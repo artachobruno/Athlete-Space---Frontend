@@ -9,12 +9,14 @@ import {
 } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { mockPlannedWorkouts, mockActivities } from '@/lib/mock-data';
-import { Footprints, Bike, Waves, Clock, Route, CheckCircle2 } from 'lucide-react';
+import { Footprints, Bike, Waves, Clock, Route, CheckCircle2, MessageCircle } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 
 interface WeekViewProps {
   currentDate: Date;
+  onAskCoach?: (context: string) => void;
 }
 
 const sportIcons = {
@@ -32,7 +34,7 @@ const intentColors = {
   recovery: 'bg-training-recovery/15 text-training-recovery border-training-recovery/30',
 };
 
-export function WeekView({ currentDate }: WeekViewProps) {
+export function WeekView({ currentDate, onAskCoach }: WeekViewProps) {
   const days = useMemo(() => {
     const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
     const weekEnd = endOfWeek(currentDate, { weekStartsOn: 1 });
@@ -101,11 +103,12 @@ export function WeekView({ currentDate }: WeekViewProps) {
                   <div
                     key={workout.id}
                     className={cn(
-                      'p-2 rounded-lg border',
+                      'p-2 rounded-lg border cursor-pointer transition-all hover:ring-1 hover:ring-accent/50',
                       isCompleted
                         ? 'bg-load-fresh/10 border-load-fresh/30'
                         : 'bg-muted/50 border-border'
                     )}
+                    onClick={() => onAskCoach?.(workout.title)}
                   >
                     <div className="flex items-center gap-2 mb-1">
                       <Icon className="h-4 w-4 text-muted-foreground" />
@@ -128,12 +131,15 @@ export function WeekView({ currentDate }: WeekViewProps) {
                         </span>
                       )}
                     </div>
-                    <Badge
-                      variant="outline"
-                      className={cn('mt-2 text-xs', intentColors[workout.intent])}
-                    >
-                      {workout.intent}
-                    </Badge>
+                    <div className="flex items-center justify-between mt-2">
+                      <Badge
+                        variant="outline"
+                        className={cn('text-xs', intentColors[workout.intent])}
+                      >
+                        {workout.intent}
+                      </Badge>
+                      <MessageCircle className="h-3 w-3 text-muted-foreground opacity-50" />
+                    </div>
                   </div>
                 );
               })}

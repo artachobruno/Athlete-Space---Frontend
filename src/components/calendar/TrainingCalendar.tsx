@@ -1,17 +1,20 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, MessageCircle } from 'lucide-react';
 import { format, addMonths, subMonths, addWeeks, subWeeks } from 'date-fns';
 import { MonthView } from './MonthView';
 import { WeekView } from './WeekView';
 import { SeasonView } from './SeasonView';
+import { CoachDrawer } from './CoachDrawer';
 
 type ViewType = 'month' | 'week' | 'season';
 
 export function TrainingCalendar() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [view, setView] = useState<ViewType>('month');
+  const [coachOpen, setCoachOpen] = useState(false);
+  const [selectedWorkout, setSelectedWorkout] = useState<string | null>(null);
 
   const navigatePrevious = () => {
     if (view === 'month') {
@@ -48,6 +51,11 @@ export function TrainingCalendar() {
     }
   };
 
+  const handleAskCoach = (workoutContext?: string) => {
+    setSelectedWorkout(workoutContext || null);
+    setCoachOpen(true);
+  };
+
   return (
     <div className="space-y-4">
       {/* Controls */}
@@ -68,20 +76,39 @@ export function TrainingCalendar() {
           </span>
         </div>
 
-        {/* View Toggle */}
-        <Tabs value={view} onValueChange={(v) => setView(v as ViewType)}>
-          <TabsList>
-            <TabsTrigger value="week">Week</TabsTrigger>
-            <TabsTrigger value="month">Month</TabsTrigger>
-            <TabsTrigger value="season">Season</TabsTrigger>
-          </TabsList>
-        </Tabs>
+        {/* Right side: Ask Coach + View Toggle */}
+        <div className="flex items-center gap-3">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => handleAskCoach()}
+            className="text-muted-foreground hover:text-foreground"
+          >
+            <MessageCircle className="h-4 w-4 mr-1.5" />
+            Ask Coach
+          </Button>
+          
+          <Tabs value={view} onValueChange={(v) => setView(v as ViewType)}>
+            <TabsList>
+              <TabsTrigger value="week">Week</TabsTrigger>
+              <TabsTrigger value="month">Month</TabsTrigger>
+              <TabsTrigger value="season">Season</TabsTrigger>
+            </TabsList>
+          </Tabs>
+        </div>
       </div>
 
       {/* Calendar Views */}
-      {view === 'month' && <MonthView currentDate={currentDate} />}
-      {view === 'week' && <WeekView currentDate={currentDate} />}
+      {view === 'month' && <MonthView currentDate={currentDate} onAskCoach={handleAskCoach} />}
+      {view === 'week' && <WeekView currentDate={currentDate} onAskCoach={handleAskCoach} />}
       {view === 'season' && <SeasonView currentDate={currentDate} />}
+
+      {/* Coach Drawer */}
+      <CoachDrawer
+        open={coachOpen}
+        onOpenChange={setCoachOpen}
+        context={selectedWorkout || undefined}
+      />
     </div>
   );
 }
