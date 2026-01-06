@@ -17,9 +17,32 @@ import NotFound from "./pages/NotFound";
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      retry: 1,
+      retry: (failureCount, error) => {
+        // Don't retry on CORS/network errors
+        if (error && typeof error === 'object' && 'code' in error) {
+          const apiError = error as { code?: string; message?: string };
+          if (apiError.code === 'ERR_NETWORK' || 
+              (apiError.message && apiError.message.includes('CORS'))) {
+            return false;
+          }
+        }
+        return failureCount < 1;
+      },
       refetchOnWindowFocus: false,
       staleTime: 30000, // 30 seconds
+      onError: (error) => {
+        // Silently handle CORS/network errors - they're expected when backend is misconfigured
+        if (error && typeof error === 'object' && 'code' in error) {
+          const apiError = error as { code?: string; message?: string };
+          if (apiError.code === 'ERR_NETWORK' || 
+              (apiError.message && apiError.message.includes('CORS'))) {
+            return; // Don't log these errors
+          }
+        }
+      },
+    },
+    mutations: {
+      retry: false,
     },
   },
 });
