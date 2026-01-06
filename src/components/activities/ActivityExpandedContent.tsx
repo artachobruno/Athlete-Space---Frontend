@@ -8,6 +8,9 @@ import {
 import { ActivityCharts } from './ActivityCharts';
 import { ActivityMap } from './ActivityMap';
 import { useUnitSystem } from '@/hooks/useUnitSystem';
+import { useQuery } from '@tanstack/react-query';
+import { fetchActivityStreams } from '@/lib/api';
+import { useMemo } from 'react';
 
 interface ActivityExpandedContentProps {
   activity: CompletedActivity;
@@ -24,6 +27,29 @@ const mockPlannedData = {
 
 export function ActivityExpandedContent({ activity }: ActivityExpandedContentProps) {
   const { convertDistance, convertElevation } = useUnitSystem();
+  
+  // Fetch activity streams for route data
+  const { data: streamsData } = useQuery({
+    queryKey: ['activityStreams', activity.id],
+    queryFn: () => fetchActivityStreams(activity.id),
+    retry: 1,
+    enabled: !!activity.id,
+  });
+
+  // Extract route coordinates from streams
+  const routeCoordinates = useMemo<[number, number][] | undefined>(() => {
+    const latlng = streamsData?.streams_data?.latlng;
+    if (!latlng || latlng.length === 0) return undefined;
+    
+    // Convert number[][] to [number, number][]
+    // latlng is already in format [[lat, lng], [lat, lng], ...]
+    return latlng.map((coord): [number, number] => {
+      if (Array.isArray(coord) && coord.length >= 2) {
+        return [coord[0], coord[1]];
+      }
+      return [0, 0];
+    }).filter((coord) => coord[0] !== 0 || coord[1] !== 0);
+  }, [streamsData]);
   
   // Calculate comparison (using km for calculations, convert for display)
   const durationDiff = ((activity.duration - mockPlannedData.duration) / mockPlannedData.duration) * 100;
@@ -141,7 +167,7 @@ export function ActivityExpandedContent({ activity }: ActivityExpandedContentPro
           <ActivityCharts activity={activity} />
         </TabsContent>
         <TabsContent value="map" className="mt-4">
-          <ActivityMap />
+          <ActivityMap coordinates={routeCoordinates} />
         </TabsContent>
       </Tabs>
     </div>

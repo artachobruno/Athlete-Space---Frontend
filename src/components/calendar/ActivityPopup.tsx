@@ -50,10 +50,25 @@ export function ActivityPopup({
   onAskCoach 
 }: ActivityPopupProps) {
   const navigate = useNavigate();
-  const { convertDistance, convertElevation } = useUnitSystem();
+  const { convertDistance, convertElevation, convertPace } = useUnitSystem();
   const workout = plannedWorkout;
   const activity = completedActivity;
   const SportIcon = sportIcons[workout?.sport || activity?.sport || 'running'];
+  
+  // Parse and convert pace string (format: "X min/km")
+  const formatPace = (paceString?: string): string | undefined => {
+    if (!paceString) return undefined;
+    
+    // Extract number from string like "5 min/km" or "5.5 min/km"
+    const match = paceString.match(/([\d.]+)/);
+    if (!match) return paceString; // Return as-is if can't parse
+    
+    const minPerKm = parseFloat(match[1]);
+    if (isNaN(minPerKm)) return paceString;
+    
+    const converted = convertPace(minPerKm);
+    return `${converted.value.toFixed(2)} ${converted.unit}`;
+  };
   
   // Fetch training load to get TSS if activity doesn't have it
   const { data: trainingLoadData } = useQuery({
@@ -151,7 +166,7 @@ export function ActivityPopup({
               {activity.avgPace && (
                 <div className="p-3 rounded-lg bg-muted/50">
                   <div className="text-xs text-muted-foreground mb-1">Avg Pace</div>
-                  <div className="text-sm font-medium text-foreground">{activity.avgPace}</div>
+                  <div className="text-sm font-medium text-foreground">{formatPace(activity.avgPace)}</div>
                 </div>
               )}
               {activity.avgHeartRate && (

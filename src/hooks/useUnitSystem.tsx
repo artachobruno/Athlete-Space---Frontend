@@ -68,6 +68,20 @@ export function useUnitSystem() {
     };
   };
 
+  const convertPace = (minPerKm: number): { value: number; unit: string } => {
+    if (unitSystem === 'imperial') {
+      // Convert min/km to min/mile: multiply by 1.60934
+      return {
+        value: Math.round(minPerKm * 1.60934 * 100) / 100, // Round to 2 decimals
+        unit: 'min/mi',
+      };
+    }
+    return {
+      value: Math.round(minPerKm * 100) / 100, // Round to 2 decimals
+      unit: 'min/km',
+    };
+  };
+
   return {
     unitSystem,
     isLoading: false, // Always ready since we have a default
@@ -75,6 +89,7 @@ export function useUnitSystem() {
     convertElevation,
     convertWeight,
     convertHeight,
+    convertPace,
   };
 }
 

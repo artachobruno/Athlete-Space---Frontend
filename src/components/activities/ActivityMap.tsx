@@ -1,7 +1,17 @@
 import { MapPin, Navigation } from 'lucide-react';
+import RouteMap from '../RouteMap';
 
-export function ActivityMap() {
-  // Placeholder for route map - would require Mapbox integration
+interface ActivityMapProps {
+  coordinates?: [number, number][]; // [lat, lng]
+}
+
+export function ActivityMap({ coordinates }: ActivityMapProps) {
+  // If coordinates are provided, render the actual map
+  if (coordinates && coordinates.length > 0) {
+    return <RouteMap coordinates={coordinates} height="h-64" />;
+  }
+
+  // Placeholder when no route data is available
   return (
     <div className="relative h-64 bg-muted/30 rounded-lg overflow-hidden">
       {/* Placeholder map visualization */}
@@ -12,7 +22,7 @@ export function ActivityMap() {
           </div>
           <p className="text-sm text-muted-foreground mb-1">Route Map</p>
           <p className="text-xs text-muted-foreground">
-            Connect Mapbox to view GPS tracks
+            No GPS data available for this activity
           </p>
         </div>
       </div>

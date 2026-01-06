@@ -1,6 +1,7 @@
 import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
+import "leaflet/dist/leaflet.css";
 
 // Global error handlers to catch errors from browser extensions or other external sources
 window.addEventListener('unhandledrejection', (event) => {
