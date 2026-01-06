@@ -9,6 +9,7 @@ import TrainingPlan from "./pages/TrainingPlan";
 import Activities from "./pages/Activities";
 import Analytics from "./pages/Analytics";
 import Coach from "./pages/Coach";
+import Settings from "./pages/Settings";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -27,7 +28,7 @@ const App = () => (
           <Route path="/activities" element={<Activities />} />
           <Route path="/analytics" element={<Analytics />} />
           <Route path="/coach" element={<Coach />} />
-          <Route path="/settings" element={<Dashboard />} />
+          <Route path="/settings" element={<Settings />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
