@@ -62,7 +62,43 @@ This project is built with:
 
 ## How can I deploy this project?
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
+### Deploy to Render
+
+1. **Push your code to GitHub** (if not already done)
+
+2. **Create a new Static Site on Render:**
+   - Go to [Render Dashboard](https://dashboard.render.com)
+   - Click "New +" → "Static Site"
+   - Connect your GitHub repository
+
+3. **Configure Build Settings:**
+   - **Build Command:** `npm install && npm run build`
+   - **Publish Directory:** `dist`
+   - **Node Version:** 18 or higher
+
+4. **Set Environment Variables:**
+   - Add `VITE_API_URL` with your backend API URL
+   - Example: `https://your-backend.onrender.com`
+
+5. **Deploy!**
+   - Click "Create Static Site"
+   - Render will build and deploy your app
+
+### Alternative: Deploy as Web Service
+
+If you prefer to use the `render.yaml` file:
+- The project includes a `render.yaml` configuration
+- You can use "New +" → "Blueprint" and connect your repo
+- Make sure to set `VITE_API_URL` in the environment variables
+
+### Environment Variables
+
+Create a `.env` file for local development:
+```
+VITE_API_URL=http://localhost:8000
+```
+
+For production, set `VITE_API_URL` in your Render dashboard to point to your backend API.
 
 ## Can I connect a custom domain to my Lovable project?
 

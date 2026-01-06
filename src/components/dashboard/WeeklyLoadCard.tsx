@@ -1,25 +1,59 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { mockWeeklyPlan, mockTrainingLoad } from '@/lib/mock-data';
+import { fetchOverview, fetchCalendarWeek } from '@/lib/api';
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell } from 'recharts';
-import { subDays, format } from 'date-fns';
+import { subDays, format, startOfWeek } from 'date-fns';
+import { useQuery } from '@tanstack/react-query';
+import { Loader2 } from 'lucide-react';
 
 export function WeeklyLoadCard() {
   const today = new Date();
-  
-  // Get last 7 days of training load
-  const weekData = Array.from({ length: 7 }, (_, i) => {
+  const weekStart = startOfWeek(today, { weekStartsOn: 1 });
+  const weekStartStr = format(weekStart, 'yyyy-MM-dd');
+
+  const { data: overview, isLoading: overviewLoading } = useQuery({
+    queryKey: ['overview', 7],
+    queryFn: () => fetchOverview(7),
+    retry: 1,
+  });
+
+  const { data: weekData, isLoading: weekLoading } = useQuery({
+    queryKey: ['calendarWeek', weekStartStr],
+    queryFn: () => fetchCalendarWeek(weekStartStr),
+    retry: 1,
+  });
+
+  const isLoading = overviewLoading || weekLoading;
+
+  // Get last 7 days of training load from metrics
+  const dailyLoadData = overview?.metrics.tsb ? [] : [];
+  const weekChartData = Array.from({ length: 7 }, (_, i) => {
     const date = subDays(today, 6 - i);
-    const dateStr = format(date, 'yyyy-MM-dd');
-    const loadEntry = mockTrainingLoad.find(l => l.date === dateStr);
-    
     return {
       day: format(date, 'EEE'),
-      load: loadEntry?.dailyLoad || 0,
+      load: 0, // Would need daily load data from API
       isToday: i === 6,
     };
   });
 
-  const progress = (mockWeeklyPlan.actualLoad / mockWeeklyPlan.plannedLoad) * 100;
+  // Calculate weekly totals from calendar sessions
+  const plannedLoad = weekData?.sessions?.filter(s => s.status === 'planned').length * 50 || 0;
+  const actualLoad = weekData?.sessions?.filter(s => s.status === 'completed').length * 50 || 0;
+  const progress = plannedLoad > 0 ? (actualLoad / plannedLoad) * 100 : 0;
+
+  if (isLoading) {
+    return (
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg">Weekly Load</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card>
@@ -27,7 +61,7 @@ export function WeeklyLoadCard() {
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg">Weekly Load</CardTitle>
           <div className="text-sm text-muted-foreground">
-            {mockWeeklyPlan.actualLoad} / {mockWeeklyPlan.plannedLoad} TSS
+            {actualLoad} / {plannedLoad} TSS
           </div>
         </div>
       </CardHeader>
@@ -48,7 +82,7 @@ export function WeeklyLoadCard() {
         {/* Daily load chart */}
         <div className="h-32">
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={weekData} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
+            <BarChart data={weekChartData} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
               <XAxis
                 dataKey="day"
                 axisLine={false}
@@ -57,7 +91,7 @@ export function WeeklyLoadCard() {
               />
               <YAxis hide />
               <Bar dataKey="load" radius={[4, 4, 0, 0]}>
-                {weekData.map((entry, index) => (
+                {weekChartData.map((entry, index) => (
                   <Cell
                     key={`cell-${index}`}
                     fill={entry.isToday ? 'hsl(var(--accent))' : 'hsl(var(--muted))'}
@@ -67,15 +101,6 @@ export function WeeklyLoadCard() {
             </BarChart>
           </ResponsiveContainer>
         </div>
-
-        {/* Coach notes */}
-        {mockWeeklyPlan.coachNotes && (
-          <div className="border-t border-border pt-4">
-            <p className="text-sm text-muted-foreground italic">
-              "{mockWeeklyPlan.coachNotes.slice(0, 120)}..."
-            </p>
-          </div>
-        )}
       </CardContent>
     </Card>
   );

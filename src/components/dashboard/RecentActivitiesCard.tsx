@@ -1,8 +1,9 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { mockActivities } from '@/lib/mock-data';
+import { fetchActivities } from '@/lib/api';
 import { format, parseISO } from 'date-fns';
-import { Bike, Footprints, Waves } from 'lucide-react';
+import { Bike, Footprints, Waves, Loader2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
+import { useQuery } from '@tanstack/react-query';
 
 const sportIcons = {
   running: Footprints,
@@ -12,7 +13,13 @@ const sportIcons = {
 };
 
 export function RecentActivitiesCard() {
-  const recentActivities = mockActivities.slice(0, 4);
+  const { data: activities, isLoading, error } = useQuery({
+    queryKey: ['activities', 'recent'],
+    queryFn: () => fetchActivities({ limit: 4 }),
+    retry: 1,
+  });
+
+  const recentActivities = activities || [];
 
   return (
     <Card>
@@ -28,8 +35,17 @@ export function RecentActivitiesCard() {
         </div>
       </CardHeader>
       <CardContent>
-        <div className="space-y-3">
-          {recentActivities.map((activity) => {
+        {isLoading ? (
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+          </div>
+        ) : error || recentActivities.length === 0 ? (
+          <div className="text-center py-8 text-muted-foreground text-sm">
+            {error ? 'Unable to load activities' : 'No recent activities'}
+          </div>
+        ) : (
+          <div className="space-y-3">
+            {recentActivities.map((activity) => {
             const Icon = sportIcons[activity.sport];
             return (
               <div
@@ -56,7 +72,8 @@ export function RecentActivitiesCard() {
               </div>
             );
           })}
-        </div>
+          </div>
+        )}
       </CardContent>
     </Card>
   );

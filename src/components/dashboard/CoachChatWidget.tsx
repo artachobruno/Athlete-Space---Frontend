@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Send, Bot, User, Maximize2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Link } from 'react-router-dom';
+import { sendCoachChat } from '@/lib/api';
 
 interface Message {
   id: string;
@@ -20,20 +21,12 @@ const initialMessages: Message[] = [
   },
 ];
 
-const coachResponses = [
-  "Based on your recent load data, you're in a good position to handle that.",
-  "I understand. Looking at your training history, I'd recommend a gradual approach.",
-  "Good question. The key is balancing intensity with recovery.",
-  "I've noted that. Let me adjust your plan accordingly.",
-  "Your progress has been steady. The data shows improvement.",
-];
-
 export function CoachChatWidget() {
   const [messages, setMessages] = useState<Message[]>(initialMessages);
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
 
-  const sendMessage = () => {
+  const sendMessage = async () => {
     if (!input.trim()) return;
 
     const userMessage: Message = {
@@ -43,19 +36,28 @@ export function CoachChatWidget() {
     };
 
     setMessages(prev => [...prev, userMessage]);
+    const messageText = input.trim();
     setInput('');
     setIsTyping(true);
 
-    setTimeout(() => {
-      const response = coachResponses[Math.floor(Math.random() * coachResponses.length)];
+    try {
+      const response = await sendCoachChat(messageText);
       const coachMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: 'coach',
-        content: response,
+        content: response.reply || 'I understand.',
       };
       setMessages(prev => [...prev, coachMessage]);
+    } catch (error) {
+      const errorMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        role: 'coach',
+        content: 'Sorry, please try again.',
+      };
+      setMessages(prev => [...prev, errorMessage]);
+    } finally {
       setIsTyping(false);
-    }, 800 + Math.random() * 800);
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {

@@ -1,8 +1,10 @@
 import { useMemo } from 'react';
 import { startOfWeek, addDays, format, isToday } from 'date-fns';
 import { cn } from '@/lib/utils';
-import { mockPlannedWorkouts } from '@/lib/mock-data';
+import { fetchCalendarWeek } from '@/lib/api';
 import { Footprints, Bike, Waves, Moon } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
+import type { PlannedWorkout } from '@/types';
 
 const sportIcons = {
   running: Footprints,
@@ -19,15 +21,38 @@ const intentColors = {
   recovery: 'bg-training-recovery',
 };
 
+const mapSessionToWorkout = (session: import('@/lib/api').CalendarSession): PlannedWorkout | null => {
+  if (session.status === 'completed') return null;
+  return {
+    id: session.id,
+    date: session.date,
+    sport: session.type as PlannedWorkout['sport'],
+    intent: 'aerobic' as PlannedWorkout['intent'],
+    title: session.title,
+    description: session.notes || '',
+    duration: session.duration_minutes || 0,
+    distance: session.distance_km || undefined,
+    completed: session.status === 'completed',
+  };
+};
+
 export function WeeklyStructureStrip() {
+  const today = new Date();
+  const weekStart = startOfWeek(today, { weekStartsOn: 1 });
+  const weekStartStr = format(weekStart, 'yyyy-MM-dd');
+
+  const { data: weekData } = useQuery({
+    queryKey: ['calendarWeek', weekStartStr],
+    queryFn: () => fetchCalendarWeek(weekStartStr),
+    retry: 1,
+  });
+
   const weekDays = useMemo(() => {
-    const today = new Date();
-    const weekStart = startOfWeek(today, { weekStartsOn: 1 });
-    
     return Array.from({ length: 7 }, (_, i) => {
       const date = addDays(weekStart, i);
       const dateStr = format(date, 'yyyy-MM-dd');
-      const workout = mockPlannedWorkouts.find(w => w.date === dateStr);
+      const session = weekData?.sessions?.find(s => s.date === dateStr && s.status === 'planned');
+      const workout = session ? mapSessionToWorkout(session) : null;
       
       return {
         date,
@@ -37,7 +62,7 @@ export function WeeklyStructureStrip() {
         isToday: isToday(date),
       };
     });
-  }, []);
+  }, [weekData, weekStart]);
 
   return (
     <div className="flex gap-1 overflow-x-auto pb-2">

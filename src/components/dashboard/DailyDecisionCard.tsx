@@ -1,7 +1,8 @@
 import { Card, CardContent } from '@/components/ui/card';
-import { getTodayDecision } from '@/lib/mock-data';
+import { getTodayIntelligence } from '@/lib/intelligence';
 import { cn } from '@/lib/utils';
-import { CheckCircle2, AlertCircle, RefreshCw, Moon } from 'lucide-react';
+import { CheckCircle2, AlertCircle, RefreshCw, Moon, Loader2 } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
 
 const decisionConfig = {
   proceed: {
@@ -26,8 +27,47 @@ const decisionConfig = {
   },
 };
 
+const mapRecommendationToDecision = (recommendation: string): 'proceed' | 'modify' | 'replace' | 'rest' => {
+  const lower = recommendation.toLowerCase();
+  if (lower.includes('rest') || lower.includes('recovery')) return 'rest';
+  if (lower.includes('modify') || lower.includes('adjust')) return 'modify';
+  if (lower.includes('replace') || lower.includes('change')) return 'replace';
+  return 'proceed';
+};
+
 export function DailyDecisionCard() {
-  const { decision, reason } = getTodayDecision();
+  const { data, isLoading, error } = useQuery({
+    queryKey: ['todayIntelligence'],
+    queryFn: getTodayIntelligence,
+    retry: 1,
+  });
+
+  if (isLoading) {
+    return (
+      <Card className={cn('border-2 h-full')}>
+        <CardContent className="p-6">
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (error || !data) {
+    return (
+      <Card className={cn('border-2 h-full')}>
+        <CardContent className="p-6">
+          <div className="text-center py-8 text-muted-foreground">
+            <p className="text-sm">Unable to load today&apos;s decision</p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const decision = mapRecommendationToDecision(data.recommendation);
+  const reason = data.explanation || data.recommendation;
   const config = decisionConfig[decision];
   const Icon = config.icon;
 

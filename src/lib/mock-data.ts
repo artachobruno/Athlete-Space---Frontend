@@ -1,4 +1,7 @@
-// Mock data for demonstration purposes
+// MOCK DATA - FORMAT REFERENCE ONLY
+// This file is kept as a reference for data structure/format
+// All components now use API functions instead of this mock data
+// DO NOT IMPORT OR USE THIS FILE IN COMPONENTS
 import type { CompletedActivity, TrainingLoad, PlannedWorkout, WeeklyPlan } from '@/types';
 import { format, subDays, addDays, startOfWeek, endOfWeek } from 'date-fns';
 

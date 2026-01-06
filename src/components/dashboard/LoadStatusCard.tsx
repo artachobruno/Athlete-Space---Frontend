@@ -1,7 +1,8 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { getCurrentLoadStatus, mockTrainingLoad } from '@/lib/mock-data';
+import { fetchOverview } from '@/lib/api';
 import { cn } from '@/lib/utils';
-import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { TrendingUp, TrendingDown, Minus, Loader2 } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
 
 const statusStyles = {
   fresh: 'text-load-fresh',
@@ -10,12 +11,58 @@ const statusStyles = {
   overtraining: 'text-load-overtraining',
 };
 
-export function LoadStatusCard() {
-  const loadStatus = getCurrentLoadStatus();
-  const latest = mockTrainingLoad[mockTrainingLoad.length - 1];
-  const previous = mockTrainingLoad[mockTrainingLoad.length - 8]; // Week ago
+const getLoadStatus = (tsb: number): { status: keyof typeof statusStyles; description: string } => {
+  if (tsb > 5) return { status: 'fresh', description: 'Fresh - Ready for hard training' };
+  if (tsb > 0) return { status: 'optimal', description: 'Optimal - Good training balance' };
+  if (tsb > -5) return { status: 'overreaching', description: 'Overreaching - Reduce intensity' };
+  return { status: 'overtraining', description: 'Overtraining - Rest required' };
+};
 
-  const ctlTrend = latest.ctl - previous.ctl;
+export function LoadStatusCard() {
+  const { data: overview, isLoading, error } = useQuery({
+    queryKey: ['overview', 60],
+    queryFn: () => fetchOverview(60),
+    retry: 1,
+  });
+
+  if (isLoading) {
+    return (
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg">Training Load</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (error || !overview) {
+    return (
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-lg">Training Load</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="text-center py-8 text-muted-foreground text-sm">
+            Unable to load training data
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const { ctl, atl, tsb } = overview.today;
+  const loadStatus = getLoadStatus(tsb);
+  
+  // Calculate CTL trend from metrics
+  const ctlData = overview.metrics.ctl || [];
+  const latestCtl = ctl;
+  const previousCtl = ctlData.length >= 7 ? ctlData[ctlData.length - 7]?.[1] || ctl : ctl;
+  const ctlTrend = latestCtl - previousCtl;
   const TrendIcon = ctlTrend > 2 ? TrendingUp : ctlTrend < -2 ? TrendingDown : Minus;
 
   return (
@@ -27,7 +74,7 @@ export function LoadStatusCard() {
         {/* TSB Status */}
         <div className="text-center py-4 bg-muted/30 rounded-lg">
           <div className={cn('text-3xl font-bold', statusStyles[loadStatus.status])}>
-            {loadStatus.tsb > 0 ? '+' : ''}{loadStatus.tsb.toFixed(0)}
+            {tsb > 0 ? '+' : ''}{tsb.toFixed(0)}
           </div>
           <div className="text-xs text-muted-foreground mt-1 uppercase tracking-wider">
             Form (TSB)
@@ -44,7 +91,7 @@ export function LoadStatusCard() {
           <div className="text-center">
             <div className="flex items-center justify-center gap-1">
               <span className="text-xl font-semibold text-foreground">
-                {latest.ctl.toFixed(0)}
+                {ctl.toFixed(0)}
               </span>
               <TrendIcon className={cn(
                 'h-4 w-4',
@@ -55,7 +102,7 @@ export function LoadStatusCard() {
           </div>
           <div className="text-center">
             <div className="text-xl font-semibold text-foreground">
-              {latest.atl.toFixed(0)}
+              {atl.toFixed(0)}
             </div>
             <div className="text-xs text-muted-foreground">Fatigue (ATL)</div>
           </div>

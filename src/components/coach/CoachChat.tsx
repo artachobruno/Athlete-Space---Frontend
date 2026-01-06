@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Send, Bot, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { sendCoachChat } from '@/lib/api';
 
 interface Message {
   id: string;
@@ -18,16 +19,6 @@ const initialMessages: Message[] = [
     content: "Good to see you. I've been reviewing your recent training. Your consistency has been solid this week. What's on your mind?",
     timestamp: new Date(),
   },
-];
-
-const coachResponses = [
-  "Based on your recent load data, you're in a good position to handle that. Let's discuss the specifics.",
-  "I understand. Looking at your training history, I'd recommend a gradual approach here. What's your timeline?",
-  "That's a reasonable concern. Your ATL has been elevated, so let's monitor how you respond over the next few sessions.",
-  "Good question. The key is balancing intensity with recovery. Given your current form, I'd suggest focusing on quality over volume.",
-  "I've noted that. Let me adjust your plan accordingly. You should see the changes reflected in tomorrow's session.",
-  "Your progress has been steady. The data shows improvement in your aerobic capacity over the past 6 weeks.",
-  "Rest is training too. If you're feeling that way, it's often a signal worth listening to.",
 ];
 
 export function CoachChat() {
@@ -55,21 +46,30 @@ export function CoachChat() {
     };
 
     setMessages(prev => [...prev, userMessage]);
+    const messageText = input.trim();
     setInput('');
     setIsTyping(true);
 
-    // Simulate coach thinking and responding
-    setTimeout(() => {
-      const response = coachResponses[Math.floor(Math.random() * coachResponses.length)];
+    try {
+      const response = await sendCoachChat(messageText);
       const coachMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: 'coach',
-        content: response,
+        content: response.reply || 'I understand. Let me think about that.',
         timestamp: new Date(),
       };
       setMessages(prev => [...prev, coachMessage]);
+    } catch (error) {
+      const errorMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        role: 'coach',
+        content: 'Sorry, I encountered an error. Please try again.',
+        timestamp: new Date(),
+      };
+      setMessages(prev => [...prev, errorMessage]);
+    } finally {
       setIsTyping(false);
-    }, 1000 + Math.random() * 1000);
+    }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {

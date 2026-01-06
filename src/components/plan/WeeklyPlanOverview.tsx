@@ -1,11 +1,49 @@
 import { Card, CardContent } from '@/components/ui/card';
-import { mockWeeklyPlan } from '@/lib/mock-data';
-import { format, parseISO } from 'date-fns';
-import { Target, TrendingUp } from 'lucide-react';
+import { fetchCalendarWeek } from '@/lib/api';
+import { format, startOfWeek, endOfWeek } from 'date-fns';
+import { Target, TrendingUp, Loader2 } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
 
 export function WeeklyPlanOverview() {
-  const plan = mockWeeklyPlan;
-  const progress = (plan.actualLoad / plan.plannedLoad) * 100;
+  const today = new Date();
+  const weekStart = startOfWeek(today, { weekStartsOn: 1 });
+  const weekStartStr = format(weekStart, 'yyyy-MM-dd');
+
+  const { data: weekData, isLoading } = useQuery({
+    queryKey: ['calendarWeek', weekStartStr],
+    queryFn: () => fetchCalendarWeek(weekStartStr),
+    retry: 1,
+  });
+
+  if (isLoading) {
+    return (
+      <Card>
+        <CardContent className="p-6">
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (!weekData) {
+    return (
+      <Card>
+        <CardContent className="p-6">
+          <div className="text-center py-8 text-muted-foreground text-sm">
+            Unable to load weekly plan
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const plannedSessions = weekData.sessions?.filter(s => s.status === 'planned').length || 0;
+  const completedSessions = weekData.sessions?.filter(s => s.status === 'completed').length || 0;
+  const plannedLoad = plannedSessions * 50; // Estimate
+  const actualLoad = completedSessions * 50; // Estimate
+  const progress = plannedLoad > 0 ? (actualLoad / plannedLoad) * 100 : 0;
 
   return (
     <Card>
@@ -16,7 +54,7 @@ export function WeeklyPlanOverview() {
             <div>
               <div className="text-sm text-muted-foreground mb-1">Current Week</div>
               <h2 className="text-xl font-semibold text-foreground">
-                {format(parseISO(plan.weekStart), 'MMM d')} – {format(parseISO(plan.weekEnd), 'MMM d, yyyy')}
+                {format(weekStart, 'MMM d')} – {format(endOfWeek(weekStart, { weekStartsOn: 1 }), 'MMM d, yyyy')}
               </h2>
             </div>
 
@@ -31,7 +69,7 @@ export function WeeklyPlanOverview() {
               <div className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground">Weekly Load</span>
                 <span className="font-medium text-foreground">
-                  {plan.actualLoad} / {plan.plannedLoad} TSS
+                  {actualLoad} / {plannedLoad} TSS
                 </span>
               </div>
               <div className="h-2 bg-muted rounded-full overflow-hidden">
@@ -53,7 +91,7 @@ export function WeeklyPlanOverview() {
               Coach Notes
             </div>
             <p className="text-sm text-foreground leading-relaxed">
-              {plan.coachNotes}
+              {weekData.sessions?.length ? `${weekData.sessions.length} sessions planned this week` : 'No sessions planned'}
             </p>
           </div>
         </div>

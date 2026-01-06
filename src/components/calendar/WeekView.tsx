@@ -8,10 +8,11 @@ import {
   isSameDay,
 } from 'date-fns';
 import { cn } from '@/lib/utils';
-import { mockPlannedWorkouts, mockActivities } from '@/lib/mock-data';
-import { Footprints, Bike, Waves, Clock, Route, CheckCircle2, MessageCircle } from 'lucide-react';
+import { fetchCalendarWeek, fetchActivities } from '@/lib/api';
+import { Footprints, Bike, Waves, Clock, Route, CheckCircle2, MessageCircle, Loader2 } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { useQuery } from '@tanstack/react-query';
 import type { PlannedWorkout, CompletedActivity } from '@/types';
 
 interface WeekViewProps {
@@ -34,19 +35,57 @@ const intentColors = {
   recovery: 'bg-training-recovery/15 text-training-recovery border-training-recovery/30',
 };
 
+const mapSessionToWorkout = (session: import('@/lib/api').CalendarSession): PlannedWorkout | null => {
+  if (session.status === 'completed') return null;
+  return {
+    id: session.id,
+    date: session.date,
+    sport: session.type as PlannedWorkout['sport'],
+    intent: 'aerobic' as PlannedWorkout['intent'],
+    title: session.title,
+    description: session.notes || '',
+    duration: session.duration_minutes || 0,
+    distance: session.distance_km || undefined,
+    completed: session.status === 'completed',
+  };
+};
+
 export function WeekView({ currentDate, onActivityClick }: WeekViewProps) {
+  const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
+  const weekStartStr = format(weekStart, 'yyyy-MM-dd');
+
+  const { data: weekData, isLoading: weekLoading } = useQuery({
+    queryKey: ['calendarWeek', weekStartStr],
+    queryFn: () => fetchCalendarWeek(weekStartStr),
+    retry: 1,
+  });
+
+  const { data: activities, isLoading: activitiesLoading } = useQuery({
+    queryKey: ['activities', 'week'],
+    queryFn: () => fetchActivities({ limit: 100 }),
+    retry: 1,
+  });
+
   const days = useMemo(() => {
-    const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
     const weekEnd = endOfWeek(currentDate, { weekStartsOn: 1 });
     return eachDayOfInterval({ start: weekStart, end: weekEnd });
-  }, [currentDate]);
+  }, [currentDate, weekStart]);
 
   const getWorkoutsForDay = (date: Date) => {
     const dateStr = format(date, 'yyyy-MM-dd');
-    const planned = mockPlannedWorkouts.filter(w => w.date === dateStr);
-    const completed = mockActivities.filter(a => a.date === dateStr);
+    const plannedSessions = weekData?.sessions?.filter(s => s.date === dateStr && s.status === 'planned') || [];
+    const planned = plannedSessions.map(mapSessionToWorkout).filter((w): w is PlannedWorkout => w !== null);
+    const completed = (activities || []).filter((a: CompletedActivity) => a.date === dateStr);
     return { planned, completed };
   };
+
+  if (weekLoading || activitiesLoading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-7 gap-3">

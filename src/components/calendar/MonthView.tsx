@@ -9,10 +9,12 @@ import {
   isSameMonth,
   isToday,
   isSameDay,
+  eachWeekOfInterval,
 } from 'date-fns';
 import { cn } from '@/lib/utils';
-import { mockPlannedWorkouts, mockActivities } from '@/lib/mock-data';
-import { Footprints, Bike, Waves, CheckCircle2, MessageCircle } from 'lucide-react';
+import { fetchCalendarWeek, fetchActivities } from '@/lib/api';
+import { Footprints, Bike, Waves, CheckCircle2, MessageCircle, Loader2 } from 'lucide-react';
+import { useQuery } from '@tanstack/react-query';
 import type { PlannedWorkout, CompletedActivity } from '@/types';
 
 interface MonthViewProps {
@@ -35,22 +37,70 @@ const intentColors = {
   recovery: 'bg-training-recovery',
 };
 
+const mapSessionToWorkout = (session: import('@/lib/api').CalendarSession): PlannedWorkout | null => {
+  if (session.status === 'completed') return null;
+  return {
+    id: session.id,
+    date: session.date,
+    sport: session.type as PlannedWorkout['sport'],
+    intent: 'aerobic' as PlannedWorkout['intent'],
+    title: session.title,
+    description: session.notes || '',
+    duration: session.duration_minutes || 0,
+    distance: session.distance_km || undefined,
+    completed: session.status === 'completed',
+  };
+};
+
 export function MonthView({ currentDate, onActivityClick }: MonthViewProps) {
+  const monthStart = startOfMonth(currentDate);
+  const monthEnd = endOfMonth(currentDate);
+  
+  // Fetch data for all weeks in the month
+  const weeks = useMemo(() => {
+    return eachWeekOfInterval({ start: monthStart, end: monthEnd }, { weekStartsOn: 1 });
+  }, [monthStart, monthEnd]);
+
+  const weekQueries = weeks.map(weekStart => {
+    const weekStartStr = format(weekStart, 'yyyy-MM-dd');
+    return useQuery({
+      queryKey: ['calendarWeek', weekStartStr],
+      queryFn: () => fetchCalendarWeek(weekStartStr),
+      retry: 1,
+    });
+  });
+
+  const { data: activities, isLoading: activitiesLoading } = useQuery({
+    queryKey: ['activities', 'month'],
+    queryFn: () => fetchActivities({ limit: 200 }),
+    retry: 1,
+  });
+
+  const isLoading = weekQueries.some(q => q.isLoading) || activitiesLoading;
+  const allWeekData = weekQueries.map(q => q.data).filter(Boolean);
+
   const days = useMemo(() => {
-    const monthStart = startOfMonth(currentDate);
-    const monthEnd = endOfMonth(currentDate);
     const calendarStart = startOfWeek(monthStart, { weekStartsOn: 1 });
     const calendarEnd = endOfWeek(monthEnd, { weekStartsOn: 1 });
-
     return eachDayOfInterval({ start: calendarStart, end: calendarEnd });
-  }, [currentDate]);
+  }, [currentDate, monthStart, monthEnd]);
 
   const getWorkoutsForDay = (date: Date) => {
     const dateStr = format(date, 'yyyy-MM-dd');
-    const planned = mockPlannedWorkouts.filter(w => w.date === dateStr);
-    const completed = mockActivities.filter(a => a.date === dateStr);
+    const allSessions = allWeekData.flatMap(w => w?.sessions || []);
+    const plannedSessions = allSessions.filter(s => s.date === dateStr && s.status === 'planned');
+    const planned = plannedSessions.map(mapSessionToWorkout).filter((w): w is PlannedWorkout => w !== null);
+    const completed = (activities || []).filter((a: CompletedActivity) => a.date === dateStr);
     return { planned, completed };
   };
+
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+      </div>
+    );
+  }
 
   const weekDays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
