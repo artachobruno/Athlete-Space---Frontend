@@ -199,11 +199,18 @@ export const getStravaStatus = async (): Promise<{ connected: boolean; athlete_i
 
 /**
  * Fetches activities from the backend.
+ * Note: Backend has a maximum limit of 100. Larger limits will be capped at 100.
  */
 export const fetchActivities = async (params?: { limit?: number; offset?: number }): Promise<import("../types").CompletedActivity[]> => {
   console.log("[API] Fetching activities");
   try {
-    const response = await api.get("/activities", { params });
+    // Ensure limit doesn't exceed backend maximum of 100
+    const safeParams = params ? {
+      ...params,
+      limit: params.limit && params.limit > 100 ? 100 : params.limit,
+    } : params;
+    
+    const response = await api.get("/activities", { params: safeParams });
     
     // Handle different response formats
     if (Array.isArray(response)) {

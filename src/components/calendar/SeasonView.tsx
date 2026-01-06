@@ -44,7 +44,7 @@ export function SeasonView({ currentDate }: SeasonViewProps) {
 
   const { data: activities, isLoading: activitiesLoading } = useQuery({
     queryKey: ['activities', 'season'],
-    queryFn: () => fetchActivities({ limit: 500 }),
+    queryFn: () => fetchActivities({ limit: 100 }),
     retry: 1,
   });
 

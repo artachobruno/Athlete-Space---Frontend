@@ -72,7 +72,7 @@ export function MonthView({ currentDate, onActivityClick }: MonthViewProps) {
 
   const { data: activities, isLoading: activitiesLoading } = useQuery({
     queryKey: ['activities', 'month'],
-    queryFn: () => fetchActivities({ limit: 200 }),
+    queryFn: () => fetchActivities({ limit: 100 }),
     retry: 1,
   });
 
