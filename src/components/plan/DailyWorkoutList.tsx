@@ -18,7 +18,7 @@ const mapSessionToWorkout = (session: import('@/lib/api').CalendarSession): Plan
     description: session.notes || '',
     duration: session.duration_minutes || 0,
     distance: session.distance_km || undefined,
-    completed: session.status === 'completed',
+    completed: false,
   };
 };
 
@@ -74,6 +74,7 @@ export function DailyWorkoutList() {
 
       return {
         date,
+        dateStr,
         workout,
         completed: completed || undefined,
         status,
@@ -101,6 +102,7 @@ export function DailyWorkoutList() {
           <DailyWorkoutCard
             key={day.date.toString()}
             date={day.date}
+            dateId={`workout-${day.dateStr}`}
             workout={day.workout}
             completed={day.completed}
             status={day.status}

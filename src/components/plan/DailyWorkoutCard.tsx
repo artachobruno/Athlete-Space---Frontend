@@ -10,6 +10,7 @@ import {
 
 interface DailyWorkoutCardProps {
   date: Date;
+  dateId?: string;
   workout?: PlannedWorkout;
   completed?: CompletedActivity;
   status: 'upcoming' | 'today' | 'completed' | 'missed';
@@ -46,18 +47,21 @@ const coachNotes: Record<string, string> = {
   recovery: 'Very easy. Heart rate should stay low throughout.',
 };
 
-export function DailyWorkoutCard({ date, workout, completed, status, dailyDecision }: DailyWorkoutCardProps) {
+export function DailyWorkoutCard({ date, dateId, workout, completed, status, dailyDecision }: DailyWorkoutCardProps) {
   const isRestDay = !workout;
   const Icon = workout ? sportIcons[workout.sport] : Moon;
   const decisionInfo = dailyDecision ? decisionConfig[dailyDecision.decision] : null;
   const DecisionIcon = decisionInfo?.icon;
 
   return (
-    <Card className={cn(
-      'transition-all',
-      status === 'today' && 'ring-2 ring-accent',
-      status === 'missed' && 'opacity-60'
-    )}>
+    <Card 
+      id={dateId}
+      className={cn(
+        'transition-all scroll-mt-4',
+        status === 'today' && 'ring-2 ring-accent',
+        status === 'missed' && 'opacity-60'
+      )}
+    >
       <CardContent className="p-4">
         <div className="flex flex-col lg:flex-row lg:items-start gap-4">
           {/* Left: Day info */}
