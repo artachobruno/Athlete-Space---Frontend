@@ -32,7 +32,7 @@ const mapSessionToWorkout = (session: import('@/lib/api').CalendarSession): Plan
     description: session.notes || '',
     duration: session.duration_minutes || 0,
     distance: session.distance_km || undefined,
-    completed: session.status === 'completed',
+    completed: false,
   };
 };
 
