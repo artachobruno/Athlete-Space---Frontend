@@ -10,6 +10,7 @@ import Activities from "./pages/Activities";
 import Analytics from "./pages/Analytics";
 import Coach from "./pages/Coach";
 import Settings from "./pages/Settings";
+import Onboarding from "./pages/Onboarding";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -22,6 +23,7 @@ const App = () => (
       <BrowserRouter>
         <Routes>
           <Route path="/" element={<Navigate to="/dashboard" replace />} />
+          <Route path="/onboarding" element={<Onboarding />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/calendar" element={<Calendar />} />
           <Route path="/plan" element={<TrainingPlan />} />
