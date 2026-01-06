@@ -1,3 +1,4 @@
+import { useCallback } from 'react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { WeeklyPlanOverview } from '@/components/plan/WeeklyPlanOverview';
 import { WeeklyStructureStrip } from '@/components/plan/WeeklyStructureStrip';
@@ -6,6 +7,13 @@ import { PlanChangeHistory } from '@/components/plan/PlanChangeHistory';
 import { PlanCoachChat } from '@/components/plan/PlanCoachChat';
 
 export default function TrainingPlan() {
+  const handleDayClick = useCallback((dateStr: string) => {
+    const element = document.getElementById(`workout-${dateStr}`);
+    if (element) {
+      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, []);
+
   return (
     <AppLayout>
       <div className="space-y-6">
@@ -18,7 +26,7 @@ export default function TrainingPlan() {
         <WeeklyPlanOverview />
 
         {/* Weekly Structure Strip */}
-        <WeeklyStructureStrip />
+        <WeeklyStructureStrip onDayClick={handleDayClick} />
 
         {/* Daily Workout List */}
         <DailyWorkoutList />
