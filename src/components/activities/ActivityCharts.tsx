@@ -238,49 +238,50 @@ export function ActivityCharts({ activity }: ActivityChartsProps) {
           <div className="h-48 bg-muted/30 rounded-lg p-2">
             <ResponsiveContainer width="100%" height="100%">
               <AreaChart data={paceData} margin={{ top: 5, right: 5, left: 0, bottom: 5 }}>
-              <defs>
-                <linearGradient id="paceGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="hsl(var(--chart-1))" stopOpacity={0.3} />
-                  <stop offset="95%" stopColor="hsl(var(--chart-1))" stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-              <XAxis
-                dataKey="timeLabel"
-                tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
-                axisLine={{ stroke: 'hsl(var(--border))' }}
-                tickLine={false}
-              />
-              <YAxis
-                domain={['dataMin - 0.5', 'dataMax + 0.5']}
-                tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
-                axisLine={false}
-                tickLine={false}
-                width={35}
-                tickFormatter={(value) => value.toFixed(1)}
-                reversed
-              />
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: 'hsl(var(--card))',
-                  border: '1px solid hsl(var(--border))',
-                  borderRadius: '8px',
-                  fontSize: '12px',
-                }}
-                formatter={(value: number, name: string, props: { payload: { paceUnit: string } }) => {
-                  const unit = props.payload.paceUnit || (unitSystem === 'imperial' ? 'min/mi' : 'min/km');
-                  return [`${value.toFixed(2)} ${unit}`, 'Pace'];
-                }}
-              />
-              <Area
-                type="monotone"
-                dataKey="paceDisplay"
-                stroke="hsl(var(--chart-1))"
-                fill="url(#paceGradient)"
-                strokeWidth={2}
-              />
-            </AreaChart>
-          </ResponsiveContainer>
+                <defs>
+                  <linearGradient id="paceGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="hsl(var(--chart-1))" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="hsl(var(--chart-1))" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                <XAxis
+                  dataKey="timeLabel"
+                  tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
+                  axisLine={{ stroke: 'hsl(var(--border))' }}
+                  tickLine={false}
+                />
+                <YAxis
+                  domain={['dataMin - 0.5', 'dataMax + 0.5']}
+                  tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
+                  axisLine={false}
+                  tickLine={false}
+                  width={35}
+                  tickFormatter={(value) => value.toFixed(1)}
+                  reversed
+                />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: 'hsl(var(--card))',
+                    border: '1px solid hsl(var(--border))',
+                    borderRadius: '8px',
+                    fontSize: '12px',
+                  }}
+                  formatter={(value: number, name: string, props: { payload: { paceUnit: string } }) => {
+                    const unit = props.payload.paceUnit || (unitSystem === 'imperial' ? 'min/mi' : 'min/km');
+                    return [`${value.toFixed(2)} ${unit}`, 'Pace'];
+                  }}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="paceDisplay"
+                  stroke="hsl(var(--chart-1))"
+                  fill="url(#paceGradient)"
+                  strokeWidth={2}
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
         </div>
       )}
 
