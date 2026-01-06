@@ -1,11 +1,13 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { fetchCalendarToday } from '@/lib/api';
+import { fetchCalendarToday, fetchTrainingLoad, fetchActivities } from '@/lib/api';
 import { format } from 'date-fns';
 import { Clock, Route, Zap, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useQuery } from '@tanstack/react-query';
 import { useUnitSystem } from '@/hooks/useUnitSystem';
+import { useMemo } from 'react';
+import { getTssForDate, enrichActivitiesWithTss } from '@/lib/tss-utils';
 
 const intentColors = {
   aerobic: 'bg-training-aerobic/15 text-training-aerobic border-training-aerobic/30',
@@ -36,7 +38,36 @@ export function TodayWorkoutCard() {
     retry: 1,
   });
 
+  const { data: trainingLoadData } = useQuery({
+    queryKey: ['trainingLoad', 7],
+    queryFn: () => fetchTrainingLoad(7),
+    retry: 1,
+  });
+
+  const { data: activities } = useQuery({
+    queryKey: ['activities', 'today'],
+    queryFn: () => fetchActivities({ limit: 10 }),
+    retry: 1,
+  });
+
   const todayWorkout = todayData?.sessions?.find(s => s.status === 'planned' || s.status === 'completed') || null;
+  
+  // Get TSS for today from training load or completed activity
+  const todayTss = useMemo(() => {
+    if (todayWorkout?.status === 'completed') {
+      // Try to find matching completed activity
+      const enrichedActivities = enrichActivitiesWithTss(activities || [], trainingLoadData);
+      const matchingActivity = enrichedActivities.find(a => {
+        const activityDate = a.date?.split('T')[0] || a.date;
+        return activityDate === today;
+      });
+      if (matchingActivity?.trainingLoad) {
+        return matchingActivity.trainingLoad;
+      }
+    }
+    // Fallback to training load data
+    return getTssForDate(today, trainingLoadData);
+  }, [todayWorkout, today, activities, trainingLoadData]);
 
   if (isLoading) {
     return (
@@ -109,6 +140,12 @@ export function TodayWorkoutCard() {
             <Zap className="h-4 w-4" />
             <span className="capitalize">{workoutType || 'Workout'}</span>
           </div>
+          {todayTss !== null && todayTss > 0 && (
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <span className="font-medium text-foreground">{Math.round(todayTss)}</span>
+              <span className="text-xs">TSS</span>
+            </div>
+          )}
         </div>
       </CardContent>
     </Card>

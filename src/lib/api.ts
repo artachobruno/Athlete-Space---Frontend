@@ -436,6 +436,42 @@ export const fetchActivityStreams = async (id: string): Promise<ActivityStreamsR
 };
 
 /**
+ * Fetches training load data including TSS.
+ */
+export const fetchTrainingLoad = async (days?: number): Promise<{
+  dates: string[];
+  daily_load: number[];
+  daily_tss: number[];
+  ctl: number[];
+  atl: number[];
+  tsb: number[];
+  weekly_dates?: string[];
+  weekly_volume?: number[];
+  weekly_rolling_avg?: number[];
+  last_updated?: string;
+}> => {
+  console.log("[API] Fetching training load");
+  try {
+    const response = await api.get("/state/training-load", { params: days ? { days } : undefined });
+    return response as unknown as {
+      dates: string[];
+      daily_load: number[];
+      daily_tss: number[];
+      ctl: number[];
+      atl: number[];
+      tsb: number[];
+      weekly_dates?: string[];
+      weekly_volume?: number[];
+      weekly_rolling_avg?: number[];
+      last_updated?: string;
+    };
+  } catch (error) {
+    console.error("[API] Failed to fetch training load:", error);
+    throw error;
+  }
+};
+
+/**
  * Fetches training overview data.
  */
 export const fetchOverview = async (days?: number): Promise<{

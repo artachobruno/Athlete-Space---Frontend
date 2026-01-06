@@ -6,6 +6,10 @@ import { cn } from '@/lib/utils';
 import { useNavigate } from 'react-router-dom';
 import type { PlannedWorkout, CompletedActivity } from '@/types';
 import { useUnitSystem } from '@/hooks/useUnitSystem';
+import { useQuery } from '@tanstack/react-query';
+import { fetchTrainingLoad } from '@/lib/api';
+import { useMemo } from 'react';
+import { getTssForDate, enrichActivitiesWithTss } from '@/lib/tss-utils';
 
 interface ActivityPopupProps {
   open: boolean;
@@ -50,6 +54,24 @@ export function ActivityPopup({
   const workout = plannedWorkout;
   const activity = completedActivity;
   const SportIcon = sportIcons[workout?.sport || activity?.sport || 'running'];
+  
+  // Fetch training load to get TSS if activity doesn't have it
+  const { data: trainingLoadData } = useQuery({
+    queryKey: ['trainingLoad', 60],
+    queryFn: () => fetchTrainingLoad(60),
+    retry: 1,
+  });
+  
+  // Enrich activity with TSS from training load if needed
+  const enrichedActivity = useMemo(() => {
+    if (!activity) return null;
+    const enriched = enrichActivitiesWithTss([activity], trainingLoadData);
+    return enriched[0] || activity;
+  }, [activity, trainingLoadData]);
+  
+  // Get TSS for display
+  const displayTss = enrichedActivity?.trainingLoad || 
+    (activity?.date ? getTssForDate(activity.date, trainingLoadData) : null);
 
   const handleViewDetails = () => {
     onOpenChange(false);
@@ -148,10 +170,10 @@ export function ActivityPopup({
                   <div className="text-sm font-medium text-foreground">{Math.round(activity.avgPower)}w</div>
                 </div>
               )}
-              {activity.trainingLoad && (
+              {displayTss !== null && displayTss > 0 && (
                 <div className="p-3 rounded-lg bg-muted/50">
-                  <div className="text-xs text-muted-foreground mb-1">Training Load</div>
-                  <div className="text-sm font-medium text-foreground">{Math.round(activity.trainingLoad)}</div>
+                  <div className="text-xs text-muted-foreground mb-1">TSS</div>
+                  <div className="text-sm font-medium text-foreground">{Math.round(displayTss)}</div>
                 </div>
               )}
             </div>

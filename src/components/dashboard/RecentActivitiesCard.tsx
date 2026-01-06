@@ -1,10 +1,12 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { fetchActivities } from '@/lib/api';
+import { fetchActivities, fetchTrainingLoad } from '@/lib/api';
 import { format, parseISO } from 'date-fns';
 import { Bike, Footprints, Waves, Loader2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { useUnitSystem } from '@/hooks/useUnitSystem';
+import { useMemo } from 'react';
+import { enrichActivitiesWithTss } from '@/lib/tss-utils';
 
 const sportIcons = {
   running: Footprints,
@@ -21,7 +23,16 @@ export function RecentActivitiesCard() {
     retry: 1,
   });
 
-  const recentActivities = Array.isArray(activities) ? activities : [];
+  const { data: trainingLoadData } = useQuery({
+    queryKey: ['trainingLoad', 60],
+    queryFn: () => fetchTrainingLoad(60),
+    retry: 1,
+  });
+
+  const recentActivities = useMemo(() => {
+    const activitiesArray = Array.isArray(activities) ? activities : [];
+    return enrichActivitiesWithTss(activitiesArray, trainingLoadData);
+  }, [activities, trainingLoadData]);
 
   return (
     <Card>

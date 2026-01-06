@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { format, parseISO } from 'date-fns';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -12,6 +12,9 @@ import {
 } from 'lucide-react';
 import { ActivityExpandedContent } from './ActivityExpandedContent';
 import { useUnitSystem } from '@/hooks/useUnitSystem';
+import { fetchTrainingLoad } from '@/lib/api';
+import { enrichActivitiesWithTss } from '@/lib/tss-utils';
+import { useQuery } from '@tanstack/react-query';
 
 interface ActivityListProps {
   activities: CompletedActivity[];
@@ -29,6 +32,18 @@ export function ActivityList({ activities, initialExpandedId = null }: ActivityL
   const [expandedId, setExpandedId] = useState<string | null>(initialExpandedId);
   const expandedRef = useRef<HTMLDivElement>(null);
   const { convertDistance, convertElevation } = useUnitSystem();
+  
+  // Fetch training load data to enrich activities with TSS
+  const { data: trainingLoadData } = useQuery({
+    queryKey: ['trainingLoad', 60],
+    queryFn: () => fetchTrainingLoad(60),
+    retry: 1,
+  });
+  
+  // Enrich activities with TSS from training load endpoint
+  const enrichedActivities = useMemo(() => {
+    return enrichActivitiesWithTss(activities, trainingLoadData);
+  }, [activities, trainingLoadData]);
   
   // Expand the activity if initialExpandedId is provided
   useEffect(() => {
@@ -48,7 +63,7 @@ export function ActivityList({ activities, initialExpandedId = null }: ActivityL
   };
 
   // Filter out invalid/empty activities
-  const validActivities = activities.filter((activity) => {
+  const validActivities = enrichedActivities.filter((activity) => {
     if (!activity || !activity.id) {
       return false;
     }

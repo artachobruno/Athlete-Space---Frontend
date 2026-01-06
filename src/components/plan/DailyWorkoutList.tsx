@@ -1,11 +1,12 @@
 import { useMemo } from 'react';
 import { startOfWeek, addDays, format, isToday, isBefore } from 'date-fns';
-import { fetchCalendarWeek, fetchActivities } from '@/lib/api';
+import { fetchCalendarWeek, fetchActivities, fetchTrainingLoad } from '@/lib/api';
 import { getTodayIntelligence } from '@/lib/intelligence';
 import { DailyWorkoutCard } from './DailyWorkoutCard';
 import { useQuery } from '@tanstack/react-query';
 import { Loader2 } from 'lucide-react';
 import type { PlannedWorkout, CompletedActivity } from '@/types';
+import { enrichActivitiesWithTss } from '@/lib/tss-utils';
 
 const mapSessionToWorkout = (session: import('@/lib/api').CalendarSession): PlannedWorkout | null => {
   if (session.status === 'completed') return null;
@@ -39,6 +40,12 @@ export function DailyWorkoutList() {
     retry: 1,
   });
 
+  const { data: trainingLoadData } = useQuery({
+    queryKey: ['trainingLoad', 14],
+    queryFn: () => fetchTrainingLoad(14),
+    retry: 1,
+  });
+
   const { data: todayIntelligence } = useQuery({
     queryKey: ['todayIntelligence'],
     queryFn: getTodayIntelligence,
@@ -46,8 +53,14 @@ export function DailyWorkoutList() {
     enabled: isToday(today),
   });
 
+  // Enrich activities with TSS
+  const enrichedActivities = useMemo(() => {
+    if (!activities) return [];
+    return enrichActivitiesWithTss(activities, trainingLoadData);
+  }, [activities, trainingLoadData]);
+
   const weekDays = useMemo(() => {
-    if (!weekData || !activities) return [];
+    if (!weekData || !enrichedActivities) return [];
 
     return Array.from({ length: 7 }, (_, i) => {
       const date = addDays(weekStart, i);
@@ -56,7 +69,7 @@ export function DailyWorkoutList() {
       const session = weekData.sessions?.find(s => s.date === dateStr && s.status === 'planned');
       const workout = session ? mapSessionToWorkout(session) : null;
       
-      const completed = activities.find((a: CompletedActivity) => a.date === dateStr);
+      const completed = enrichedActivities.find((a: CompletedActivity) => a.date === dateStr);
       
       // Determine status
       let status: 'upcoming' | 'today' | 'completed' | 'missed' = 'upcoming';
@@ -81,7 +94,7 @@ export function DailyWorkoutList() {
         dailyDecision,
       };
     });
-  }, [weekData, activities, weekStart, today, todayIntelligence]);
+  }, [weekData, enrichedActivities, weekStart, today, todayIntelligence]);
 
   if (weekLoading || activitiesLoading) {
     return (
