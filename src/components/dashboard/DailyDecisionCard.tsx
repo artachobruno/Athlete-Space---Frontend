@@ -54,6 +54,22 @@ export function DailyDecisionCard() {
     );
   }
 
+  // 503 means data isn't ready yet - show a friendly message
+  const isServiceUnavailable = error && typeof error === 'object' && 'status' in error && (error as { status?: number }).status === 503;
+  
+  if (isServiceUnavailable) {
+    return (
+      <Card className={cn('border-2 h-full')}>
+        <CardContent className="p-6">
+          <div className="text-center py-8 text-muted-foreground">
+            <p className="text-sm">Today&apos;s decision is being generated</p>
+            <p className="text-xs mt-2 opacity-70">The coach will have your recommendation ready soon</p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
   if (error || !data) {
     return (
       <Card className={cn('border-2 h-full')}>

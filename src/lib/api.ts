@@ -500,17 +500,24 @@ api.interceptors.response.use(
       return Promise.reject(normalizedError);
     }
     
+    // 503 means service unavailable / data not ready - this is expected, not an error
+    if (normalizedError.status === 503) {
+      // Don't log 503 errors - they're expected when data isn't ready yet
+      return Promise.reject(normalizedError);
+    }
+    
     // CORS/network errors are expected when backend is misconfigured or down
-    // Log them as warnings instead of errors to reduce console noise
+    // Suppress them completely to reduce console noise
     if (normalizedError.code === "ERR_NETWORK" || 
         (normalizedError.message && normalizedError.message.includes("CORS"))) {
-      // Only log once per session to avoid spam
-      if (!corsErrorLogged) {
-        console.warn("[API] CORS/Network error detected. This is a backend configuration issue. The backend server needs to allow requests from this domain and include CORS headers in all responses.");
+      // Only log once per session in development mode
+      if (!corsErrorLogged && import.meta.env.DEV) {
+        console.warn("[API] CORS/Network error detected. This is a backend configuration issue.");
         corsErrorLogged = true;
       }
+      // In production, completely suppress CORS errors
     } else {
-      // Log other errors normally
+      // Log other errors normally (but not 503)
       console.error("[API] Request failed:", normalizedError);
     }
     
