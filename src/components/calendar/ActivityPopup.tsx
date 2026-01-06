@@ -1,8 +1,9 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Footprints, Bike, Waves, Clock, Route, Mountain, Heart, Zap, MessageCircle, CheckCircle2 } from 'lucide-react';
+import { Footprints, Bike, Waves, Clock, Route, Mountain, Heart, Zap, MessageCircle, CheckCircle2, ExternalLink } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useNavigate } from 'react-router-dom';
 import type { PlannedWorkout, CompletedActivity } from '@/types';
 
 interface ActivityPopupProps {
@@ -43,9 +44,15 @@ export function ActivityPopup({
   completedActivity,
   onAskCoach 
 }: ActivityPopupProps) {
+  const navigate = useNavigate();
   const workout = plannedWorkout;
   const activity = completedActivity;
   const SportIcon = sportIcons[workout?.sport || activity?.sport || 'running'];
+
+  const handleViewDetails = () => {
+    onOpenChange(false);
+    navigate('/activities');
+  };
 
   if (!workout && !activity) return null;
 
@@ -187,18 +194,30 @@ export function ActivityPopup({
             </div>
           )}
 
-          {/* Ask Coach button */}
-          <Button
-            variant="outline"
-            className="w-full"
-            onClick={() => {
-              onAskCoach?.(workout?.title || activity?.title || '');
-              onOpenChange(false);
-            }}
-          >
-            <MessageCircle className="h-4 w-4 mr-2" />
-            Ask Coach about this
-          </Button>
+          {/* Action buttons */}
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              className="flex-1"
+              onClick={() => {
+                onAskCoach?.(workout?.title || activity?.title || '');
+                onOpenChange(false);
+              }}
+            >
+              <MessageCircle className="h-4 w-4 mr-2" />
+              Ask Coach
+            </Button>
+            {activity && (
+              <Button
+                variant="default"
+                className="flex-1"
+                onClick={handleViewDetails}
+              >
+                <ExternalLink className="h-4 w-4 mr-2" />
+                View Details
+              </Button>
+            )}
+          </div>
         </div>
       </DialogContent>
     </Dialog>
