@@ -421,37 +421,66 @@ export const fetchActivity = async (id: string): Promise<import("../types").Comp
  * Follows the workflow:
  * 1. Check if streams exist via activity endpoint (has_streams field)
  * 2. If not available, POST /activities/{id}/fetch-streams to fetch from Strava
- * 3. GET /activities/{id}/streams to get formatted data
+ * 3. GET /activities/{id}/streams to get formatted data (with retries)
  */
 export const fetchActivityStreams = async (id: string): Promise<ActivityStreamsResponse> => {
   console.log("[API] Fetching activity streams", id);
   try {
     // First, try to get the activity to check if streams are available
     let activity;
+    let hasStreams = false;
     try {
       activity = await api.get(`/activities/${id}`);
-    } catch {
-      // If we can't get activity, proceed to fetch streams anyway
+      hasStreams = (activity as { has_streams?: boolean })?.has_streams === true;
+    } catch (error) {
+      console.warn("[API] Could not fetch activity to check has_streams, proceeding...", error);
     }
-    
-    // Check if streams are already available
-    const hasStreams = (activity as { has_streams?: boolean })?.has_streams;
     
     // If streams are not available, fetch them from Strava first
     if (!hasStreams) {
       console.log("[API] Streams not available, fetching from Strava...");
       try {
-        await api.post(`/activities/${id}/fetch-streams`);
-        // Wait a bit for backend to process
-        await new Promise((resolve) => setTimeout(resolve, 1000));
+        const fetchResponse = await api.post(`/activities/${id}/fetch-streams`);
+        // Check if the fetch was actually successful
+        // Note: Backend may return 200 even if fetching fails internally
+        // Wait for backend to process the fetch (may take a few seconds)
+        await new Promise((resolve) => setTimeout(resolve, 2000));
       } catch (error) {
-        console.warn("[API] Failed to fetch streams from Strava, trying to get existing streams anyway:", error);
+        console.warn("[API] Failed to fetch streams from Strava:", error);
+        // Continue anyway - maybe streams were already fetched or will be available
       }
     }
     
-    // Get the formatted streams data
-    const response = await api.get(`/activities/${id}/streams`);
-    return response as unknown as ActivityStreamsResponse;
+    // Try to get the formatted streams data with retries
+    // The backend might need time to process after fetching
+    let lastError: unknown;
+    const maxRetries = 3;
+    const retryDelay = 2000; // 2 seconds between retries
+    
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+      try {
+        const response = await api.get(`/activities/${id}/streams`);
+        return response as unknown as ActivityStreamsResponse;
+      } catch (error) {
+        lastError = error;
+        const errorMessage = (error as { message?: string })?.message || '';
+        
+        // If it's a 404 and we haven't exhausted retries, wait and retry
+        if (errorMessage.includes('not available') && attempt < maxRetries - 1) {
+          console.log(`[API] Streams not ready yet, retrying in ${retryDelay}ms... (attempt ${attempt + 1}/${maxRetries})`);
+          await new Promise((resolve) => setTimeout(resolve, retryDelay));
+          continue;
+        }
+        
+        // If it's the last attempt or a different error, throw
+        if (attempt === maxRetries - 1) {
+          throw error;
+        }
+      }
+    }
+    
+    // Should not reach here, but just in case
+    throw lastError;
   } catch (error) {
     console.error("[API] Failed to fetch activity streams:", error);
     throw error;

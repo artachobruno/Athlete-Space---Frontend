@@ -99,10 +99,11 @@ export function ActivityCharts({ activity }: ActivityChartsProps) {
   const { convertPace, convertElevation, unitSystem } = useUnitSystem();
   
   // Fetch activity streams to get real time-series data
-  const { data: streamsData, isLoading: isLoadingStreams } = useQuery({
+  const { data: streamsData, isLoading: isLoadingStreams, error: streamsError } = useQuery({
     queryKey: ['activityStreams', activity.id],
     queryFn: () => fetchActivityStreams(activity.id),
-    retry: 1,
+    retry: 2,
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 5000),
     enabled: !!activity.id,
   });
   
@@ -172,10 +173,19 @@ export function ActivityCharts({ activity }: ActivityChartsProps) {
   }
 
   if (!hasData) {
+    const errorMessage = streamsError instanceof Error ? streamsError.message : '';
+    const isFetchError = errorMessage.includes('not available') || errorMessage.includes('404');
+    
     return (
       <div className="text-center py-12 text-muted-foreground">
         <p className="text-sm">No stream data available for this activity</p>
-        <p className="text-xs mt-2">Stream data may not be available for this activity</p>
+        {isFetchError ? (
+          <p className="text-xs mt-2">
+            Stream data could not be fetched from Strava. This may be due to API limitations or the activity type.
+          </p>
+        ) : (
+          <p className="text-xs mt-2">Stream data may not be available for this activity</p>
+        )}
       </div>
     );
   }
