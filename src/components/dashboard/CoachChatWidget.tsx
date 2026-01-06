@@ -66,12 +66,15 @@ export function CoachChatWidget() {
   };
 
   return (
-    <Card className="flex flex-col h-[320px]">
+    <Card className="flex flex-col h-full min-h-[200px]">
       <CardHeader className="pb-2 flex-row items-center justify-between space-y-0">
-        <CardTitle className="text-lg">Coach</CardTitle>
+        <div className="flex items-center gap-2">
+          <Bot className="h-4 w-4 text-muted-foreground" />
+          <CardTitle className="text-sm font-medium text-muted-foreground">Coach</CardTitle>
+        </div>
         <Link to="/coach">
-          <Button variant="ghost" size="icon" className="h-8 w-8">
-            <Maximize2 className="h-4 w-4" />
+          <Button variant="ghost" size="icon" className="h-7 w-7">
+            <Maximize2 className="h-3.5 w-3.5" />
           </Button>
         </Link>
       </CardHeader>
