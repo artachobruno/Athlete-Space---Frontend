@@ -234,36 +234,124 @@ export const fetchActivities = async (params?: { limit?: number; offset?: number
       }
     }
     
-    // Filter out invalid/empty activities
-    const validActivities = activitiesArray.filter((activity): activity is import("../types").CompletedActivity => {
-      if (!activity || typeof activity !== 'object') {
-        return false;
-      }
-      const act = activity as { id?: string; title?: string; date?: string; sport?: string };
-      
-      // Must have an ID
-      if (!act.id || typeof act.id !== 'string') {
-        return false;
-      }
-      
-      // Must have a date
-      if (!act.date || typeof act.date !== 'string') {
-        return false;
-      }
-      
-      // Must have a sport
-      if (!act.sport || typeof act.sport !== 'string') {
-        return false;
-      }
-      
-      // Filter out obvious mock/placeholder data
-      const title = act.title?.toLowerCase() || '';
-      if (title.includes('placeholder') || title.includes('mock') || title.includes('sample') || title === 'untitled activity') {
-        return false;
-      }
-      
-      return true;
-    });
+    // Log first activity to see structure
+    if (activitiesArray.length > 0) {
+      console.log('[API] Sample activity structure:', activitiesArray[0]);
+      console.log('[API] Activity keys:', Object.keys(activitiesArray[0] as Record<string, unknown>));
+    }
+    
+    // Map backend activity format to frontend format
+    const validActivities = activitiesArray
+      .filter((activity) => {
+        if (!activity || typeof activity !== 'object') {
+          return false;
+        }
+        const act = activity as Record<string, unknown>;
+        
+        // Must have an ID
+        if (!act.id || typeof act.id !== 'string') {
+          return false;
+        }
+        
+        // Must have a date (try multiple possible field names)
+        const dateField = act.date || act.start_date || act.start_date_local || act.activity_date;
+        if (!dateField || (typeof dateField !== 'string' && !(dateField instanceof Date))) {
+          console.log('[API] Activity missing date field:', act.id, 'Available fields:', Object.keys(act));
+          return false;
+        }
+        
+        // Must have a sport/type (try multiple possible field names)
+        const sportField = act.sport || act.type || act.activity_type || act.sport_type;
+        if (!sportField || typeof sportField !== 'string') {
+          console.log('[API] Activity missing sport field:', act.id, 'Available fields:', Object.keys(act));
+          return false;
+        }
+        
+        // Filter out obvious mock/placeholder data
+        const title = (act.title || act.name || act.activity_name || '').toString().toLowerCase();
+        if (title.includes('placeholder') || title.includes('mock') || title.includes('sample')) {
+          return false;
+        }
+        
+        return true;
+      })
+      .map((activity) => {
+        const act = activity as Record<string, unknown>;
+        
+        // Map backend fields to frontend format
+        const dateField = act.date || act.start_date || act.start_date_local || act.activity_date || '';
+        const sportField = act.sport || act.type || act.activity_type || act.sport_type || '';
+        const titleField = act.title || act.name || act.activity_name || 'Untitled Activity';
+        
+        // Normalize date
+        let dateStr = '';
+        if (typeof dateField === 'string') {
+          dateStr = dateField.split('T')[0];
+        } else if (dateField instanceof Date) {
+          dateStr = dateField.toISOString().split('T')[0];
+        } else {
+          dateStr = String(dateField);
+        }
+        
+        // Normalize sport to match frontend types
+        const normalizedSport = sportField.toLowerCase();
+        let sport: 'running' | 'cycling' | 'swimming' | 'triathlon' = 'running';
+        if (normalizedSport.includes('run')) {
+          sport = 'running';
+        } else if (normalizedSport.includes('ride') || normalizedSport.includes('bike') || normalizedSport.includes('cycle')) {
+          sport = 'cycling';
+        } else if (normalizedSport.includes('swim')) {
+          sport = 'swimming';
+        } else if (normalizedSport.includes('tri')) {
+          sport = 'triathlon';
+        }
+        
+        // Map duration (could be in seconds or minutes)
+        let duration = 0;
+        if (typeof act.duration === 'number') {
+          duration = act.duration > 1000 ? Math.round(act.duration / 60) : act.duration; // If > 1000, assume seconds
+        } else if (typeof act.moving_time === 'number') {
+          duration = Math.round(act.moving_time / 60);
+        } else if (typeof act.elapsed_time === 'number') {
+          duration = Math.round(act.elapsed_time / 60);
+        } else if (typeof act.duration_minutes === 'number') {
+          duration = act.duration_minutes;
+        }
+        
+        // Map distance (could be in meters or km)
+        let distance = 0;
+        if (typeof act.distance === 'number') {
+          distance = act.distance > 100 ? act.distance / 1000 : act.distance; // If > 100, assume meters
+        } else if (typeof act.distance_km === 'number') {
+          distance = act.distance_km;
+        }
+        
+        return {
+          id: act.id as string,
+          date: dateStr,
+          sport,
+          title: typeof titleField === 'string' ? titleField : titleField.toString(),
+          duration,
+          distance,
+          avgPace: act.average_speed ? (typeof act.average_speed === 'number' ? `${Math.round(1000 / act.average_speed)} min/km` : act.average_speed.toString()) : undefined,
+          avgHeartRate: typeof act.average_heartrate === 'number' ? act.average_heartrate :
+                       typeof act.avg_heart_rate === 'number' ? act.avg_heart_rate :
+                       typeof act.heart_rate === 'number' ? act.heart_rate : undefined,
+          avgPower: typeof act.average_watts === 'number' ? act.average_watts :
+                   typeof act.avg_power === 'number' ? act.avg_power :
+                   typeof act.power === 'number' ? act.power : undefined,
+          elevation: typeof act.total_elevation_gain === 'number' ? act.total_elevation_gain :
+                    typeof act.elevation_gain === 'number' ? act.elevation_gain :
+                    typeof act.elevation === 'number' ? act.elevation : undefined,
+          trainingLoad: typeof act.training_load === 'number' ? act.training_load :
+                       typeof act.tss === 'number' ? act.tss :
+                       typeof act.stress_score === 'number' ? act.stress_score :
+                       typeof act.load === 'number' ? act.load : 0,
+          source: 'strava' as const,
+          coachFeedback: typeof act.coach_feedback === 'string' ? act.coach_feedback :
+                        typeof act.coachFeedback === 'string' ? act.coachFeedback : undefined,
+        } as import("../types").CompletedActivity;
+      });
     
     console.log(`[API] Filtered ${validActivities.length} valid activities from ${activitiesArray.length} total`);
     
