@@ -16,32 +16,33 @@ export default function Dashboard() {
           <p className="text-muted-foreground mt-1">Your training at a glance</p>
         </div>
 
-        {/* Daily Decision - Most important */}
-        <DailyDecisionCard />
-
-        {/* Main grid */}
+        {/* Decision + Coach row */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Today's Workout */}
+          {/* Daily Decision - Primary emphasis */}
+          <div className="lg:col-span-2">
+            <DailyDecisionCard />
+          </div>
+
+          {/* Coach Chat Widget - Secondary */}
+          <div>
+            <CoachChatWidget />
+          </div>
+        </div>
+
+        {/* Today's Workout + Load Status */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="lg:col-span-2">
             <TodayWorkoutCard />
           </div>
-
-          {/* Load Status */}
           <div>
             <LoadStatusCard />
           </div>
         </div>
 
-        {/* Secondary row */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Weekly Load */}
+        {/* Weekly Load + Recent Activities */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <WeeklyLoadCard />
-
-          {/* Recent Activities */}
           <RecentActivitiesCard />
-
-          {/* Coach Chat Widget */}
-          <CoachChatWidget />
         </div>
       </div>
     </AppLayout>
