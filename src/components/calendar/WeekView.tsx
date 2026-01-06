@@ -12,11 +12,11 @@ import { mockPlannedWorkouts, mockActivities } from '@/lib/mock-data';
 import { Footprints, Bike, Waves, Clock, Route, CheckCircle2, MessageCircle } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
+import type { PlannedWorkout, CompletedActivity } from '@/types';
 
 interface WeekViewProps {
   currentDate: Date;
-  onAskCoach?: (context: string) => void;
+  onActivityClick?: (planned: PlannedWorkout | null, completed: CompletedActivity | null) => void;
 }
 
 const sportIcons = {
@@ -34,7 +34,7 @@ const intentColors = {
   recovery: 'bg-training-recovery/15 text-training-recovery border-training-recovery/30',
 };
 
-export function WeekView({ currentDate, onAskCoach }: WeekViewProps) {
+export function WeekView({ currentDate, onActivityClick }: WeekViewProps) {
   const days = useMemo(() => {
     const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
     const weekEnd = endOfWeek(currentDate, { weekStartsOn: 1 });
@@ -94,10 +94,11 @@ export function WeekView({ currentDate, onAskCoach }: WeekViewProps) {
 
               {planned.map((workout) => {
                 const Icon = sportIcons[workout.sport];
-                const isCompleted = completed.some(c =>
+                const matchingActivity = completed.find(c =>
                   isSameDay(new Date(c.date), new Date(workout.date)) &&
                   c.sport === workout.sport
                 );
+                const isCompleted = !!matchingActivity;
 
                 return (
                   <div
@@ -108,7 +109,7 @@ export function WeekView({ currentDate, onAskCoach }: WeekViewProps) {
                         ? 'bg-load-fresh/10 border-load-fresh/30'
                         : 'bg-muted/50 border-border'
                     )}
-                    onClick={() => onAskCoach?.(workout.title)}
+                    onClick={() => onActivityClick?.(workout, matchingActivity || null)}
                   >
                     <div className="flex items-center gap-2 mb-1">
                       <Icon className="h-4 w-4 text-muted-foreground" />
@@ -152,7 +153,8 @@ export function WeekView({ currentDate, onAskCoach }: WeekViewProps) {
                   return (
                     <div
                       key={activity.id}
-                      className="p-2 rounded-lg border bg-accent/10 border-accent/30"
+                      className="p-2 rounded-lg border bg-accent/10 border-accent/30 cursor-pointer hover:ring-1 hover:ring-accent/50"
+                      onClick={() => onActivityClick?.(null, activity)}
                     >
                       <div className="flex items-center gap-2 mb-1">
                         <Icon className="h-4 w-4 text-accent" />

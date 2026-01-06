@@ -7,6 +7,8 @@ import { MonthView } from './MonthView';
 import { WeekView } from './WeekView';
 import { SeasonView } from './SeasonView';
 import { CoachDrawer } from './CoachDrawer';
+import { ActivityPopup } from './ActivityPopup';
+import type { PlannedWorkout, CompletedActivity } from '@/types';
 
 type ViewType = 'month' | 'week' | 'season';
 
@@ -15,6 +17,9 @@ export function TrainingCalendar() {
   const [view, setView] = useState<ViewType>('month');
   const [coachOpen, setCoachOpen] = useState(false);
   const [selectedWorkout, setSelectedWorkout] = useState<string | null>(null);
+  const [activityPopupOpen, setActivityPopupOpen] = useState(false);
+  const [selectedPlannedWorkout, setSelectedPlannedWorkout] = useState<PlannedWorkout | null>(null);
+  const [selectedCompletedActivity, setSelectedCompletedActivity] = useState<CompletedActivity | null>(null);
 
   const navigatePrevious = () => {
     if (view === 'month') {
@@ -54,6 +59,12 @@ export function TrainingCalendar() {
   const handleAskCoach = (workoutContext?: string) => {
     setSelectedWorkout(workoutContext || null);
     setCoachOpen(true);
+  };
+
+  const handleActivityClick = (planned: PlannedWorkout | null, completed: CompletedActivity | null) => {
+    setSelectedPlannedWorkout(planned);
+    setSelectedCompletedActivity(completed);
+    setActivityPopupOpen(true);
   };
 
   return (
@@ -99,9 +110,18 @@ export function TrainingCalendar() {
       </div>
 
       {/* Calendar Views */}
-      {view === 'month' && <MonthView currentDate={currentDate} onAskCoach={handleAskCoach} />}
-      {view === 'week' && <WeekView currentDate={currentDate} onAskCoach={handleAskCoach} />}
+      {view === 'month' && <MonthView currentDate={currentDate} onActivityClick={handleActivityClick} />}
+      {view === 'week' && <WeekView currentDate={currentDate} onActivityClick={handleActivityClick} />}
       {view === 'season' && <SeasonView currentDate={currentDate} />}
+
+      {/* Activity Popup */}
+      <ActivityPopup
+        open={activityPopupOpen}
+        onOpenChange={setActivityPopupOpen}
+        plannedWorkout={selectedPlannedWorkout}
+        completedActivity={selectedCompletedActivity}
+        onAskCoach={handleAskCoach}
+      />
 
       {/* Coach Drawer */}
       <CoachDrawer

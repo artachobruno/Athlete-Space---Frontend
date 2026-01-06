@@ -13,11 +13,11 @@ import {
 import { cn } from '@/lib/utils';
 import { mockPlannedWorkouts, mockActivities } from '@/lib/mock-data';
 import { Footprints, Bike, Waves, CheckCircle2, MessageCircle } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import type { PlannedWorkout, CompletedActivity } from '@/types';
 
 interface MonthViewProps {
   currentDate: Date;
-  onAskCoach?: (context: string) => void;
+  onActivityClick?: (planned: PlannedWorkout | null, completed: CompletedActivity | null) => void;
 }
 
 const sportIcons = {
@@ -35,7 +35,7 @@ const intentColors = {
   recovery: 'bg-training-recovery',
 };
 
-export function MonthView({ currentDate, onAskCoach }: MonthViewProps) {
+export function MonthView({ currentDate, onActivityClick }: MonthViewProps) {
   const days = useMemo(() => {
     const monthStart = startOfMonth(currentDate);
     const monthEnd = endOfMonth(currentDate);
@@ -102,10 +102,11 @@ export function MonthView({ currentDate, onAskCoach }: MonthViewProps) {
               <div className="space-y-1">
                 {planned.map((workout) => {
                   const Icon = sportIcons[workout.sport];
-                  const isCompleted = completed.some(c => 
+                  const matchingActivity = completed.find(c => 
                     isSameDay(new Date(c.date), new Date(workout.date)) && 
                     c.sport === workout.sport
                   );
+                  const isCompleted = !!matchingActivity;
 
                   return (
                     <div
@@ -116,7 +117,7 @@ export function MonthView({ currentDate, onAskCoach }: MonthViewProps) {
                           ? 'bg-load-fresh/20 text-load-fresh'
                           : 'bg-muted text-muted-foreground'
                       )}
-                      onClick={() => onAskCoach?.(workout.title)}
+                      onClick={() => onActivityClick?.(workout, matchingActivity || null)}
                     >
                       <Icon className="h-3 w-3 shrink-0" />
                       <span className="truncate">{workout.title}</span>
@@ -137,7 +138,8 @@ export function MonthView({ currentDate, onAskCoach }: MonthViewProps) {
                     return (
                       <div
                         key={activity.id}
-                        className="flex items-center gap-1 px-1.5 py-0.5 rounded text-xs bg-accent/20 text-accent"
+                        className="flex items-center gap-1 px-1.5 py-0.5 rounded text-xs bg-accent/20 text-accent cursor-pointer hover:ring-1 hover:ring-accent/50"
+                        onClick={() => onActivityClick?.(null, activity)}
                       >
                         <Icon className="h-3 w-3 shrink-0" />
                         <span className="truncate">{activity.title}</span>
