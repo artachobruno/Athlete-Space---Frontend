@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { startOfWeek, addDays, format, isToday, isBefore } from 'date-fns';
-import { fetchCalendarWeek, fetchActivities, getTodayIntelligence } from '@/lib/api';
+import { fetchCalendarWeek, fetchActivities } from '@/lib/api';
+import { getTodayIntelligence } from '@/lib/intelligence';
 import { DailyWorkoutCard } from './DailyWorkoutCard';
 import { useQuery } from '@tanstack/react-query';
 import { Loader2 } from 'lucide-react';
