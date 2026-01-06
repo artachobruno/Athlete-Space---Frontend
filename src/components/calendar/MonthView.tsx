@@ -78,6 +78,15 @@ export function MonthView({ currentDate, onActivityClick }: MonthViewProps) {
 
   const isLoading = weekQueries.some(q => q.isLoading) || activitiesLoading;
   const allWeekData = weekQueries.map(q => q.data).filter(Boolean);
+  
+  // Debug logging
+  if (allWeekData.length > 0) {
+    const totalSessions = allWeekData.reduce((sum, w) => sum + (w?.sessions?.length || 0), 0);
+    console.log('[MonthView] Total sessions across all weeks:', totalSessions);
+  }
+  if (activities) {
+    console.log('[MonthView] Activities count:', activities.length);
+  }
 
   const days = useMemo(() => {
     const calendarStart = startOfWeek(monthStart, { weekStartsOn: 1 });
@@ -88,9 +97,18 @@ export function MonthView({ currentDate, onActivityClick }: MonthViewProps) {
   const getWorkoutsForDay = (date: Date) => {
     const dateStr = format(date, 'yyyy-MM-dd');
     const allSessions = allWeekData.flatMap(w => w?.sessions || []);
-    const plannedSessions = allSessions.filter(s => s.date === dateStr && s.status === 'planned');
+    
+    const plannedSessions = allSessions.filter(s => {
+      // Normalize date strings for comparison (handle timezone issues)
+      const sessionDate = s.date?.split('T')[0] || s.date;
+      return sessionDate === dateStr && s.status === 'planned';
+    });
+    
     const planned = plannedSessions.map(mapSessionToWorkout).filter((w): w is PlannedWorkout => w !== null);
-    const completed = (activities || []).filter((a: CompletedActivity) => a.date === dateStr);
+    const completed = (activities || []).filter((a: CompletedActivity) => {
+      const activityDate = a.date?.split('T')[0] || a.date;
+      return activityDate === dateStr;
+    });
     return { planned, completed };
   };
 

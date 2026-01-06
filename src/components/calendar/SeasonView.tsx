@@ -55,6 +55,15 @@ export function SeasonView({ currentDate }: SeasonViewProps) {
   });
 
   const isLoading = seasonLoading || activitiesLoading || overviewLoading;
+  
+  // Debug logging
+  if (seasonData) {
+    console.log('[SeasonView] Season data received:', seasonData);
+    console.log('[SeasonView] Sessions count:', seasonData.sessions?.length || 0);
+  }
+  if (activities) {
+    console.log('[SeasonView] Activities count:', activities.length);
+  }
 
   const getWeekStats = (weekStart: Date) => {
     const weekEnd = endOfWeek(weekStart, { weekStartsOn: 1 });
@@ -62,15 +71,18 @@ export function SeasonView({ currentDate }: SeasonViewProps) {
     const weekEndStr = format(weekEnd, 'yyyy-MM-dd');
     
     const plannedSessions = seasonData?.sessions?.filter(s => {
-      return s.date >= weekStartStr && s.date <= weekEndStr && s.status === 'planned';
+      const sessionDate = s.date?.split('T')[0] || s.date;
+      return sessionDate >= weekStartStr && sessionDate <= weekEndStr && s.status === 'planned';
     }) || [];
 
     const completedSessions = seasonData?.sessions?.filter(s => {
-      return s.date >= weekStartStr && s.date <= weekEndStr && s.status === 'completed';
+      const sessionDate = s.date?.split('T')[0] || s.date;
+      return sessionDate >= weekStartStr && sessionDate <= weekEndStr && s.status === 'completed';
     }) || [];
 
     const completedActivities = (activities || []).filter(a => {
-      return a.date >= weekStartStr && a.date <= weekEndStr;
+      const activityDate = a.date?.split('T')[0] || a.date;
+      return activityDate >= weekStartStr && activityDate <= weekEndStr;
     });
 
     // Calculate CTL from overview metrics

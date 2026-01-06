@@ -207,7 +207,7 @@ export const getStravaStatus = async (): Promise<{ connected: boolean; athlete_i
  * Note: Backend has a maximum limit of 100. Larger limits will be capped at 100.
  */
 export const fetchActivities = async (params?: { limit?: number; offset?: number }): Promise<import("../types").CompletedActivity[]> => {
-  console.log("[API] Fetching activities");
+  console.log("[API] Fetching activities with params:", params);
   try {
     // Ensure limit doesn't exceed backend maximum of 100
     const safeParams = params ? {
@@ -216,26 +216,62 @@ export const fetchActivities = async (params?: { limit?: number; offset?: number
     } : params;
     
     const response = await api.get("/activities", { params: safeParams });
+    console.log("[API] Activities response:", response);
+    
+    let activitiesArray: unknown[] = [];
     
     // Handle different response formats
     if (Array.isArray(response)) {
-      return response as import("../types").CompletedActivity[];
-    }
-    
-    // If response is an object, try to extract the array
-    if (response && typeof response === "object") {
+      activitiesArray = response;
+    } else if (response && typeof response === "object") {
+      // If response is an object, try to extract the array
       const activities = (response as { activities?: unknown[]; data?: unknown[]; items?: unknown[] }).activities 
         || (response as { activities?: unknown[]; data?: unknown[]; items?: unknown[] }).data
         || (response as { activities?: unknown[]; data?: unknown[]; items?: unknown[] }).items;
       
       if (Array.isArray(activities)) {
-        return activities as import("../types").CompletedActivity[];
+        activitiesArray = activities;
       }
     }
     
-    // If we can't find an array, return empty array to prevent map errors
-    console.warn("[API] Activities response is not in expected format:", response);
-    return [];
+    // Filter out invalid/empty activities
+    const validActivities = activitiesArray.filter((activity): activity is import("../types").CompletedActivity => {
+      if (!activity || typeof activity !== 'object') {
+        return false;
+      }
+      const act = activity as { id?: string; title?: string; date?: string; sport?: string };
+      
+      // Must have an ID
+      if (!act.id || typeof act.id !== 'string') {
+        return false;
+      }
+      
+      // Must have a date
+      if (!act.date || typeof act.date !== 'string') {
+        return false;
+      }
+      
+      // Must have a sport
+      if (!act.sport || typeof act.sport !== 'string') {
+        return false;
+      }
+      
+      // Filter out obvious mock/placeholder data
+      const title = act.title?.toLowerCase() || '';
+      if (title.includes('placeholder') || title.includes('mock') || title.includes('sample') || title === 'untitled activity') {
+        return false;
+      }
+      
+      return true;
+    });
+    
+    console.log(`[API] Filtered ${validActivities.length} valid activities from ${activitiesArray.length} total`);
+    
+    if (validActivities.length === 0 && activitiesArray.length > 0) {
+      console.warn("[API] All activities were filtered out. Raw response:", response);
+    }
+    
+    return validActivities;
   } catch (error) {
     console.error("[API] Failed to fetch activities:", error);
     throw error;
@@ -342,10 +378,37 @@ export const sendCoachChat = async (message: string, context?: unknown): Promise
  * Fetches calendar week data.
  */
 export const fetchCalendarWeek = async (date: string): Promise<WeekResponse> => {
-  console.log("[API] Fetching calendar week");
+  console.log("[API] Fetching calendar week for date:", date);
   try {
     const response = await api.get("/calendar/week", { params: { date } });
-    return response as unknown as WeekResponse;
+    console.log("[API] Calendar week response:", response);
+    
+    // Handle different response formats
+    if (response && typeof response === 'object') {
+      // If response already has the expected structure
+      if ('sessions' in response && Array.isArray(response.sessions)) {
+        return response as WeekResponse;
+      }
+      // If response is wrapped in a data property
+      if ('data' in response && response.data && typeof response.data === 'object') {
+        const data = response.data as { sessions?: unknown[]; week_start?: string; week_end?: string };
+        if (data.sessions && Array.isArray(data.sessions)) {
+          return {
+            week_start: data.week_start || '',
+            week_end: data.week_end || '',
+            sessions: data.sessions as CalendarSession[],
+          };
+        }
+      }
+    }
+    
+    // Fallback: return empty structure if response doesn't match
+    console.warn("[API] Calendar week response doesn't match expected format:", response);
+    return {
+      week_start: date,
+      week_end: date,
+      sessions: [],
+    };
   } catch (error) {
     console.error("[API] Failed to fetch calendar week:", error);
     throw error;
@@ -373,7 +436,40 @@ export const fetchCalendarSeason = async (): Promise<SeasonResponse> => {
   console.log("[API] Fetching calendar season");
   try {
     const response = await api.get("/calendar/season");
-    return response as unknown as SeasonResponse;
+    console.log("[API] Calendar season response:", response);
+    
+    // Handle different response formats
+    if (response && typeof response === 'object') {
+      // If response already has the expected structure
+      if ('sessions' in response && Array.isArray(response.sessions)) {
+        return response as SeasonResponse;
+      }
+      // If response is wrapped in a data property
+      if ('data' in response && response.data && typeof response.data === 'object') {
+        const data = response.data as { sessions?: unknown[]; season_start?: string; season_end?: string; total_sessions?: number; completed_sessions?: number; planned_sessions?: number };
+        if (data.sessions && Array.isArray(data.sessions)) {
+          return {
+            season_start: data.season_start || '',
+            season_end: data.season_end || '',
+            sessions: data.sessions as CalendarSession[],
+            total_sessions: data.total_sessions || 0,
+            completed_sessions: data.completed_sessions || 0,
+            planned_sessions: data.planned_sessions || 0,
+          };
+        }
+      }
+    }
+    
+    // Fallback: return empty structure if response doesn't match
+    console.warn("[API] Calendar season response doesn't match expected format:", response);
+    return {
+      season_start: new Date().toISOString().split('T')[0],
+      season_end: new Date().toISOString().split('T')[0],
+      sessions: [],
+      total_sessions: 0,
+      completed_sessions: 0,
+      planned_sessions: 0,
+    };
   } catch (error) {
     console.error("[API] Failed to fetch calendar season:", error);
     throw error;

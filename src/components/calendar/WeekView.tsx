@@ -54,11 +54,20 @@ export function WeekView({ currentDate, onActivityClick }: WeekViewProps) {
   const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
   const weekStartStr = format(weekStart, 'yyyy-MM-dd');
 
-  const { data: weekData, isLoading: weekLoading } = useQuery({
+  const { data: weekData, isLoading: weekLoading, error: weekError } = useQuery({
     queryKey: ['calendarWeek', weekStartStr],
     queryFn: () => fetchCalendarWeek(weekStartStr),
     retry: 1,
   });
+
+  // Debug logging
+  if (weekData) {
+    console.log('[WeekView] Week data received:', weekData);
+    console.log('[WeekView] Sessions count:', weekData.sessions?.length || 0);
+  }
+  if (weekError) {
+    console.error('[WeekView] Error loading week data:', weekError);
+  }
 
   const { data: activities, isLoading: activitiesLoading } = useQuery({
     queryKey: ['activities', 'week'],
@@ -73,9 +82,26 @@ export function WeekView({ currentDate, onActivityClick }: WeekViewProps) {
 
   const getWorkoutsForDay = (date: Date) => {
     const dateStr = format(date, 'yyyy-MM-dd');
-    const plannedSessions = weekData?.sessions?.filter(s => s.date === dateStr && s.status === 'planned') || [];
+    
+    // Debug logging for specific day
+    if (weekData?.sessions) {
+      const allSessionsForDay = weekData.sessions.filter(s => s.date === dateStr);
+      if (allSessionsForDay.length > 0) {
+        console.log(`[WeekView] Found ${allSessionsForDay.length} sessions for ${dateStr}:`, allSessionsForDay);
+      }
+    }
+    
+    const plannedSessions = weekData?.sessions?.filter(s => {
+      // Normalize date strings for comparison (handle timezone issues)
+      const sessionDate = s.date?.split('T')[0] || s.date;
+      return sessionDate === dateStr && s.status === 'planned';
+    }) || [];
+    
     const planned = plannedSessions.map(mapSessionToWorkout).filter((w): w is PlannedWorkout => w !== null);
-    const completed = (activities || []).filter((a: CompletedActivity) => a.date === dateStr);
+    const completed = (activities || []).filter((a: CompletedActivity) => {
+      const activityDate = a.date?.split('T')[0] || a.date;
+      return activityDate === dateStr;
+    });
     return { planned, completed };
   };
 
@@ -85,6 +111,22 @@ export function WeekView({ currentDate, onActivityClick }: WeekViewProps) {
         <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
       </div>
     );
+  }
+
+  if (weekError) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12 text-center">
+        <p className="text-muted-foreground mb-2">Unable to load calendar data</p>
+        <p className="text-xs text-muted-foreground">
+          {weekError instanceof Error ? weekError.message : 'Unknown error'}
+        </p>
+      </div>
+    );
+  }
+
+  // Show debug info if no sessions found
+  if (weekData && (!weekData.sessions || weekData.sessions.length === 0)) {
+    console.warn('[WeekView] No sessions found in week data:', weekData);
   }
 
   return (

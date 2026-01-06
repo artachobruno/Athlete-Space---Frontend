@@ -30,11 +30,38 @@ export function ActivityList({ activities }: ActivityListProps) {
     setExpandedId(expandedId === id ? null : id);
   };
 
+  // Filter out invalid/empty activities
+  const validActivities = activities.filter((activity) => {
+    if (!activity || !activity.id) {
+      return false;
+    }
+    
+    // Must have required fields
+    if (!activity.date || !activity.sport) {
+      return false;
+    }
+    
+    // Filter out placeholder/mock activities
+    const title = (activity.title || '').toLowerCase();
+    if (title.includes('placeholder') || title.includes('mock') || title.includes('sample') || title === 'untitled activity') {
+      return false;
+    }
+    
+    return true;
+  });
+
+  if (validActivities.length === 0) {
+    return (
+      <div className="text-center py-12 text-muted-foreground">
+        <p>No activities found</p>
+        <p className="text-xs mt-2">Connect your Strava account to sync activities</p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-3">
-      {activities
-        .filter((activity) => activity && activity.id)
-        .map((activity) => {
+      {validActivities.map((activity) => {
           const Icon = sportIcons[activity.sport] || Footprints;
           const isExpanded = expandedId === activity.id;
           

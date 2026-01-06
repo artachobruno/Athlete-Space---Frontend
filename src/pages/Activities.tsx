@@ -11,6 +11,14 @@ export default function Activities() {
     retry: 1,
   });
 
+  // Debug logging
+  if (activities) {
+    console.log('[Activities] Loaded activities:', activities.length);
+  }
+  if (error) {
+    console.error('[Activities] Error loading activities:', error);
+  }
+
   return (
     <AppLayout>
       <div className="space-y-6">
@@ -26,6 +34,9 @@ export default function Activities() {
         ) : error ? (
           <div className="text-center py-12 text-muted-foreground">
             <p>Unable to load activities</p>
+            <p className="text-xs mt-2">
+              {error instanceof Error ? error.message : 'Unknown error occurred'}
+            </p>
           </div>
         ) : (
           <ActivityList activities={activities || []} />
