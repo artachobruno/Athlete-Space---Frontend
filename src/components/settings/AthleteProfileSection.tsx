@@ -5,17 +5,25 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { User, Save } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 export function AthleteProfileSection() {
   const [profile, setProfile] = useState({
     name: 'Alex Thompson',
     email: 'alex@example.com',
     gender: 'male',
-    weight: '72',
-    weightUnit: 'kg',
+    weight: '159',
+    unitSystem: 'imperial' as 'imperial' | 'metric',
     location: 'San Francisco, CA',
   });
+
+  // Convert weight based on unit system
+  const displayWeight = profile.unitSystem === 'metric' 
+    ? Math.round(parseFloat(profile.weight) * 0.453592) 
+    : profile.weight;
+  const weightUnit = profile.unitSystem === 'metric' ? 'kg' : 'lbs';
 
   const [isSaving, setIsSaving] = useState(false);
 
@@ -89,22 +97,20 @@ export function AthleteProfileSection() {
               <Input
                 id="weight"
                 type="number"
-                value={profile.weight}
-                onChange={(e) => setProfile({ ...profile, weight: e.target.value })}
+                value={displayWeight}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  // Store in lbs internally
+                  const inLbs = profile.unitSystem === 'metric' 
+                    ? Math.round(parseFloat(value) / 0.453592).toString()
+                    : value;
+                  setProfile({ ...profile, weight: inLbs });
+                }}
                 className="flex-1"
               />
-              <Select
-                value={profile.weightUnit}
-                onValueChange={(value) => setProfile({ ...profile, weightUnit: value })}
-              >
-                <SelectTrigger className="w-20">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="kg">kg</SelectItem>
-                  <SelectItem value="lbs">lbs</SelectItem>
-                </SelectContent>
-              </Select>
+              <span className="flex items-center px-3 text-sm text-muted-foreground bg-muted rounded-md">
+                {weightUnit}
+              </span>
             </div>
           </div>
           <div className="space-y-2">
@@ -120,6 +126,45 @@ export function AthleteProfileSection() {
               onChange={(e) => setProfile({ ...profile, location: e.target.value })}
             />
           </div>
+        </div>
+
+        {/* Unit System */}
+        <div className="space-y-3">
+          <Label>Unit System</Label>
+          <RadioGroup
+            value={profile.unitSystem}
+            onValueChange={(value) => setProfile({ ...profile, unitSystem: value as 'imperial' | 'metric' })}
+            className="flex gap-3"
+          >
+            <label
+              className={cn(
+                'flex items-center gap-3 px-4 py-3 rounded-lg border cursor-pointer transition-all flex-1',
+                profile.unitSystem === 'imperial'
+                  ? 'border-accent bg-accent/5 ring-1 ring-accent'
+                  : 'border-border hover:border-accent/50'
+              )}
+            >
+              <RadioGroupItem value="imperial" />
+              <div>
+                <div className="font-medium text-foreground">Imperial</div>
+                <p className="text-xs text-muted-foreground">miles, feet, lbs</p>
+              </div>
+            </label>
+            <label
+              className={cn(
+                'flex items-center gap-3 px-4 py-3 rounded-lg border cursor-pointer transition-all flex-1',
+                profile.unitSystem === 'metric'
+                  ? 'border-accent bg-accent/5 ring-1 ring-accent'
+                  : 'border-border hover:border-accent/50'
+              )}
+            >
+              <RadioGroupItem value="metric" />
+              <div>
+                <div className="font-medium text-foreground">Metric</div>
+                <p className="text-xs text-muted-foreground">km, meters, kg</p>
+              </div>
+            </label>
+          </RadioGroup>
         </div>
 
         {/* Save Button */}
