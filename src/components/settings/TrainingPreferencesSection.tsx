@@ -1,13 +1,15 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Slider } from '@/components/ui/slider';
-import { Checkbox } from '@/components/ui/checkbox';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Textarea } from '@/components/ui/textarea';
-import { Settings2, Save } from 'lucide-react';
+import { Settings2, Save, Loader2 } from 'lucide-react';
+import { fetchUserProfile, updateUserProfile } from '@/lib/api';
+import { toast } from '@/hooks/use-toast';
+import type { Sport } from '@/types';
 
 const sports = [
   { id: 'running', label: 'Running' },
@@ -18,24 +20,79 @@ const sports = [
 
 const weekDays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
+interface PreferencesState {
+  primarySports: Sport[];
+  trainingDays: boolean[];
+  hoursPerWeek: number;
+  trainingFocus: 'race' | 'general';
+  hasInjuryHistory: boolean;
+  injuryNotes: string;
+  trainingAge?: number;
+}
+
 export function TrainingPreferencesSection() {
-  const [preferences, setPreferences] = useState({
-    primarySports: ['running', 'cycling'],
-    trainingDays: [true, false, true, true, false, true, true],
+  const [preferences, setPreferences] = useState<PreferencesState>({
+    primarySports: [],
+    trainingDays: [true, true, true, true, true, true, true],
     hoursPerWeek: 10,
-    trainingFocus: 'race',
+    trainingFocus: 'general',
     hasInjuryHistory: false,
     injuryNotes: '',
+    trainingAge: 0,
   });
 
+  const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [hasChanges, setHasChanges] = useState(false);
+  const [initialPreferences, setInitialPreferences] = useState<PreferencesState | null>(null);
+
+  useEffect(() => {
+    loadPreferences();
+  }, []);
+
+  useEffect(() => {
+    if (initialPreferences) {
+      const changed = JSON.stringify(preferences) !== JSON.stringify(initialPreferences);
+      setHasChanges(changed);
+    }
+  }, [preferences, initialPreferences]);
+
+  const loadPreferences = async () => {
+    setIsLoading(true);
+    try {
+      const userProfile = await fetchUserProfile();
+      const daysAvailable = (userProfile.weeklyAvailability?.days || 7);
+      const trainingDaysArray = Array(7).fill(false).map((_, i) => i < daysAvailable);
+      
+      const prefsData: PreferencesState = {
+        primarySports: userProfile.sports || [],
+        trainingDays: trainingDaysArray,
+        hoursPerWeek: userProfile.weeklyAvailability?.hoursPerWeek || 10,
+        trainingFocus: (userProfile as { trainingFocus?: 'race' | 'general' }).trainingFocus || 'general',
+        hasInjuryHistory: (userProfile as { hasInjuryHistory?: boolean }).hasInjuryHistory || false,
+        injuryNotes: (userProfile as { injuryNotes?: string }).injuryNotes || '',
+        trainingAge: userProfile.trainingAge || 0,
+      };
+      setPreferences(prefsData);
+      setInitialPreferences(prefsData);
+    } catch (error) {
+      console.error('Failed to load preferences:', error);
+      toast({
+        title: 'Failed to load preferences',
+        description: error instanceof Error ? error.message : 'Could not load your training preferences',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const toggleSport = (sportId: string) => {
     setPreferences(prev => ({
       ...prev,
-      primarySports: prev.primarySports.includes(sportId)
-        ? prev.primarySports.filter(s => s !== sportId)
-        : [...prev.primarySports, sportId],
+      primarySports: prev.primarySports.includes(sportId as Sport)
+        ? prev.primarySports.filter(s => s !== sportId) as Sport[]
+        : [...prev.primarySports, sportId as Sport],
     }));
   };
 
@@ -48,9 +105,60 @@ export function TrainingPreferencesSection() {
 
   const handleSave = async () => {
     setIsSaving(true);
-    await new Promise(resolve => setTimeout(resolve, 800));
-    setIsSaving(false);
+    try {
+      const updateData: Record<string, unknown> = {
+        sports: preferences.primarySports,
+        weeklyAvailability: {
+          days: preferences.trainingDays.filter(Boolean).length,
+          hoursPerWeek: preferences.hoursPerWeek,
+        },
+        trainingFocus: preferences.trainingFocus,
+        hasInjuryHistory: preferences.hasInjuryHistory,
+        injuryNotes: preferences.injuryNotes,
+        trainingAge: preferences.trainingAge,
+      };
+
+      await updateUserProfile(updateData);
+      setInitialPreferences({ ...preferences });
+      setHasChanges(false);
+      toast({
+        title: 'Preferences updated',
+        description: 'Your training preferences have been saved successfully',
+      });
+    } catch (error) {
+      console.error('Failed to save preferences:', error);
+      toast({
+        title: 'Failed to save preferences',
+        description: error instanceof Error ? error.message : 'Could not save your preferences',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSaving(false);
+    }
   };
+
+  if (isLoading) {
+    return (
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-accent/10 rounded-lg">
+              <Settings2 className="h-5 w-5 text-accent" />
+            </div>
+            <div>
+              <CardTitle className="text-lg">Training Preferences</CardTitle>
+              <CardDescription>Configure how the coach structures your training</CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card>
@@ -66,6 +174,24 @@ export function TrainingPreferencesSection() {
         </div>
       </CardHeader>
       <CardContent className="space-y-8">
+        {/* Training Age */}
+        <div className="space-y-3">
+          <Label htmlFor="trainingAge">Years of Structured Training</Label>
+          <div className="flex items-center gap-4">
+            <Slider
+              value={[preferences.trainingAge || 0]}
+              onValueChange={([value]) => setPreferences({ ...preferences, trainingAge: value })}
+              min={0}
+              max={30}
+              step={1}
+              className="flex-1"
+            />
+            <span className="text-sm font-medium text-foreground min-w-[3rem] text-right">
+              {preferences.trainingAge || 0} years
+            </span>
+          </div>
+        </div>
+
         {/* Primary Sports */}
         <div className="space-y-3">
           <Label>Primary Sports</Label>
@@ -75,7 +201,7 @@ export function TrainingPreferencesSection() {
                 key={sport.id}
                 onClick={() => toggleSport(sport.id)}
                 className={`px-4 py-2 rounded-lg border text-sm font-medium transition-colors ${
-                  preferences.primarySports.includes(sport.id)
+                  preferences.primarySports.includes(sport.id as Sport)
                     ? 'bg-accent text-accent-foreground border-accent'
                     : 'bg-muted/50 text-muted-foreground border-border hover:border-accent/50'
                 }`}
@@ -84,6 +210,9 @@ export function TrainingPreferencesSection() {
               </button>
             ))}
           </div>
+          {preferences.primarySports.length === 0 && (
+            <p className="text-xs text-muted-foreground">Select at least one sport</p>
+          )}
         </div>
 
         {/* Available Training Days */}
@@ -198,9 +327,18 @@ export function TrainingPreferencesSection() {
 
         {/* Save Button */}
         <div className="flex justify-end pt-2">
-          <Button onClick={handleSave} disabled={isSaving}>
-            <Save className="h-4 w-4 mr-2" />
-            {isSaving ? 'Saving...' : 'Save Preferences'}
+          <Button onClick={handleSave} disabled={isSaving || !hasChanges || preferences.primarySports.length === 0}>
+            {isSaving ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Saving...
+              </>
+            ) : (
+              <>
+                <Save className="h-4 w-4 mr-2" />
+                Save Preferences
+              </>
+            )}
           </Button>
         </div>
       </CardContent>

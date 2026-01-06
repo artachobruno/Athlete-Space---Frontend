@@ -3,6 +3,9 @@ import { AthleteProfileSection } from '@/components/settings/AthleteProfileSecti
 import { TrainingPreferencesSection } from '@/components/settings/TrainingPreferencesSection';
 import { AppearanceSection } from '@/components/settings/AppearanceSection';
 import { IntegrationsSection } from '@/components/settings/IntegrationsSection';
+import { NotificationsSection } from '@/components/settings/NotificationsSection';
+import { PrivacySecuritySection } from '@/components/settings/PrivacySecuritySection';
+import { DataManagementSection } from '@/components/settings/DataManagementSection';
 
 export default function Settings() {
   return (
@@ -22,8 +25,17 @@ export default function Settings() {
         {/* Appearance */}
         <AppearanceSection />
 
+        {/* Notifications */}
+        <NotificationsSection />
+
         {/* Integrations */}
         <IntegrationsSection />
+
+        {/* Privacy & Security */}
+        <PrivacySecuritySection />
+
+        {/* Data Management */}
+        <DataManagementSection />
       </div>
     </AppLayout>
   );

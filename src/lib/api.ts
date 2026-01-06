@@ -4,7 +4,12 @@ import { auth } from "./auth";
 
 const getBaseURL = () => {
   if (import.meta.env.PROD) {
-    return import.meta.env.VITE_API_URL || window.location.origin;
+    const apiUrl = import.meta.env.VITE_API_URL || window.location.origin;
+    // Debug: Log the API URL being used (only in dev or if URL seems wrong)
+    if (import.meta.env.DEV || !import.meta.env.VITE_API_URL) {
+      console.log("[API] Using base URL:", apiUrl);
+    }
+    return apiUrl;
   }
   return "http://localhost:8000";
 };

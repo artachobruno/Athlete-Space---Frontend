@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -6,33 +6,151 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { User, Save } from 'lucide-react';
+import { User, Save, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { fetchUserProfile, updateUserProfile } from '@/lib/api';
+import { toast } from '@/hooks/use-toast';
+
+interface ProfileState {
+  name: string;
+  email: string;
+  gender: string;
+  weight: string;
+  unitSystem: 'imperial' | 'metric';
+  location: string;
+  dateOfBirth?: string;
+  height?: string;
+}
 
 export function AthleteProfileSection() {
-  const [profile, setProfile] = useState({
-    name: 'Alex Thompson',
-    email: 'alex@example.com',
+  const [profile, setProfile] = useState<ProfileState>({
+    name: '',
+    email: '',
     gender: 'male',
-    weight: '159',
-    unitSystem: 'imperial' as 'imperial' | 'metric',
-    location: 'San Francisco, CA',
+    weight: '',
+    unitSystem: 'imperial',
+    location: '',
+    dateOfBirth: '',
+    height: '',
   });
 
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [hasChanges, setHasChanges] = useState(false);
+  const [initialProfile, setInitialProfile] = useState<ProfileState | null>(null);
+
+  useEffect(() => {
+    loadProfile();
+  }, []);
+
+  useEffect(() => {
+    if (initialProfile) {
+      const changed = JSON.stringify(profile) !== JSON.stringify(initialProfile);
+      setHasChanges(changed);
+    }
+  }, [profile, initialProfile]);
+
+  const loadProfile = async () => {
+    setIsLoading(true);
+    try {
+      const userProfile = await fetchUserProfile();
+      const profileData: ProfileState = {
+        name: userProfile.name || '',
+        email: (userProfile as { email?: string }).email || '',
+        gender: (userProfile as { gender?: string }).gender || 'male',
+        weight: (userProfile as { weight?: number | string }).weight?.toString() || '',
+        unitSystem: (userProfile as { unitSystem?: 'imperial' | 'metric' }).unitSystem || 'imperial',
+        location: (userProfile as { location?: string }).location || '',
+        dateOfBirth: (userProfile as { dateOfBirth?: string }).dateOfBirth || '',
+        height: (userProfile as { height?: number | string }).height?.toString() || '',
+      };
+      setProfile(profileData);
+      setInitialProfile(profileData);
+    } catch (error) {
+      console.error('Failed to load profile:', error);
+      toast({
+        title: 'Failed to load profile',
+        description: error instanceof Error ? error.message : 'Could not load your profile data',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   // Convert weight based on unit system
-  const displayWeight = profile.unitSystem === 'metric' 
-    ? Math.round(parseFloat(profile.weight) * 0.453592) 
+  const displayWeight = profile.unitSystem === 'metric' && profile.weight
+    ? Math.round(parseFloat(profile.weight) * 0.453592).toString()
     : profile.weight;
   const weightUnit = profile.unitSystem === 'metric' ? 'kg' : 'lbs';
 
-  const [isSaving, setIsSaving] = useState(false);
-
   const handleSave = async () => {
     setIsSaving(true);
-    // Simulate save
-    await new Promise(resolve => setTimeout(resolve, 800));
-    setIsSaving(false);
+    try {
+      const updateData: Record<string, unknown> = {
+        name: profile.name,
+        email: profile.email,
+        gender: profile.gender,
+        location: profile.location,
+        unitSystem: profile.unitSystem,
+      };
+
+      if (profile.weight) {
+        const weightValue = profile.unitSystem === 'metric'
+          ? Math.round(parseFloat(profile.weight) / 0.453592).toString()
+          : profile.weight;
+        updateData.weight = parseFloat(weightValue);
+      }
+
+      if (profile.dateOfBirth) {
+        updateData.dateOfBirth = profile.dateOfBirth;
+      }
+
+      if (profile.height) {
+        updateData.height = parseFloat(profile.height);
+      }
+
+      await updateUserProfile(updateData);
+      setInitialProfile({ ...profile });
+      setHasChanges(false);
+      toast({
+        title: 'Profile updated',
+        description: 'Your profile has been saved successfully',
+      });
+    } catch (error) {
+      console.error('Failed to save profile:', error);
+      toast({
+        title: 'Failed to save profile',
+        description: error instanceof Error ? error.message : 'Could not save your profile',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSaving(false);
+    }
   };
+
+  if (isLoading) {
+    return (
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-accent/10 rounded-lg">
+              <User className="h-5 w-5 text-accent" />
+            </div>
+            <div>
+              <CardTitle className="text-lg">Athlete Profile</CardTitle>
+              <CardDescription>Your personal information and physical attributes</CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <Card>
@@ -69,8 +187,8 @@ export function AthleteProfileSection() {
           </div>
         </div>
 
-        {/* Gender and Weight */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* Gender, Weight, Height, Date of Birth */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-2">
             <Label htmlFor="gender">Gender</Label>
             <Select
@@ -83,16 +201,25 @@ export function AthleteProfileSection() {
               <SelectContent>
                 <SelectItem value="male">Male</SelectItem>
                 <SelectItem value="female">Female</SelectItem>
+                <SelectItem value="other">Other</SelectItem>
+                <SelectItem value="prefer-not-to-say">Prefer not to say</SelectItem>
               </SelectContent>
             </Select>
           </div>
           <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <Label htmlFor="weight">Weight</Label>
-              <Badge variant="outline" className="text-xs font-normal">
-                From Strava
-              </Badge>
-            </div>
+            <Label htmlFor="dateOfBirth">Date of Birth</Label>
+            <Input
+              id="dateOfBirth"
+              type="date"
+              value={profile.dateOfBirth || ''}
+              onChange={(e) => setProfile({ ...profile, dateOfBirth: e.target.value })}
+            />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="space-y-2">
+            <Label htmlFor="weight">Weight</Label>
             <div className="flex gap-2">
               <Input
                 id="weight"
@@ -100,13 +227,13 @@ export function AthleteProfileSection() {
                 value={displayWeight}
                 onChange={(e) => {
                   const value = e.target.value;
-                  // Store in lbs internally
                   const inLbs = profile.unitSystem === 'metric' 
-                    ? Math.round(parseFloat(value) / 0.453592).toString()
+                    ? (value ? Math.round(parseFloat(value) / 0.453592).toString() : '')
                     : value;
                   setProfile({ ...profile, weight: inLbs });
                 }}
                 className="flex-1"
+                placeholder="0"
               />
               <span className="flex items-center px-3 text-sm text-muted-foreground bg-muted rounded-md">
                 {weightUnit}
@@ -114,16 +241,28 @@ export function AthleteProfileSection() {
             </div>
           </div>
           <div className="space-y-2">
-            <div className="flex items-center gap-2">
-              <Label htmlFor="location">Location</Label>
-              <Badge variant="outline" className="text-xs font-normal">
-                From Strava
-              </Badge>
+            <Label htmlFor="height">Height</Label>
+            <div className="flex gap-2">
+              <Input
+                id="height"
+                type="number"
+                value={profile.height || ''}
+                onChange={(e) => setProfile({ ...profile, height: e.target.value })}
+                className="flex-1"
+                placeholder="0"
+              />
+              <span className="flex items-center px-3 text-sm text-muted-foreground bg-muted rounded-md">
+                {profile.unitSystem === 'metric' ? 'cm' : 'in'}
+              </span>
             </div>
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="location">Location</Label>
             <Input
               id="location"
               value={profile.location}
               onChange={(e) => setProfile({ ...profile, location: e.target.value })}
+              placeholder="City, State/Country"
             />
           </div>
         </div>
@@ -169,9 +308,18 @@ export function AthleteProfileSection() {
 
         {/* Save Button */}
         <div className="flex justify-end pt-2">
-          <Button onClick={handleSave} disabled={isSaving}>
-            <Save className="h-4 w-4 mr-2" />
-            {isSaving ? 'Saving...' : 'Save Changes'}
+          <Button onClick={handleSave} disabled={isSaving || !hasChanges}>
+            {isSaving ? (
+              <>
+                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                Saving...
+              </>
+            ) : (
+              <>
+                <Save className="h-4 w-4 mr-2" />
+                Save Changes
+              </>
+            )}
           </Button>
         </div>
       </CardContent>
