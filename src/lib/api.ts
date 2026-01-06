@@ -201,7 +201,26 @@ export const fetchActivities = async (params?: { limit?: number; offset?: number
   console.log("[API] Fetching activities");
   try {
     const response = await api.get("/activities", { params });
-    return response as unknown as import("../types").CompletedActivity[];
+    
+    // Handle different response formats
+    if (Array.isArray(response)) {
+      return response as import("../types").CompletedActivity[];
+    }
+    
+    // If response is an object, try to extract the array
+    if (response && typeof response === "object") {
+      const activities = (response as { activities?: unknown[]; data?: unknown[]; items?: unknown[] }).activities 
+        || (response as { activities?: unknown[]; data?: unknown[]; items?: unknown[] }).data
+        || (response as { activities?: unknown[]; data?: unknown[]; items?: unknown[] }).items;
+      
+      if (Array.isArray(activities)) {
+        return activities as import("../types").CompletedActivity[];
+      }
+    }
+    
+    // If we can't find an array, return empty array to prevent map errors
+    console.warn("[API] Activities response is not in expected format:", response);
+    return [];
   } catch (error) {
     console.error("[API] Failed to fetch activities:", error);
     throw error;
