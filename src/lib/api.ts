@@ -440,14 +440,26 @@ export const fetchActivityStreams = async (id: string): Promise<ActivityStreamsR
     if (!hasStreams) {
       console.log("[API] Streams not available, fetching from Strava...");
       try {
-        const fetchResponse = await api.post(`/activities/${id}/fetch-streams`);
-        // Check if the fetch was actually successful
-        // Note: Backend may return 200 even if fetching fails internally
+        await api.post(`/activities/${id}/fetch-streams`);
         // Wait for backend to process the fetch (may take a few seconds)
         await new Promise((resolve) => setTimeout(resolve, 2000));
       } catch (error) {
-        console.warn("[API] Failed to fetch streams from Strava:", error);
-        // Continue anyway - maybe streams were already fetched or will be available
+        const errorStatus = (error as { response?: { status?: number } })?.response?.status;
+        const errorMessage = (error as { message?: string })?.message || '';
+        
+        // Backend now returns proper status codes:
+        // 500 = Internal server error (fetching failed)
+        // 404 = Streams not available
+        if (errorStatus === 500) {
+          console.error("[API] Failed to fetch streams from Strava (server error):", error);
+          throw new Error("Failed to fetch stream data from Strava. Please try again later.");
+        } else if (errorStatus === 404) {
+          console.warn("[API] Streams not available for this activity:", error);
+          throw new Error("Stream data is not available for this activity.");
+        } else {
+          console.warn("[API] Failed to fetch streams from Strava:", error);
+          throw error;
+        }
       }
     }
     
@@ -463,10 +475,20 @@ export const fetchActivityStreams = async (id: string): Promise<ActivityStreamsR
         return response as unknown as ActivityStreamsResponse;
       } catch (error) {
         lastError = error;
+        const errorStatus = (error as { response?: { status?: number } })?.response?.status;
         const errorMessage = (error as { message?: string })?.message || '';
         
+        // Backend now returns proper status codes:
+        // 404 = Streams not available (might be processing, so retry)
+        // 500 = Server error (don't retry)
+        if (errorStatus === 500) {
+          console.error("[API] Server error fetching streams:", error);
+          throw new Error("Server error while fetching stream data. Please try again later.");
+        }
+        
         // If it's a 404 and we haven't exhausted retries, wait and retry
-        if (errorMessage.includes('not available') && attempt < maxRetries - 1) {
+        // (streams might still be processing after fetch)
+        if (errorStatus === 404 && attempt < maxRetries - 1) {
           console.log(`[API] Streams not ready yet, retrying in ${retryDelay}ms... (attempt ${attempt + 1}/${maxRetries})`);
           await new Promise((resolve) => setTimeout(resolve, retryDelay));
           continue;
@@ -474,6 +496,9 @@ export const fetchActivityStreams = async (id: string): Promise<ActivityStreamsR
         
         // If it's the last attempt or a different error, throw
         if (attempt === maxRetries - 1) {
+          if (errorStatus === 404) {
+            throw new Error("Stream data is not available for this activity.");
+          }
           throw error;
         }
       }

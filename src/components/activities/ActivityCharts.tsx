@@ -174,14 +174,19 @@ export function ActivityCharts({ activity }: ActivityChartsProps) {
 
   if (!hasData) {
     const errorMessage = streamsError instanceof Error ? streamsError.message : '';
-    const isFetchError = errorMessage.includes('not available') || errorMessage.includes('404');
+    const isServerError = errorMessage.includes('Server error') || errorMessage.includes('Failed to fetch');
+    const isNotAvailable = errorMessage.includes('not available') || errorMessage.includes('404');
     
     return (
       <div className="text-center py-12 text-muted-foreground">
-        <p className="text-sm">No stream data available for this activity</p>
-        {isFetchError ? (
+        <p className="text-sm font-medium">No stream data available</p>
+        {isServerError ? (
           <p className="text-xs mt-2">
-            Stream data could not be fetched from Strava. This may be due to API limitations or the activity type.
+            An error occurred while fetching stream data. Please try refreshing the page.
+          </p>
+        ) : isNotAvailable ? (
+          <p className="text-xs mt-2">
+            Stream data is not available for this activity. This may be due to activity type or API limitations.
           </p>
         ) : (
           <p className="text-xs mt-2">Stream data may not be available for this activity</p>
