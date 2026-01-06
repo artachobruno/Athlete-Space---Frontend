@@ -7,6 +7,7 @@ import Dashboard from "./pages/Dashboard";
 import Calendar from "./pages/Calendar";
 import TrainingPlan from "./pages/TrainingPlan";
 import Activities from "./pages/Activities";
+import Analytics from "./pages/Analytics";
 import Coach from "./pages/Coach";
 import NotFound from "./pages/NotFound";
 
@@ -24,7 +25,7 @@ const App = () => (
           <Route path="/calendar" element={<Calendar />} />
           <Route path="/plan" element={<TrainingPlan />} />
           <Route path="/activities" element={<Activities />} />
-          <Route path="/analytics" element={<Dashboard />} />
+          <Route path="/analytics" element={<Analytics />} />
           <Route path="/coach" element={<Coach />} />
           <Route path="/settings" element={<Dashboard />} />
           <Route path="*" element={<NotFound />} />
