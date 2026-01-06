@@ -240,8 +240,35 @@ export const fetchActivities = async (params?: { limit?: number; offset?: number
       console.log('[API] Activity keys:', Object.keys(activitiesArray[0] as Record<string, unknown>));
     }
     
+    // First, remove duplicates by strava_activity_id (keep the first occurrence)
+    const seenStravaIds = new Set<string | number>();
+    let duplicateCount = 0;
+    const uniqueActivities = activitiesArray.filter((activity) => {
+      if (!activity || typeof activity !== 'object') {
+        return false;
+      }
+      const act = activity as Record<string, unknown>;
+      const stravaId = act.strava_activity_id;
+      
+      // If we've seen this Strava activity ID before, skip it
+      if (stravaId !== undefined && stravaId !== null) {
+        const idStr = String(stravaId);
+        if (seenStravaIds.has(idStr)) {
+          duplicateCount++;
+          return false; // Duplicate
+        }
+        seenStravaIds.add(idStr);
+      }
+      
+      return true;
+    });
+    
+    if (duplicateCount > 0) {
+      console.log(`[API] Removed ${duplicateCount} duplicate activities (by strava_activity_id)`);
+    }
+    
     // Map backend activity format to frontend format
-    const validActivities = activitiesArray
+    const validActivities = uniqueActivities
       .filter((activity) => {
         if (!activity || typeof activity !== 'object') {
           return false;
@@ -256,14 +283,12 @@ export const fetchActivities = async (params?: { limit?: number; offset?: number
         // Must have a date (try multiple possible field names)
         const dateField = act.start_time || act.date || act.start_date || act.start_date_local || act.activity_date;
         if (!dateField || (typeof dateField !== 'string' && !(dateField instanceof Date))) {
-          console.log('[API] Activity missing date field:', act.id, 'Available fields:', Object.keys(act));
           return false;
         }
         
         // Must have a sport/type (try multiple possible field names)
         const sportField = act.sport || act.type || act.activity_type || act.sport_type;
         if (!sportField || typeof sportField !== 'string') {
-          console.log('[API] Activity missing sport field:', act.id, 'Available fields:', Object.keys(act));
           return false;
         }
         
@@ -320,26 +345,28 @@ export const fetchActivities = async (params?: { limit?: number; offset?: number
           duration = act.duration_minutes;
         }
         
-        // Map distance (could be in meters or km)
+        // Map distance (could be in meters or km) - round to 1 decimal place
         let distance = 0;
         if (typeof act.distance_meters === 'number') {
-          distance = act.distance_meters / 1000; // Convert meters to km
+          distance = Math.round((act.distance_meters / 1000) * 10) / 10; // Convert meters to km, round to 1 decimal
         } else if (typeof act.distance === 'number') {
-          distance = act.distance > 100 ? act.distance / 1000 : act.distance; // If > 100, assume meters
+          distance = act.distance > 100 
+            ? Math.round((act.distance / 1000) * 10) / 10 
+            : Math.round(act.distance * 10) / 10; // If > 100, assume meters
         } else if (typeof act.distance_km === 'number') {
-          distance = act.distance_km;
+          distance = Math.round(act.distance_km * 10) / 10;
         }
         
-        // Map elevation
+        // Map elevation - round to 1 decimal place
         let elevation: number | undefined = undefined;
         if (typeof act.elevation_gain_meters === 'number') {
-          elevation = act.elevation_gain_meters;
+          elevation = Math.round(act.elevation_gain_meters * 10) / 10;
         } else if (typeof act.total_elevation_gain === 'number') {
-          elevation = act.total_elevation_gain;
+          elevation = Math.round(act.total_elevation_gain * 10) / 10;
         } else if (typeof act.elevation_gain === 'number') {
-          elevation = act.elevation_gain;
+          elevation = Math.round(act.elevation_gain * 10) / 10;
         } else if (typeof act.elevation === 'number') {
-          elevation = act.elevation;
+          elevation = Math.round(act.elevation * 10) / 10;
         }
         
         return {

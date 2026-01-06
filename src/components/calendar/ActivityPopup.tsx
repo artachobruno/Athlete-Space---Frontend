@@ -100,13 +100,13 @@ export function ActivityPopup({
             {(workout?.distance || activity?.distance) && (
               <span className="flex items-center gap-1.5">
                 <Route className="h-4 w-4" />
-                {workout?.distance || activity?.distance}km
+                {((workout?.distance || activity?.distance) || 0).toFixed(1)}km
               </span>
             )}
             {activity?.elevation && (
               <span className="flex items-center gap-1.5">
                 <Mountain className="h-4 w-4" />
-                {activity.elevation}m
+                {activity.elevation.toFixed(1)}m
               </span>
             )}
           </div>
@@ -125,7 +125,7 @@ export function ActivityPopup({
                   <div className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
                     <Heart className="h-3 w-3" /> Avg HR
                   </div>
-                  <div className="text-sm font-medium text-foreground">{activity.avgHeartRate} bpm</div>
+                  <div className="text-sm font-medium text-foreground">{Math.round(activity.avgHeartRate)} bpm</div>
                 </div>
               )}
               {activity.avgPower && (
@@ -133,13 +133,13 @@ export function ActivityPopup({
                   <div className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
                     <Zap className="h-3 w-3" /> Avg Power
                   </div>
-                  <div className="text-sm font-medium text-foreground">{activity.avgPower}w</div>
+                  <div className="text-sm font-medium text-foreground">{Math.round(activity.avgPower)}w</div>
                 </div>
               )}
               {activity.trainingLoad && (
                 <div className="p-3 rounded-lg bg-muted/50">
                   <div className="text-xs text-muted-foreground mb-1">Training Load</div>
-                  <div className="text-sm font-medium text-foreground">{activity.trainingLoad}</div>
+                  <div className="text-sm font-medium text-foreground">{Math.round(activity.trainingLoad)}</div>
                 </div>
               )}
             </div>

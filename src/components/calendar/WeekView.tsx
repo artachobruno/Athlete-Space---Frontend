@@ -206,10 +206,10 @@ export function WeekView({ currentDate, onActivityClick }: WeekViewProps) {
                         <Clock className="h-3 w-3" />
                         {workout.duration}m
                       </span>
-                      {workout.distance && (
+                      {workout.distance !== undefined && workout.distance > 0 && (
                         <span className="flex items-center gap-1">
                           <Route className="h-3 w-3" />
-                          {workout.distance}km
+                          {workout.distance.toFixed(1)}km
                         </span>
                       )}
                     </div>
@@ -250,7 +250,7 @@ export function WeekView({ currentDate, onActivityClick }: WeekViewProps) {
                         </span>
                         <span className="flex items-center gap-1">
                           <Route className="h-3 w-3" />
-                          {activity.distance}km
+                          {(activity.distance || 0).toFixed(1)}km
                         </span>
                       </div>
                     </div>

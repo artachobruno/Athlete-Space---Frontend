@@ -118,22 +118,28 @@ export function ActivityList({ activities }: ActivityListProps) {
                     </span>
                     <span className="flex items-center gap-1">
                       <Route className="h-4 w-4" />
-                      {activity.distance || 0} km
+                      {(activity.distance || 0).toFixed(1)} km
                     </span>
                     {activity.avgHeartRate && (
                       <span className="flex items-center gap-1">
                         <Heart className="h-4 w-4" />
-                        {activity.avgHeartRate} bpm
+                        {Math.round(activity.avgHeartRate)} bpm
                       </span>
                     )}
                     {activity.avgPower && (
                       <span className="flex items-center gap-1">
                         <Zap className="h-4 w-4" />
-                        {activity.avgPower} W
+                        {Math.round(activity.avgPower)} W
+                      </span>
+                    )}
+                    {activity.elevation && (
+                      <span className="flex items-center gap-1">
+                        <Route className="h-4 w-4" />
+                        {activity.elevation.toFixed(1)} m
                       </span>
                     )}
                     <span className="ml-auto font-medium text-foreground">
-                      {activity.trainingLoad || 0} TSS
+                      {Math.round(activity.trainingLoad || 0)} TSS
                     </span>
                   </div>
 
