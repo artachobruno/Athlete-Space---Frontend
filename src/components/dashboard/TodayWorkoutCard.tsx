@@ -14,7 +14,10 @@ const intentColors = {
   recovery: 'bg-training-recovery/15 text-training-recovery border-training-recovery/30',
 };
 
-const mapTypeToIntent = (type: string): 'aerobic' | 'threshold' | 'vo2' | 'endurance' | 'recovery' => {
+const mapTypeToIntent = (type: string | null | undefined): 'aerobic' | 'threshold' | 'vo2' | 'endurance' | 'recovery' => {
+  if (!type || typeof type !== 'string') {
+    return 'aerobic';
+  }
   const lower = type.toLowerCase();
   if (lower.includes('threshold') || lower.includes('tempo')) return 'threshold';
   if (lower.includes('vo2') || lower.includes('interval')) return 'vo2';

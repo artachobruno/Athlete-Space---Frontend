@@ -27,7 +27,10 @@ const decisionConfig = {
   },
 };
 
-const mapRecommendationToDecision = (recommendation: string): 'proceed' | 'modify' | 'replace' | 'rest' => {
+const mapRecommendationToDecision = (recommendation: string | null | undefined): 'proceed' | 'modify' | 'replace' | 'rest' => {
+  if (!recommendation || typeof recommendation !== 'string') {
+    return 'proceed';
+  }
   const lower = recommendation.toLowerCase();
   if (lower.includes('rest') || lower.includes('recovery')) return 'rest';
   if (lower.includes('modify') || lower.includes('adjust')) return 'modify';
