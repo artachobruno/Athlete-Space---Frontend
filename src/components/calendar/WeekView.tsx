@@ -14,6 +14,7 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useQuery } from '@tanstack/react-query';
 import type { PlannedWorkout, CompletedActivity } from '@/types';
+import { useUnitSystem } from '@/hooks/useUnitSystem';
 
 interface WeekViewProps {
   currentDate: Date;
@@ -51,6 +52,7 @@ const mapSessionToWorkout = (session: import('@/lib/api').CalendarSession): Plan
 };
 
 export function WeekView({ currentDate, onActivityClick }: WeekViewProps) {
+  const { convertDistance } = useUnitSystem();
   const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
   const weekStartStr = format(weekStart, 'yyyy-MM-dd');
 
@@ -209,7 +211,10 @@ export function WeekView({ currentDate, onActivityClick }: WeekViewProps) {
                       {workout.distance !== undefined && workout.distance > 0 && (
                         <span className="flex items-center gap-1">
                           <Route className="h-3 w-3" />
-                          {workout.distance.toFixed(1)}km
+                          {(() => {
+                            const dist = convertDistance(workout.distance);
+                            return `${dist.value.toFixed(1)}${dist.unit}`;
+                          })()}
                         </span>
                       )}
                     </div>
@@ -250,7 +255,10 @@ export function WeekView({ currentDate, onActivityClick }: WeekViewProps) {
                         </span>
                         <span className="flex items-center gap-1">
                           <Route className="h-3 w-3" />
-                          {(activity.distance || 0).toFixed(1)}km
+                          {(() => {
+                            const dist = convertDistance(activity.distance || 0);
+                            return `${dist.value.toFixed(1)}${dist.unit}`;
+                          })()}
                         </span>
                       </div>
                     </div>

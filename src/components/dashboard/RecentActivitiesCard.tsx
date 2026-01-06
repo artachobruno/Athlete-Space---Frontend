@@ -4,6 +4,7 @@ import { format, parseISO } from 'date-fns';
 import { Bike, Footprints, Waves, Loader2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
+import { useUnitSystem } from '@/hooks/useUnitSystem';
 
 const sportIcons = {
   running: Footprints,
@@ -13,6 +14,7 @@ const sportIcons = {
 };
 
 export function RecentActivitiesCard() {
+  const { convertDistance } = useUnitSystem();
   const { data: activities, isLoading, error } = useQuery({
     queryKey: ['activities', 'recent'],
     queryFn: () => fetchActivities({ limit: 4 }),
@@ -70,7 +72,10 @@ export function RecentActivitiesCard() {
                         {activity.title || 'Untitled Activity'}
                       </div>
                       <div className="text-xs text-muted-foreground">
-                        {dateStr} · {activity.distance || 0} km · {activity.duration || 0} min
+                        {dateStr} · {(() => {
+                          const dist = convertDistance(activity.distance || 0);
+                          return `${dist.value.toFixed(1)} ${dist.unit}`;
+                        })()} · {activity.duration || 0} min
                       </div>
                     </div>
                     <div className="text-right">

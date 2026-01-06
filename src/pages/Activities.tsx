@@ -3,8 +3,12 @@ import { ActivityList } from '@/components/activities/ActivityList';
 import { fetchActivities } from '@/lib/api';
 import { useQuery } from '@tanstack/react-query';
 import { Loader2 } from 'lucide-react';
+import { useSearchParams } from 'react-router-dom';
 
 export default function Activities() {
+  const [searchParams] = useSearchParams();
+  const activityId = searchParams.get('activity');
+  
   const { data: activities, isLoading, error } = useQuery({
     queryKey: ['activities'],
     queryFn: () => fetchActivities({ limit: 100 }),
@@ -39,7 +43,7 @@ export default function Activities() {
             </p>
           </div>
         ) : (
-          <ActivityList activities={activities || []} />
+          <ActivityList activities={activities || []} initialExpandedId={activityId || null} />
         )}
       </div>
     </AppLayout>

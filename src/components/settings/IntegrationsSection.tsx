@@ -38,7 +38,7 @@ const integrations: Integration[] = [
     description: 'Import workouts and physiological metrics from Garmin devices',
     icon: Watch,
     iconColor: 'text-[#007CC3]',
-    status: 'disconnected',
+    status: 'coming-soon',
   },
   {
     id: 'whoop',

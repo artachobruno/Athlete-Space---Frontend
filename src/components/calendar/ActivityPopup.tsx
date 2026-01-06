@@ -5,6 +5,7 @@ import { Footprints, Bike, Waves, Clock, Route, Mountain, Heart, Zap, MessageCir
 import { cn } from '@/lib/utils';
 import { useNavigate } from 'react-router-dom';
 import type { PlannedWorkout, CompletedActivity } from '@/types';
+import { useUnitSystem } from '@/hooks/useUnitSystem';
 
 interface ActivityPopupProps {
   open: boolean;
@@ -45,13 +46,18 @@ export function ActivityPopup({
   onAskCoach 
 }: ActivityPopupProps) {
   const navigate = useNavigate();
+  const { convertDistance, convertElevation } = useUnitSystem();
   const workout = plannedWorkout;
   const activity = completedActivity;
   const SportIcon = sportIcons[workout?.sport || activity?.sport || 'running'];
 
   const handleViewDetails = () => {
     onOpenChange(false);
-    navigate('/activities');
+    if (activity?.id) {
+      navigate(`/activities?activity=${activity.id}`);
+    } else {
+      navigate('/activities');
+    }
   };
 
   if (!workout && !activity) return null;
@@ -100,13 +106,19 @@ export function ActivityPopup({
             {(workout?.distance || activity?.distance) && (
               <span className="flex items-center gap-1.5">
                 <Route className="h-4 w-4" />
-                {((workout?.distance || activity?.distance) || 0).toFixed(1)}km
+                {(() => {
+                  const dist = convertDistance((workout?.distance || activity?.distance) || 0);
+                  return `${dist.value.toFixed(1)} ${dist.unit}`;
+                })()}
               </span>
             )}
             {activity?.elevation && (
               <span className="flex items-center gap-1.5">
                 <Mountain className="h-4 w-4" />
-                {activity.elevation.toFixed(1)}m
+                {(() => {
+                  const elev = convertElevation(activity.elevation);
+                  return `${elev.value.toFixed(1)} ${elev.unit}`;
+                })()}
               </span>
             )}
           </div>

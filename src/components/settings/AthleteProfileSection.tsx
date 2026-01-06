@@ -10,6 +10,7 @@ import { User, Save, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { fetchUserProfile, updateUserProfile } from '@/lib/api';
 import { toast } from '@/hooks/use-toast';
+import { useQueryClient } from '@tanstack/react-query';
 
 interface ProfileState {
   name: string;
@@ -23,10 +24,11 @@ interface ProfileState {
 }
 
 export function AthleteProfileSection() {
+  const queryClient = useQueryClient();
   const [profile, setProfile] = useState<ProfileState>({
     name: '',
     email: '',
-    gender: 'male',
+    gender: '',
     weight: '',
     unitSystem: 'imperial',
     location: '',
@@ -57,7 +59,7 @@ export function AthleteProfileSection() {
       const profileData: ProfileState = {
         name: userProfile.name || '',
         email: (userProfile as { email?: string }).email || '',
-        gender: (userProfile as { gender?: string }).gender || 'male',
+        gender: (userProfile as { gender?: string }).gender || '',
         weight: (userProfile as { weight?: number | string }).weight?.toString() || '',
         unitSystem: (userProfile as { unitSystem?: 'imperial' | 'metric' }).unitSystem || 'imperial',
         location: (userProfile as { location?: string }).location || '',
@@ -113,6 +115,8 @@ export function AthleteProfileSection() {
       await updateUserProfile(updateData);
       setInitialProfile({ ...profile });
       setHasChanges(false);
+      // Invalidate queries to update unit system across the app
+      await queryClient.invalidateQueries({ queryKey: ['userProfile'] });
       toast({
         title: 'Profile updated',
         description: 'Your profile has been saved successfully',
@@ -192,17 +196,16 @@ export function AthleteProfileSection() {
           <div className="space-y-2">
             <Label htmlFor="gender">Gender</Label>
             <Select
-              value={profile.gender || 'male'}
+              value={profile.gender || ''}
               onValueChange={(value) => setProfile({ ...profile, gender: value })}
             >
               <SelectTrigger id="gender">
-                <SelectValue />
+                <SelectValue placeholder="Not specified" />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="">Not specified</SelectItem>
                 <SelectItem value="male">Male</SelectItem>
                 <SelectItem value="female">Female</SelectItem>
-                <SelectItem value="other">Other</SelectItem>
-                <SelectItem value="prefer-not-to-say">Prefer not to say</SelectItem>
               </SelectContent>
             </Select>
           </div>

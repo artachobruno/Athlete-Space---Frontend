@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { format, parseISO } from 'date-fns';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -11,9 +11,11 @@ import {
   Bot, ChevronDown, ChevronUp
 } from 'lucide-react';
 import { ActivityExpandedContent } from './ActivityExpandedContent';
+import { useUnitSystem } from '@/hooks/useUnitSystem';
 
 interface ActivityListProps {
   activities: CompletedActivity[];
+  initialExpandedId?: string | null;
 }
 
 const sportIcons = {
@@ -23,8 +25,23 @@ const sportIcons = {
   triathlon: Footprints,
 };
 
-export function ActivityList({ activities }: ActivityListProps) {
-  const [expandedId, setExpandedId] = useState<string | null>(null);
+export function ActivityList({ activities, initialExpandedId = null }: ActivityListProps) {
+  const [expandedId, setExpandedId] = useState<string | null>(initialExpandedId);
+  const expandedRef = useRef<HTMLDivElement>(null);
+  const { convertDistance, convertElevation } = useUnitSystem();
+  
+  // Expand the activity if initialExpandedId is provided
+  useEffect(() => {
+    if (initialExpandedId && activities.length > 0) {
+      setExpandedId(initialExpandedId);
+      // Scroll to the expanded activity after a delay to ensure it's rendered
+      setTimeout(() => {
+        if (expandedRef.current) {
+          expandedRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 300);
+    }
+  }, [initialExpandedId, activities.length]);
 
   const toggleExpand = (id: string) => {
     setExpandedId(expandedId === id ? null : id);
@@ -74,15 +91,20 @@ export function ActivityList({ activities }: ActivityListProps) {
           })() : 'Unknown date';
 
           return (
-            <Collapsible
+            <div
               key={activity.id}
-              open={isExpanded}
-              onOpenChange={() => toggleExpand(activity.id)}
+              ref={isExpanded && initialExpandedId === activity.id ? expandedRef : null}
             >
-              <Card className={cn(
-                'transition-all',
-                isExpanded && 'ring-2 ring-accent'
-              )}>
+              <Collapsible
+                open={isExpanded}
+                onOpenChange={() => toggleExpand(activity.id)}
+              >
+                <Card 
+                  className={cn(
+                    'transition-all',
+                    isExpanded && 'ring-2 ring-accent'
+                  )}
+                >
                 <CollapsibleTrigger asChild>
                   <CardContent className="p-4 cursor-pointer hover:bg-muted/30 transition-colors">
                     {/* Header */}
@@ -118,7 +140,10 @@ export function ActivityList({ activities }: ActivityListProps) {
                     </span>
                     <span className="flex items-center gap-1">
                       <Route className="h-4 w-4" />
-                      {(activity.distance || 0).toFixed(1)} km
+                      {(() => {
+                        const dist = convertDistance(activity.distance || 0);
+                        return `${dist.value.toFixed(1)} ${dist.unit}`;
+                      })()}
                     </span>
                     {activity.avgHeartRate && (
                       <span className="flex items-center gap-1">
@@ -135,7 +160,10 @@ export function ActivityList({ activities }: ActivityListProps) {
                     {activity.elevation && (
                       <span className="flex items-center gap-1">
                         <Route className="h-4 w-4" />
-                        {activity.elevation.toFixed(1)} m
+                        {(() => {
+                          const elev = convertElevation(activity.elevation);
+                          return `${elev.value.toFixed(1)} ${elev.unit}`;
+                        })()}
                       </span>
                     )}
                     <span className="ml-auto font-medium text-foreground">
@@ -163,6 +191,7 @@ export function ActivityList({ activities }: ActivityListProps) {
               </CollapsibleContent>
             </Card>
           </Collapsible>
+        </div>
         );
       })}
     </div>

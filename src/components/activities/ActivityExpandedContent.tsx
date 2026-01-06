@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { ActivityCharts } from './ActivityCharts';
 import { ActivityMap } from './ActivityMap';
+import { useUnitSystem } from '@/hooks/useUnitSystem';
 
 interface ActivityExpandedContentProps {
   activity: CompletedActivity;
@@ -22,12 +23,18 @@ const mockPlannedData = {
 };
 
 export function ActivityExpandedContent({ activity }: ActivityExpandedContentProps) {
-  // Calculate comparison
+  const { convertDistance, convertElevation } = useUnitSystem();
+  
+  // Calculate comparison (using km for calculations, convert for display)
   const durationDiff = ((activity.duration - mockPlannedData.duration) / mockPlannedData.duration) * 100;
   const distanceDiff = ((activity.distance - mockPlannedData.distance) / mockPlannedData.distance) * 100;
   const hrDiff = activity.avgHeartRate
     ? ((activity.avgHeartRate - mockPlannedData.avgHeartRate) / mockPlannedData.avgHeartRate) * 100
     : 0;
+  
+  const distanceDisplay = convertDistance(activity.distance);
+  const plannedDistanceDisplay = convertDistance(mockPlannedData.distance);
+  const elevationDisplay = activity.elevation ? convertElevation(activity.elevation) : null;
 
   const getComplianceStatus = () => {
     const avgDiff = Math.abs(durationDiff) + Math.abs(distanceDiff) + Math.abs(hrDiff);
@@ -73,9 +80,9 @@ export function ActivityExpandedContent({ activity }: ActivityExpandedContentPro
         <MetricCard
           icon={Route}
           label="Distance"
-          value={`${activity.distance} km`}
+          value={`${distanceDisplay.value.toFixed(1)} ${distanceDisplay.unit}`}
           diff={distanceDiff}
-          planned={`${mockPlannedData.distance} km`}
+          planned={`${plannedDistanceDisplay.value.toFixed(1)} ${plannedDistanceDisplay.unit}`}
         />
         {activity.avgHeartRate && (
           <MetricCard
@@ -94,11 +101,11 @@ export function ActivityExpandedContent({ activity }: ActivityExpandedContentPro
             planned={`${mockPlannedData.avgPower} W`}
           />
         )}
-        {activity.elevation && (
+        {elevationDisplay && (
           <MetricCard
             icon={Mountain}
             label="Elevation"
-            value={`${activity.elevation} m`}
+            value={`${elevationDisplay.value.toFixed(1)} ${elevationDisplay.unit}`}
           />
         )}
       </div>

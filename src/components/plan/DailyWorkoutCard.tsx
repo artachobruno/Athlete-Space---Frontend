@@ -7,6 +7,7 @@ import {
   Footprints, Bike, Waves, Clock, Route, Heart,
   CheckCircle2, XCircle, AlertCircle, Moon, RefreshCw
 } from 'lucide-react';
+import { useUnitSystem } from '@/hooks/useUnitSystem';
 
 interface DailyWorkoutCardProps {
   date: Date;
@@ -48,6 +49,7 @@ const coachNotes: Record<string, string> = {
 };
 
 export function DailyWorkoutCard({ date, dateId, workout, completed, status, dailyDecision }: DailyWorkoutCardProps) {
+  const { convertDistance } = useUnitSystem();
   const isRestDay = !workout;
   const Icon = workout ? sportIcons[workout.sport] : Moon;
   const decisionInfo = dailyDecision ? decisionConfig[dailyDecision.decision] : null;
@@ -134,7 +136,10 @@ export function DailyWorkoutCard({ date, dateId, workout, completed, status, dai
                   {workout.distance && (
                     <span className="flex items-center gap-1">
                       <Route className="h-4 w-4" />
-                      {workout.distance} km
+                      {(() => {
+                        const dist = convertDistance(workout.distance);
+                        return `${dist.value.toFixed(1)} ${dist.unit}`;
+                      })()}
                     </span>
                   )}
                 </div>
@@ -172,7 +177,10 @@ export function DailyWorkoutCard({ date, dateId, workout, completed, status, dai
                       </span>
                       <span className="flex items-center gap-1 text-foreground">
                         <Route className="h-4 w-4 text-load-fresh" />
-                        {completed.distance} km
+                        {(() => {
+                          const dist = convertDistance(completed.distance);
+                          return `${dist.value.toFixed(1)} ${dist.unit}`;
+                        })()}
                       </span>
                       {completed.avgHeartRate && (
                         <span className="flex items-center gap-1 text-foreground">

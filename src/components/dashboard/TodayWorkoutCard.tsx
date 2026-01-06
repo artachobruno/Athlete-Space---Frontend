@@ -5,6 +5,7 @@ import { format } from 'date-fns';
 import { Clock, Route, Zap, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useQuery } from '@tanstack/react-query';
+import { useUnitSystem } from '@/hooks/useUnitSystem';
 
 const intentColors = {
   aerobic: 'bg-training-aerobic/15 text-training-aerobic border-training-aerobic/30',
@@ -27,6 +28,7 @@ const mapTypeToIntent = (type: string | null | undefined): 'aerobic' | 'threshol
 };
 
 export function TodayWorkoutCard() {
+  const { convertDistance } = useUnitSystem();
   const today = format(new Date(), 'yyyy-MM-dd');
   const { data: todayData, isLoading, error } = useQuery({
     queryKey: ['calendarToday', today],
@@ -97,7 +99,10 @@ export function TodayWorkoutCard() {
           {todayWorkout.distance_km && (
             <div className="flex items-center gap-2 text-muted-foreground">
               <Route className="h-4 w-4" />
-              <span>{todayWorkout.distance_km} km</span>
+              <span>{(() => {
+                const dist = convertDistance(todayWorkout.distance_km);
+                return `${dist.value.toFixed(1)} ${dist.unit}`;
+              })()}</span>
             </div>
           )}
           <div className="flex items-center gap-2 text-muted-foreground">
