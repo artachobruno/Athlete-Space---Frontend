@@ -1,6 +1,7 @@
 import { AppLayout } from '@/components/layout/AppLayout';
 import { AthleteProfileSection } from '@/components/settings/AthleteProfileSection';
 import { TrainingPreferencesSection } from '@/components/settings/TrainingPreferencesSection';
+import { AppearanceSection } from '@/components/settings/AppearanceSection';
 import { IntegrationsSection } from '@/components/settings/IntegrationsSection';
 
 export default function Settings() {
@@ -17,6 +18,9 @@ export default function Settings() {
 
         {/* Training Preferences */}
         <TrainingPreferencesSection />
+
+        {/* Appearance */}
+        <AppearanceSection />
 
         {/* Integrations */}
         <IntegrationsSection />
