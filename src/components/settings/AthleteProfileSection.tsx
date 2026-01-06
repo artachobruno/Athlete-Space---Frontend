@@ -56,10 +56,11 @@ export function AthleteProfileSection() {
     setIsLoading(true);
     try {
       const userProfile = await fetchUserProfile();
+      const genderValue = (userProfile as { gender?: string }).gender || '';
       const profileData: ProfileState = {
         name: userProfile.name || '',
         email: (userProfile as { email?: string }).email || '',
-        gender: (userProfile as { gender?: string }).gender || '',
+        gender: genderValue || '', // Keep empty string in state, convert for Select display
         weight: (userProfile as { weight?: number | string }).weight?.toString() || '',
         unitSystem: (userProfile as { unitSystem?: 'imperial' | 'metric' }).unitSystem || 'imperial',
         location: (userProfile as { location?: string }).location || '',
@@ -92,7 +93,7 @@ export function AthleteProfileSection() {
       const updateData: Record<string, unknown> = {
         name: profile.name,
         email: profile.email,
-        gender: profile.gender,
+        gender: profile.gender === 'not-specified' ? '' : profile.gender,
         location: profile.location,
         unitSystem: profile.unitSystem,
       };
@@ -196,14 +197,14 @@ export function AthleteProfileSection() {
           <div className="space-y-2">
             <Label htmlFor="gender">Gender</Label>
             <Select
-              value={profile.gender || ''}
-              onValueChange={(value) => setProfile({ ...profile, gender: value })}
+              value={profile.gender || 'not-specified'}
+              onValueChange={(value) => setProfile({ ...profile, gender: value === 'not-specified' ? '' : value })}
             >
               <SelectTrigger id="gender">
                 <SelectValue placeholder="Not specified" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Not specified</SelectItem>
+                <SelectItem value="not-specified">Not specified</SelectItem>
                 <SelectItem value="male">Male</SelectItem>
                 <SelectItem value="female">Female</SelectItem>
               </SelectContent>
