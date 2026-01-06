@@ -70,9 +70,12 @@ export interface ActivityStreamsResponse {
   message?: string;
 }
 
+// Axios instance configured for CORS
+// - withCredentials: true enables sending cookies/credentials with cross-origin requests
+// - Backend CORS is configured to allow requests from https://pace-ai.onrender.com
 export const api = axios.create({
   baseURL: getBaseURL(),
-  withCredentials: true,
+  withCredentials: true, // Required for CORS with credentials
   timeout: 30000,
 });
 
@@ -435,7 +438,7 @@ const normalizeError = (error: unknown): ApiError => {
       
       if (isCrossOrigin && axiosError.message.includes("CORS") || 
           (typeof axiosError.request !== "undefined" && axiosError.request.status === 0)) {
-        message = "CORS error: Backend server may be down or not configured to allow requests from this domain. Please check backend CORS settings and server status.";
+        message = "Network error: Unable to connect to the backend server. This may be a temporary connectivity issue.";
       } else {
         message = "Network error. Please check your connection and ensure the backend server is running.";
       }
@@ -472,6 +475,7 @@ const normalizeError = (error: unknown): ApiError => {
   };
 };
 
+// Request interceptor: Adds Authorization header for authenticated requests
 api.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
     if (config.headers) {
@@ -479,6 +483,7 @@ api.interceptors.request.use(
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
       }
+      // Content-Type is set automatically by axios for JSON requests
     }
     return config;
   },
@@ -506,16 +511,15 @@ api.interceptors.response.use(
       return Promise.reject(normalizedError);
     }
     
-    // CORS/network errors are expected when backend is misconfigured or down
-    // Suppress them completely to reduce console noise
+    // CORS/network errors - should be rare now that backend CORS is configured
+    // Log them for debugging but don't spam the console
     if (normalizedError.code === "ERR_NETWORK" || 
         (normalizedError.message && normalizedError.message.includes("CORS"))) {
-      // Only log once per session in development mode
-      if (!corsErrorLogged && import.meta.env.DEV) {
-        console.warn("[API] CORS/Network error detected. This is a backend configuration issue.");
+      // Log once per session to help identify any remaining CORS issues
+      if (!corsErrorLogged) {
+        console.warn("[API] CORS/Network error detected. If this persists, check backend CORS configuration.");
         corsErrorLogged = true;
       }
-      // In production, completely suppress CORS errors
     } else {
       // Log other errors normally (but not 503)
       console.error("[API] Request failed:", normalizedError);
