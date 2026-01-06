@@ -254,7 +254,7 @@ export const fetchActivities = async (params?: { limit?: number; offset?: number
         }
         
         // Must have a date (try multiple possible field names)
-        const dateField = act.date || act.start_date || act.start_date_local || act.activity_date;
+        const dateField = act.start_time || act.date || act.start_date || act.start_date_local || act.activity_date;
         if (!dateField || (typeof dateField !== 'string' && !(dateField instanceof Date))) {
           console.log('[API] Activity missing date field:', act.id, 'Available fields:', Object.keys(act));
           return false;
@@ -279,9 +279,9 @@ export const fetchActivities = async (params?: { limit?: number; offset?: number
         const act = activity as Record<string, unknown>;
         
         // Map backend fields to frontend format
-        const dateField = act.date || act.start_date || act.start_date_local || act.activity_date || '';
-        const sportField = act.sport || act.type || act.activity_type || act.sport_type || '';
-        const titleField = act.title || act.name || act.activity_name || 'Untitled Activity';
+        const dateField = act.start_time || act.date || act.start_date || act.start_date_local || act.activity_date || '';
+        const sportField = act.type || act.sport || act.activity_type || act.sport_type || '';
+        const titleField = act.title || act.name || act.activity_name || `${sportField} Activity`;
         
         // Normalize date
         let dateStr = '';
@@ -308,7 +308,9 @@ export const fetchActivities = async (params?: { limit?: number; offset?: number
         
         // Map duration (could be in seconds or minutes)
         let duration = 0;
-        if (typeof act.duration === 'number') {
+        if (typeof act.duration_seconds === 'number') {
+          duration = Math.round(act.duration_seconds / 60); // Convert seconds to minutes
+        } else if (typeof act.duration === 'number') {
           duration = act.duration > 1000 ? Math.round(act.duration / 60) : act.duration; // If > 1000, assume seconds
         } else if (typeof act.moving_time === 'number') {
           duration = Math.round(act.moving_time / 60);
@@ -320,10 +322,24 @@ export const fetchActivities = async (params?: { limit?: number; offset?: number
         
         // Map distance (could be in meters or km)
         let distance = 0;
-        if (typeof act.distance === 'number') {
+        if (typeof act.distance_meters === 'number') {
+          distance = act.distance_meters / 1000; // Convert meters to km
+        } else if (typeof act.distance === 'number') {
           distance = act.distance > 100 ? act.distance / 1000 : act.distance; // If > 100, assume meters
         } else if (typeof act.distance_km === 'number') {
           distance = act.distance_km;
+        }
+        
+        // Map elevation
+        let elevation: number | undefined = undefined;
+        if (typeof act.elevation_gain_meters === 'number') {
+          elevation = act.elevation_gain_meters;
+        } else if (typeof act.total_elevation_gain === 'number') {
+          elevation = act.total_elevation_gain;
+        } else if (typeof act.elevation_gain === 'number') {
+          elevation = act.elevation_gain;
+        } else if (typeof act.elevation === 'number') {
+          elevation = act.elevation;
         }
         
         return {
@@ -340,9 +356,7 @@ export const fetchActivities = async (params?: { limit?: number; offset?: number
           avgPower: typeof act.average_watts === 'number' ? act.average_watts :
                    typeof act.avg_power === 'number' ? act.avg_power :
                    typeof act.power === 'number' ? act.power : undefined,
-          elevation: typeof act.total_elevation_gain === 'number' ? act.total_elevation_gain :
-                    typeof act.elevation_gain === 'number' ? act.elevation_gain :
-                    typeof act.elevation === 'number' ? act.elevation : undefined,
+          elevation,
           trainingLoad: typeof act.training_load === 'number' ? act.training_load :
                        typeof act.tss === 'number' ? act.tss :
                        typeof act.stress_score === 'number' ? act.stress_score :
