@@ -74,6 +74,7 @@ export function DailyWorkoutList() {
 
       return {
         date,
+        dateStr,
         workout,
         completed: completed || undefined,
         status,
@@ -101,6 +102,7 @@ export function DailyWorkoutList() {
           <DailyWorkoutCard
             key={day.date.toString()}
             date={day.date}
+            dateId={`workout-${day.dateStr}`}
             workout={day.workout}
             completed={day.completed}
             status={day.status}

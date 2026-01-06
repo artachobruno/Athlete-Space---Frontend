@@ -36,7 +36,11 @@ const mapSessionToWorkout = (session: import('@/lib/api').CalendarSession): Plan
   };
 };
 
-export function WeeklyStructureStrip() {
+interface WeeklyStructureStripProps {
+  onDayClick?: (dateStr: string) => void;
+}
+
+export function WeeklyStructureStrip({ onDayClick }: WeeklyStructureStripProps) {
   const today = new Date();
   const weekStart = startOfWeek(today, { weekStartsOn: 1 });
   const weekStartStr = format(weekStart, 'yyyy-MM-dd');
@@ -56,6 +60,7 @@ export function WeeklyStructureStrip() {
       
       return {
         date,
+        dateStr,
         dayName: format(date, 'EEE'),
         dayNum: format(date, 'd'),
         workout,
@@ -73,8 +78,9 @@ export function WeeklyStructureStrip() {
         return (
           <div
             key={day.date.toString()}
+            onClick={() => onDayClick?.(day.dateStr)}
             className={cn(
-              'flex-1 min-w-[80px] p-3 rounded-lg border text-center transition-all',
+              'flex-1 min-w-[80px] p-3 rounded-lg border text-center transition-all cursor-pointer hover:border-accent/50',
               day.isToday
                 ? 'border-accent bg-accent/5 ring-1 ring-accent'
                 : 'border-border bg-card'
