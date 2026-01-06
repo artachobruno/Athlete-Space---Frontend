@@ -4,6 +4,7 @@ import { TodayWorkoutCard } from '@/components/dashboard/TodayWorkoutCard';
 import { WeeklyLoadCard } from '@/components/dashboard/WeeklyLoadCard';
 import { RecentActivitiesCard } from '@/components/dashboard/RecentActivitiesCard';
 import { LoadStatusCard } from '@/components/dashboard/LoadStatusCard';
+import { CoachChatWidget } from '@/components/dashboard/CoachChatWidget';
 
 export default function Dashboard() {
   return (
@@ -32,12 +33,15 @@ export default function Dashboard() {
         </div>
 
         {/* Secondary row */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Weekly Load */}
           <WeeklyLoadCard />
 
           {/* Recent Activities */}
           <RecentActivitiesCard />
+
+          {/* Coach Chat Widget */}
+          <CoachChatWidget />
         </div>
       </div>
     </AppLayout>
