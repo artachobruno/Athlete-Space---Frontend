@@ -485,6 +485,9 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
+// Track if we've already logged a CORS error to avoid console spam
+let corsErrorLogged = false;
+
 api.interceptors.response.use(
   (response) => response.data,
   (error) => {
@@ -497,7 +500,20 @@ api.interceptors.response.use(
       return Promise.reject(normalizedError);
     }
     
-    console.error("[API] Request failed:", normalizedError);
+    // CORS/network errors are expected when backend is misconfigured or down
+    // Log them as warnings instead of errors to reduce console noise
+    if (normalizedError.code === "ERR_NETWORK" || 
+        (normalizedError.message && normalizedError.message.includes("CORS"))) {
+      // Only log once per session to avoid spam
+      if (!corsErrorLogged) {
+        console.warn("[API] CORS/Network error detected. This is a backend configuration issue. The backend server needs to allow requests from this domain and include CORS headers in all responses.");
+        corsErrorLogged = true;
+      }
+    } else {
+      // Log other errors normally
+      console.error("[API] Request failed:", normalizedError);
+    }
+    
     return Promise.reject(normalizedError);
   }
 );

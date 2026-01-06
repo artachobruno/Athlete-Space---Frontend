@@ -54,6 +54,17 @@ export interface IntelligenceError {
 const handleIntelligenceError = (error: unknown): IntelligenceError => {
   if (error && typeof error === "object" && "message" in error) {
     const apiError = error as ApiError;
+    
+    // Handle CORS errors specifically
+    if (apiError.code === "ERR_NETWORK" || 
+        (apiError.message && apiError.message.includes("CORS"))) {
+      return {
+        message: "Unable to connect to the intelligence service. The backend server may be down or not configured to allow requests from this domain.",
+        status: apiError.status,
+        code: apiError.code,
+      };
+    }
+    
     return {
       message: apiError.message || "Failed to load intelligence",
       status: apiError.status,
@@ -125,7 +136,8 @@ export const getWeekIntelligence = async (): Promise<WeeklyIntent | null> => {
   } catch (error) {
     const intelligenceError = handleIntelligenceError(error);
     // 503 means data isn't ready yet - this is expected, not an error
-    if (intelligenceError.status !== 503) {
+    // CORS/network errors are handled by the API interceptor, so we don't log them here
+    if (intelligenceError.status !== 503 && intelligenceError.code !== "ERR_NETWORK") {
       console.error("[Intelligence] Failed to load week intelligence:", error);
     }
     throw intelligenceError;
@@ -144,7 +156,8 @@ export const getTodayIntelligence = async (): Promise<DailyDecision | null> => {
   } catch (error) {
     const intelligenceError = handleIntelligenceError(error);
     // 503 means data isn't ready yet - this is expected, not an error
-    if (intelligenceError.status !== 503) {
+    // CORS/network errors are handled by the API interceptor, so we don't log them here
+    if (intelligenceError.status !== 503 && intelligenceError.code !== "ERR_NETWORK") {
       console.error("[Intelligence] Failed to load today intelligence:", error);
     }
     throw intelligenceError;
