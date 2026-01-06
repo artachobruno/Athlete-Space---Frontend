@@ -38,12 +38,12 @@ export function ActivityExpandedContent({ activity }: ActivityExpandedContentPro
 
   // Extract route coordinates from streams
   const routeCoordinates = useMemo<[number, number][] | undefined>(() => {
-    const latlng = streamsData?.streams_data?.latlng;
-    if (!latlng || latlng.length === 0) return undefined;
+    const routePoints = streamsData?.route_points;
+    if (!routePoints || routePoints.length === 0) return undefined;
     
     // Convert number[][] to [number, number][]
-    // latlng is already in format [[lat, lng], [lat, lng], ...]
-    return latlng.map((coord): [number, number] => {
+    // route_points is in format [[lat, lng], [lat, lng], ...]
+    return routePoints.map((coord): [number, number] => {
       if (Array.isArray(coord) && coord.length >= 2) {
         return [coord[0], coord[1]];
       }

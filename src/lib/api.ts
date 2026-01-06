@@ -57,23 +57,18 @@ export interface SeasonResponse {
 
 // Activity streams types
 export interface StreamsData {
-  time?: number[];
-  latlng?: number[][];
-  heartrate?: number[];
-  distance?: number[];
-  altitude?: number[];
-  velocity_smooth?: number[];
-  cadence?: number[];
-  watts?: number[];
-  grade_smooth?: number[];
-  temp?: number[];
+  time: number[]; // Time in seconds from start
+  route_points: number[][]; // GPS coordinates [[lat, lng], ...]
+  elevation: number[]; // Elevation in meters
+  pace: (number | null)[]; // Pace in min/km (null when stopped)
+  heartrate?: number[]; // Heart rate in bpm (if available)
+  distance: number[]; // Cumulative distance in meters
+  power?: number[]; // Power in watts (if available)
+  cadence?: number[]; // Cadence in rpm (if available)
+  data_points: number; // Total number of data points
 }
 
-export interface ActivityStreamsResponse {
-  success?: boolean;
-  streams_data?: StreamsData | null;
-  message?: string;
-}
+export interface ActivityStreamsResponse extends StreamsData {}
 
 // Axios instance configured for CORS
 // - withCredentials: true enables sending cookies/credentials with cross-origin requests
@@ -423,11 +418,39 @@ export const fetchActivity = async (id: string): Promise<import("../types").Comp
 
 /**
  * Fetches activity streams (GPS, heart rate, power, etc.).
+ * Follows the workflow:
+ * 1. Check if streams exist via activity endpoint (has_streams field)
+ * 2. If not available, POST /activities/{id}/fetch-streams to fetch from Strava
+ * 3. GET /activities/{id}/streams to get formatted data
  */
 export const fetchActivityStreams = async (id: string): Promise<ActivityStreamsResponse> => {
   console.log("[API] Fetching activity streams", id);
   try {
-    const response = await api.post(`/activities/${id}/fetch-streams`);
+    // First, try to get the activity to check if streams are available
+    let activity;
+    try {
+      activity = await api.get(`/activities/${id}`);
+    } catch {
+      // If we can't get activity, proceed to fetch streams anyway
+    }
+    
+    // Check if streams are already available
+    const hasStreams = (activity as { has_streams?: boolean })?.has_streams;
+    
+    // If streams are not available, fetch them from Strava first
+    if (!hasStreams) {
+      console.log("[API] Streams not available, fetching from Strava...");
+      try {
+        await api.post(`/activities/${id}/fetch-streams`);
+        // Wait a bit for backend to process
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+      } catch (error) {
+        console.warn("[API] Failed to fetch streams from Strava, trying to get existing streams anyway:", error);
+      }
+    }
+    
+    // Get the formatted streams data
+    const response = await api.get(`/activities/${id}/streams`);
     return response as unknown as ActivityStreamsResponse;
   } catch (error) {
     console.error("[API] Failed to fetch activity streams:", error);

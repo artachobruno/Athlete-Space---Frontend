@@ -19,95 +19,135 @@ interface ActivityChartsProps {
   activity: CompletedActivity;
 }
 
-// Generate mock time-series data for the activity
-function generateMockData(duration: number, avgHr?: number, avgPower?: number, elevationData?: number[]) {
-  const points = Math.min(duration, 60); // Max 60 data points
-  const interval = duration / points;
+// Process real stream data from backend API only
+function processStreamData(
+  streamsData: { time?: number[]; route_points?: number[][]; elevation?: number[]; pace?: (number | null)[]; heartrate?: number[]; power?: number[]; cadence?: number[] } | undefined
+) {
+  // Only process if we have time stream data from backend
+  if (!streamsData?.time || streamsData.time.length === 0) {
+    return [];
+  }
   
-  // Use real elevation data if available, otherwise generate mock
-  const hasRealElevation = elevationData && elevationData.length > 0;
-  const elevationPoints = hasRealElevation ? elevationData.length : points;
-  const elevationInterval = hasRealElevation ? Math.floor(elevationData.length / points) : 1;
+  const timeArray = streamsData.time;
+  const maxPoints = Math.min(timeArray.length, 200); // Limit to 200 points for performance
+  const step = Math.max(1, Math.floor(timeArray.length / maxPoints));
   
-  return Array.from({ length: points }, (_, i) => {
-    const time = Math.round(i * interval);
-    const progress = i / points;
-    
-    // Simulate warm-up, main effort, cool-down pattern
-    let hrMultiplier = 1;
-    let paceMultiplier = 1;
-    
-    if (progress < 0.15) {
-      // Warm-up
-      hrMultiplier = 0.85 + (progress / 0.15) * 0.15;
-      paceMultiplier = 1.1 - (progress / 0.15) * 0.1;
-    } else if (progress > 0.9) {
-      // Cool-down
-      hrMultiplier = 1 - ((progress - 0.9) / 0.1) * 0.1;
-      paceMultiplier = 1 + ((progress - 0.9) / 0.1) * 0.1;
-    }
-    
-    // Add some natural variation
-    const variation = (Math.random() - 0.5) * 0.1;
-    
-    // Get elevation from real data or generate mock
-    let elevation: number;
-    if (hasRealElevation) {
-      const elevationIndex = Math.min(i * elevationInterval, elevationData.length - 1);
-      elevation = elevationData[elevationIndex] || 0;
-    } else {
-      elevation = 50 + Math.sin(progress * Math.PI * 4) * 30 + Math.random() * 10;
-    }
-    
-    return {
-      time,
-      timeLabel: `${Math.floor(time / 60)}:${String(time % 60).padStart(2, '0')}`,
-      heartRate: avgHr ? Math.round(avgHr * (hrMultiplier + variation)) : undefined,
-      pace: 5.5 + (paceMultiplier + variation - 1) * 0.5, // min/km (will be converted for display)
-      power: avgPower ? Math.round(avgPower * (hrMultiplier + variation)) : undefined,
-      elevation,
-    };
-  });
+  const hasHeartRate = streamsData.heartrate && streamsData.heartrate.length > 0;
+  const hasPace = streamsData.pace && streamsData.pace.length > 0;
+  const hasPower = streamsData.power && streamsData.power.length > 0;
+  const hasElevation = streamsData.elevation && streamsData.elevation.length > 0;
+  const hasCadence = streamsData.cadence && streamsData.cadence.length > 0;
+  
+  return timeArray
+    .filter((_, index) => index % step === 0)
+    .slice(0, maxPoints)
+    .map((timeSeconds, index) => {
+      const actualIndex = index * step;
+      const time = Math.round(timeSeconds);
+      const timeLabel = `${Math.floor(time / 60)}:${String(time % 60).padStart(2, '0')}`;
+      
+      // Get heart rate from real stream data only
+      const heartRate = hasHeartRate && streamsData.heartrate
+        ? (streamsData.heartrate[actualIndex] !== null && streamsData.heartrate[actualIndex] !== undefined
+            ? Math.round(streamsData.heartrate[actualIndex])
+            : undefined)
+        : undefined;
+      
+      // Get pace from real stream data (already in min/km, null when stopped)
+      let pace: number | undefined;
+      if (hasPace && streamsData.pace) {
+        const paceValue = streamsData.pace[actualIndex];
+        if (paceValue !== null && paceValue !== undefined && paceValue > 0) {
+          pace = paceValue;
+        }
+      }
+      
+      // Get power from real stream data only
+      const power = hasPower && streamsData.power
+        ? (streamsData.power[actualIndex] !== null && streamsData.power[actualIndex] !== undefined
+            ? Math.round(streamsData.power[actualIndex])
+            : undefined)
+        : undefined;
+      
+      // Get elevation from real stream data only
+      const elevation = hasElevation && streamsData.elevation
+        ? (streamsData.elevation[actualIndex] !== null && streamsData.elevation[actualIndex] !== undefined
+            ? streamsData.elevation[actualIndex]
+            : 0)
+        : 0;
+      
+      // Get cadence from real stream data only
+      const cadence = hasCadence && streamsData.cadence
+        ? (streamsData.cadence[actualIndex] !== null && streamsData.cadence[actualIndex] !== undefined
+            ? Math.round(streamsData.cadence[actualIndex])
+            : undefined)
+        : undefined;
+      
+      return {
+        time,
+        timeLabel,
+        heartRate,
+        pace: pace || undefined,
+        power,
+        elevation,
+        cadence,
+      };
+    });
 }
 
 export function ActivityCharts({ activity }: ActivityChartsProps) {
   const { convertPace, convertElevation, unitSystem } = useUnitSystem();
   
-  // Fetch activity streams to get real elevation data
-  const { data: streamsData } = useQuery({
+  // Fetch activity streams to get real time-series data
+  const { data: streamsData, isLoading: isLoadingStreams } = useQuery({
     queryKey: ['activityStreams', activity.id],
     queryFn: () => fetchActivityStreams(activity.id),
     retry: 1,
     enabled: !!activity.id,
   });
   
-  // Extract elevation data from streams
-  const elevationData = useMemo(() => {
-    const altitude = streamsData?.streams_data?.altitude;
-    if (altitude && Array.isArray(altitude) && altitude.length > 0) {
-      return altitude;
-    }
-    return undefined;
-  }, [streamsData]);
-  
+  // Process stream data - only use real backend API data
   const data = useMemo(
-    () => generateMockData(activity.duration, activity.avgHeartRate, activity.avgPower, elevationData),
-    [activity, elevationData]
+    () => processStreamData(streamsData),
+    [streamsData]
   );
-
-  const hasHeartRate = activity.avgHeartRate !== undefined;
-  const hasPower = activity.avgPower !== undefined;
+  
+  // Check if we have real data from streams
+  const hasData = data.length > 0;
+  
+  // Check which metrics we have from real stream data
+  const hasHeartRate = useMemo(() => {
+    return data.some((point) => point.heartRate !== undefined && point.heartRate > 0);
+  }, [data]);
+  
+  const hasPaceData = useMemo(() => {
+    return data.some((point) => point.pace !== undefined && point.pace > 0);
+  }, [data]);
+  
+  const hasPower = useMemo(() => {
+    return data.some((point) => point.power !== undefined && point.power > 0);
+  }, [data]);
+  
+  const hasElevation = useMemo(() => {
+    return data.some((point) => point.elevation !== undefined && point.elevation !== 0);
+  }, [data]);
+  
+  const hasCadence = useMemo(() => {
+    return data.some((point) => point.cadence !== undefined && point.cadence > 0);
+  }, [data]);
   
   // Convert pace data for display
   const paceData = useMemo(() => {
-    return data.map((point) => {
-      const converted = convertPace(point.pace);
-      return {
-        ...point,
-        paceDisplay: converted.value,
-        paceUnit: converted.unit,
-      };
-    });
+    return data
+      .filter((point) => point.pace !== undefined && point.pace > 0) // Filter out invalid pace values
+      .map((point) => {
+        const converted = convertPace(point.pace!);
+        return {
+          ...point,
+          paceDisplay: converted.value,
+          paceUnit: converted.unit,
+        };
+      });
   }, [data, convertPace]);
   
   // Convert elevation data for display
@@ -121,6 +161,24 @@ export function ActivityCharts({ activity }: ActivityChartsProps) {
       };
     });
   }, [data, convertElevation]);
+
+  // Show loading state while fetching streams
+  if (isLoadingStreams) {
+    return (
+      <div className="flex items-center justify-center py-12">
+        <p className="text-sm text-muted-foreground">Loading activity data...</p>
+      </div>
+    );
+  }
+
+  if (!hasData) {
+    return (
+      <div className="text-center py-12 text-muted-foreground">
+        <p className="text-sm">No stream data available for this activity</p>
+        <p className="text-xs mt-2">Stream data may not be available for this activity</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -174,11 +232,12 @@ export function ActivityCharts({ activity }: ActivityChartsProps) {
       )}
 
       {/* Pace Chart */}
-      <div>
-        <h5 className="text-sm font-medium text-foreground mb-3">Pace</h5>
-        <div className="h-48 bg-muted/30 rounded-lg p-2">
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={paceData} margin={{ top: 5, right: 5, left: 0, bottom: 5 }}>
+      {hasPaceData && (
+        <div>
+          <h5 className="text-sm font-medium text-foreground mb-3">Pace</h5>
+          <div className="h-48 bg-muted/30 rounded-lg p-2">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={paceData} margin={{ top: 5, right: 5, left: 0, bottom: 5 }}>
               <defs>
                 <linearGradient id="paceGradient" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor="hsl(var(--chart-1))" stopOpacity={0.3} />
@@ -223,7 +282,7 @@ export function ActivityCharts({ activity }: ActivityChartsProps) {
             </AreaChart>
           </ResponsiveContainer>
         </div>
-      </div>
+      )}
 
       {/* Power Chart */}
       {hasPower && (
@@ -274,58 +333,109 @@ export function ActivityCharts({ activity }: ActivityChartsProps) {
         </div>
       )}
 
-      {/* Elevation Chart */}
-      <div>
-        <h5 className="text-sm font-medium text-foreground mb-3">Elevation</h5>
-        <div className="h-48 bg-muted/30 rounded-lg p-2">
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={elevationDataDisplay} margin={{ top: 5, right: 5, left: 0, bottom: 5 }}>
-              <defs>
-                <linearGradient id="elevationGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="hsl(var(--chart-2))" stopOpacity={0.4} />
-                  <stop offset="95%" stopColor="hsl(var(--chart-2))" stopOpacity={0.1} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-              <XAxis
-                dataKey="timeLabel"
-                tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
-                axisLine={{ stroke: 'hsl(var(--border))' }}
-                tickLine={false}
-              />
-              <YAxis
-                domain={['dataMin - 10', 'dataMax + 10']}
-                tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
-                axisLine={false}
-                tickLine={false}
-                width={35}
-                tickFormatter={(value: number) => {
-                  return `${value.toFixed(0)}`;
-                }}
-              />
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: 'hsl(var(--card))',
-                  border: '1px solid hsl(var(--border))',
-                  borderRadius: '8px',
-                  fontSize: '12px',
-                }}
-                formatter={(value: number, name: string, props: { payload: { elevationUnit: string } }) => {
-                  const unit = props.payload.elevationUnit || (unitSystem === 'imperial' ? 'ft' : 'm');
-                  return [`${value.toFixed(1)} ${unit}`, 'Elevation'];
-                }}
-              />
-              <Area
-                type="monotone"
-                dataKey="elevationDisplay"
-                stroke="hsl(var(--chart-2))"
-                fill="url(#elevationGradient)"
-                strokeWidth={2}
-              />
-            </AreaChart>
-          </ResponsiveContainer>
+      {/* Cadence Chart */}
+      {hasCadence && (
+        <div>
+          <h5 className="text-sm font-medium text-foreground mb-3">Cadence</h5>
+          <div className="h-48 bg-muted/30 rounded-lg p-2">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={data} margin={{ top: 5, right: 5, left: 0, bottom: 5 }}>
+                <defs>
+                  <linearGradient id="cadenceGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="hsl(var(--chart-5))" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="hsl(var(--chart-5))" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                <XAxis
+                  dataKey="timeLabel"
+                  tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
+                  axisLine={{ stroke: 'hsl(var(--border))' }}
+                  tickLine={false}
+                />
+                <YAxis
+                  domain={['dataMin - 5', 'dataMax + 5']}
+                  tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
+                  axisLine={false}
+                  tickLine={false}
+                  width={35}
+                />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: 'hsl(var(--card))',
+                    border: '1px solid hsl(var(--border))',
+                    borderRadius: '8px',
+                    fontSize: '12px',
+                  }}
+                  formatter={(value: number) => [`${value} rpm`, 'Cadence']}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="cadence"
+                  stroke="hsl(var(--chart-5))"
+                  fill="url(#cadenceGradient)"
+                  strokeWidth={2}
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
         </div>
-      </div>
+      )}
+
+      {/* Elevation Chart */}
+      {hasElevation && (
+        <div>
+          <h5 className="text-sm font-medium text-foreground mb-3">Elevation</h5>
+          <div className="h-48 bg-muted/30 rounded-lg p-2">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={elevationDataDisplay} margin={{ top: 5, right: 5, left: 0, bottom: 5 }}>
+                <defs>
+                  <linearGradient id="elevationGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="hsl(var(--chart-2))" stopOpacity={0.4} />
+                    <stop offset="95%" stopColor="hsl(var(--chart-2))" stopOpacity={0.1} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                <XAxis
+                  dataKey="timeLabel"
+                  tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
+                  axisLine={{ stroke: 'hsl(var(--border))' }}
+                  tickLine={false}
+                />
+                <YAxis
+                  domain={['dataMin - 10', 'dataMax + 10']}
+                  tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
+                  axisLine={false}
+                  tickLine={false}
+                  width={35}
+                  tickFormatter={(value: number) => {
+                    return `${value.toFixed(0)}`;
+                  }}
+                />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: 'hsl(var(--card))',
+                    border: '1px solid hsl(var(--border))',
+                    borderRadius: '8px',
+                    fontSize: '12px',
+                  }}
+                  formatter={(value: number, name: string, props: { payload: { elevationUnit: string } }) => {
+                    const unit = props.payload.elevationUnit || (unitSystem === 'imperial' ? 'ft' : 'm');
+                    return [`${value.toFixed(1)} ${unit}`, 'Elevation'];
+                  }}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="elevationDisplay"
+                  stroke="hsl(var(--chart-2))"
+                  fill="url(#elevationGradient)"
+                  strokeWidth={2}
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
