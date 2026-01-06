@@ -59,7 +59,7 @@ export function LoadStatusCard() {
   const loadStatus = getLoadStatus(tsb);
   
   // Calculate CTL trend from metrics
-  const ctlData = overview.metrics.ctl || [];
+  const ctlData = Array.isArray(overview.metrics.ctl) ? overview.metrics.ctl : [];
   const latestCtl = ctl;
   const previousCtl = ctlData.length >= 7 ? ctlData[ctlData.length - 7]?.[1] || ctl : ctl;
   const ctlTrend = latestCtl - previousCtl;

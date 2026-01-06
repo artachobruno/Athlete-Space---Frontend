@@ -24,12 +24,24 @@ interface PMCChartProps {
 
 export function PMCChart({ data, isAdvanced }: PMCChartProps) {
   const chartData = useMemo(() => {
-    return data.map((d) => ({
-      ...d,
-      dateLabel: format(parseISO(d.date), 'MMM d'),
-      // For simple view, create a combined "fitness score"
-      fitnessScore: d.ctl - Math.abs(d.tsb) * 0.3,
-    }));
+    return data
+      .filter((d) => d && d.date)
+      .map((d) => {
+        const dateLabel = d.date ? (() => {
+          try {
+            return format(parseISO(d.date), 'MMM d');
+          } catch {
+            return d.date;
+          }
+        })() : 'Unknown';
+        
+        return {
+          ...d,
+          dateLabel,
+          // For simple view, create a combined "fitness score"
+          fitnessScore: (d.ctl || 0) - Math.abs(d.tsb || 0) * 0.3,
+        };
+      });
   }, [data]);
 
   if (isAdvanced) {

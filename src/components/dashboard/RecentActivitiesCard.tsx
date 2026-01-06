@@ -19,7 +19,7 @@ export function RecentActivitiesCard() {
     retry: 1,
   });
 
-  const recentActivities = activities || [];
+  const recentActivities = Array.isArray(activities) ? activities : [];
 
   return (
     <Card>
@@ -45,33 +45,43 @@ export function RecentActivitiesCard() {
           </div>
         ) : (
           <div className="space-y-3">
-            {recentActivities.map((activity) => {
-            const Icon = sportIcons[activity.sport];
-            return (
-              <div
-                key={activity.id}
-                className="flex items-center gap-3 py-2 border-b border-border last:border-0"
-              >
-                <div className="p-2 bg-muted rounded-lg">
-                  <Icon className="h-4 w-4 text-muted-foreground" />
-                </div>
-                <div className="flex-1 min-w-0">
-                  <div className="font-medium text-sm text-foreground truncate">
-                    {activity.title}
+            {recentActivities
+              .filter((activity) => activity && activity.date && activity.id)
+              .map((activity) => {
+                const Icon = sportIcons[activity.sport] || Footprints;
+                const dateStr = activity.date ? (() => {
+                  try {
+                    return format(parseISO(activity.date), 'MMM d');
+                  } catch {
+                    return activity.date;
+                  }
+                })() : 'Unknown date';
+                
+                return (
+                  <div
+                    key={activity.id}
+                    className="flex items-center gap-3 py-2 border-b border-border last:border-0"
+                  >
+                    <div className="p-2 bg-muted rounded-lg">
+                      <Icon className="h-4 w-4 text-muted-foreground" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium text-sm text-foreground truncate">
+                        {activity.title || 'Untitled Activity'}
+                      </div>
+                      <div className="text-xs text-muted-foreground">
+                        {dateStr} · {activity.distance || 0} km · {activity.duration || 0} min
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-sm font-medium text-foreground">
+                        {activity.trainingLoad || 0}
+                      </div>
+                      <div className="text-xs text-muted-foreground">TSS</div>
+                    </div>
                   </div>
-                  <div className="text-xs text-muted-foreground">
-                    {format(parseISO(activity.date), 'MMM d')} · {activity.distance} km · {activity.duration} min
-                  </div>
-                </div>
-                <div className="text-right">
-                  <div className="text-sm font-medium text-foreground">
-                    {activity.trainingLoad}
-                  </div>
-                  <div className="text-xs text-muted-foreground">TSS</div>
-                </div>
-              </div>
-            );
-          })}
+                );
+              })}
           </div>
         )}
       </CardContent>

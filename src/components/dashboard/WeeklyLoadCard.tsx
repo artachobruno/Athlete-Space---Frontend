@@ -36,8 +36,9 @@ export function WeeklyLoadCard() {
   });
 
   // Calculate weekly totals from calendar sessions
-  const plannedLoad = weekData?.sessions?.filter(s => s.status === 'planned').length * 50 || 0;
-  const actualLoad = weekData?.sessions?.filter(s => s.status === 'completed').length * 50 || 0;
+  const sessions = Array.isArray(weekData?.sessions) ? weekData.sessions : [];
+  const plannedLoad = sessions.filter(s => s.status === 'planned').length * 50 || 0;
+  const actualLoad = sessions.filter(s => s.status === 'completed').length * 50 || 0;
   const progress = plannedLoad > 0 ? (actualLoad / plannedLoad) * 100 : 0;
 
   if (isLoading) {

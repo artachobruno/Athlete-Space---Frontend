@@ -32,33 +32,43 @@ export function ActivityList({ activities }: ActivityListProps) {
 
   return (
     <div className="space-y-3">
-      {activities.map((activity) => {
-        const Icon = sportIcons[activity.sport];
-        const isExpanded = expandedId === activity.id;
+      {activities
+        .filter((activity) => activity && activity.id)
+        .map((activity) => {
+          const Icon = sportIcons[activity.sport] || Footprints;
+          const isExpanded = expandedId === activity.id;
+          
+          const dateStr = activity.date ? (() => {
+            try {
+              return format(parseISO(activity.date), 'EEEE, MMM d');
+            } catch {
+              return activity.date;
+            }
+          })() : 'Unknown date';
 
-        return (
-          <Collapsible
-            key={activity.id}
-            open={isExpanded}
-            onOpenChange={() => toggleExpand(activity.id)}
-          >
-            <Card className={cn(
-              'transition-all',
-              isExpanded && 'ring-2 ring-accent'
-            )}>
-              <CollapsibleTrigger asChild>
-                <CardContent className="p-4 cursor-pointer hover:bg-muted/30 transition-colors">
-                  {/* Header */}
-                  <div className="flex items-start gap-3 mb-3">
-                    <div className="p-2 bg-muted rounded-lg">
-                      <Icon className="h-5 w-5 text-foreground" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-semibold text-foreground truncate">{activity.title}</h3>
-                      <p className="text-sm text-muted-foreground">
-                        {format(parseISO(activity.date), 'EEEE, MMM d')}
-                      </p>
-                    </div>
+          return (
+            <Collapsible
+              key={activity.id}
+              open={isExpanded}
+              onOpenChange={() => toggleExpand(activity.id)}
+            >
+              <Card className={cn(
+                'transition-all',
+                isExpanded && 'ring-2 ring-accent'
+              )}>
+                <CollapsibleTrigger asChild>
+                  <CardContent className="p-4 cursor-pointer hover:bg-muted/30 transition-colors">
+                    {/* Header */}
+                    <div className="flex items-start gap-3 mb-3">
+                      <div className="p-2 bg-muted rounded-lg">
+                        <Icon className="h-5 w-5 text-foreground" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-semibold text-foreground truncate">{activity.title || 'Untitled Activity'}</h3>
+                        <p className="text-sm text-muted-foreground">
+                          {dateStr}
+                        </p>
+                      </div>
                     <div className="flex items-center gap-2">
                       <Badge variant="outline" className="shrink-0 capitalize">
                         {activity.sport}
@@ -77,11 +87,11 @@ export function ActivityList({ activities }: ActivityListProps) {
                   <div className="flex items-center gap-4 text-sm text-muted-foreground mb-3">
                     <span className="flex items-center gap-1">
                       <Clock className="h-4 w-4" />
-                      {activity.duration} min
+                      {activity.duration || 0} min
                     </span>
                     <span className="flex items-center gap-1">
                       <Route className="h-4 w-4" />
-                      {activity.distance} km
+                      {activity.distance || 0} km
                     </span>
                     {activity.avgHeartRate && (
                       <span className="flex items-center gap-1">
@@ -96,7 +106,7 @@ export function ActivityList({ activities }: ActivityListProps) {
                       </span>
                     )}
                     <span className="ml-auto font-medium text-foreground">
-                      {activity.trainingLoad} TSS
+                      {activity.trainingLoad || 0} TSS
                     </span>
                   </div>
 
