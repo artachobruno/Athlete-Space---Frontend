@@ -486,6 +486,21 @@ export const fetchCoachSummary = async (): Promise<{
 };
 
 /**
+ * Fetches coach context for personalized greetings.
+ */
+export const fetchCoachContext = async (): Promise<import("../types").CoachContext | null> => {
+  console.log("[API] Fetching coach context");
+  try {
+    const response = await api.get("/coach/context");
+    return response as unknown as import("../types").CoachContext;
+  } catch (error) {
+    console.error("[API] Failed to fetch coach context:", error);
+    // Return null if endpoint doesn't exist yet - graceful degradation
+    return null;
+  }
+};
+
+/**
  * Sends a chat message to the coach.
  */
 export const sendCoachChat = async (message: string, context?: unknown): Promise<{ reply?: string; intent?: string }> => {

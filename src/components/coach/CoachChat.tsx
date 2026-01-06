@@ -3,7 +3,8 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Send, Bot, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { sendCoachChat } from '@/lib/api';
+import { sendCoachChat, fetchCoachContext } from '@/lib/api';
+import { generateCoachGreeting } from '@/lib/coachGreeting';
 
 interface Message {
   id: string;
@@ -12,17 +13,8 @@ interface Message {
   timestamp: Date;
 }
 
-const initialMessages: Message[] = [
-  {
-    id: '1',
-    role: 'coach',
-    content: "Good to see you. I've been reviewing your recent training. Your consistency has been solid this week. What's on your mind?",
-    timestamp: new Date(),
-  },
-];
-
 export function CoachChat() {
-  const [messages, setMessages] = useState<Message[]>(initialMessages);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -34,6 +26,38 @@ export function CoachChat() {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  // Fetch coach context and set initial greeting on mount
+  useEffect(() => {
+    const loadInitialGreeting = async () => {
+      try {
+        const coachContext = await fetchCoachContext();
+        const greeting = generateCoachGreeting(coachContext);
+        setMessages([
+          {
+            id: '1',
+            role: 'coach',
+            content: greeting,
+            timestamp: new Date(),
+          },
+        ]);
+      } catch (error) {
+        console.error('Failed to load coach context:', error);
+        // Fallback to default greeting on error
+        const defaultGreeting = generateCoachGreeting(null);
+        setMessages([
+          {
+            id: '1',
+            role: 'coach',
+            content: defaultGreeting,
+            timestamp: new Date(),
+          },
+        ]);
+      }
+    };
+
+    loadInitialGreeting();
+  }, []);
 
   const sendMessage = async () => {
     if (!input.trim()) return;

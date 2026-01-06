@@ -95,3 +95,8 @@ export interface OnboardingState {
   data: Partial<AthleteProfile>;
   messages: ChatMessage[];
 }
+
+export interface CoachContext {
+  data_confidence: number; // 0.0 – 1.0
+  summary_hint?: 'consistent' | 'fatigue' | 'insufficient';
+}

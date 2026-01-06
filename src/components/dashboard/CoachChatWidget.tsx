@@ -1,11 +1,12 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Send, Bot, User, Maximize2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Link } from 'react-router-dom';
-import { sendCoachChat } from '@/lib/api';
+import { sendCoachChat, fetchCoachContext } from '@/lib/api';
+import { generateCoachGreeting } from '@/lib/coachGreeting';
 
 interface Message {
   id: string;
@@ -13,16 +14,8 @@ interface Message {
   content: string;
 }
 
-const initialMessages: Message[] = [
-  {
-    id: '1',
-    role: 'coach',
-    content: "Ready when you are. What's on your mind?",
-  },
-];
-
 export function CoachChatWidget() {
-  const [messages, setMessages] = useState<Message[]>(initialMessages);
+  const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
 
@@ -66,6 +59,36 @@ export function CoachChatWidget() {
       sendMessage();
     }
   };
+
+  // Fetch coach context and set initial greeting on mount
+  useEffect(() => {
+    const loadInitialGreeting = async () => {
+      try {
+        const coachContext = await fetchCoachContext();
+        const greeting = generateCoachGreeting(coachContext);
+        setMessages([
+          {
+            id: '1',
+            role: 'coach',
+            content: greeting,
+          },
+        ]);
+      } catch (error) {
+        console.error('Failed to load coach context:', error);
+        // Fallback to default greeting on error
+        const defaultGreeting = generateCoachGreeting(null);
+        setMessages([
+          {
+            id: '1',
+            role: 'coach',
+            content: defaultGreeting,
+          },
+        ]);
+      }
+    };
+
+    loadInitialGreeting();
+  }, []);
 
   return (
     <Card className="flex flex-col h-full min-h-[200px]">
