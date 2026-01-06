@@ -442,13 +442,13 @@ const normalizeError = (error: unknown): ApiError => {
       message = extractMessage(data.message);
     } else if (data?.error) {
       message = extractMessage(data.error);
-    } else if (axiosError.code === "ECONNABORTED" || axiosError.message.includes("timeout")) {
+    } else if (axiosError.code === "ECONNABORTED" || (axiosError.message && axiosError.message.includes("timeout"))) {
       message = "Request timed out. Please try again.";
     } else if (axiosError.code === "ERR_NETWORK" || !axiosError.response) {
       const requestUrl = axiosError.config?.url || axiosError.request?.responseURL || "";
       const isCrossOrigin = requestUrl && !requestUrl.startsWith(window.location.origin);
       
-      if (isCrossOrigin && axiosError.message.includes("CORS") || 
+      if (isCrossOrigin && axiosError.message && axiosError.message.includes("CORS") || 
           (typeof axiosError.request !== "undefined" && axiosError.request.status === 0)) {
         message = "Network error: Unable to connect to the backend server. This may be a temporary connectivity issue.";
       } else {

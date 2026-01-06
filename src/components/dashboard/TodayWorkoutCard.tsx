@@ -66,13 +66,16 @@ export function TodayWorkoutCard() {
     );
   }
 
+  const workoutType = todayWorkout.type || '';
+  const workoutIntent = mapTypeToIntent(workoutType);
+
   return (
     <Card>
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg">Today's Workout</CardTitle>
-          <Badge variant="outline" className={cn(intentColors[mapTypeToIntent(todayWorkout.type)])}>
-            {todayWorkout.intensity || todayWorkout.type}
+          <Badge variant="outline" className={cn(intentColors[workoutIntent])}>
+            {todayWorkout.intensity || workoutType || 'Workout'}
           </Badge>
         </div>
       </CardHeader>
@@ -99,7 +102,7 @@ export function TodayWorkoutCard() {
           )}
           <div className="flex items-center gap-2 text-muted-foreground">
             <Zap className="h-4 w-4" />
-            <span className="capitalize">{todayWorkout.type}</span>
+            <span className="capitalize">{workoutType || 'Workout'}</span>
           </div>
         </div>
       </CardContent>

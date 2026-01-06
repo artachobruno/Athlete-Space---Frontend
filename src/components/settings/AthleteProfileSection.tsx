@@ -192,7 +192,7 @@ export function AthleteProfileSection() {
           <div className="space-y-2">
             <Label htmlFor="gender">Gender</Label>
             <Select
-              value={profile.gender}
+              value={profile.gender || 'male'}
               onValueChange={(value) => setProfile({ ...profile, gender: value })}
             >
               <SelectTrigger id="gender">
