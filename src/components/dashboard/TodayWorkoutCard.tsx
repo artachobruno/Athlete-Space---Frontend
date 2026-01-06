@@ -1,8 +1,9 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { fetchCalendarToday, fetchTrainingLoad, fetchActivities } from '@/lib/api';
+import { getTodayIntelligence } from '@/lib/intelligence';
 import { format } from 'date-fns';
-import { Clock, Route, Zap, Loader2 } from 'lucide-react';
+import { Clock, Route, Zap, Loader2, MessageSquare } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useQuery } from '@tanstack/react-query';
 import { useUnitSystem } from '@/hooks/useUnitSystem';
@@ -47,6 +48,12 @@ export function TodayWorkoutCard() {
   const { data: activities } = useQuery({
     queryKey: ['activities', 'today'],
     queryFn: () => fetchActivities({ limit: 10 }),
+    retry: 1,
+  });
+
+  const { data: todayIntelligence } = useQuery({
+    queryKey: ['todayIntelligence'],
+    queryFn: getTodayIntelligence,
     retry: 1,
   });
 
@@ -119,6 +126,23 @@ export function TodayWorkoutCard() {
             <p className="text-sm text-muted-foreground mt-1">{todayWorkout.notes}</p>
           )}
         </div>
+
+        {/* Coach Explanation */}
+        {todayIntelligence?.explanation && (
+          <div className="bg-accent/5 border border-accent/20 rounded-lg p-3">
+            <div className="flex items-start gap-2">
+              <MessageSquare className="h-4 w-4 text-accent mt-0.5 shrink-0" />
+              <div className="flex-1">
+                <div className="text-xs font-semibold text-muted-foreground mb-1 uppercase tracking-wider">
+                  Coach&apos;s Explanation
+                </div>
+                <p className="text-sm text-foreground leading-relaxed">
+                  {todayIntelligence.explanation}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
 
         <div className="flex items-center gap-6 text-sm">
           {todayWorkout.duration_minutes && (

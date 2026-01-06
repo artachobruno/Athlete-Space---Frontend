@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import {
   startOfWeek,
   endOfWeek,
@@ -8,13 +8,28 @@ import {
   isSameDay,
 } from 'date-fns';
 import { cn } from '@/lib/utils';
-import { fetchCalendarWeek, fetchActivities } from '@/lib/api';
-import { Footprints, Bike, Waves, Clock, Route, CheckCircle2, MessageCircle, Loader2 } from 'lucide-react';
+import { fetchCalendarWeek, fetchActivities, fetchOverview } from '@/lib/api';
+import { Footprints, Bike, Waves, Clock, Route, CheckCircle2, MessageCircle, Loader2, Sparkles, Share2, Copy, Download } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { useQuery } from '@tanstack/react-query';
-import type { PlannedWorkout, CompletedActivity } from '@/types';
+import type { PlannedWorkout, CompletedActivity, TrainingLoad } from '@/types';
 import { useUnitSystem } from '@/hooks/useUnitSystem';
+import { 
+  generateWeeklySummaryText, 
+  generateWeeklySummaryMarkdown,
+  copyToClipboard,
+  downloadTextFile,
+  shareContent 
+} from '@/lib/weekly-summary';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { toast } from '@/hooks/use-toast';
 
 interface WeekViewProps {
   currentDate: Date;
@@ -53,8 +68,10 @@ const mapSessionToWorkout = (session: import('@/lib/api').CalendarSession): Plan
 
 export function WeekView({ currentDate, onActivityClick }: WeekViewProps) {
   const { convertDistance } = useUnitSystem();
+  const [isSharing, setIsSharing] = useState(false);
   const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
   const weekStartStr = format(weekStart, 'yyyy-MM-dd');
+  const weekEnd = endOfWeek(currentDate, { weekStartsOn: 1 });
 
   const { data: weekData, isLoading: weekLoading, error: weekError } = useQuery({
     queryKey: ['calendarWeek', weekStartStr],
@@ -76,6 +93,149 @@ export function WeekView({ currentDate, onActivityClick }: WeekViewProps) {
     queryFn: () => fetchActivities({ limit: 100 }),
     retry: 1,
   });
+
+  const { data: overview } = useQuery({
+    queryKey: ['overview', 14],
+    queryFn: () => fetchOverview(14),
+    retry: 1,
+  });
+
+  const weeklyInsight = useMemo(() => {
+    if (!overview?.metrics) return null;
+    
+    const ctlData = overview.metrics.ctl || [];
+    const atlData = overview.metrics.atl || [];
+    const tsbData = overview.metrics.tsb || [];
+    
+    if (ctlData.length < 7) return null;
+    
+    const trainingLoadData: TrainingLoad[] = ctlData.map(([date, ctl], index) => ({
+      date,
+      ctl,
+      atl: atlData[index]?.[1] || 0,
+      tsb: tsbData[index]?.[1] || 0,
+      dailyLoad: 0,
+    })).slice(-14);
+    
+    const latest = trainingLoadData[trainingLoadData.length - 1];
+    const weekAgo = trainingLoadData[Math.max(0, trainingLoadData.length - 7)];
+    const ctlTrend = latest.ctl - weekAgo.ctl;
+    const tsbCurrent = latest.tsb;
+    
+    let insight = '';
+    let color = 'text-muted-foreground';
+    
+    if (tsbCurrent > 15) {
+      insight = 'You\'re well-rested and ready for hard training this week.';
+      color = 'text-load-fresh';
+    } else if (tsbCurrent > 0) {
+      insight = 'You\'re in good form with balanced recovery.';
+      color = 'text-load-optimal';
+    } else if (tsbCurrent > -15) {
+      insight = 'You\'re productively fatigued from training.';
+      color = 'text-muted-foreground';
+    } else if (tsbCurrent > -25) {
+      insight = 'You\'re accumulating significant fatigue - consider recovery.';
+      color = 'text-load-overreaching';
+    } else {
+      insight = 'Signs of overreaching - prioritize recovery this week.';
+      color = 'text-load-overtraining';
+    }
+    
+    if (ctlTrend > 2) {
+      insight += ' Fitness is trending upward.';
+    } else if (ctlTrend < -2) {
+      insight += ' Focus on consistency to rebuild momentum.';
+    }
+    
+    return { insight, color };
+  }, [overview]);
+
+  const weeklySummaryData = useMemo(() => {
+    if (!weekData || !overview) return null;
+    
+    const plannedSessions = weekData.sessions?.filter(s => s.status === 'planned').length || 0;
+    const completedSessions = weekData.sessions?.filter(s => s.status === 'completed').length || 0;
+    
+    const ctlData = overview.metrics.ctl || [];
+    const atlData = overview.metrics.atl || [];
+    const tsbData = overview.metrics.tsb || [];
+    
+    const trainingLoadData: TrainingLoad[] = ctlData.map(([date, ctl], index) => ({
+      date,
+      ctl,
+      atl: atlData[index]?.[1] || 0,
+      tsb: tsbData[index]?.[1] || 0,
+      dailyLoad: 0,
+    })).slice(-14);
+    
+    const totalLoad = (activities || []).reduce((sum, a) => {
+      const activityDate = a.date?.split('T')[0] || a.date;
+      const weekStartStr = format(weekStart, 'yyyy-MM-dd');
+      const weekEndStr = format(weekEnd, 'yyyy-MM-dd');
+      if (activityDate >= weekStartStr && activityDate <= weekEndStr) {
+        return sum + (a.trainingLoad || 0);
+      }
+      return sum;
+    }, 0);
+    
+    return {
+      weekStart: format(weekStart, 'yyyy-MM-dd'),
+      weekEnd: format(weekEnd, 'yyyy-MM-dd'),
+      plannedSessions,
+      completedSessions,
+      totalLoad: Math.round(totalLoad),
+      insight: weeklyInsight?.insight || '',
+      trainingLoad: trainingLoadData.length >= 7 ? trainingLoadData : undefined,
+    };
+  }, [weekData, overview, activities, weekStart, weekEnd, weeklyInsight]);
+
+  const handleShare = async () => {
+    if (!weeklySummaryData) return;
+    
+    setIsSharing(true);
+    const text = generateWeeklySummaryText(weeklySummaryData);
+    const success = await shareContent('Weekly Training Summary', text);
+    
+    if (!success) {
+      // Fallback to copy
+      const copied = await copyToClipboard(text);
+      if (copied) {
+        toast({
+          title: 'Copied to clipboard',
+          description: 'Weekly summary copied to clipboard',
+        });
+      }
+    }
+    setIsSharing(false);
+  };
+
+  const handleCopy = async () => {
+    if (!weeklySummaryData) return;
+    
+    const text = generateWeeklySummaryText(weeklySummaryData);
+    const copied = await copyToClipboard(text);
+    
+    if (copied) {
+      toast({
+        title: 'Copied to clipboard',
+        description: 'Weekly summary copied to clipboard',
+      });
+    }
+  };
+
+  const handleDownload = () => {
+    if (!weeklySummaryData) return;
+    
+    const markdown = generateWeeklySummaryMarkdown(weeklySummaryData);
+    const filename = `weekly-summary-${format(weekStart, 'yyyy-MM-dd')}.md`;
+    downloadTextFile(markdown, filename, 'text/markdown');
+    
+    toast({
+      title: 'Downloaded',
+      description: 'Weekly summary downloaded',
+    });
+  };
 
   const days = useMemo(() => {
     const weekEnd = endOfWeek(currentDate, { weekStartsOn: 1 });
@@ -132,7 +292,58 @@ export function WeekView({ currentDate, onActivityClick }: WeekViewProps) {
   }
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-7 gap-3">
+    <div className="space-y-4">
+      {/* Weekly Insight */}
+      {weeklyInsight && (
+        <Card className="bg-accent/5 border-accent/20">
+          <div className="p-4 flex items-start gap-3">
+            <div className={cn('p-2 rounded-lg bg-accent/10', weeklyInsight.color)}>
+              <Sparkles className="h-4 w-4" />
+            </div>
+            <div className="flex-1">
+              <div className="flex items-center justify-between mb-1">
+                <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                  Weekly Insight
+                </div>
+                {weeklySummaryData && (
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-7 w-7 p-0"
+                        disabled={isSharing}
+                      >
+                        <Share2 className="h-3.5 w-3.5" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem onClick={handleShare}>
+                        <Share2 className="h-4 w-4 mr-2" />
+                        Share
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={handleCopy}>
+                        <Copy className="h-4 w-4 mr-2" />
+                        Copy Text
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={handleDownload}>
+                        <Download className="h-4 w-4 mr-2" />
+                        Download Markdown
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                )}
+              </div>
+              <p className={cn('text-sm leading-relaxed', weeklyInsight.color)}>
+                {weeklyInsight.insight}
+              </p>
+            </div>
+          </div>
+        </Card>
+      )}
+
+      {/* Week Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-7 gap-3">
       {days.map((day) => {
         const { planned, completed } = getWorkoutsForDay(day);
         const isCurrentDay = isToday(day);
@@ -268,6 +479,7 @@ export function WeekView({ currentDate, onActivityClick }: WeekViewProps) {
           </Card>
         );
       })}
+      </div>
     </div>
   );
 }

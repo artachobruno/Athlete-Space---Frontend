@@ -1,13 +1,16 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ChevronLeft, ChevronRight, MessageCircle } from 'lucide-react';
+import { ChevronLeft, ChevronRight, MessageCircle, Download } from 'lucide-react';
 import { format, addMonths, subMonths, addWeeks, subWeeks } from 'date-fns';
 import { MonthView } from './MonthView';
 import { WeekView } from './WeekView';
 import { SeasonView } from './SeasonView';
 import { CoachDrawer } from './CoachDrawer';
 import { ActivityPopup } from './ActivityPopup';
+import { fetchCalendarSeason } from '@/lib/api';
+import { downloadIcsFile } from '@/lib/ics-export';
+import { useQuery } from '@tanstack/react-query';
 import type { PlannedWorkout, CompletedActivity } from '@/types';
 
 type ViewType = 'month' | 'week' | 'season';
@@ -67,6 +70,18 @@ export function TrainingCalendar() {
     setActivityPopupOpen(true);
   };
 
+  const { data: seasonData } = useQuery({
+    queryKey: ['calendarSeason'],
+    queryFn: () => fetchCalendarSeason(),
+    retry: 1,
+  });
+
+  const handleExportIcs = () => {
+    if (seasonData?.sessions) {
+      downloadIcsFile(seasonData.sessions);
+    }
+  };
+
   return (
     <div className="space-y-4">
       {/* Controls */}
@@ -87,7 +102,7 @@ export function TrainingCalendar() {
           </span>
         </div>
 
-        {/* Right side: Ask Coach + View Toggle */}
+        {/* Right side: Ask Coach + Export + View Toggle */}
         <div className="flex items-center gap-3">
           <Button
             variant="ghost"
@@ -97,6 +112,17 @@ export function TrainingCalendar() {
           >
             <MessageCircle className="h-4 w-4 mr-1.5" />
             Ask Coach
+          </Button>
+          
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleExportIcs}
+            className="text-muted-foreground hover:text-foreground"
+            disabled={!seasonData?.sessions || seasonData.sessions.length === 0}
+          >
+            <Download className="h-4 w-4 mr-1.5" />
+            Export ICS
           </Button>
           
           <Tabs value={view} onValueChange={(v) => setView(v as ViewType)}>

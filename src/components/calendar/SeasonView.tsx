@@ -11,9 +11,11 @@ import {
 } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { fetchCalendarSeason, fetchActivities, fetchOverview } from '@/lib/api';
+import { getSeasonIntelligence } from '@/lib/intelligence';
 import { Card } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { useQuery } from '@tanstack/react-query';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Flag, Target, RefreshCw } from 'lucide-react';
 
 interface SeasonViewProps {
   currentDate: Date;
@@ -51,6 +53,12 @@ export function SeasonView({ currentDate }: SeasonViewProps) {
   const { data: overview, isLoading: overviewLoading } = useQuery({
     queryKey: ['overview', 90],
     queryFn: () => fetchOverview(90),
+    retry: 1,
+  });
+
+  const { data: seasonIntelligence } = useQuery({
+    queryKey: ['seasonIntelligence'],
+    queryFn: () => getSeasonIntelligence(),
     retry: 1,
   });
 
@@ -116,10 +124,57 @@ export function SeasonView({ currentDate }: SeasonViewProps) {
 
   const maxLoad = Math.max(...weeks.map(w => getWeekStats(w).totalLoad), 1);
 
+  // Get phase and race marker for a week
+  const getWeekPhase = (weekNumber: number) => {
+    if (!seasonIntelligence?.phases) return null;
+    return seasonIntelligence.phases.find(
+      phase => weekNumber >= phase.week_start && weekNumber <= phase.week_end
+    );
+  };
+
+  const getWeekRaceMarkers = (weekNumber: number) => {
+    if (!seasonIntelligence?.race_markers) return [];
+    return seasonIntelligence.race_markers.filter(marker => marker.week === weekNumber);
+  };
+
+  const raceMarkerIcons = {
+    race: Flag,
+    milestone: Target,
+    recovery: RefreshCw,
+  };
+
+  const raceMarkerColors = {
+    race: 'bg-red-500/20 text-red-600 border-red-500/30',
+    milestone: 'bg-blue-500/20 text-blue-600 border-blue-500/30',
+    recovery: 'bg-green-500/20 text-green-600 border-green-500/30',
+  };
+
   return (
     <div className="space-y-4">
+      {/* Season Intelligence Summary */}
+      {seasonIntelligence && (
+        <Card className="bg-accent/5 border-accent/20">
+          <div className="p-4 space-y-3">
+            {seasonIntelligence.explanation && (
+              <p className="text-sm text-foreground leading-relaxed">
+                {seasonIntelligence.explanation}
+              </p>
+            )}
+            {seasonIntelligence.phases && seasonIntelligence.phases.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {seasonIntelligence.phases.map((phase, idx) => (
+                  <Badge key={idx} variant="outline" className="text-xs">
+                    {phase.label} (Weeks {phase.week_start}-{phase.week_end})
+                  </Badge>
+                ))}
+              </div>
+            )}
+          </div>
+        </Card>
+      )}
+
       {/* Legend */}
-      <div className="flex items-center gap-6 text-sm text-muted-foreground">
+      <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
         <div className="flex items-center gap-2">
           <div className="w-3 h-3 rounded bg-accent" />
           <span>Training Load</span>
@@ -132,6 +187,22 @@ export function SeasonView({ currentDate }: SeasonViewProps) {
           <div className="w-3 h-3 rounded bg-muted" />
           <span>Planned</span>
         </div>
+        {seasonIntelligence?.race_markers && seasonIntelligence.race_markers.length > 0 && (
+          <>
+            <div className="flex items-center gap-2">
+              <Flag className="w-3 h-3 text-red-600" />
+              <span>Race</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Target className="w-3 h-3 text-blue-600" />
+              <span>Milestone</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <RefreshCw className="w-3 h-3 text-green-600" />
+              <span>Recovery</span>
+            </div>
+          </>
+        )}
       </div>
 
       {/* Weeks Grid */}
@@ -144,6 +215,9 @@ export function SeasonView({ currentDate }: SeasonViewProps) {
             end: weekEnd,
           });
           const loadPercentage = (stats.totalLoad / maxLoad) * 100;
+          const weekNumber = getWeek(weekStart);
+          const phase = getWeekPhase(weekNumber);
+          const raceMarkers = getWeekRaceMarkers(weekNumber);
 
           return (
             <Card
@@ -155,16 +229,40 @@ export function SeasonView({ currentDate }: SeasonViewProps) {
             >
               {/* Week header */}
               <div className="flex items-center justify-between mb-3">
-                <div>
-                  <div className="text-xs text-muted-foreground">
-                    Week {getWeek(weekStart)}
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-1">
+                    <div className="text-xs text-muted-foreground">
+                      Week {weekNumber}
+                    </div>
+                    {phase && (
+                      <Badge variant="outline" className="text-xs">
+                        {phase.label}
+                      </Badge>
+                    )}
                   </div>
                   <div className="text-sm font-medium">
                     {format(weekStart, 'MMM d')} - {format(weekEnd, 'MMM d')}
                   </div>
+                  {raceMarkers.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mt-2">
+                      {raceMarkers.map((marker, idx) => {
+                        const Icon = raceMarkerIcons[marker.type];
+                        return (
+                          <Badge
+                            key={idx}
+                            variant="outline"
+                            className={cn('text-xs', raceMarkerColors[marker.type])}
+                          >
+                            <Icon className="h-3 w-3 mr-1" />
+                            {marker.label}
+                          </Badge>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
                 {isCurrentWeek && (
-                  <span className="text-xs bg-accent/10 text-accent px-2 py-0.5 rounded">
+                  <span className="text-xs bg-accent/10 text-accent px-2 py-0.5 rounded shrink-0">
                     Current
                   </span>
                 )}

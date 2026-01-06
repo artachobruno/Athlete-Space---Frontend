@@ -1,7 +1,8 @@
 import { Card, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { getTodayIntelligence } from '@/lib/intelligence';
 import { cn } from '@/lib/utils';
-import { CheckCircle2, AlertCircle, RefreshCw, Moon, Loader2 } from 'lucide-react';
+import { CheckCircle2, AlertCircle, RefreshCw, Moon, Loader2, TrendingUp } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 
 const decisionConfig = {
@@ -87,8 +88,23 @@ export function DailyDecisionCard() {
 
   const decision = mapRecommendationToDecision(data.recommendation);
   const reason = data.explanation || data.recommendation;
+  const confidence = data.confidence;
   const config = decisionConfig[decision];
   const Icon = config.icon;
+
+  const getConfidenceColor = (score: number) => {
+    if (score >= 0.8) return 'text-load-fresh';
+    if (score >= 0.6) return 'text-load-optimal';
+    if (score >= 0.4) return 'text-muted-foreground';
+    return 'text-load-overreaching';
+  };
+
+  const getConfidenceLabel = (score: number) => {
+    if (score >= 0.8) return 'High';
+    if (score >= 0.6) return 'Moderate';
+    if (score >= 0.4) return 'Low';
+    return 'Very Low';
+  };
 
   return (
     <Card className={cn('border-2 h-full', config.className)}>
@@ -98,13 +114,29 @@ export function DailyDecisionCard() {
             <Icon className="h-8 w-8" />
           </div>
           <div className="flex-1">
-            <div className="flex items-center gap-2 mb-2">
+            <div className="flex items-center justify-between mb-2">
               <span className="text-xs font-semibold uppercase tracking-wider opacity-70">
                 Today&apos;s Decision
               </span>
+              {confidence && (
+                <Badge 
+                  variant="outline" 
+                  className={cn('text-xs', getConfidenceColor(confidence.score))}
+                >
+                  <TrendingUp className="h-3 w-3 mr-1" />
+                  {getConfidenceLabel(confidence.score)} ({Math.round(confidence.score * 100)}%)
+                </Badge>
+              )}
             </div>
             <h2 className="text-2xl font-bold mb-3">{config.label}</h2>
-            <p className="text-sm opacity-80 leading-relaxed">{reason}</p>
+            <p className="text-sm opacity-80 leading-relaxed mb-3">{reason}</p>
+            {confidence && confidence.explanation && (
+              <div className="mt-3 pt-3 border-t border-border/50">
+                <p className="text-xs text-muted-foreground leading-relaxed">
+                  <span className="font-medium">Confidence:</span> {confidence.explanation}
+                </p>
+              </div>
+            )}
           </div>
         </div>
       </CardContent>
