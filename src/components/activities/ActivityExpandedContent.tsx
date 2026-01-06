@@ -29,10 +29,11 @@ export function ActivityExpandedContent({ activity }: ActivityExpandedContentPro
   const { convertDistance, convertElevation } = useUnitSystem();
   
   // Fetch activity streams for route data
-  const { data: streamsData } = useQuery({
+  // Note: retry is set to false to avoid retrying on CORS errors
+  const { data: streamsData, error: streamsError } = useQuery({
     queryKey: ['activityStreams', activity.id],
     queryFn: () => fetchActivityStreams(activity.id),
-    retry: 1,
+    retry: false, // Don't retry - CORS errors won't resolve with retries
     enabled: !!activity.id,
   });
 

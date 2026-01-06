@@ -417,11 +417,45 @@ export const fetchActivity = async (id: string): Promise<import("../types").Comp
 };
 
 /**
+ * Checks if an error is a CORS error
+ */
+const isCorsError = (error: unknown): boolean => {
+  if (!error || typeof error !== 'object') return false;
+  
+  const err = error as { code?: string; message?: string; response?: { status?: number } };
+  
+  // CORS errors typically show up as:
+  // - ERR_NETWORK code
+  // - Status 0 or 500 with CORS message
+  // - Message containing "CORS" or "Cross-Origin"
+  if (err.code === 'ERR_NETWORK') {
+    return true;
+  }
+  
+  if (err.message && (
+    err.message.includes('CORS') ||
+    err.message.includes('Cross-Origin') ||
+    err.message.includes('Access-Control-Allow-Origin')
+  )) {
+    return true;
+  }
+  
+  // Status 500 with ERR_NETWORK is often a CORS issue
+  if (err.response?.status === 500 && err.code === 'ERR_NETWORK') {
+    return true;
+  }
+  
+  return false;
+};
+
+/**
  * Fetches activity streams (GPS, heart rate, power, etc.).
  * Follows the workflow:
  * 1. Check if streams exist via activity endpoint (has_streams field)
  * 2. If not available, POST /activities/{id}/fetch-streams to fetch from Strava
  * 3. GET /activities/{id}/streams to get formatted data (with retries)
+ * 
+ * Note: Stops retrying immediately on CORS errors to avoid console spam.
  */
 export const fetchActivityStreams = async (id: string): Promise<ActivityStreamsResponse> => {
   console.log("[API] Fetching activity streams", id);
@@ -433,6 +467,11 @@ export const fetchActivityStreams = async (id: string): Promise<ActivityStreamsR
       activity = await api.get(`/activities/${id}`);
       hasStreams = (activity as { has_streams?: boolean })?.has_streams === true;
     } catch (error) {
+      // If this is a CORS error, don't proceed
+      if (isCorsError(error)) {
+        console.warn("[API] CORS error checking activity streams. Streams feature unavailable.");
+        throw new Error("Stream data is not available due to server configuration.");
+      }
       console.warn("[API] Could not fetch activity to check has_streams, proceeding...", error);
     }
     
@@ -444,6 +483,12 @@ export const fetchActivityStreams = async (id: string): Promise<ActivityStreamsR
         // Wait for backend to process the fetch (may take a few seconds)
         await new Promise((resolve) => setTimeout(resolve, 2000));
       } catch (error) {
+        // Stop immediately on CORS errors
+        if (isCorsError(error)) {
+          console.warn("[API] CORS error fetching streams from Strava. Streams feature unavailable.");
+          throw new Error("Stream data is not available due to server configuration.");
+        }
+        
         const errorStatus = (error as { response?: { status?: number } })?.response?.status;
         const errorMessage = (error as { message?: string })?.message || '';
         
@@ -474,6 +519,12 @@ export const fetchActivityStreams = async (id: string): Promise<ActivityStreamsR
         const response = await api.get(`/activities/${id}/streams`);
         return response as unknown as ActivityStreamsResponse;
       } catch (error) {
+        // Stop immediately on CORS errors - don't retry
+        if (isCorsError(error)) {
+          console.warn("[API] CORS error fetching streams. Streams feature unavailable.");
+          throw new Error("Stream data is not available due to server configuration.");
+        }
+        
         lastError = error;
         const errorStatus = (error as { response?: { status?: number } })?.response?.status;
         const errorMessage = (error as { message?: string })?.message || '';
@@ -507,7 +558,10 @@ export const fetchActivityStreams = async (id: string): Promise<ActivityStreamsR
     // Should not reach here, but just in case
     throw lastError;
   } catch (error) {
-    console.error("[API] Failed to fetch activity streams:", error);
+    // Don't log CORS errors repeatedly - they're already handled
+    if (!isCorsError(error)) {
+      console.error("[API] Failed to fetch activity streams:", error);
+    }
     throw error;
   }
 };
