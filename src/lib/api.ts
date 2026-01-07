@@ -167,6 +167,7 @@ export const fetchUserProfile = async (): Promise<import("../types").AthleteProf
 
 /**
  * Updates user profile on the backend.
+ * Note: The API documentation doesn't specify an update endpoint. Trying PATCH first, then POST as fallback.
  * @param profileData - Partial profile data to update
  * @returns Updated profile data
  */
@@ -175,10 +176,27 @@ export const updateUserProfile = async (
 ): Promise<import("../types").AthleteProfile> => {
   console.log("[API] Updating user profile");
   try {
-    const response = await api.put("/me/profile", profileData);
+    // Try PATCH first (standard REST for partial updates)
+    let response;
+    try {
+      response = await api.patch("/me/profile", profileData);
+    } catch (patchError) {
+      // If PATCH fails, try POST
+      if ((patchError as { response?: { status?: number } })?.response?.status === 405) {
+        console.log("[API] PATCH not supported, trying POST");
+        response = await api.post("/me/profile", profileData);
+      } else {
+        throw patchError;
+      }
+    }
     return response as unknown as import("../types").AthleteProfile;
   } catch (error) {
     console.error("[API] Failed to update profile:", error);
+    // If update endpoint doesn't exist, log a warning but don't break the UI
+    const status = (error as { response?: { status?: number } })?.response?.status;
+    if (status === 404 || status === 405) {
+      console.warn("[API] Profile update endpoint not available. Profile updates may not be supported yet.");
+    }
     throw error;
   }
 };
@@ -858,6 +876,52 @@ export const triggerHistoricalSync = async (): Promise<{
     };
   } catch (error) {
     console.error("[API] Failed to trigger historical sync:", error);
+    throw error;
+  }
+};
+
+/**
+ * Checks for recent activities (last 48 hours) on refresh or new session.
+ * Runs in background to ensure today's activities are synced.
+ */
+export const checkRecentActivities = async (): Promise<{
+  success: boolean;
+  message: string;
+  last_sync: string;
+}> => {
+  console.log("[API] Checking for recent activities");
+  try {
+    const response = await api.post("/me/sync/check");
+    return response as unknown as {
+      success: boolean;
+      message: string;
+      last_sync: string;
+    };
+  } catch (error) {
+    console.error("[API] Failed to check recent activities:", error);
+    throw error;
+  }
+};
+
+/**
+ * User-initiated sync button.
+ * Fetches activities since last sync (or last 48 hours for safety), runs in background.
+ */
+export const syncActivitiesNow = async (): Promise<{
+  success: boolean;
+  message: string;
+  last_sync: string;
+}> => {
+  console.log("[API] User-initiated sync");
+  try {
+    const response = await api.post("/me/sync/now");
+    return response as unknown as {
+      success: boolean;
+      message: string;
+      last_sync: string;
+    };
+  } catch (error) {
+    console.error("[API] Failed to sync activities:", error);
     throw error;
   }
 };

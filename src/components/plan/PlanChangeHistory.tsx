@@ -1,7 +1,9 @@
 import { useState } from 'react';
 import { ChevronDown, ChevronUp, Clock, AlertCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { format, subDays } from 'date-fns';
+import { format } from 'date-fns';
+import { useQuery } from '@tanstack/react-query';
+import { fetchCoachRecommendations } from '@/lib/api';
 
 interface PlanChange {
   id: string;
@@ -11,27 +13,44 @@ interface PlanChange {
   reason: string;
 }
 
-const mockChanges: PlanChange[] = [
-  {
-    id: '1',
-    date: subDays(new Date(), 1),
-    type: 'adjustment',
-    description: 'Thursday VO2max session reduced to tempo',
-    reason: 'ATL elevated after Tuesday interval session. Reducing intensity to allow adequate recovery.',
-  },
-  {
-    id: '2',
-    date: subDays(new Date(), 3),
-    type: 'replacement',
-    description: 'Saturday long run moved to Sunday',
-    reason: 'Weather conditions unfavorable for long endurance work on Saturday.',
-  },
-];
-
 export function PlanChangeHistory() {
   const [isExpanded, setIsExpanded] = useState(false);
 
-  if (mockChanges.length === 0) return null;
+  // Fetch coach recommendations as they may indicate plan adjustments
+  const { data: recommendations } = useQuery({
+    queryKey: ['coach', 'recommendations'],
+    queryFn: () => fetchCoachRecommendations(),
+    retry: 1,
+    staleTime: 30 * 60 * 1000, // 30 minutes - coach LLM call is expensive
+    gcTime: 60 * 60 * 1000, // Keep in cache for 1 hour
+  });
+
+  // Convert recommendations to plan changes if they exist and are recent (this week)
+  const planChanges: PlanChange[] = [];
+  
+  if (recommendations?.recommendations) {
+    const now = new Date();
+    const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+    
+    recommendations.recommendations
+      .filter(rec => {
+        // Only show high priority recommendations from this week
+        const recDate = new Date(rec.timestamp);
+        return rec.priority === 'high' && recDate >= weekAgo;
+      })
+      .forEach((rec, index) => {
+        planChanges.push({
+          id: rec.id,
+          date: new Date(rec.timestamp),
+          type: 'adjustment' as const,
+          description: rec.recommendation,
+          reason: rec.rationale || rec.recommendation,
+        });
+      });
+  }
+
+  // Hide component if there are no plan changes
+  if (planChanges.length === 0) return null;
 
   return (
     <div className="border border-border rounded-lg overflow-hidden">
@@ -43,7 +62,7 @@ export function PlanChangeHistory() {
         <div className="flex items-center gap-2 text-muted-foreground">
           <AlertCircle className="h-4 w-4" />
           <span className="text-sm font-medium">
-            {mockChanges.length} plan adjustment{mockChanges.length > 1 ? 's' : ''} this week
+            {planChanges.length} plan adjustment{planChanges.length > 1 ? 's' : ''} this week
           </span>
         </div>
         {isExpanded ? (
@@ -55,7 +74,7 @@ export function PlanChangeHistory() {
 
       {isExpanded && (
         <div className="border-t border-border p-4 space-y-3">
-          {mockChanges.map((change) => (
+          {planChanges.map((change) => (
             <div key={change.id} className="flex gap-3">
               <div className="flex items-center gap-1 text-xs text-muted-foreground shrink-0 w-20">
                 <Clock className="h-3 w-3" />

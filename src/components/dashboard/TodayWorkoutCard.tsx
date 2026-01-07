@@ -52,9 +52,11 @@ export function TodayWorkoutCard() {
   });
 
   const { data: todayIntelligence } = useQuery({
-    queryKey: ['todayIntelligence'],
+    queryKey: ['intelligence', 'today', 'current'],
     queryFn: () => getTodayIntelligence(),
     retry: 1,
+    staleTime: 30 * 60 * 1000, // 30 minutes - intelligence is expensive LLM call
+    gcTime: 60 * 60 * 1000, // Keep in cache for 1 hour
   });
 
   const todayWorkout = todayData?.sessions?.find(s => s.status === 'planned' || s.status === 'completed') || null;

@@ -1,12 +1,14 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { fetchActivities, fetchTrainingLoad } from '@/lib/api';
+import { fetchActivities, fetchTrainingLoad, syncActivitiesNow } from '@/lib/api';
 import { format, parseISO } from 'date-fns';
-import { Bike, Footprints, Waves, Loader2 } from 'lucide-react';
+import { Bike, Footprints, Waves, Loader2, RefreshCw } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useUnitSystem } from '@/hooks/useUnitSystem';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { enrichActivitiesWithTss } from '@/lib/tss-utils';
+import { Button } from '@/components/ui/button';
+import { toast } from '@/hooks/use-toast';
 
 const sportIcons = {
   running: Footprints,
@@ -17,11 +19,45 @@ const sportIcons = {
 
 export function RecentActivitiesCard() {
   const { convertDistance } = useUnitSystem();
-  const { data: activities, isLoading, error } = useQuery({
-    queryKey: ['activities', 'recent'],
-    queryFn: () => fetchActivities({ limit: 4 }),
+  const queryClient = useQueryClient();
+  const [isSyncing, setIsSyncing] = useState(false);
+  
+  // Use same query key structure as main activities page to share cache
+  const { data: activities, isLoading, error, refetch } = useQuery({
+    queryKey: ['activities', 'limit', 10],
+    queryFn: () => fetchActivities({ limit: 10 }),
     retry: 1,
+    staleTime: 2 * 60 * 1000, // 2 minutes - recent activities can change
+    gcTime: 10 * 60 * 1000, // Keep in cache for 10 minutes
+    refetchOnWindowFocus: true,
+    refetchInterval: false, // Don't auto-refetch in background
   });
+
+  const handleSync = async () => {
+    setIsSyncing(true);
+    try {
+      await syncActivitiesNow();
+      toast({
+        title: 'Sync started',
+        description: 'Activities are being synced in the background. This may take a few moments.',
+      });
+      
+      // Invalidate activities queries to trigger refetch after sync
+      setTimeout(() => {
+        queryClient.invalidateQueries({ queryKey: ['activities'] });
+        refetch();
+      }, 3000); // Wait 3 seconds for sync to start processing
+    } catch (error) {
+      console.error('Failed to sync activities:', error);
+      toast({
+        title: 'Sync failed',
+        description: error instanceof Error ? error.message : 'Could not sync activities',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSyncing(false);
+    }
+  };
 
   const { data: trainingLoadData } = useQuery({
     queryKey: ['trainingLoad', 60],
@@ -31,7 +67,21 @@ export function RecentActivitiesCard() {
 
   const recentActivities = useMemo(() => {
     const activitiesArray = Array.isArray(activities) ? activities : [];
-    return enrichActivitiesWithTss(activitiesArray, trainingLoadData);
+    const enriched = enrichActivitiesWithTss(activitiesArray, trainingLoadData);
+    
+    // Sort by date (most recent first) and take only the 4 most recent
+    const sorted = enriched.sort((a, b) => {
+      if (!a.date || !b.date) return 0;
+      try {
+        const dateA = typeof a.date === 'string' ? parseISO(a.date.split('T')[0]) : new Date(a.date);
+        const dateB = typeof b.date === 'string' ? parseISO(b.date.split('T')[0]) : new Date(b.date);
+        return dateB.getTime() - dateA.getTime();
+      } catch {
+        return 0;
+      }
+    });
+    
+    return sorted.slice(0, 4); // Return only 4 most recent
   }, [activities, trainingLoadData]);
 
   return (
@@ -39,12 +89,25 @@ export function RecentActivitiesCard() {
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg">Recent Activities</CardTitle>
-          <Link
-            to="/activities"
-            className="text-sm text-accent hover:underline"
-          >
-            View all
-          </Link>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={handleSync}
+              className="h-7 px-2 text-xs"
+              disabled={isLoading || isSyncing}
+              title="Sync activities from Strava"
+            >
+              <RefreshCw className={`h-3 w-3 mr-1 ${isSyncing ? 'animate-spin' : ''}`} />
+              {isSyncing ? 'Syncing...' : 'Sync'}
+            </Button>
+            <Link
+              to="/activities"
+              className="text-sm text-accent hover:underline"
+            >
+              View all
+            </Link>
+          </div>
         </div>
       </CardHeader>
       <CardContent>

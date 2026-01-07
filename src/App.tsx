@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { useSyncActivities } from "@/hooks/useSyncActivities";
 import Dashboard from "./pages/Dashboard";
 import Calendar from "./pages/Calendar";
 import TrainingPlan from "./pages/TrainingPlan";
@@ -29,7 +30,11 @@ const queryClient = new QueryClient({
         return failureCount < 1;
       },
       refetchOnWindowFocus: false,
-      staleTime: 30000, // 30 seconds
+      // Optimized default cache times
+      staleTime: 5 * 60 * 1000, // 5 minutes - data is fresh for 5 min
+      gcTime: 30 * 60 * 1000, // 30 minutes - keep in cache for 30 min (formerly cacheTime)
+      // Query deduplication: if same query is called multiple times within 2s, only fetch once
+      structuralSharing: true,
       onError: (error) => {
         // Silently handle CORS/network errors - they're expected when backend is misconfigured
         if (error && typeof error === 'object' && 'code' in error) {
@@ -47,26 +52,36 @@ const queryClient = new QueryClient({
   },
 });
 
+// Component to handle sync on app mount
+const AppContent = () => {
+  // Automatically check for recent activities on app mount/page refresh
+  useSyncActivities();
+  
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route path="/" element={<Navigate to="/dashboard" replace />} />
+        <Route path="/onboarding" element={<Onboarding />} />
+        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/calendar" element={<Calendar />} />
+        <Route path="/plan" element={<TrainingPlan />} />
+        <Route path="/activities" element={<Activities />} />
+        <Route path="/analytics" element={<Analytics />} />
+        <Route path="/coach" element={<Coach />} />
+        <Route path="/settings" element={<Settings />} />
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </BrowserRouter>
+  );
+};
+
 const App = () => (
   <ErrorBoundary>
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
         <Toaster />
         <Sonner />
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Navigate to="/dashboard" replace />} />
-            <Route path="/onboarding" element={<Onboarding />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/calendar" element={<Calendar />} />
-            <Route path="/plan" element={<TrainingPlan />} />
-            <Route path="/activities" element={<Activities />} />
-            <Route path="/analytics" element={<Analytics />} />
-            <Route path="/coach" element={<Coach />} />
-            <Route path="/settings" element={<Settings />} />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
+        <AppContent />
       </TooltipProvider>
     </QueryClientProvider>
   </ErrorBoundary>

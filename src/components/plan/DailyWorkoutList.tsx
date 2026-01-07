@@ -34,10 +34,13 @@ export function DailyWorkoutList() {
     retry: 1,
   });
 
+  // Use consistent query key to share cache with other components
   const { data: activities, isLoading: activitiesLoading } = useQuery({
-    queryKey: ['activities', 'plan'],
+    queryKey: ['activities', 'limit', 100],
     queryFn: () => fetchActivities({ limit: 100 }),
     retry: 1,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 30 * 60 * 1000, // 30 minutes
   });
 
   const { data: trainingLoadData } = useQuery({
@@ -47,10 +50,12 @@ export function DailyWorkoutList() {
   });
 
   const { data: todayIntelligence } = useQuery({
-    queryKey: ['todayIntelligence'],
-    queryFn: getTodayIntelligence,
+    queryKey: ['intelligence', 'today', 'current'],
+    queryFn: () => getTodayIntelligence(),
     retry: 1,
     enabled: isToday(today),
+    staleTime: 30 * 60 * 1000, // 30 minutes - intelligence is expensive LLM call
+    gcTime: 60 * 60 * 1000, // Keep in cache for 1 hour
   });
 
   // Enrich activities with TSS

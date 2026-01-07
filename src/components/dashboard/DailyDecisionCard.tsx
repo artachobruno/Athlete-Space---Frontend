@@ -41,9 +41,11 @@ const mapRecommendationToDecision = (recommendation: string | null | undefined):
 
 export function DailyDecisionCard() {
   const { data, isLoading, error } = useQuery({
-    queryKey: ['todayIntelligence'],
-    queryFn: getTodayIntelligence,
+    queryKey: ['intelligence', 'today', 'current'],
+    queryFn: () => getTodayIntelligence(),
     retry: 1,
+    staleTime: 30 * 60 * 1000, // 30 minutes - intelligence is expensive
+    gcTime: 60 * 60 * 1000, // Keep in cache for 1 hour
   });
 
   if (isLoading) {

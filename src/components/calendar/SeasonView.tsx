@@ -44,10 +44,13 @@ export function SeasonView({ currentDate }: SeasonViewProps) {
     retry: 1,
   });
 
+  // Use consistent query key to share cache
   const { data: activities, isLoading: activitiesLoading } = useQuery({
-    queryKey: ['activities', 'season'],
+    queryKey: ['activities', 'limit', 100],
     queryFn: () => fetchActivities({ limit: 100 }),
     retry: 1,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 30 * 60 * 1000, // 30 minutes
   });
 
   const { data: overview, isLoading: overviewLoading } = useQuery({
@@ -57,9 +60,11 @@ export function SeasonView({ currentDate }: SeasonViewProps) {
   });
 
   const { data: seasonIntelligence } = useQuery({
-    queryKey: ['seasonIntelligence'],
+    queryKey: ['intelligence', 'season'],
     queryFn: () => getSeasonIntelligence(),
     retry: 1,
+    staleTime: 30 * 60 * 1000, // 30 minutes - intelligence is expensive LLM call
+    gcTime: 60 * 60 * 1000, // Keep in cache for 1 hour
   });
 
   const isLoading = seasonLoading || activitiesLoading || overviewLoading;

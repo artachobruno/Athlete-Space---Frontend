@@ -40,16 +40,29 @@ export function ActivityExpandedContent({ activity }: ActivityExpandedContentPro
   // Extract route coordinates from streams
   const routeCoordinates = useMemo<[number, number][] | undefined>(() => {
     const routePoints = streamsData?.route_points;
-    if (!routePoints || routePoints.length === 0) return undefined;
+    
+    // Ensure routePoints is actually an array
+    if (!routePoints || !Array.isArray(routePoints) || routePoints.length === 0) {
+      return undefined;
+    }
     
     // Convert number[][] to [number, number][]
     // route_points is in format [[lat, lng], [lat, lng], ...]
-    return routePoints.map((coord): [number, number] => {
-      if (Array.isArray(coord) && coord.length >= 2) {
-        return [coord[0], coord[1]];
-      }
-      return [0, 0];
-    }).filter((coord) => coord[0] !== 0 || coord[1] !== 0);
+    try {
+      return routePoints
+        .map((coord): [number, number] | null => {
+          if (Array.isArray(coord) && coord.length >= 2) {
+            const lat = typeof coord[0] === 'number' ? coord[0] : 0;
+            const lng = typeof coord[1] === 'number' ? coord[1] : 0;
+            return [lat, lng];
+          }
+          return null;
+        })
+        .filter((coord): coord is [number, number] => coord !== null && (coord[0] !== 0 || coord[1] !== 0));
+    } catch (error) {
+      console.error('[ActivityExpandedContent] Error processing route points:', error);
+      return undefined;
+    }
   }, [streamsData]);
   
   // Calculate comparison (using km for calculations, convert for display)
