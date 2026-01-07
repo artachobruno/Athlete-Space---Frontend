@@ -24,9 +24,27 @@ export function StravaConnectCard({ onConnect, onSkip }: StravaConnectCardProps)
     } catch (error) {
       setIsConnecting(false);
       console.error('Failed to connect Strava:', error);
+      
+      // Extract user-friendly error message
+      let errorMessage = 'Could not initiate Strava connection';
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      } else if (error && typeof error === 'object' && 'message' in error) {
+        errorMessage = String(error.message);
+      }
+      
+      // Check for database/schema errors and show a more helpful message
+      const errorStr = errorMessage.toLowerCase();
+      if (errorStr.includes('column') && errorStr.includes('does not exist') ||
+          errorStr.includes('programmingerror') ||
+          errorStr.includes('database') ||
+          errorStr.includes('migration')) {
+        errorMessage = 'The server is being updated. Please try again in a few moments.';
+      }
+      
       toast({
-        title: 'Failed to connect Strava',
-        description: error instanceof Error ? error.message : 'Could not initiate Strava connection',
+        title: 'Strava Connection Failed',
+        description: errorMessage,
         variant: 'destructive',
       });
     }

@@ -199,6 +199,19 @@ export const fetchUserProfile = async (): Promise<import("../types").AthleteProf
     // Don't log CORS errors repeatedly - they're already handled by interceptor
     if (!isCorsError(error)) {
       console.error("[API] Failed to fetch profile:", error);
+      
+      // Check for database errors and provide helpful context
+      if (error && typeof error === 'object' && 'status' in error) {
+        const apiError = error as { status?: number; message?: string };
+        if (apiError.status === 500) {
+          const errorStr = (apiError.message || '').toLowerCase();
+          if (errorStr.includes('column') && errorStr.includes('does not exist') ||
+              errorStr.includes('programmingerror') ||
+              errorStr.includes('database')) {
+            console.warn("[API] Database schema error detected. This usually means the backend is being updated. The migration should run automatically.");
+          }
+        }
+      }
     }
     throw error;
   }
@@ -1764,7 +1777,16 @@ const normalizeError = (error: unknown): ApiError => {
     } else if (status === 404) {
       message = "Resource not found.";
     } else if (status === 500) {
-      message = "Server error. Please try again later.";
+      // Check for database/schema errors in the error message
+      const errorStr = JSON.stringify(data || axiosError.message || '').toLowerCase();
+      if (errorStr.includes('column') && errorStr.includes('does not exist') ||
+          errorStr.includes('programmingerror') ||
+          errorStr.includes('undefinedcolumn') ||
+          errorStr.includes('migration')) {
+        message = "Database configuration error. The server is being updated. Please try again in a few moments.";
+      } else {
+        message = "Server error. Please try again later.";
+      }
     } else if (axiosError.message) {
       message = axiosError.message;
     }

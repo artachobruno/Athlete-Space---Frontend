@@ -12,6 +12,20 @@ export default function Onboarding() {
   // Check for auth token in URL params (from Strava OAuth callback)
   useEffect(() => {
     const token = searchParams.get('token');
+    const error = searchParams.get('error');
+    
+    // Check for OAuth errors first
+    if (error) {
+      console.error('[Onboarding] OAuth error:', error);
+      // Error is already in URL, user will see it or we can show a toast
+      // Remove error from URL
+      const newSearchParams = new URLSearchParams(searchParams);
+      newSearchParams.delete('error');
+      const newSearch = newSearchParams.toString();
+      navigate(`/onboarding${newSearch ? `?${newSearch}` : ''}`, { replace: true });
+      return;
+    }
+    
     if (token) {
       console.log('[Onboarding] Token found in URL, storing...', {
         tokenLength: token.length,
