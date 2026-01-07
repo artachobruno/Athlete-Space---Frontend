@@ -18,7 +18,10 @@ interface RequireAuthProps {
 export function RequireAuth({ children }: RequireAuthProps) {
   const { user, loading } = useAuth();
 
+  console.log("[RequireAuth] Auth state:", { user, loading, hasUser: !!user });
+
   if (loading) {
+    console.log("[RequireAuth] Still loading, showing skeleton");
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="space-y-4 w-full max-w-md p-8">
@@ -31,8 +34,10 @@ export function RequireAuth({ children }: RequireAuthProps) {
   }
 
   if (!user) {
+    console.warn("[RequireAuth] No user found, redirecting to login");
     return <Navigate to="/login" replace />;
   }
 
+  console.log("[RequireAuth] User authenticated, rendering children");
   return <>{children}</>;
 }

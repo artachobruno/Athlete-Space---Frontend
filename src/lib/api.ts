@@ -2033,6 +2033,17 @@ api.interceptors.response.use(
       // Return empty object instead of undefined to prevent .then() errors
       return {};
     }
+    
+    // Log /me responses for debugging
+    if (response.config?.url === '/me' || response.config?.url?.endsWith('/me')) {
+      console.log("[API] /me response interceptor:", {
+        url: response.config?.url,
+        status: response.status,
+        data: response.data,
+        dataType: typeof response.data,
+      });
+    }
+    
     return response.data;
   },
   (error) => {

@@ -226,6 +226,8 @@ export async function fetchCurrentUser(): Promise<AuthUser | null> {
       // /me endpoint is REQUIRED - this validates authentication
       const response = await api.get("/me");
       
+      console.log("[Auth] /me response received:", response);
+      
       // Validate response is not undefined/null
       if (!response || typeof response !== 'object') {
         console.warn("[Auth] /me returned invalid response:", response);
@@ -237,6 +239,8 @@ export async function fetchCurrentUser(): Promise<AuthUser | null> {
       // Or full UserOut: {"id": "...", "email": "...", "onboarding_complete": true, "strava_connected": true}
       // Transform it to match expected AuthUser shape
       const backendResponse = response as { user_id?: string; id?: string; authenticated?: boolean; email?: string | null; onboarding_complete?: boolean; strava_connected?: boolean };
+      
+      console.log("[Auth] Parsed backend response:", backendResponse);
       
       // Extract user_id or id (backend may use either)
       const userId = backendResponse.id || backendResponse.user_id;
@@ -254,6 +258,8 @@ export async function fetchCurrentUser(): Promise<AuthUser | null> {
         onboarding_complete: backendResponse.onboarding_complete ?? false,
         strava_connected: backendResponse.strava_connected ?? false,
       };
+      
+      console.log("[Auth] Created user profile:", userProfile);
       
       return userProfile;
     } catch (error) {
