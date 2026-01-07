@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Activity, Mail, Lock, HelpCircle, Shield, ArrowLeft, AlertCircle } from 'lucide-react';
+import { Activity, Mail, Lock, HelpCircle, Shield, ArrowLeft, AlertCircle, Info } from 'lucide-react';
 import { loginWithEmail } from '@/lib/auth';
 import { useAuth } from '@/context/AuthContext';
 import { initiateStravaConnect } from '@/lib/api';
@@ -95,6 +95,12 @@ export default function Login() {
           <span className="font-bold text-xl text-foreground">AthleteSpace</span>
         </div>
         <div className="flex items-center gap-2">
+          <Link to="/about">
+            <Button variant="ghost" size="sm">
+              <Info className="h-4 w-4 mr-1" />
+              About
+            </Button>
+          </Link>
           <Link to="/faq">
             <Button variant="ghost" size="sm">
               <HelpCircle className="h-4 w-4 mr-1" />
