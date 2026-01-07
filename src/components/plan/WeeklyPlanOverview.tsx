@@ -39,8 +39,9 @@ export function WeeklyPlanOverview() {
     );
   }
 
-  const plannedSessions = weekData.sessions?.filter(s => s.status === 'planned').length || 0;
-  const completedSessions = weekData.sessions?.filter(s => s.status === 'completed').length || 0;
+  const sessionsArray = Array.isArray(weekData?.sessions) ? weekData.sessions : [];
+  const plannedSessions = sessionsArray.filter(s => s?.status === 'planned').length;
+  const completedSessions = sessionsArray.filter(s => s?.status === 'completed').length;
   const plannedLoad = plannedSessions * 50; // Estimate
   const actualLoad = completedSessions * 50; // Estimate
   const progress = plannedLoad > 0 ? (actualLoad / plannedLoad) * 100 : 0;

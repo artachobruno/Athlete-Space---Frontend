@@ -154,8 +154,9 @@ export function WeekView({ currentDate, onActivityClick }: WeekViewProps) {
   const weeklySummaryData = useMemo(() => {
     if (!weekData || !overview) return null;
     
-    const plannedSessions = weekData.sessions?.filter(s => s.status === 'planned').length || 0;
-    const completedSessions = weekData.sessions?.filter(s => s.status === 'completed').length || 0;
+    const sessionsArray = Array.isArray(weekData?.sessions) ? weekData.sessions : [];
+    const plannedSessions = sessionsArray.filter(s => s?.status === 'planned').length;
+    const completedSessions = sessionsArray.filter(s => s?.status === 'completed').length;
     
     const ctlData = overview.metrics.ctl || [];
     const atlData = overview.metrics.atl || [];
@@ -245,22 +246,28 @@ export function WeekView({ currentDate, onActivityClick }: WeekViewProps) {
   const getWorkoutsForDay = (date: Date) => {
     const dateStr = format(date, 'yyyy-MM-dd');
     
+    // Ensure sessions is an array
+    const sessionsArray = Array.isArray(weekData?.sessions) ? weekData.sessions : [];
+    
     // Debug logging for specific day
-    if (weekData?.sessions) {
-      const allSessionsForDay = weekData.sessions.filter(s => s.date === dateStr);
+    if (sessionsArray.length > 0) {
+      const allSessionsForDay = sessionsArray.filter(s => s?.date === dateStr);
       if (allSessionsForDay.length > 0) {
         console.log(`[WeekView] Found ${allSessionsForDay.length} sessions for ${dateStr}:`, allSessionsForDay);
       }
     }
     
-    const plannedSessions = weekData?.sessions?.filter(s => {
+    const plannedSessions = sessionsArray.filter(s => {
+      if (!s || typeof s !== 'object') return false;
       // Normalize date strings for comparison (handle timezone issues)
       const sessionDate = s.date?.split('T')[0] || s.date;
       return sessionDate === dateStr && s.status === 'planned';
-    }) || [];
+    });
     
     const planned = plannedSessions.map(mapSessionToWorkout).filter((w): w is PlannedWorkout => w !== null);
-    const completed = (activities || []).filter((a: CompletedActivity) => {
+    const activitiesArray = Array.isArray(activities) ? activities : [];
+    const completed = activitiesArray.filter((a: CompletedActivity) => {
+      if (!a || typeof a !== 'object') return false;
       const activityDate = a.date?.split('T')[0] || a.date;
       return activityDate === dateStr;
     });

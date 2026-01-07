@@ -28,24 +28,33 @@ export function PlanChangeHistory() {
   // Convert recommendations to plan changes if they exist and are recent (this week)
   const planChanges: PlanChange[] = [];
   
-  if (recommendations?.recommendations) {
+  if (recommendations?.recommendations && Array.isArray(recommendations.recommendations)) {
     const now = new Date();
     const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
     
     recommendations.recommendations
       .filter(rec => {
+        if (!rec || typeof rec !== 'object') return false;
         // Only show high priority recommendations from this week
-        const recDate = new Date(rec.timestamp);
-        return rec.priority === 'high' && recDate >= weekAgo;
+        if (rec.priority !== 'high') return false;
+        if (!rec.timestamp) return false;
+        try {
+          const recDate = new Date(rec.timestamp);
+          return recDate >= weekAgo;
+        } catch {
+          return false;
+        }
       })
-      .forEach((rec, index) => {
-        planChanges.push({
-          id: rec.id,
-          date: new Date(rec.timestamp),
-          type: 'adjustment' as const,
-          description: rec.recommendation,
-          reason: rec.rationale || rec.recommendation,
-        });
+      .forEach((rec) => {
+        if (rec?.id && rec?.recommendation) {
+          planChanges.push({
+            id: rec.id,
+            date: rec.timestamp ? new Date(rec.timestamp) : new Date(),
+            type: 'adjustment' as const,
+            description: rec.recommendation,
+            reason: rec.rationale || rec.recommendation,
+          });
+        }
       });
   }
 

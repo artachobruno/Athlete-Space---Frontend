@@ -99,16 +99,22 @@ export function MonthView({ currentDate, onActivityClick }: MonthViewProps) {
 
   const getWorkoutsForDay = (date: Date) => {
     const dateStr = format(date, 'yyyy-MM-dd');
-    const allSessions = allWeekData.flatMap(w => w?.sessions || []);
+    const allSessions = allWeekData.flatMap(w => {
+      const sessions = w?.sessions;
+      return Array.isArray(sessions) ? sessions : [];
+    });
     
     const plannedSessions = allSessions.filter(s => {
+      if (!s || typeof s !== 'object') return false;
       // Normalize date strings for comparison (handle timezone issues)
       const sessionDate = s.date?.split('T')[0] || s.date;
       return sessionDate === dateStr && s.status === 'planned';
     });
     
     const planned = plannedSessions.map(mapSessionToWorkout).filter((w): w is PlannedWorkout => w !== null);
-    const completed = (activities || []).filter((a: CompletedActivity) => {
+    const activitiesArray = Array.isArray(activities) ? activities : [];
+    const completed = activitiesArray.filter((a: CompletedActivity) => {
+      if (!a || typeof a !== 'object') return false;
       const activityDate = a.date?.split('T')[0] || a.date;
       return activityDate === dateStr;
     });

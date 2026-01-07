@@ -66,7 +66,7 @@ export function WeeklyLoadCard() {
     let plannedLoad = 0;
 
     // Calculate actual load from completed sessions or TSS data
-    if (trainingLoadData?.daily_tss) {
+    if (trainingLoadData?.daily_tss && Array.isArray(trainingLoadData.daily_tss)) {
       // Sum up TSS for the week (using absolute values)
       actualLoad = trainingLoadData.daily_tss
         .slice(-7)
@@ -75,7 +75,7 @@ export function WeeklyLoadCard() {
 
     // Estimate planned load from calendar sessions
     const sessions = Array.isArray(weekData?.sessions) ? weekData.sessions : [];
-    const plannedSessions = sessions.filter(s => s.status === 'planned' || s.status === 'completed');
+    const plannedSessions = sessions.filter(s => s?.status === 'planned' || s?.status === 'completed');
     // Estimate TSS based on session duration (rough estimate: 1 hour = ~50 TSS)
     plannedLoad = plannedSessions.reduce((sum, session) => {
       const durationHours = (session.duration_minutes || 60) / 60;

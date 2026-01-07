@@ -29,10 +29,12 @@ export default function Activities() {
 
   // Check for missing recent activities
   const missingRecentActivities = useMemo(() => {
-    if (!activities || activities.length === 0) return null;
+    // Ensure activities is an array
+    const activitiesArray = Array.isArray(activities) ? activities : [];
+    if (activitiesArray.length === 0) return null;
     
     // Sort activities by date (most recent first)
-    const sortedActivities = [...activities].sort((a, b) => {
+    const sortedActivities = [...activitiesArray].sort((a, b) => {
       const dateA = a.date ? (typeof a.date === 'string' ? parseISO(a.date.split('T')[0]) : new Date(a.date)) : new Date(0);
       const dateB = b.date ? (typeof b.date === 'string' ? parseISO(b.date.split('T')[0]) : new Date(b.date)) : new Date(0);
       return dateB.getTime() - dateA.getTime();

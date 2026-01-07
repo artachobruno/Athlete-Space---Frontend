@@ -83,24 +83,33 @@ export function SeasonView({ currentDate }: SeasonViewProps) {
     const weekStartStr = format(weekStart, 'yyyy-MM-dd');
     const weekEndStr = format(weekEnd, 'yyyy-MM-dd');
     
-    const plannedSessions = seasonData?.sessions?.filter(s => {
+    const sessionsArray = Array.isArray(seasonData?.sessions) ? seasonData.sessions : [];
+    const plannedSessions = sessionsArray.filter(s => {
+      if (!s || typeof s !== 'object') return false;
       const sessionDate = s.date?.split('T')[0] || s.date;
       return sessionDate >= weekStartStr && sessionDate <= weekEndStr && s.status === 'planned';
-    }) || [];
+    });
 
-    const completedSessions = seasonData?.sessions?.filter(s => {
+    const completedSessions = sessionsArray.filter(s => {
+      if (!s || typeof s !== 'object') return false;
       const sessionDate = s.date?.split('T')[0] || s.date;
       return sessionDate >= weekStartStr && sessionDate <= weekEndStr && s.status === 'completed';
-    }) || [];
+    });
 
-    const completedActivities = (activities || []).filter(a => {
+    const activitiesArray = Array.isArray(activities) ? activities : [];
+    const completedActivities = activitiesArray.filter(a => {
+      if (!a || typeof a !== 'object') return false;
       const activityDate = a.date?.split('T')[0] || a.date;
       return activityDate >= weekStartStr && activityDate <= weekEndStr;
     });
 
     // Calculate CTL from overview metrics
-    const ctlData = overview?.metrics?.ctl || [];
-    const weekCtlData = ctlData.filter(([date]) => date >= weekStartStr && date <= weekEndStr);
+    const ctlData = Array.isArray(overview?.metrics?.ctl) ? overview.metrics.ctl : [];
+    const weekCtlData = ctlData.filter((item) => {
+      if (!Array.isArray(item) || item.length < 1) return false;
+      const [date] = item;
+      return date && date >= weekStartStr && date <= weekEndStr;
+    });
     const avgCtl = weekCtlData.length > 0
       ? weekCtlData.reduce((sum, [, ctl]) => sum + ctl, 0) / weekCtlData.length
       : 0;
