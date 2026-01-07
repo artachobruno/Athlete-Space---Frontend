@@ -27,6 +27,7 @@ import FAQ from "./pages/FAQ";
 import ScienceAndAI from "./pages/ScienceAndAI";
 import About from "./pages/About";
 import Terms from "./pages/Terms";
+import ConnectSuccess from "./pages/ConnectSuccess";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient({
@@ -137,22 +138,19 @@ const OAuthTokenHandler = () => {
       const storedToken = auth.getToken();
       if (storedToken) {
         console.log('[OAuth] ✅ Token stored successfully');
-        // Refresh user state from backend
-        refreshUser().catch((err) => {
-          console.error('[OAuth] Failed to refresh user after token storage:', err);
-        });
+        // Refresh user state from backend, then send to success page
+        refreshUser()
+          .then(() => {
+            navigate('/connect-success', { replace: true });
+          })
+          .catch((err) => {
+            console.error('[OAuth] Failed to refresh user after token storage:', err);
+            // Still navigate to success page – it will handle missing user
+            navigate('/connect-success', { replace: true });
+          });
       } else {
         console.error('[OAuth] ❌ Failed to store token!');
       }
-      
-      // Remove token from URL
-      const newSearchParams = new URLSearchParams(searchParams);
-      newSearchParams.delete('token');
-      const newSearch = newSearchParams.toString();
-      const currentPath = location.pathname;
-      
-      // Navigate to same path without token
-      navigate(`${currentPath}${newSearch ? `?${newSearch}` : ''}`, { replace: true });
     }
   }, [location, navigate, refreshUser]);
   
@@ -189,6 +187,7 @@ const AppContent = () => {
           }
         />
         <Route path="/onboarding" element={<Onboarding />} />
+        <Route path="/connect-success" element={<ConnectSuccess />} />
         <Route path="/privacy" element={<Privacy />} />
         <Route path="/faq" element={<FAQ />} />
         <Route path="/science" element={<ScienceAndAI />} />
