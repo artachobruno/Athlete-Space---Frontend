@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Activity, Mail, Lock, HelpCircle, Shield, ArrowLeft, AlertCircle, Info } from 'lucide-react';
+import { Activity, Mail, Lock, HelpCircle, Shield, ArrowLeft, AlertCircle, Info, FileText } from 'lucide-react';
 import { loginWithEmail } from '@/lib/auth';
 import { useAuth } from '@/context/AuthContext';
 import { initiateStravaConnect } from '@/lib/api';
@@ -111,6 +111,12 @@ export default function Login() {
             <Button variant="ghost" size="sm">
               <Shield className="h-4 w-4 mr-1" />
               Privacy
+            </Button>
+          </Link>
+          <Link to="/terms">
+            <Button variant="ghost" size="sm">
+              <FileText className="h-4 w-4 mr-1" />
+              Terms
             </Button>
           </Link>
         </div>
