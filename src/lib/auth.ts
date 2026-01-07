@@ -1,5 +1,6 @@
 import { api } from "./api";
 import type { UserOut } from "./apiValidation";
+import type { AthleteProfile } from "@/types";
 
 // Minimal user type for auth context (matches what /me returns)
 // This is a subset of the full profile - just enough for authentication
@@ -206,7 +207,7 @@ export async function logout(): Promise<void> {
 }
 
 // Guard to prevent multiple simultaneous calls to /me
-let fetchCurrentUserPromise: Promise<AthleteProfile | null> | null = null;
+let fetchCurrentUserPromise: Promise<AuthUser | null> | null = null;
 
 /**
  * Fetch current user profile.

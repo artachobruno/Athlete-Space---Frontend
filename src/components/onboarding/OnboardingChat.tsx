@@ -418,7 +418,7 @@ export function OnboardingChat({ onComplete, isComplete }: OnboardingChatProps) 
       sports: data.sports,
       trainingAge: 1,
       weeklyAvailability: {
-        days: data.availableDays,
+        daysPerWeek: data.availableDays,
         hoursPerWeek: data.hoursPerWeek,
       },
       goals: data.goal ? [data.goal] : [],

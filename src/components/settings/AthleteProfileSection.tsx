@@ -159,8 +159,8 @@ export function AthleteProfileSection() {
 
       // Preserve target_event and goals from current profile (they're edited in TrainingPreferencesSection)
       if (currentProfile) {
-        if (currentProfile.targetEvent) {
-          updateData.targetEvent = currentProfile.targetEvent;
+        if (currentProfile.target_event) {
+          updateData.targetEvent = currentProfile.target_event;
         }
         if (currentProfile.goals && currentProfile.goals.length > 0) {
           updateData.goals = currentProfile.goals;

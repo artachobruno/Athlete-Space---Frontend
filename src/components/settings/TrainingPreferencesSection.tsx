@@ -13,7 +13,7 @@ import { fetchTrainingPreferences, updateTrainingPreferences, updateUserProfile,
 import { auth } from '@/lib/auth';
 import { getStoredProfile, getOnboardingAdditionalData, saveProfile, saveOnboardingAdditionalData } from '@/lib/storage';
 import { toast } from '@/hooks/use-toast';
-import type { Sport } from '@/types';
+import type { Sport, AthleteProfile } from '@/types';
 
 const sports = [
   { id: 'running', label: 'Running' },
@@ -241,19 +241,19 @@ export function TrainingPreferencesSection() {
         name: '',
         sports: [],
         trainingAge: 0,
-        weeklyAvailability: { days: 0, hoursPerWeek: 0 },
+        weeklyAvailability: { daysPerWeek: 0, hoursPerWeek: 0 },
         goals: [],
         stravaConnected: false,
         onboardingComplete: true,
       };
 
       // Update profile with new data
-      const updatedProfile = {
+      const updatedProfile: AthleteProfile = {
         ...profile,
         sports: preferences.primarySports,
         trainingAge: preferences.trainingAge || 0,
         weeklyAvailability: {
-          days: preferences.trainingDays.filter(Boolean).length,
+          daysPerWeek: preferences.trainingDays.filter(Boolean).length,
           hoursPerWeek: preferences.hoursPerWeek,
         },
         goals: preferences.goal ? [preferences.goal] : [],
