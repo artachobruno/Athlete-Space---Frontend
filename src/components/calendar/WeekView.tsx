@@ -52,8 +52,6 @@ const intentColors = {
   recovery: 'bg-training-recovery/15 text-training-recovery border-training-recovery/30',
 };
 
-import { mapSessionToWorkout } from '@/lib/session-utils';
-
 export function WeekView({ currentDate, onActivityClick }: WeekViewProps) {
   const { convertDistance } = useUnitSystem();
   const [isSharing, setIsSharing] = useState(false);

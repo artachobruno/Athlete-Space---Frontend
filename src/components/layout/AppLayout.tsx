@@ -13,6 +13,7 @@ import {
   MessageCircle,
   LogOut,
   Shield,
+  HelpCircle,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { auth } from '@/lib/auth';
@@ -38,7 +39,7 @@ export function AppLayout({ children }: AppLayoutProps) {
 
   const handleLogout = () => {
     auth.logout();
-    navigate('/onboarding');
+    navigate('/login');
   };
 
   return (
@@ -97,6 +98,19 @@ export function AppLayout({ children }: AppLayoutProps) {
 
           {/* Footer */}
           <div className="p-4 border-t border-sidebar-border space-y-2">
+            <Link
+              to="/faq"
+              onClick={() => setSidebarOpen(false)}
+              className={cn(
+                'flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors w-full',
+                location.pathname === '/faq'
+                  ? 'bg-sidebar-accent text-sidebar-accent-foreground'
+                  : 'text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground'
+              )}
+            >
+              <HelpCircle className="h-4 w-4" />
+              FAQ
+            </Link>
             <Link
               to="/privacy"
               onClick={() => setSidebarOpen(false)}

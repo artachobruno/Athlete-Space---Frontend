@@ -56,7 +56,7 @@ export function LoadStatusCard() {
   }
 
   // Safely extract today's values with fallbacks
-  const today = overview?.today || {};
+  const today = overview?.today as { ctl?: number; atl?: number; tsb?: number } || {};
   const ctl = typeof today.ctl === 'number' ? today.ctl : 0;
   const atl = typeof today.atl === 'number' ? today.atl : 0;
   const tsb = typeof today.tsb === 'number' ? today.tsb : 0;

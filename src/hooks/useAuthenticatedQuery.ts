@@ -44,11 +44,14 @@ export function useAuthenticatedQuery<TData = unknown, TError = unknown>(
         }
       }
       // Use custom retry logic if provided, otherwise use default
-      if (options.retry) {
+      if (options.retry !== undefined) {
         if (typeof options.retry === 'function') {
           return options.retry(failureCount, error);
         }
-        return failureCount < options.retry;
+        if (typeof options.retry === 'number') {
+          return failureCount < options.retry;
+        }
+        return false;
       }
       return failureCount < 1;
     },

@@ -16,8 +16,10 @@ export function useValidateAuth() {
 
   useEffect(() => {
     const validateToken = async () => {
-      // Don't validate if already on onboarding page
-      if (location.pathname === '/onboarding' || location.pathname.startsWith('/onboarding/')) {
+      // Don't validate if already on login or onboarding page
+      if (location.pathname === '/login' || 
+          location.pathname === '/onboarding' || 
+          location.pathname.startsWith('/onboarding/')) {
         setIsValidating(false);
         return;
       }
@@ -33,13 +35,13 @@ export function useValidateAuth() {
 
       // Check if token is expired first (before making API call)
       if (auth.isTokenExpired()) {
-        console.log('[Auth] Token is expired, clearing and redirecting to onboarding');
+        console.log('[Auth] Token is expired, clearing and redirecting to login');
         auth.clear();
         setIsValid(false);
         setIsValidating(false);
-        // Only redirect if not already on onboarding
-        if (location.pathname !== '/onboarding') {
-          navigate('/onboarding', { replace: true });
+        // Only redirect if not already on login or onboarding
+        if (location.pathname !== '/login' && location.pathname !== '/onboarding') {
+          navigate('/login', { replace: true });
         }
         return;
       }
@@ -55,13 +57,13 @@ export function useValidateAuth() {
         const apiError = error as { status?: number };
         if (apiError.status === 401) {
           // Token is invalid - clear it
-          console.log('[Auth] Token is invalid (401), clearing and redirecting to onboarding');
+          console.log('[Auth] Token is invalid (401), clearing and redirecting to login');
           auth.clear();
           setIsValid(false);
           setIsValidating(false);
-          // Only redirect if not already on onboarding
-          if (location.pathname !== '/onboarding') {
-            navigate('/onboarding', { replace: true });
+          // Only redirect if not already on login or onboarding
+          if (location.pathname !== '/login' && location.pathname !== '/onboarding') {
+            navigate('/login', { replace: true });
           }
         } else {
           // Other error (network, etc.) - assume token might still be valid

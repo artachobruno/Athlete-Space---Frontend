@@ -19,6 +19,7 @@ import Analytics from "./pages/Analytics";
 import Coach from "./pages/Coach";
 import Settings from "./pages/Settings";
 import Onboarding from "./pages/Onboarding";
+import Login from "./pages/Login";
 import Privacy from "./pages/Privacy";
 import FAQ from "./pages/FAQ";
 import NotFound from "./pages/NotFound";
@@ -68,43 +69,6 @@ const queryClient = new QueryClient({
       gcTime: 30 * 60 * 1000, // 30 minutes - keep in cache for 30 min (formerly cacheTime)
       // Query deduplication: if same query is called multiple times within 2s, only fetch once
       structuralSharing: true,
-      onError: (error) => {
-        // Handle 401 authentication errors globally
-        if (error && typeof error === 'object' && 'status' in error) {
-          const apiError = error as { status?: number; code?: string; message?: string };
-          if (apiError.status === 401) {
-            // Auth error - token is invalid or missing
-            // Check if we're on a page that allows unauthenticated access
-            const currentPath = typeof window !== 'undefined' ? window.location.pathname : '';
-            const unauthenticatedAllowedPaths = ["/dashboard", "/onboarding"];
-            const allowsUnauthenticated = unauthenticatedAllowedPaths.some(path => 
-              currentPath === path || currentPath.startsWith(`${path}/`)
-            );
-            
-            // Only clear auth and redirect if we're on a page that requires auth
-            // Pages that allow unauthenticated access should handle 401s gracefully
-            if (!allowsUnauthenticated) {
-              auth.clear();
-              // Redirect will be handled by the API interceptor
-            }
-            // Silently handle 401s on pages that allow unauthenticated access
-            return;
-          }
-        }
-        // Silently handle CORS/network errors and timeouts - they're expected when backend is slow or misconfigured
-        if (error && typeof error === 'object' && 'code' in error) {
-          const apiError = error as { code?: string; message?: string };
-          if (apiError.code === 'ERR_NETWORK' || 
-              apiError.code === 'ECONNABORTED' ||
-              (apiError.message && (
-                apiError.message.includes('CORS') ||
-                apiError.message.includes('timeout') ||
-                apiError.message.includes('timed out')
-              ))) {
-            return; // Don't log these errors
-          }
-        }
-      },
     },
     mutations: {
       retry: false,
@@ -216,7 +180,8 @@ const AppContent = () => {
       <AuthValidator />
       <AuthRedirectHandler />
       <Routes>
-        <Route path="/" element={<Navigate to="/dashboard" replace />} />
+        <Route path="/" element={<Navigate to="/login" replace />} />
+        <Route path="/login" element={<Login />} />
         <Route path="/onboarding" element={<Onboarding />} />
         <Route path="/privacy" element={<Privacy />} />
         <Route path="/faq" element={<FAQ />} />
