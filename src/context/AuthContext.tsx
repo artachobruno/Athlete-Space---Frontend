@@ -41,6 +41,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
       // Validate response is not undefined/null
       if (!currentUser || typeof currentUser !== 'object') {
         console.warn("[AuthContext] /me returned invalid response:", currentUser);
+        // Only clear user if we're certain auth failed (not on transient errors)
+        // Don't clear on network errors or other non-auth failures
         setUser(null);
         setLoading(false);
         return;
@@ -49,8 +51,19 @@ export function AuthProvider({ children }: AuthProviderProps) {
       console.log("[AuthContext] Setting user:", currentUser);
       setUser(currentUser);
     } catch (error) {
+      // Check if error is actually an auth failure (401) vs other errors
+      const apiError = error as { status?: number };
       console.error("[AuthContext] Failed to fetch user:", error);
-      setUser(null);
+      
+      // Only clear user on actual auth failures (401)
+      // Don't clear on network errors, 404, 500, etc. - might be temporary
+      if (apiError.status === 401) {
+        console.warn("[AuthContext] Auth failed (401), clearing user");
+        setUser(null);
+      } else {
+        // For other errors, keep existing user state (don't clear on transient errors)
+        console.warn("[AuthContext] Non-auth error, keeping existing user state");
+      }
     } finally {
       setLoading(false);
       setIsRefreshing(false);

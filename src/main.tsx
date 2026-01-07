@@ -7,6 +7,7 @@ import "./lib/api-debug";
 import "leaflet/dist/leaflet.css";
 
 // Global error handlers to catch errors from browser extensions or other external sources
+// CRITICAL: These errors must NEVER affect app state or cause redirects
 window.addEventListener('unhandledrejection', (event) => {
   // Ignore errors from browser extensions (moz-extension://, chrome-extension://)
   if (event.reason && typeof event.reason === 'object') {
@@ -15,16 +16,24 @@ window.addEventListener('unhandledrejection', (event) => {
     if (errorStr.includes('moz-extension://') || 
         errorStr.includes('chrome-extension://') ||
         errorStr.includes('detectStore') ||
-        errorStr.includes('h1-check.js')) {
-      event.preventDefault(); // Prevent console error from extension interference
+        errorStr.includes('h1-check.js') ||
+        errorStr.includes("can't access property \"then\"")) {
+      // CRITICAL: Prevent extension errors from affecting app state
+      event.preventDefault();
+      event.stopPropagation();
       return;
     }
   }
   
   // Check if error message contains extension-related strings
   const reasonStr = String(event.reason || '');
-  if (reasonStr.includes('detectStore') || reasonStr.includes('moz-extension://') || reasonStr.includes('chrome-extension://')) {
+  if (reasonStr.includes('detectStore') || 
+      reasonStr.includes('moz-extension://') || 
+      reasonStr.includes('chrome-extension://') ||
+      reasonStr.includes("can't access property \"then\"")) {
+    // CRITICAL: Prevent extension errors from affecting app state
     event.preventDefault();
+    event.stopPropagation();
     return;
   }
   
@@ -35,6 +44,7 @@ window.addEventListener('unhandledrejection', (event) => {
 });
 
 // Also catch regular errors from extensions
+// CRITICAL: These errors must NEVER affect app state or cause redirects
 const originalError = window.onerror;
 window.onerror = (message, source, lineno, colno, error) => {
   const errorStr = String(message || '') + String(source || '');
@@ -42,9 +52,11 @@ window.onerror = (message, source, lineno, colno, error) => {
       errorStr.includes('chrome-extension://') ||
       errorStr.includes('detectStore') ||
       errorStr.includes('h1-check.js') ||
-      errorStr.includes('can\'t access property "then"')) {
-    // Suppress extension errors
-    return true; // Prevent default error handling
+      errorStr.includes("can't access property \"then\"") ||
+      errorStr.includes('a.default.detectStore')) {
+    // CRITICAL: Suppress extension errors completely - they must not affect app state
+    // Return true to prevent default error handling and stop propagation
+    return true;
   }
   // Call original error handler if it exists
   if (originalError) {

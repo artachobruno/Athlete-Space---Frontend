@@ -20,6 +20,8 @@ export function RequireAuth({ children }: RequireAuthProps) {
 
   console.log("[RequireAuth] Auth state:", { user, loading, hasUser: !!user });
 
+  // Always show loading state while auth is being determined
+  // This prevents redirects during initial load or errors
   if (loading) {
     console.log("[RequireAuth] Still loading, showing skeleton");
     return (
@@ -33,8 +35,10 @@ export function RequireAuth({ children }: RequireAuthProps) {
     );
   }
 
+  // Only redirect if loading is complete AND user is definitively null
+  // This ensures we don't redirect on transient errors or render issues
   if (!user) {
-    console.warn("[RequireAuth] No user found, redirecting to login");
+    console.warn("[RequireAuth] No user found after loading complete, redirecting to login");
     return <Navigate to="/login" replace />;
   }
 
