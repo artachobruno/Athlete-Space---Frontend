@@ -199,10 +199,13 @@ export const getTodayIntelligence = async (decisionDate?: string): Promise<Daily
     
     // Extract the decision from the response
     if (data.decision) {
+      // Confidence is now an object from the API with score and explanation
+      const confidence = (data.decision as { confidence?: { score?: number; explanation?: string } }).confidence;
+      
       return {
         recommendation: data.decision.recommendation || '',
         explanation: data.decision.rationale || data.decision.recommendation || '',
-        confidence: {
+        confidence: confidence || {
           score: 0.8,
           explanation: 'Based on current training state',
         },

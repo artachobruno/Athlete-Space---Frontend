@@ -47,8 +47,24 @@ export function AthleteProfileSection() {
 
   useEffect(() => {
     if (initialProfile) {
-      const changed = JSON.stringify(profile) !== JSON.stringify(initialProfile);
+      // Normalize data for comparison (handle empty strings, undefined, null)
+      const normalize = (obj: ProfileState): ProfileState => ({
+        name: obj.name || '',
+        email: obj.email || '',
+        gender: obj.gender || '',
+        weight: obj.weight || '',
+        unitSystem: obj.unitSystem || 'imperial',
+        location: obj.location || '',
+        dateOfBirth: obj.dateOfBirth || '',
+        height: obj.height || '',
+      });
+      const normalizedProfile = normalize(profile);
+      const normalizedInitial = normalize(initialProfile);
+      const changed = JSON.stringify(normalizedProfile) !== JSON.stringify(normalizedInitial);
       setHasChanges(changed);
+    } else {
+      // If initialProfile is not set yet, no changes can exist
+      setHasChanges(false);
     }
   }, [profile, initialProfile]);
 

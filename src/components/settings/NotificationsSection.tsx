@@ -44,6 +44,9 @@ export function NotificationsSection() {
     if (initialPreferences) {
       const changed = JSON.stringify(preferences) !== JSON.stringify(initialPreferences);
       setHasChanges(changed);
+    } else {
+      // If initialPreferences is not set yet, no changes can exist
+      setHasChanges(false);
     }
   }, [preferences, initialPreferences]);
 

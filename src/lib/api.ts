@@ -1680,27 +1680,43 @@ let corsErrorLogged = false;
 // Track if we've already redirected due to auth expiry to avoid redirect loops
 let authRedirected = false;
 
+// Reset redirect flag when we're on onboarding page (so we can redirect again if needed)
+if (typeof window !== 'undefined') {
+  const checkAndResetRedirect = () => {
+    if (window.location.pathname === "/onboarding") {
+      authRedirected = false;
+    }
+  };
+  // Check on load
+  checkAndResetRedirect();
+  // Listen for navigation changes
+  window.addEventListener('popstate', checkAndResetRedirect);
+}
+
 api.interceptors.response.use(
-  (response) => response.data,
+  (response) => {
+    // Reset redirect flag on successful response (means we're authenticated)
+    if (authRedirected) {
+      authRedirected = false;
+    }
+    return response.data;
+  },
   (error) => {
     const normalizedError = normalizeError(error);
     
     // Handle 401 by clearing auth and redirecting
     if (normalizedError.status === 401) {
-      const hadToken = !!auth.getToken();
       const isOnOnboarding = window.location.pathname === "/onboarding";
       
-      // Only clear auth if we had one (don't clear if already cleared)
-      if (hadToken) {
-        auth.clear();
-      }
+      // Always clear auth token on 401 (it's invalid anyway)
+      auth.clear();
       
-      // If we had a token and it became invalid/expired, redirect once to onboarding.
-      // If we didn't have a token or we're already on onboarding, don't redirect
-      // (prevents flicker/redirect loops after data deletion)
-      if (hadToken && !authRedirected && !isOnOnboarding) {
+      // Redirect to onboarding if we're not already there and haven't redirected recently
+      // This handles both cases: expired token OR no token (after data deletion)
+      if (!isOnOnboarding && !authRedirected) {
         authRedirected = true;
-        window.location.href = "/onboarding";
+        // Use replace to avoid adding to history
+        window.location.replace("/onboarding");
       }
       return Promise.reject(normalizedError);
     }

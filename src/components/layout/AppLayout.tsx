@@ -1,5 +1,5 @@
 import { ReactNode, useState } from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import {
   LayoutDashboard,
@@ -11,8 +11,10 @@ import {
   Menu,
   X,
   MessageCircle,
+  LogOut,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { auth } from '@/lib/auth';
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -30,7 +32,13 @@ const navItems = [
 
 export function AppLayout({ children }: AppLayoutProps) {
   const location = useLocation();
+  const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+
+  const handleLogout = () => {
+    auth.logout();
+    navigate('/onboarding');
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -87,7 +95,15 @@ export function AppLayout({ children }: AppLayoutProps) {
           </nav>
 
           {/* Footer */}
-          <div className="p-4 border-t border-sidebar-border">
+          <div className="p-4 border-t border-sidebar-border space-y-2">
+            <Button
+              variant="ghost"
+              onClick={handleLogout}
+              className="w-full justify-start text-sidebar-foreground/70 hover:text-sidebar-foreground hover:bg-sidebar-accent/50"
+            >
+              <LogOut className="h-4 w-4 mr-2" />
+              Logout
+            </Button>
             <div className="text-xs text-sidebar-foreground/50">
               Demo Mode
             </div>

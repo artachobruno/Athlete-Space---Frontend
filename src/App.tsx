@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { useSyncActivities } from "@/hooks/useSyncActivities";
+import { auth } from "@/lib/auth";
 import Dashboard from "./pages/Dashboard";
 import Calendar from "./pages/Calendar";
 import TrainingPlan from "./pages/TrainingPlan";
@@ -44,6 +45,17 @@ const queryClient = new QueryClient({
       // Query deduplication: if same query is called multiple times within 2s, only fetch once
       structuralSharing: true,
       onError: (error) => {
+        // Handle 401 authentication errors globally
+        if (error && typeof error === 'object' && 'status' in error) {
+          const apiError = error as { status?: number; code?: string; message?: string };
+          if (apiError.status === 401) {
+            // Auth error - token is invalid or missing
+            // The API interceptor will handle redirect, but we should also clear any cached data
+            auth.clear();
+            // Redirect will be handled by the API interceptor
+            return;
+          }
+        }
         // Silently handle CORS/network errors and timeouts - they're expected when backend is slow or misconfigured
         if (error && typeof error === 'object' && 'code' in error) {
           const apiError = error as { code?: string; message?: string };

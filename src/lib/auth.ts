@@ -5,5 +5,8 @@ export const auth = {
   setToken: (token: string): void => localStorage.setItem(TOKEN_KEY, token),
   clear: (): void => localStorage.removeItem(TOKEN_KEY),
   isLoggedIn: (): boolean => !!localStorage.getItem(TOKEN_KEY),
+  logout: (): void => {
+    localStorage.removeItem(TOKEN_KEY);
+  },
 };
 
