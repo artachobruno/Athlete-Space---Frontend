@@ -37,7 +37,17 @@ export function ActivityList({ activities, initialExpandedId = null }: ActivityL
   const { data: trainingLoadData } = useQuery({
     queryKey: ['trainingLoad', 60],
     queryFn: () => fetchTrainingLoad(60),
-    retry: 1,
+    retry: (failureCount, error) => {
+      // Don't retry on timeout errors
+      if (error && typeof error === 'object' && 'code' in error) {
+        const apiError = error as { code?: string; message?: string };
+        if (apiError.code === 'ECONNABORTED' || 
+            (apiError.message && apiError.message.includes('timed out'))) {
+          return false;
+        }
+      }
+      return failureCount < 1;
+    },
   });
   
   // Enrich activities with TSS from training load endpoint

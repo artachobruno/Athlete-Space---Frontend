@@ -1,4 +1,6 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -16,11 +18,15 @@ import {
 import { Database, Download, Trash2, Loader2, FileJson, FileSpreadsheet } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { fetchActivities, fetchUserProfile } from '@/lib/api';
+import { clearAllData } from '@/lib/storage';
+import { auth } from '@/lib/auth';
 
 export function DataManagementSection() {
   const [isExporting, setIsExporting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [exportFormat, setExportFormat] = useState<'json' | 'csv'>('json');
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   const handleExportData = async () => {
     setIsExporting(true);
@@ -98,16 +104,32 @@ export function DataManagementSection() {
   const handleDeleteAllData = async () => {
     setIsDeleting(true);
     try {
-      // In a real app, this would call an API endpoint
-      await new Promise(resolve => setTimeout(resolve, 2000));
+      // Cancel all pending queries to prevent flickering
+      await queryClient.cancelQueries();
       
-      // Clear local storage
-      localStorage.clear();
+      // Clear all app data
+      clearAllData();
+      localStorage.removeItem('strava_last_sync');
+      localStorage.removeItem('theme');
+      
+      // Clear auth token - user will need to re-authenticate
+      auth.clear();
+
+      // Remove all queries from cache to prevent refetching
+      queryClient.removeQueries();
+      
+      // Clear in-memory query cache so UI reflects the reset immediately
+      queryClient.clear();
       
       toast({
         title: 'Data deleted',
-        description: 'All your local data has been deleted',
+        description: 'All your data has been deleted. Redirecting to onboarding...',
       });
+
+      // Small delay to ensure all cleanup completes, then navigate
+      setTimeout(() => {
+        navigate('/onboarding', { replace: true });
+      }, 100);
     } catch (error) {
       console.error('Failed to delete data:', error);
       toast({
@@ -115,7 +137,6 @@ export function DataManagementSection() {
         description: error instanceof Error ? error.message : 'Could not delete your data',
         variant: 'destructive',
       });
-    } finally {
       setIsDeleting(false);
     }
   };

@@ -26,7 +26,17 @@ export function WeeklyLoadCard() {
   const { data: trainingLoadData, isLoading: trainingLoadLoading } = useQuery({
     queryKey: ['trainingLoad', 7],
     queryFn: () => fetchTrainingLoad(7),
-    retry: 1,
+    retry: (failureCount, error) => {
+      // Don't retry on timeout errors
+      if (error && typeof error === 'object' && 'code' in error) {
+        const apiError = error as { code?: string; message?: string };
+        if (apiError.code === 'ECONNABORTED' || 
+            (apiError.message && apiError.message.includes('timed out'))) {
+          return false;
+        }
+      }
+      return failureCount < 1;
+    },
   });
 
   const isLoading = overviewLoading || weekLoading || trainingLoadLoading;

@@ -19,11 +19,19 @@ const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       retry: (failureCount, error) => {
-        // Don't retry on CORS/network errors
-        if (error && typeof error === 'object' && 'code' in error) {
-          const apiError = error as { code?: string; message?: string };
-          if (apiError.code === 'ERR_NETWORK' || 
-              (apiError.message && apiError.message.includes('CORS'))) {
+        // Don't retry on CORS/network errors, timeouts, or auth errors
+        if (error && typeof error === 'object') {
+          const apiError = error as { code?: string; message?: string; status?: number };
+          // Don't retry on network errors, CORS errors, timeouts, or 401 (auth) errors
+          if (apiError.status === 401 || 
+              apiError.code === 'ERR_NETWORK' || 
+              apiError.code === 'ECONNABORTED' ||
+              (apiError.message && (
+                apiError.message.includes('CORS') ||
+                apiError.message.includes('timeout') ||
+                apiError.message.includes('timed out') ||
+                apiError.message.includes('Authentication required')
+              ))) {
             return false;
           }
         }
@@ -36,11 +44,16 @@ const queryClient = new QueryClient({
       // Query deduplication: if same query is called multiple times within 2s, only fetch once
       structuralSharing: true,
       onError: (error) => {
-        // Silently handle CORS/network errors - they're expected when backend is misconfigured
+        // Silently handle CORS/network errors and timeouts - they're expected when backend is slow or misconfigured
         if (error && typeof error === 'object' && 'code' in error) {
           const apiError = error as { code?: string; message?: string };
           if (apiError.code === 'ERR_NETWORK' || 
-              (apiError.message && apiError.message.includes('CORS'))) {
+              apiError.code === 'ECONNABORTED' ||
+              (apiError.message && (
+                apiError.message.includes('CORS') ||
+                apiError.message.includes('timeout') ||
+                apiError.message.includes('timed out')
+              ))) {
             return; // Don't log these errors
           }
         }

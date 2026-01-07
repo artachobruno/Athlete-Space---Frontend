@@ -811,7 +811,11 @@ export const fetchTrainingLoad = async (days?: number): Promise<{
   console.log("[API] Fetching training load");
   try {
     const params = days ? { days } : undefined;
-    const response = await api.get("/state/training-load", { params });
+    // Use longer timeout for training load as it processes many activities
+    const response = await api.get("/state/training-load", { 
+      params,
+      timeout: 60000, // 60 seconds - training load processing can take time with many activities
+    });
     return response as unknown as {
       dates: string[];
       daily_load: number[];
@@ -1673,6 +1677,8 @@ api.interceptors.request.use(
 
 // Track if we've already logged a CORS error to avoid console spam
 let corsErrorLogged = false;
+// Track if we've already redirected due to auth expiry to avoid redirect loops
+let authRedirected = false;
 
 api.interceptors.response.use(
   (response) => response.data,
@@ -1681,8 +1687,21 @@ api.interceptors.response.use(
     
     // Handle 401 by clearing auth and redirecting
     if (normalizedError.status === 401) {
-      auth.clear();
-      window.location.href = "/";
+      const hadToken = !!auth.getToken();
+      const isOnOnboarding = window.location.pathname === "/onboarding";
+      
+      // Only clear auth if we had one (don't clear if already cleared)
+      if (hadToken) {
+        auth.clear();
+      }
+      
+      // If we had a token and it became invalid/expired, redirect once to onboarding.
+      // If we didn't have a token or we're already on onboarding, don't redirect
+      // (prevents flicker/redirect loops after data deletion)
+      if (hadToken && !authRedirected && !isOnOnboarding) {
+        authRedirected = true;
+        window.location.href = "/onboarding";
+      }
       return Promise.reject(normalizedError);
     }
     

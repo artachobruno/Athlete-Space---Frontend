@@ -8,7 +8,7 @@ import { cn } from '@/lib/utils';
 import { useQuery } from '@tanstack/react-query';
 import { useUnitSystem } from '@/hooks/useUnitSystem';
 import { useMemo } from 'react';
-import { getTssForDate, enrichActivitiesWithTss } from '@/lib/tss-utils';
+import { getTssForDate, enrichActivitiesWithTss, type TrainingLoadData } from '@/lib/tss-utils';
 
 const intentColors = {
   aerobic: 'bg-training-aerobic/15 text-training-aerobic border-training-aerobic/30',
@@ -39,10 +39,20 @@ export function TodayWorkoutCard() {
     retry: 1,
   });
 
-  const { data: trainingLoadData } = useQuery({
+  const { data: trainingLoadData } = useQuery<TrainingLoadData>({
     queryKey: ['trainingLoad', 7],
     queryFn: () => fetchTrainingLoad(7),
-    retry: 1,
+    retry: (failureCount, error) => {
+      // Don't retry on timeout errors
+      if (error && typeof error === 'object' && 'code' in error) {
+        const apiError = error as { code?: string; message?: string };
+        if (apiError.code === 'ECONNABORTED' || 
+            (apiError.message && apiError.message.includes('timed out'))) {
+          return false;
+        }
+      }
+      return failureCount < 1;
+    },
   });
 
   const { data: activities } = useQuery({
