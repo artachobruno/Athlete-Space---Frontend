@@ -58,10 +58,9 @@ export function DataManagementSection() {
         
         // Profile section
         csvRows.push('Section,Field,Value');
-        csvRows.push(`Profile,Name,"${profile.name}"`);
-        csvRows.push(`Profile,Sports,"${profile.sports.join(', ')}"`);
-        csvRows.push(`Profile,Training Age,${profile.trainingAge}`);
-        csvRows.push(`Profile,Weekly Hours,${profile.weeklyAvailability.hoursPerWeek}`);
+        csvRows.push(`Profile,Name,"${profile?.name || 'N/A'}"`);
+        csvRows.push(`Profile,Goals,"${profile?.goals?.join(', ') || 'N/A'}"`);
+        csvRows.push(`Profile,Strava Connected,${profile?.strava_connected ? 'Yes' : 'No'}`);
         csvRows.push('');
         
         // Activities section

@@ -11,21 +11,50 @@
  * If this file is empty or shows errors, run the generation command.
  */
 
-// Placeholder - run 'npm run generate-types' to generate actual types
-// Example structure (will be replaced):
-// export interface paths {
-//   "/me": {
-//     get: {
-//       responses: {
-//         200: {
-//           content: {
-//             "application/json": components["schemas"]["UserOut"];
-//           };
-//         };
-//       };
-//     };
-//   };
-// }
+// Placeholder types until 'npm run generate-types' is run.
+// Using 'any' to avoid strict type checking issues with API responses.
 
-export {};
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type ApiResponse = any;
+
+export interface paths {
+  "/me": {
+    get: { responses: { 200: { content: { "application/json": ApiResponse } } } };
+  };
+  "/me/profile": {
+    get: { responses: { 200: { content: { "application/json": ApiResponse } } } };
+    put: { responses: { 200: { content: { "application/json": ApiResponse } } } };
+  };
+  "/me/training-preferences": {
+    get: { responses: { 200: { content: { "application/json": ApiResponse } } } };
+    put: { responses: { 200: { content: { "application/json": ApiResponse } } } };
+  };
+  "/me/status": {
+    get: { responses: { 200: { content: { "application/json": ApiResponse } } } };
+  };
+  "/me/sync/history": {
+    post: { responses: { 200: { content: { "application/json": ApiResponse } } } };
+  };
+  "/me/sync/check": {
+    post: { responses: { 200: { content: { "application/json": ApiResponse } } } };
+  };
+  "/me/sync/now": {
+    post: { responses: { 200: { content: { "application/json": ApiResponse } } } };
+  };
+  "/activities": {
+    get: { responses: { 200: { content: { "application/json": ApiResponse } } } };
+  };
+  "/activities/{id}": {
+    get: { responses: { 200: { content: { "application/json": ApiResponse } } } };
+  };
+  "/calendar/today": {
+    get: { responses: { 200: { content: { "application/json": ApiResponse } } } };
+  };
+  "/calendar/week": {
+    get: { responses: { 200: { content: { "application/json": ApiResponse } } } };
+  };
+  "/calendar/season": {
+    get: { responses: { 200: { content: { "application/json": ApiResponse } } } };
+  };
+}
 

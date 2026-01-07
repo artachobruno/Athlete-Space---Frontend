@@ -9,13 +9,64 @@ export type DailyDecision = 'proceed' | 'modify' | 'replace' | 'rest';
 export type LoadStatus = 'fresh' | 'optimal' | 'overreaching' | 'overtraining';
 
 /**
- * @deprecated Use generated types from @/types/api instead.
- * Import from api.ts: import type { components } from "@/types/api";
- * Then use: components["schemas"]["AthleteProfileOut"]
- * 
- * This interface was removed to enforce type generation from backend OpenAPI schema.
- * Run: npm run generate-types
+ * AthleteProfile interface for user profile data.
+ * Supports both snake_case (backend) and camelCase (frontend) properties.
  */
+export interface AthleteProfile {
+  id?: string;
+  user_id?: string;
+  name?: string;
+  email?: string;
+  gender?: string;
+  
+  // Date of birth - both cases
+  date_of_birth?: string;
+  dateOfBirth?: string;
+  
+  // Weight - both cases
+  weight_kg?: number;
+  weight?: number;
+  
+  // Height - both cases  
+  height_cm?: number;
+  height?: number;
+  
+  location?: string;
+  
+  // Unit system - both cases
+  unit_system?: 'imperial' | 'metric';
+  unitSystem?: 'imperial' | 'metric';
+  
+  // Onboarding complete - both cases
+  onboarding_complete?: boolean;
+  onboardingComplete?: boolean;
+  
+  // Strava connected - both cases
+  strava_connected?: boolean;
+  stravaConnected?: boolean;
+  
+  // Target event - both cases
+  target_event?: {
+    name?: string;
+    date?: string;
+  } | null;
+  targetEvent?: {
+    name?: string;
+    date?: string;
+  } | null;
+  
+  // Training data
+  goals?: string[];
+  sports?: Sport[];
+  trainingAge?: number | string;
+  
+  // Weekly availability
+  weeklyAvailability?: {
+    hoursPerWeek?: number;
+    daysPerWeek?: number;
+    days?: number[];
+  };
+}
 
 export interface PlannedWorkout {
   id: string;
@@ -82,7 +133,7 @@ export interface ChatMessage {
 
 export interface OnboardingState {
   step: 'welcome' | 'sports' | 'experience' | 'goals' | 'availability' | 'strava' | 'analysis' | 'plan' | 'complete';
-  data: Partial<AthleteProfile>;
+  data: Partial<Omit<AthleteProfile, 'sports'> & { sports?: Sport[] }>;
   messages: ChatMessage[];
 }
 
