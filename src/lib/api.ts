@@ -1827,15 +1827,23 @@ api.interceptors.response.use(
       const currentPath = typeof window !== 'undefined' ? window.location.pathname : '';
       const isOnOnboarding = currentPath === "/onboarding" || currentPath.startsWith("/onboarding/");
       
+      // Pages that allow unauthenticated access (don't redirect on 401)
+      const unauthenticatedAllowedPaths = ["/dashboard", "/onboarding"];
+      const allowsUnauthenticated = unauthenticatedAllowedPaths.some(path => 
+        currentPath === path || currentPath.startsWith(`${path}/`)
+      );
+      
       // Always clear auth token on 401 (it's invalid anyway)
       auth.clear();
       
-      // If we're already on onboarding, don't redirect or log - 401 is expected here
-      if (isOnOnboarding) {
-        // Silently reject - don't log 401 errors on onboarding page
+      // If we're on a page that allows unauthenticated access, don't redirect
+      // 401 errors are expected here - user can still use the page
+      if (isOnOnboarding || allowsUnauthenticated) {
+        // Silently reject - don't log 401 errors on pages that allow unauthenticated access
         return Promise.reject(normalizedError);
       }
       
+      // Only redirect if we're on a page that requires authentication
       // Trigger navigation event for React Router to handle
       // This avoids hard redirects that bypass React Router
       createNavigationEvent("/onboarding");

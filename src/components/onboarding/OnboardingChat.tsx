@@ -47,7 +47,7 @@ export function OnboardingChat({ onComplete, isComplete }: OnboardingChatProps) 
     hoursPerWeek: 0,
     hasInjury: false,
     injuryDetails: '',
-    stravaConnected: false,
+    stravaConnected: auth.isLoggedIn(), // Check if token exists (from OAuth callback)
   });
 
   const scrollToBottom = () => {
@@ -57,6 +57,28 @@ export function OnboardingChat({ onComplete, isComplete }: OnboardingChatProps) 
   useEffect(() => {
     scrollToBottom();
   }, [messages, isTyping]);
+
+  // Check if user authenticated (token from OAuth callback)
+  useEffect(() => {
+    if (auth.isLoggedIn() && !data.stravaConnected && step === 'strava') {
+      // User came back from OAuth with a token
+      setData(prev => ({ ...prev, stravaConnected: true }));
+      addAthleteMessage('Connected Strava');
+      
+      setTimeout(() => {
+        addCoachMessage("Analyzing your training history...");
+        setStep('analyzing');
+
+        setTimeout(() => {
+          addCoachMessage(
+            "I'm seeing consistent aerobic work over the past 6 weeks with limited high-intensity sessions. Your volume has been steady. I'll build around that foundation.",
+            'summary'
+          );
+          setStep('summary');
+        }, 2000);
+      }, 300);
+    }
+  }, [auth.isLoggedIn(), step, data.stravaConnected]);
 
   // Start with welcome
   useEffect(() => {

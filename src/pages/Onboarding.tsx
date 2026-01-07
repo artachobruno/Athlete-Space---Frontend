@@ -24,10 +24,20 @@ export default function Onboarding() {
 
   useEffect(() => {
     const profile = getStoredProfile();
-    // Only redirect if profile is complete AND user is authenticated
-    if (profile?.onboardingComplete && auth.isLoggedIn()) {
+    const isAuthenticated = auth.isLoggedIn();
+    
+    // If user has a token, validate it by checking profile
+    if (isAuthenticated && profile?.onboardingComplete) {
+      // User is authenticated and has completed onboarding - redirect to dashboard
       navigate('/dashboard', { replace: true });
+    } else if (isAuthenticated && !profile?.onboardingComplete) {
+      // User has token but hasn't completed onboarding - stay on onboarding
+      // This handles returning users who need to finish onboarding
+    } else if (!isAuthenticated && profile?.onboardingComplete) {
+      // User completed onboarding but lost token - they need to reconnect
+      // Stay on onboarding so they can reconnect Strava
     }
+    // If no token and no profile, user is new - stay on onboarding
   }, [navigate]);
 
   const handleComplete = () => {

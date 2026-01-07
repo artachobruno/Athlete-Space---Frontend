@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route, Navigate, useNavigate } from "react-route
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { useSyncActivities } from "@/hooks/useSyncActivities";
+import { useValidateAuth } from "@/hooks/useValidateAuth";
 import { auth } from "@/lib/auth";
 import { useEffect } from "react";
 import Dashboard from "./pages/Dashboard";
@@ -52,9 +53,20 @@ const queryClient = new QueryClient({
           const apiError = error as { status?: number; code?: string; message?: string };
           if (apiError.status === 401) {
             // Auth error - token is invalid or missing
-            // The API interceptor will handle redirect, but we should also clear any cached data
-            auth.clear();
-            // Redirect will be handled by the API interceptor
+            // Check if we're on a page that allows unauthenticated access
+            const currentPath = typeof window !== 'undefined' ? window.location.pathname : '';
+            const unauthenticatedAllowedPaths = ["/dashboard", "/onboarding"];
+            const allowsUnauthenticated = unauthenticatedAllowedPaths.some(path => 
+              currentPath === path || currentPath.startsWith(`${path}/`)
+            );
+            
+            // Only clear auth and redirect if we're on a page that requires auth
+            // Pages that allow unauthenticated access should handle 401s gracefully
+            if (!allowsUnauthenticated) {
+              auth.clear();
+              // Redirect will be handled by the API interceptor
+            }
+            // Silently handle 401s on pages that allow unauthenticated access
             return;
           }
         }
@@ -101,6 +113,12 @@ const AuthRedirectHandler = () => {
   return null;
 };
 
+// Component to validate auth on app load (inside router for navigation)
+const AuthValidator = () => {
+  useValidateAuth();
+  return null;
+};
+
 // Component to handle sync on app mount and auth redirects
 const AppContent = () => {
   // Automatically check for recent activities on app mount/page refresh
@@ -108,6 +126,7 @@ const AppContent = () => {
   
   return (
     <BrowserRouter>
+      <AuthValidator />
       <AuthRedirectHandler />
       <Routes>
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
