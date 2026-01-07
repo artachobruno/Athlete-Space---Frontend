@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { CheckCircle2, Loader2, Activity, ArrowRight } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { triggerHistoricalSync } from "@/lib/api";
-import logo from "@/assets/logo.png";
+import { Logo } from "@/components/Logo";
 
 type SyncStatus = "idle" | "syncing" | "done" | "error";
 
@@ -72,7 +72,7 @@ export default function ConnectSuccess() {
       {/* Header */}
       <header className="p-4 flex items-center gap-3">
         <div className="w-1.5 h-6 bg-primary rounded-sm" />
-        <img src={logo} alt="AthleteSpace" className="h-8 w-auto dark:invert" />
+        <Logo className="h-8 w-auto" />
         <span className="font-bold text-xl text-foreground">AthleteSpace</span>
       </header>
 

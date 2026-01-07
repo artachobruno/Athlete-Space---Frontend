@@ -8,7 +8,7 @@ import { Activity, Mail, Lock, HelpCircle, Shield, AlertCircle } from 'lucide-re
 import { signupWithEmail } from '@/lib/auth';
 import { useAuth } from '@/context/AuthContext';
 import { initiateStravaConnect } from '@/lib/api';
-import logo from '@/assets/logo.png';
+import { Logo } from '@/components/Logo';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
 export default function Signup() {
@@ -77,7 +77,7 @@ export default function Signup() {
       <header className="p-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="w-1.5 h-6 bg-primary rounded-sm" />
-          <img src={logo} alt="AthleteSpace" className="h-8 w-auto dark:invert" />
+          <Logo className="h-8 w-auto" />
           <span className="font-bold text-xl text-foreground">AthleteSpace</span>
         </div>
         <div className="flex items-center gap-2">

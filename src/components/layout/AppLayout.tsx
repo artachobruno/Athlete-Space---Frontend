@@ -17,7 +17,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { auth } from '@/lib/auth';
-import logo from '@/assets/logo.png';
+import { Logo } from '@/components/Logo';
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -56,7 +56,7 @@ export function AppLayout({ children }: AppLayoutProps) {
           {sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
         </Button>
         <div className="flex items-center gap-2">
-          <img src={logo} alt="AthleteSpace" className="h-6 w-auto dark:invert" />
+          <Logo className="h-6 w-auto" />
           <span className="font-semibold text-foreground">AthleteSpace</span>
         </div>
       </header>
@@ -73,7 +73,7 @@ export function AppLayout({ children }: AppLayoutProps) {
           {/* Logo */}
           <div className="h-14 lg:h-16 flex items-center gap-2 px-6 border-b border-sidebar-border">
             <div className="w-1.5 h-5 bg-primary rounded-sm" />
-            <img src={logo} alt="AthleteSpace" className="h-6 w-auto dark:invert" />
+            <Logo className="h-6 w-auto" />
             <span className="font-semibold text-lg text-sidebar-foreground">AthleteSpace</span>
           </div>
 
