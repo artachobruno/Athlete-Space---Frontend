@@ -61,13 +61,13 @@ export default function About() {
           <h2 className="text-xl font-semibold text-foreground mb-4">Who Builds AthleteSpace</h2>
           <div className="space-y-4 text-muted-foreground leading-relaxed">
             <p>
-              AthleteSpace is built and led by an applied AI researcher with a Ph.D. in Artificial Intelligence and Machine Learning and multiple years of experience building production AI systems at several leading technology companies.
+            Athlete Space is built by researchers and practitioners with deep backgrounds in applied artificial intelligence and endurance sport. The system is informed by advanced training in AI and machine learning, as well as multiple years of experience building and operating production AI systems within large-scale technology environments.
             </p>
             <p>
-              The platform is informed not only by academic research, but also by extensive firsthand experience as an endurance athlete—including multiple Ironman finishes, an Ironman championship, a sub-9-hour Ironman performance, and a sub-2:30 marathon.
+            Its design is further shaped by extensive firsthand experience in high-level endurance competition, including multiple Ironman finishes, an Ironman championship, a sub-9-hour Ironman performance, and sub-2:30 marathon racing.
             </p>
             <p className="text-foreground font-medium">
-              This dual background ensures AthleteSpace is grounded in both scientific rigor and the practical realities of high-level endurance training.
+            This combination of scientific expertise and lived athletic experience ensures Athlete Space is grounded in rigorous research while remaining aligned with the real demands of serious endurance training.
             </p>
           </div>
         </section>
