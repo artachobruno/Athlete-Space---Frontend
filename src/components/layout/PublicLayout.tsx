@@ -2,6 +2,7 @@ import { ReactNode } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { Shield, HelpCircle, Brain, Info } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Logo } from '@/components/Logo';
 
 interface PublicLayoutProps {
   children: ReactNode;
@@ -16,9 +17,8 @@ export function PublicLayout({ children }: PublicLayoutProps) {
       <header className="border-b border-border bg-card">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16">
-            <Link to="/" className="flex items-center gap-2">
-              <div className="w-2 h-6 bg-primary rounded-sm" />
-              <span className="font-semibold text-lg text-foreground">AthleteSpace</span>
+            <Link to="/" className="flex items-center">
+              <Logo className="text-xl" />
             </Link>
             
             {/* Navigation */}

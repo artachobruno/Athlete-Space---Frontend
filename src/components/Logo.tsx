@@ -1,48 +1,24 @@
-import { useTheme } from '@/hooks/useTheme';
-import { useEffect, useState } from 'react';
-import logoLight from '@/assets/AthleteSpace_logo_light.jpg';
-import logoDark from '@/assets/AthleteSpace_logo_dark.jpg';
+import { cn } from '@/lib/utils';
 
 interface LogoProps {
   className?: string;
-  alt?: string;
+  variant?: 'default' | 'inverse';
 }
 
-export function Logo({ className = '', alt = 'AthleteSpace' }: LogoProps) {
-  const { theme } = useTheme();
-  const [isDark, setIsDark] = useState(false);
-
-  useEffect(() => {
-    const updateTheme = () => {
-      if (theme === 'dark') {
-        setIsDark(true);
-      } else if (theme === 'light') {
-        setIsDark(false);
-      } else {
-        // system theme - check actual system preference
-        setIsDark(window.matchMedia('(prefers-color-scheme: dark)').matches);
-      }
-    };
-
-    updateTheme();
-
-    if (theme === 'system') {
-      const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-      const handleChange = () => setIsDark(mediaQuery.matches);
-      mediaQuery.addEventListener('change', handleChange);
-      return () => mediaQuery.removeEventListener('change', handleChange);
-    }
-  }, [theme]);
-  
-  // Use light logo for dark theme, dark logo for light theme
-  const logoPath = isDark ? logoLight : logoDark;
-  
+export function Logo({ className = '', variant = 'default' }: LogoProps) {
   return (
-    <img 
-      src={logoPath} 
-      alt={alt} 
-      className={className}
-    />
+    <span 
+      className={cn(
+        "font-semibold tracking-wide select-none",
+        variant === 'default' 
+          ? "text-primary" 
+          : "text-primary-foreground",
+        className
+      )}
+      style={{ fontFamily: "'Inter', sans-serif" }}
+    >
+      AthleteSpace
+    </span>
   );
 }
 
