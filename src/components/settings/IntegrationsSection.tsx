@@ -179,11 +179,11 @@ export function IntegrationsSection() {
     return date.toLocaleDateString();
   };
 
-  const updatedIntegrations = integrations.map(integration => {
+  const updatedIntegrations: Integration[] = integrations.map(integration => {
     if (integration.id === 'strava') {
       return {
         ...integration,
-        status: stravaStatus?.connected ? 'connected' : 'disconnected',
+        status: stravaStatus?.connected ? 'connected' as const : 'disconnected' as const,
         lastSync: lastSync ? formatLastSync(lastSync) : undefined,
       };
     }

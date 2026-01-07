@@ -453,7 +453,7 @@ export function TrainingPreferencesSection() {
           <Label>Training Focus</Label>
           <RadioGroup
             value={preferences.trainingFocus}
-            onValueChange={(value) => setPreferences({ ...preferences, trainingFocus: value })}
+            onValueChange={(value: 'general' | 'race') => setPreferences({ ...preferences, trainingFocus: value })}
             className="grid grid-cols-1 md:grid-cols-2 gap-3"
           >
             <label
