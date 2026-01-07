@@ -1,16 +1,26 @@
 import { useEffect } from 'react';
 import { checkRecentActivities } from '@/lib/api';
-import { auth } from '@/lib/auth';
+import { useAuthState } from './useAuthState';
 
 /**
  * Hook to automatically check for recent activities on app mount/page refresh
  * Calls /me/sync/check which runs in background to ensure today's activities are synced
+ * 
+ * CRITICAL: Only runs when auth is ready and user is authenticated.
+ * This prevents race conditions where sync is called before token is available.
  */
 export function useSyncActivities() {
+  const { isLoaded, isAuthenticated } = useAuthState();
+  
   useEffect(() => {
+    // CRITICAL: Wait for auth to be ready before making API calls
+    if (!isLoaded) {
+      return; // Auth not ready yet - wait
+    }
+    
     // Only check if user is authenticated
-    if (!auth.getToken()) {
-      return;
+    if (!isAuthenticated) {
+      return; // User not authenticated - don't make authenticated API calls
     }
 
     // Call sync check on mount (page refresh or new session)
@@ -22,6 +32,6 @@ export function useSyncActivities() {
         console.log('[Sync] Activity check failed (expected if no Strava connection):', error);
       }
     });
-  }, []); // Only run once on mount
+  }, [isLoaded, isAuthenticated]); // Re-run when auth state changes
 }
 

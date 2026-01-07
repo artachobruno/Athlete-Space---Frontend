@@ -2,7 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { fetchOverview } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import { TrendingUp, TrendingDown, Minus, Loader2 } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
+import { useAuthenticatedQuery } from '@/hooks/useAuthenticatedQuery';
 
 const statusStyles = {
   fresh: 'text-load-fresh',
@@ -19,7 +19,7 @@ const getLoadStatus = (tsb: number): { status: keyof typeof statusStyles; descri
 };
 
 export function LoadStatusCard() {
-  const { data: overview, isLoading, error } = useQuery({
+  const { data: overview, isLoading, error } = useAuthenticatedQuery({
     queryKey: ['overview', 60],
     queryFn: () => fetchOverview(60),
     retry: 1,

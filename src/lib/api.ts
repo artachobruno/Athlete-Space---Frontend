@@ -1837,10 +1837,13 @@ api.interceptors.request.use(
         });
       }
     } else {
-      // No token available - log for debugging
+      // No token available - this is expected if:
+      // 1. User hasn't authenticated yet (onboarding page)
+      // 2. Token was cleared/expired
+      // 3. Query was called before auth was ready (shouldn't happen with useAuthenticatedQuery)
       // Only log once per session to avoid spam
       if (!(window as { _tokenWarningLogged?: boolean })._tokenWarningLogged) {
-        console.warn('[API] No token available for request. User needs to authenticate via Strava OAuth.');
+        console.warn('[API] No app auth token available. Waiting for authentication.');
         console.warn('[API] Check localStorage:', {
           hasToken: !!localStorage.getItem('auth_token'),
           tokenValue: localStorage.getItem('auth_token')?.substring(0, 30) || 'null',

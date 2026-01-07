@@ -4,7 +4,7 @@ import { PMCChart } from '@/components/analytics/PMCChart';
 import { CoachInterpretation } from '@/components/analytics/CoachInterpretation';
 import { AnalyticsHeader } from '@/components/analytics/AnalyticsHeader';
 import { fetchOverview } from '@/lib/api';
-import { useQuery } from '@tanstack/react-query';
+import { useAuthenticatedQuery } from '@/hooks/useAuthenticatedQuery';
 import { Loader2 } from 'lucide-react';
 import type { TrainingLoad } from '@/types';
 
@@ -12,7 +12,7 @@ export default function Analytics() {
   const [isAdvanced, setIsAdvanced] = useState(false);
   const [dateRange, setDateRange] = useState<30 | 90>(30);
 
-  const { data: overview, isLoading, error } = useQuery({
+  const { data: overview, isLoading, error } = useAuthenticatedQuery({
     queryKey: ['overview', dateRange],
     queryFn: () => fetchOverview(dateRange),
     retry: 1,

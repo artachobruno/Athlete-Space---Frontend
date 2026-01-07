@@ -2,7 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { fetchOverview, fetchCalendarWeek, fetchTrainingLoad } from '@/lib/api';
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell } from 'recharts';
 import { subDays, format, startOfWeek } from 'date-fns';
-import { useQuery } from '@tanstack/react-query';
+import { useAuthenticatedQuery } from '@/hooks/useAuthenticatedQuery';
 import { Loader2 } from 'lucide-react';
 import { useMemo } from 'react';
 
@@ -11,19 +11,19 @@ export function WeeklyLoadCard() {
   const weekStart = startOfWeek(today, { weekStartsOn: 1 });
   const weekStartStr = format(weekStart, 'yyyy-MM-dd');
 
-  const { data: overview, isLoading: overviewLoading } = useQuery({
+  const { data: overview, isLoading: overviewLoading } = useAuthenticatedQuery({
     queryKey: ['overview', 7],
     queryFn: () => fetchOverview(7),
     retry: 1,
   });
 
-  const { data: weekData, isLoading: weekLoading } = useQuery({
+  const { data: weekData, isLoading: weekLoading } = useAuthenticatedQuery({
     queryKey: ['calendarWeek', weekStartStr],
     queryFn: () => fetchCalendarWeek(weekStartStr),
     retry: 1,
   });
 
-  const { data: trainingLoadData, isLoading: trainingLoadLoading } = useQuery({
+  const { data: trainingLoadData, isLoading: trainingLoadLoading } = useAuthenticatedQuery({
     queryKey: ['trainingLoad', 7],
     queryFn: () => fetchTrainingLoad(7),
     retry: (failureCount, error) => {

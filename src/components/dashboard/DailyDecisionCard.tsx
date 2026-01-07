@@ -3,7 +3,7 @@ import { Badge } from '@/components/ui/badge';
 import { getTodayIntelligence } from '@/lib/intelligence';
 import { cn } from '@/lib/utils';
 import { CheckCircle2, AlertCircle, RefreshCw, Moon, Loader2, TrendingUp } from 'lucide-react';
-import { useQuery } from '@tanstack/react-query';
+import { useAuthenticatedQuery } from '@/hooks/useAuthenticatedQuery';
 
 const decisionConfig = {
   proceed: {
@@ -40,7 +40,7 @@ const mapRecommendationToDecision = (recommendation: string | null | undefined):
 };
 
 export function DailyDecisionCard() {
-  const { data, isLoading, error } = useQuery({
+  const { data, isLoading, error } = useAuthenticatedQuery({
     queryKey: ['intelligence', 'today', 'current'],
     queryFn: () => getTodayIntelligence(),
     retry: 1,

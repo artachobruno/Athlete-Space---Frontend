@@ -5,6 +5,7 @@ import { getTodayIntelligence } from '@/lib/intelligence';
 import { format } from 'date-fns';
 import { Clock, Route, Zap, Loader2, MessageSquare } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useAuthenticatedQuery } from '@/hooks/useAuthenticatedQuery';
 import { useQuery } from '@tanstack/react-query';
 import { useUnitSystem } from '@/hooks/useUnitSystem';
 import { useMemo } from 'react';
@@ -33,13 +34,13 @@ const mapTypeToIntent = (type: string | null | undefined): 'aerobic' | 'threshol
 export function TodayWorkoutCard() {
   const { convertDistance } = useUnitSystem();
   const today = format(new Date(), 'yyyy-MM-dd');
-  const { data: todayData, isLoading, error } = useQuery({
+  const { data: todayData, isLoading, error } = useAuthenticatedQuery({
     queryKey: ['calendarToday', today],
     queryFn: () => fetchCalendarToday(today),
     retry: 1,
   });
 
-  const { data: trainingLoadData } = useQuery<TrainingLoadData>({
+  const { data: trainingLoadData } = useAuthenticatedQuery<TrainingLoadData>({
     queryKey: ['trainingLoad', 7],
     queryFn: () => fetchTrainingLoad(7),
     retry: (failureCount, error) => {
@@ -55,13 +56,13 @@ export function TodayWorkoutCard() {
     },
   });
 
-  const { data: activities } = useQuery({
+  const { data: activities } = useAuthenticatedQuery({
     queryKey: ['activities', 'today'],
     queryFn: () => fetchActivities({ limit: 10 }),
     retry: 1,
   });
 
-  const { data: todayIntelligence } = useQuery({
+  const { data: todayIntelligence } = useAuthenticatedQuery({
     queryKey: ['intelligence', 'today', 'current'],
     queryFn: () => getTodayIntelligence(),
     retry: 1,

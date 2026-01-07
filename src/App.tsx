@@ -7,8 +7,9 @@ import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { useSyncActivities } from "@/hooks/useSyncActivities";
 import { useValidateAuth } from "@/hooks/useValidateAuth";
+import { useAuthState } from "@/hooks/useAuthState";
 import { auth } from "@/lib/auth";
-import { useEffect } from "react";
+import { useEffect, createContext, useContext } from "react";
 import Dashboard from "./pages/Dashboard";
 import Calendar from "./pages/Calendar";
 import TrainingPlan from "./pages/TrainingPlan";
@@ -19,16 +20,33 @@ import Settings from "./pages/Settings";
 import Onboarding from "./pages/Onboarding";
 import NotFound from "./pages/NotFound";
 
+// Auth context to provide auth state to all components
+const AuthContext = createContext<{ isLoaded: boolean; isAuthenticated: boolean; token: string | null }>({
+  isLoaded: false,
+  isAuthenticated: false,
+  token: null,
+});
+
+// Hook to access auth state
+export const useAuth = () => useContext(AuthContext);
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
+      // CRITICAL: Disable queries by default - they will be enabled when auth is ready
+      // This prevents race conditions where queries fire before auth is initialized
+      enabled: false, // Will be overridden by individual queries based on auth state
+      
       retry: (failureCount, error) => {
         // Don't retry on CORS/network errors, timeouts, or auth errors
         if (error && typeof error === 'object') {
           const apiError = error as { code?: string; message?: string; status?: number };
-          // Don't retry on network errors, CORS errors, timeouts, or 401 (auth) errors
-          if (apiError.status === 401 || 
-              apiError.code === 'ERR_NETWORK' || 
+          // CRITICAL: Never retry on 401 - auth is not ready or token is invalid
+          if (apiError.status === 401) {
+            return false; // Stop retrying immediately on 401
+          }
+          // Don't retry on network errors, CORS errors, or timeouts
+          if (apiError.code === 'ERR_NETWORK' || 
               apiError.code === 'ECONNABORTED' ||
               (apiError.message && (
                 apiError.message.includes('CORS') ||
@@ -63,8 +81,8 @@ const queryClient = new QueryClient({
             // Only clear auth and redirect if we're on a page that requires auth
             // Pages that allow unauthenticated access should handle 401s gracefully
             if (!allowsUnauthenticated) {
-            auth.clear();
-            // Redirect will be handled by the API interceptor
+              auth.clear();
+              // Redirect will be handled by the API interceptor
             }
             // Silently handle 401s on pages that allow unauthenticated access
             return;
@@ -119,9 +137,21 @@ const AuthValidator = () => {
   return null;
 };
 
+// Component to provide auth state to all components
+const AuthProvider = ({ children }: { children: React.ReactNode }) => {
+  const authState = useAuthState();
+  
+  return (
+    <AuthContext.Provider value={authState}>
+      {children}
+    </AuthContext.Provider>
+  );
+};
+
 // Component to handle sync on app mount and auth redirects
 const AppContent = () => {
-  // Automatically check for recent activities on app mount/page refresh
+  // Only sync activities when auth is ready and user is authenticated
+  // This prevents race conditions
   useSyncActivities();
   
   return (
@@ -196,11 +226,13 @@ const AppContent = () => {
 const App = () => (
   <ErrorBoundary>
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <AppContent />
-      </TooltipProvider>
+      <AuthProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <AppContent />
+        </TooltipProvider>
+      </AuthProvider>
     </QueryClientProvider>
   </ErrorBoundary>
 );

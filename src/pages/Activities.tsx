@@ -2,6 +2,7 @@ import { AppLayout } from '@/components/layout/AppLayout';
 import { ActivityList } from '@/components/activities/ActivityList';
 import { fetchActivities, syncActivitiesNow } from '@/lib/api';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useAuthenticatedQuery } from '@/hooks/useAuthenticatedQuery';
 import { Loader2, RefreshCw } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import { useMemo, useState } from 'react';
@@ -19,7 +20,7 @@ export default function Activities() {
   // Auto-match activities to planned sessions
   useAutoMatchSessions(true);
   
-  const { data: activities, isLoading, error, refetch } = useQuery({
+  const { data: activities, isLoading, error, refetch } = useAuthenticatedQuery({
     queryKey: ['activities', 'limit', 100],
     queryFn: () => fetchActivities({ limit: 100 }),
     retry: 1,

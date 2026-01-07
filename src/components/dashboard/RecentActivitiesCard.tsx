@@ -4,6 +4,7 @@ import { format, parseISO } from 'date-fns';
 import { Bike, Footprints, Waves, Loader2, RefreshCw } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useAuthenticatedQuery } from '@/hooks/useAuthenticatedQuery';
 import { useUnitSystem } from '@/hooks/useUnitSystem';
 import { useMemo, useState } from 'react';
 import { enrichActivitiesWithTss } from '@/lib/tss-utils';
@@ -23,7 +24,7 @@ export function RecentActivitiesCard() {
   const [isSyncing, setIsSyncing] = useState(false);
   
   // Use same query key structure as main activities page to share cache
-  const { data: activities, isLoading, error, refetch } = useQuery({
+  const { data: activities, isLoading, error, refetch } = useAuthenticatedQuery({
     queryKey: ['activities', 'limit', 10],
     queryFn: () => fetchActivities({ limit: 10 }),
     retry: 1,
@@ -59,7 +60,7 @@ export function RecentActivitiesCard() {
     }
   };
 
-  const { data: trainingLoadData } = useQuery({
+  const { data: trainingLoadData } = useAuthenticatedQuery({
     queryKey: ['trainingLoad', 60],
     queryFn: () => fetchTrainingLoad(60),
     retry: (failureCount, error) => {
