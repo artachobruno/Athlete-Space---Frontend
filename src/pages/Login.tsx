@@ -73,8 +73,8 @@ export default function Login() {
       {/* Header */}
       <header className="p-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <img src={logo} alt="Athlete Space" className="h-8 w-auto dark:invert" />
-          <span className="font-bold text-xl text-foreground">Athlete Space</span>
+          <img src={logo} alt="AthleteSpace" className="h-8 w-auto dark:invert" />
+          <span className="font-bold text-xl text-foreground">AthleteSpace</span>
         </div>
         <div className="flex items-center gap-2">
           <Link to="/faq">
@@ -96,7 +96,7 @@ export default function Login() {
       <main className="flex-1 flex items-center justify-center p-4">
         <div className="w-full max-w-md space-y-6">
           <div className="text-center space-y-2">
-            <h1 className="text-3xl font-bold text-foreground">Welcome Back</h1>
+            <h1 className="text-3xl font-bold text-foreground">Welcome</h1>
             <p className="text-muted-foreground">
               Sign in to continue your training journey
             </p>
@@ -179,7 +179,7 @@ export default function Login() {
                   <div className="text-center space-y-4">
                     <div className="p-6 bg-accent/10 rounded-xl">
                       <Activity className="h-12 w-12 mx-auto text-accent mb-3" />
-                      <h3 className="font-semibold text-lg text-foreground">Get Started with Athlete Space</h3>
+                      <h3 className="font-semibold text-lg text-foreground">Get Started with AthleteSpace</h3>
                       <p className="text-sm text-muted-foreground mt-2">
                         Create your personalized training plan by connecting your Strava account
                       </p>
@@ -217,7 +217,7 @@ export default function Login() {
 
       {/* Footer */}
       <footer className="p-4 text-center text-xs text-muted-foreground">
-        © {new Date().getFullYear()} Athlete Space. All rights reserved.
+        © {new Date().getFullYear()} AthleteSpace. All rights reserved.
       </footer>
 
       {/* Forgot Password Dialog */}
