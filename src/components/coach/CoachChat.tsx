@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Send, Bot, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { sendCoachChat, fetchCoachContext } from '@/lib/api';
+import { sendCoachChat } from '@/lib/api';
 import { generateCoachGreeting } from '@/lib/coachGreeting';
 
 interface Message {
@@ -27,36 +27,17 @@ export function CoachChat() {
     scrollToBottom();
   }, [messages]);
 
-  // Fetch coach context and set initial greeting on mount
+  // Set initial greeting on mount (no API call needed - endpoint is deprecated)
   useEffect(() => {
-    const loadInitialGreeting = async () => {
-      try {
-        const coachContext = await fetchCoachContext();
-        const greeting = generateCoachGreeting(coachContext);
-        setMessages([
-          {
-            id: '1',
-            role: 'coach',
-            content: greeting,
-            timestamp: new Date(),
-          },
-        ]);
-      } catch (error) {
-        console.error('Failed to load coach context:', error);
-        // Fallback to default greeting on error
-        const defaultGreeting = generateCoachGreeting(null);
-        setMessages([
-          {
-            id: '1',
-            role: 'coach',
-            content: defaultGreeting,
-            timestamp: new Date(),
-          },
-        ]);
-      }
-    };
-
-    loadInitialGreeting();
+    const greeting = generateCoachGreeting(null);
+    setMessages([
+      {
+        id: '1',
+        role: 'coach',
+        content: greeting,
+        timestamp: new Date(),
+      },
+    ]);
   }, []);
 
   const sendMessage = async () => {

@@ -63,8 +63,8 @@ const queryClient = new QueryClient({
             // Only clear auth and redirect if we're on a page that requires auth
             // Pages that allow unauthenticated access should handle 401s gracefully
             if (!allowsUnauthenticated) {
-              auth.clear();
-              // Redirect will be handled by the API interceptor
+            auth.clear();
+            // Redirect will be handled by the API interceptor
             }
             // Silently handle 401s on pages that allow unauthenticated access
             return;

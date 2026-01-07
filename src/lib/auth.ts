@@ -75,9 +75,12 @@ export const auth = {
   /**
    * Checks if the current token is expired without clearing it.
    * Useful for checking before making API calls.
+   * 
+   * Note: This does NOT clear the token - it only checks expiration.
    */
   isTokenExpired: (): boolean => {
     const token = localStorage.getItem(TOKEN_KEY);
+    if (!token) return true; // No token = expired
     return isTokenExpired(token);
   },
   

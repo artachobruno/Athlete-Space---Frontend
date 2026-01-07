@@ -13,12 +13,33 @@ export default function Onboarding() {
   useEffect(() => {
     const token = searchParams.get('token');
     if (token) {
+      console.log('[Onboarding] Token found in URL, storing...', {
+        tokenLength: token.length,
+        tokenPreview: token.substring(0, 30) + '...',
+      });
       auth.setToken(token);
+      
+      // Verify token was stored
+      const storedToken = auth.getToken();
+      if (storedToken) {
+        console.log('[Onboarding] ✅ Token stored successfully');
+      } else {
+        console.error('[Onboarding] ❌ Failed to store token!');
+      }
+      
       // Remove token from URL
       const newSearchParams = new URLSearchParams(searchParams);
       newSearchParams.delete('token');
       const newSearch = newSearchParams.toString();
       navigate(`/onboarding${newSearch ? `?${newSearch}` : ''}`, { replace: true });
+    } else {
+      // Check if token exists in localStorage (for returning users)
+      const existingToken = auth.getToken();
+      if (existingToken) {
+        console.log('[Onboarding] Existing token found in localStorage');
+      } else {
+        console.log('[Onboarding] No token in URL or localStorage - user needs to authenticate');
+      }
     }
   }, [searchParams, navigate]);
 

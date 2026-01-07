@@ -1802,7 +1802,9 @@ api.interceptors.request.use(
     
     // Check if token is expired before adding it
     if (token) {
-      if (auth.isTokenExpired()) {
+      // Check expiration without clearing (isTokenExpired doesn't clear)
+      const isExpired = auth.isTokenExpired();
+      if (isExpired) {
         // Token is expired - clear it and don't add to request
         // The response interceptor will handle the 401 and redirect
         console.log('[API] Token expired, clearing and will redirect on 401');
@@ -1835,11 +1837,16 @@ api.interceptors.request.use(
         });
       }
     } else {
-      // No token available
-      console.warn('[API] No token available for request:', {
-        url: config.url,
-        method: config.method?.toUpperCase(),
-      });
+      // No token available - log for debugging
+      // Only log once per session to avoid spam
+      if (!(window as { _tokenWarningLogged?: boolean })._tokenWarningLogged) {
+        console.warn('[API] No token available for request. User needs to authenticate via Strava OAuth.');
+        console.warn('[API] Check localStorage:', {
+          hasToken: !!localStorage.getItem('auth_token'),
+          tokenValue: localStorage.getItem('auth_token')?.substring(0, 30) || 'null',
+        });
+        (window as { _tokenWarningLogged?: boolean })._tokenWarningLogged = true;
+      }
     }
     
     // Ensure Content-Type is set for POST/PUT requests with data
