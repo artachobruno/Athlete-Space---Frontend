@@ -122,12 +122,13 @@ export function WeekView({ currentDate, onActivityClick }: WeekViewProps) {
       }
       const [date, ctl] = item;
       return {
-      date,
-      ctl,
-      atl: atlData[index]?.[1] || 0,
-      tsb: tsbData[index]?.[1] || 0,
-      dailyLoad: 0,
-    })).slice(-14);
+        date,
+        ctl,
+        atl: atlData[index]?.[1] || 0,
+        tsb: tsbData[index]?.[1] || 0,
+        dailyLoad: 0,
+      };
+    }).slice(-14);
     
     const latest = trainingLoadData[trainingLoadData.length - 1];
     const weekAgo = trainingLoadData[Math.max(0, trainingLoadData.length - 7)];
