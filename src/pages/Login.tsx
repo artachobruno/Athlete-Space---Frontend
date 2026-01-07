@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Activity, Mail, Lock, ArrowRight, HelpCircle, Shield } from 'lucide-react';
 import { auth } from '@/lib/auth';
 import { toast } from '@/hooks/use-toast';
+import logo from '@/assets/logo.png';
 
 export default function Login() {
   const navigate = useNavigate();
@@ -45,10 +46,8 @@ export default function Login() {
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-accent/5 flex flex-col">
       {/* Header */}
       <header className="p-4 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div className="w-10 h-10 rounded-xl bg-accent flex items-center justify-center">
-            <Activity className="h-5 w-5 text-accent-foreground" />
-          </div>
+        <div className="flex items-center gap-3">
+          <img src={logo} alt="Athlete Space" className="h-8 w-auto dark:invert" />
           <span className="font-bold text-xl text-foreground">Athlete Space</span>
         </div>
         <div className="flex items-center gap-2">
