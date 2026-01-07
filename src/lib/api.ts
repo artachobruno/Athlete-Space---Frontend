@@ -1789,6 +1789,7 @@ export const syncStravaData = async (): Promise<void> => {
 
 const normalizeError = (error: unknown): ApiError => {
   if (axios.isAxiosError(error)) {
+    // Backend error format: {"error": "error_code", "message": "human readable message"}
     const axiosError = error as AxiosError<{ detail?: string | unknown[]; message?: string | unknown[]; error?: string | unknown[] }>;
     const status = axiosError.response?.status;
     const data = axiosError.response?.data;
@@ -1817,6 +1818,8 @@ const normalizeError = (error: unknown): ApiError => {
     let message = "An unexpected error occurred";
     
     // First, try to extract error message from response data
+    // Backend auth errors use: {"error": "code", "message": "..."}
+    // Prioritize message field (human-readable) over error field (machine-readable code)
     if (data?.detail) {
       message = extractMessage(data.detail);
     } else if (data?.message) {

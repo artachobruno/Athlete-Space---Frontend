@@ -5,11 +5,12 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation } from "react-router-dom";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { RequireAuth } from "@/components/auth/RequireAuth";
+import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { useSyncActivities } from "@/hooks/useSyncActivities";
 import { useValidateAuth } from "@/hooks/useValidateAuth";
-import { useAuthState } from "@/hooks/useAuthState";
 import { auth } from "@/lib/auth";
-import { useEffect, createContext, useContext } from "react";
+import { useEffect } from "react";
 import { ThemeProvider } from "@/hooks/useTheme";
 import Dashboard from "./pages/Dashboard";
 import Calendar from "./pages/Calendar";
@@ -20,19 +21,11 @@ import Coach from "./pages/Coach";
 import Settings from "./pages/Settings";
 import Onboarding from "./pages/Onboarding";
 import Login from "./pages/Login";
+import Signup from "./pages/Signup";
 import Privacy from "./pages/Privacy";
 import FAQ from "./pages/FAQ";
+import ScienceAndAI from "./pages/ScienceAndAI";
 import NotFound from "./pages/NotFound";
-
-// Auth context to provide auth state to all components
-const AuthContext = createContext<{ isLoaded: boolean; isAuthenticated: boolean; token: string | null }>({
-  isLoaded: false,
-  isAuthenticated: false,
-  token: null,
-});
-
-// Hook to access auth state
-export const useAuth = () => useContext(AuthContext);
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -99,26 +92,18 @@ const AuthRedirectHandler = () => {
 };
 
 // Component to validate auth on app load (inside router for navigation)
+// Note: This hook may still be used by other parts of the app
+// The AuthContext now handles the main auth state via /me endpoint
 const AuthValidator = () => {
   useValidateAuth();
   return null;
-};
-
-// Component to provide auth state to all components
-const AuthProvider = ({ children }: { children: React.ReactNode }) => {
-  const authState = useAuthState();
-  
-  return (
-    <AuthContext.Provider value={authState}>
-      {children}
-    </AuthContext.Provider>
-  );
 };
 
 // Component to handle OAuth token from URL (works on any route)
 const OAuthTokenHandler = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const { refreshUser } = useAuth();
   
   useEffect(() => {
     // Check for token in URL params (from Strava OAuth callback)
@@ -150,6 +135,10 @@ const OAuthTokenHandler = () => {
       const storedToken = auth.getToken();
       if (storedToken) {
         console.log('[OAuth] ✅ Token stored successfully');
+        // Refresh user state from backend
+        refreshUser().catch((err) => {
+          console.error('[OAuth] Failed to refresh user after token storage:', err);
+        });
       } else {
         console.error('[OAuth] ❌ Failed to store token!');
       }
@@ -163,7 +152,7 @@ const OAuthTokenHandler = () => {
       // Navigate to same path without token
       navigate(`${currentPath}${newSearch ? `?${newSearch}` : ''}`, { replace: true });
     }
-  }, [location, navigate]);
+  }, [location, navigate, refreshUser]);
   
   return null;
 };
@@ -180,65 +169,67 @@ const AppContent = () => {
       <AuthValidator />
       <AuthRedirectHandler />
       <Routes>
-        <Route path="/" element={<Navigate to="/login" replace />} />
+        <Route path="/" element={<Login />} />
         <Route path="/login" element={<Login />} />
+        <Route path="/signup" element={<Signup />} />
         <Route path="/onboarding" element={<Onboarding />} />
         <Route path="/privacy" element={<Privacy />} />
         <Route path="/faq" element={<FAQ />} />
+        <Route path="/science" element={<ScienceAndAI />} />
         <Route
           path="/dashboard"
           element={
-            <ProtectedRoute requireAuth={false}>
+            <RequireAuth>
               <Dashboard />
-            </ProtectedRoute>
+            </RequireAuth>
           }
         />
         <Route
           path="/calendar"
           element={
-            <ProtectedRoute>
+            <RequireAuth>
               <Calendar />
-            </ProtectedRoute>
+            </RequireAuth>
           }
         />
         <Route
           path="/plan"
           element={
-            <ProtectedRoute>
+            <RequireAuth>
               <TrainingPlan />
-            </ProtectedRoute>
+            </RequireAuth>
           }
         />
         <Route
           path="/activities"
           element={
-            <ProtectedRoute>
+            <RequireAuth>
               <Activities />
-            </ProtectedRoute>
+            </RequireAuth>
           }
         />
         <Route
           path="/analytics"
           element={
-            <ProtectedRoute>
+            <RequireAuth>
               <Analytics />
-            </ProtectedRoute>
+            </RequireAuth>
           }
         />
         <Route
           path="/coach"
           element={
-            <ProtectedRoute>
+            <RequireAuth>
               <Coach />
-            </ProtectedRoute>
+            </RequireAuth>
           }
         />
         <Route
           path="/settings"
           element={
-            <ProtectedRoute>
+            <RequireAuth>
               <Settings />
-            </ProtectedRoute>
+            </RequireAuth>
           }
         />
         <Route path="*" element={<NotFound />} />

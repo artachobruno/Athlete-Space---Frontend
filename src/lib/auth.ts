@@ -1,3 +1,6 @@
+import { api } from "./api";
+import type { AthleteProfile } from "@/types";
+
 const TOKEN_KEY = "auth_token";
 
 /**
@@ -110,4 +113,124 @@ export const auth = {
     localStorage.removeItem(TOKEN_KEY);
   },
 };
+
+/**
+ * Centralized authentication API calls.
+ * All auth-related API calls should go through these functions.
+ */
+
+/**
+ * Login with email and password.
+ * Backend returns: {"token": "..."} on success
+ * Backend returns: {"error": "user_not_found", "message": "..."} with 404
+ * Backend returns: {"error": "invalid_credentials", "message": "..."} with 401
+ * @throws Error with status code: 404 (account not found), 401 (wrong password), 500 (server error)
+ */
+export async function loginWithEmail(email: string, password: string): Promise<void> {
+  try {
+    const response = await api.post("/auth/login", { email, password });
+    // Backend returns token in response: {"token": "..."}
+    if (response && typeof response === 'object' && 'token' in response) {
+      const token = (response as { token: string }).token;
+      if (token && typeof token === 'string') {
+        auth.setToken(token);
+      } else {
+        throw new Error("Backend returned invalid token format");
+      }
+    } else {
+      throw new Error("Backend did not return a token");
+    }
+  } catch (error) {
+    // normalizeError already extracts message from backend's {"message": "..."} format
+    const apiError = error as { status?: number; message?: string; details?: unknown };
+    throw {
+      status: apiError.status || 500,
+      message: apiError.message || "Login failed",
+      details: apiError.details,
+    };
+  }
+}
+
+/**
+ * Sign up with email and password.
+ * Backend returns: {"token": "..."} on success
+ * Backend returns: {"error": "email_already_exists", "message": "..."} with 409
+ * @throws Error with status code: 409 (account exists), 400 (validation error), 500 (server error)
+ */
+export async function signupWithEmail(email: string, password: string): Promise<void> {
+  try {
+    const response = await api.post("/auth/signup", { email, password });
+    // Backend returns token in response: {"token": "..."}
+    if (response && typeof response === 'object' && 'token' in response) {
+      const token = (response as { token: string }).token;
+      if (token && typeof token === 'string') {
+        auth.setToken(token);
+      } else {
+        throw new Error("Backend returned invalid token format");
+      }
+    } else {
+      throw new Error("Backend did not return a token");
+    }
+  } catch (error) {
+    // normalizeError already extracts message from backend's {"message": "..."} format
+    const apiError = error as { status?: number; message?: string; details?: unknown };
+    throw {
+      status: apiError.status || 500,
+      message: apiError.message || "Signup failed",
+      details: apiError.details,
+    };
+  }
+}
+
+/**
+ * Logout the current user.
+ */
+export async function logout(): Promise<void> {
+  try {
+    await api.post("/auth/logout");
+  } catch (error) {
+    console.error("[Auth] Logout error:", error);
+    // Still clear local auth state even if API call fails
+  } finally {
+    auth.clear();
+  }
+}
+
+/**
+ * Fetch current user profile.
+ * Tries /me endpoint first, falls back to /me/profile if /me doesn't exist.
+ * @returns User profile if authenticated, null otherwise
+ */
+export async function fetchCurrentUser(): Promise<AthleteProfile | null> {
+  try {
+    // Try /me endpoint first (as per auth specs)
+    const response = await api.get("/me");
+    return response as unknown as AthleteProfile;
+  } catch (error) {
+    const apiError = error as { status?: number };
+    
+    // If /me doesn't exist (404), try /me/profile (existing endpoint)
+    if (apiError.status === 404) {
+      try {
+        const profileResponse = await api.get("/me/profile");
+        return profileResponse as unknown as AthleteProfile;
+      } catch (profileError) {
+        const profileApiError = profileError as { status?: number };
+        if (profileApiError.status === 401) {
+          auth.clear();
+          return null;
+        }
+        throw profileError;
+      }
+    }
+    
+    if (apiError.status === 401) {
+      // User is not authenticated
+      auth.clear();
+      return null;
+    }
+    
+    throw error;
+  }
+}
 

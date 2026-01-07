@@ -1,6 +1,6 @@
 import { ReactNode } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Shield, HelpCircle } from 'lucide-react';
+import { Shield, HelpCircle, Brain } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface PublicLayoutProps {
@@ -22,6 +22,18 @@ export function PublicLayout({ children }: PublicLayoutProps) {
             
             {/* Navigation */}
             <nav className="flex items-center gap-4">
+              <Link
+                to="/science"
+                className={cn(
+                  'flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors',
+                  location.pathname === '/science'
+                    ? 'text-foreground bg-muted'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                )}
+              >
+                <Brain className="h-4 w-4" />
+                Science & AI
+              </Link>
               <Link
                 to="/privacy"
                 className={cn(

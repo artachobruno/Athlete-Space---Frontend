@@ -2,14 +2,25 @@ import { PublicLayout } from '@/components/layout/PublicLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { HelpCircle, ChevronDown, ChevronUp } from 'lucide-react';
 import { useState } from 'react';
-import { cn } from '@/lib/utils';
+import { Link } from 'react-router-dom';
 
 interface FAQItem {
   question: string;
-  answer: string;
+  answer: string | React.ReactNode;
 }
 
 const faqItems: FAQItem[] = [
+  {
+    question: 'Where can I learn more about the science and AI behind Athlete Space?',
+    answer: (
+      <>
+        Learn more about our scientific foundations and AI methodology on our{' '}
+        <Link to="/science" className="text-accent underline hover:text-accent/80">
+          Science & AI page
+        </Link>.
+      </>
+    ),
+  },
   {
     question: 'What is Athlete Space?',
     answer:
@@ -107,7 +118,9 @@ function FAQItemComponent({ item, isOpen, onToggle }: { item: FAQItem; isOpen: b
       </CardHeader>
       {isOpen && (
         <CardContent>
-          <p className="text-muted-foreground leading-relaxed">{item.answer}</p>
+          <div className="text-muted-foreground leading-relaxed">
+            {typeof item.answer === 'string' ? <p>{item.answer}</p> : item.answer}
+          </div>
         </CardContent>
       )}
     </Card>
