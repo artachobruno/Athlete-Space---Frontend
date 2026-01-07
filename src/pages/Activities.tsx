@@ -5,7 +5,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuthenticatedQuery } from '@/hooks/useAuthenticatedQuery';
 import { Loader2, RefreshCw } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect, useRef } from 'react';
 import { format, isToday, parseISO, isYesterday, subDays } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/hooks/use-toast';
@@ -83,16 +83,40 @@ export default function Activities() {
     return missing.length > 0 ? missing : null;
   }, [activities]);
 
-  // Debug logging
-  if (activities) {
-    console.log('[Activities] Loaded activities:', activities.length);
-    if (missingRecentActivities) {
-      console.warn('[Activities] Missing recent activities:', missingRecentActivities);
+  // Track if we've already logged missing activities to prevent loop
+  const hasLoggedMissing = useRef(false);
+  const lastActivitiesCount = useRef<number | null>(null);
+  const lastMissingActivities = useRef<string[] | null>(null);
+
+  // Debug logging - only log when values actually change
+  useEffect(() => {
+    if (activities) {
+      const activitiesCount = activities.length;
+      const missingStr = missingRecentActivities ? JSON.stringify(missingRecentActivities) : null;
+      
+      // Only log if activities count changed or missing activities changed
+      if (activitiesCount !== lastActivitiesCount.current) {
+        console.log('[Activities] Loaded activities:', activitiesCount);
+        lastActivitiesCount.current = activitiesCount;
+        hasLoggedMissing.current = false; // Reset when activities change
+      }
+      
+      // Only log missing activities once when first detected
+      if (missingRecentActivities && !hasLoggedMissing.current && missingStr !== (lastMissingActivities.current ? JSON.stringify(lastMissingActivities.current) : null)) {
+        console.warn('[Activities] Missing recent activities:', missingRecentActivities);
+        hasLoggedMissing.current = true;
+        lastMissingActivities.current = missingRecentActivities;
+      } else if (!missingRecentActivities) {
+        // Reset flag when no activities are missing
+        hasLoggedMissing.current = false;
+        lastMissingActivities.current = null;
+      }
     }
-  }
-  if (error) {
-    console.error('[Activities] Error loading activities:', error);
-  }
+    
+    if (error) {
+      console.error('[Activities] Error loading activities:', error);
+    }
+  }, [activities, missingRecentActivities, error]);
 
   const handleSync = async () => {
     setIsSyncing(true);
