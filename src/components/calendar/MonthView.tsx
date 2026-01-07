@@ -38,8 +38,6 @@ const intentColors = {
   recovery: 'bg-training-recovery',
 };
 
-import { mapSessionToWorkout } from '@/lib/session-utils';
-
 export function MonthView({ currentDate, onActivityClick }: MonthViewProps) {
   const monthStart = startOfMonth(currentDate);
   const monthEnd = endOfMonth(currentDate);

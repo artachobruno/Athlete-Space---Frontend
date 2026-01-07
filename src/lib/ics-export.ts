@@ -36,7 +36,7 @@ export function generateIcsFile(sessions: CalendarSession[]): string {
   // ICS Header
   lines.push('BEGIN:VCALENDAR');
   lines.push('VERSION:2.0');
-  lines.push('PRODID:-//Athlete Space//Training Calendar//EN');
+  lines.push('PRODID:-//AthleteSpace//Training Calendar//EN');
   lines.push('CALSCALE:GREGORIAN');
   lines.push('METHOD:PUBLISH');
   

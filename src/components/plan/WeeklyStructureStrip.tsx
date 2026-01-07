@@ -22,8 +22,6 @@ const intentColors = {
   recovery: 'bg-training-recovery',
 };
 
-import { mapSessionToWorkout } from '@/lib/session-utils';
-
 interface WeeklyStructureStripProps {
   onDayClick?: (dateStr: string) => void;
 }

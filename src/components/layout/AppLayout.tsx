@@ -13,9 +13,11 @@ import {
   MessageCircle,
   LogOut,
   Shield,
+  HelpCircle,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { auth } from '@/lib/auth';
+import logo from '@/assets/logo.png';
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -38,7 +40,7 @@ export function AppLayout({ children }: AppLayoutProps) {
 
   const handleLogout = () => {
     auth.logout();
-    navigate('/onboarding');
+    navigate('/login');
   };
 
   return (
@@ -53,7 +55,10 @@ export function AppLayout({ children }: AppLayoutProps) {
         >
           {sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
         </Button>
-        <span className="font-semibold text-foreground">Athlete Space</span>
+        <div className="flex items-center gap-2">
+          <img src={logo} alt="AthleteSpace" className="h-6 w-auto dark:invert" />
+          <span className="font-semibold text-foreground">AthleteSpace</span>
+        </div>
       </header>
 
       {/* Sidebar */}
@@ -66,8 +71,9 @@ export function AppLayout({ children }: AppLayoutProps) {
       >
         <div className="flex flex-col h-full">
           {/* Logo */}
-          <div className="h-14 lg:h-16 flex items-center px-6 border-b border-sidebar-border">
-            <span className="font-semibold text-lg text-sidebar-foreground">Athlete Space</span>
+          <div className="h-14 lg:h-16 flex items-center gap-2 px-6 border-b border-sidebar-border">
+            <img src={logo} alt="AthleteSpace" className="h-6 w-auto dark:invert" />
+            <span className="font-semibold text-lg text-sidebar-foreground">AthleteSpace</span>
           </div>
 
           {/* Navigation */}
@@ -97,6 +103,19 @@ export function AppLayout({ children }: AppLayoutProps) {
 
           {/* Footer */}
           <div className="p-4 border-t border-sidebar-border space-y-2">
+            <Link
+              to="/faq"
+              onClick={() => setSidebarOpen(false)}
+              className={cn(
+                'flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors w-full',
+                location.pathname === '/faq'
+                  ? 'bg-sidebar-accent text-sidebar-accent-foreground'
+                  : 'text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground'
+              )}
+            >
+              <HelpCircle className="h-4 w-4" />
+              FAQ
+            </Link>
             <Link
               to="/privacy"
               onClick={() => setSidebarOpen(false)}
