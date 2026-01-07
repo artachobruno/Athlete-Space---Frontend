@@ -2,11 +2,12 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useNavigate } from "react-router-dom";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { useSyncActivities } from "@/hooks/useSyncActivities";
 import { auth } from "@/lib/auth";
+import { useEffect } from "react";
 import Dashboard from "./pages/Dashboard";
 import Calendar from "./pages/Calendar";
 import TrainingPlan from "./pages/TrainingPlan";
@@ -78,13 +79,36 @@ const queryClient = new QueryClient({
   },
 });
 
-// Component to handle sync on app mount
+// Component to handle auth redirect events from API interceptor
+const AuthRedirectHandler = () => {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const handleAuthRedirect = (event: Event) => {
+      const customEvent = event as CustomEvent<{ path: string }>;
+      const path = customEvent.detail?.path;
+      if (path && window.location.pathname !== path) {
+        navigate(path, { replace: true });
+      }
+    };
+
+    window.addEventListener('auth-redirect', handleAuthRedirect);
+    return () => {
+      window.removeEventListener('auth-redirect', handleAuthRedirect);
+    };
+  }, [navigate]);
+
+  return null;
+};
+
+// Component to handle sync on app mount and auth redirects
 const AppContent = () => {
   // Automatically check for recent activities on app mount/page refresh
   useSyncActivities();
   
   return (
     <BrowserRouter>
+      <AuthRedirectHandler />
       <Routes>
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
         <Route path="/onboarding" element={<Onboarding />} />

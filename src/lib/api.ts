@@ -1807,34 +1807,22 @@ api.interceptors.request.use(
 
 // Track if we've already logged a CORS error to avoid console spam
 let corsErrorLogged = false;
-// Track if we've already redirected due to auth expiry to avoid redirect loops
-let authRedirected = false;
 
-// Reset redirect flag when we're on onboarding page (so we can redirect again if needed)
-if (typeof window !== 'undefined') {
-  const checkAndResetRedirect = () => {
-    if (window.location.pathname === "/onboarding") {
-      authRedirected = false;
-    }
-  };
-  // Check on load
-  checkAndResetRedirect();
-  // Listen for navigation changes
-  window.addEventListener('popstate', checkAndResetRedirect);
-}
+// Custom event to trigger navigation from React Router context
+const createNavigationEvent = (path: string) => {
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('auth-redirect', { detail: { path } }));
+  }
+};
 
 api.interceptors.response.use(
   (response) => {
-    // Reset redirect flag on successful response (means we're authenticated)
-    if (authRedirected) {
-      authRedirected = false;
-    }
     return response.data;
   },
   (error) => {
     const normalizedError = normalizeError(error);
     
-    // Handle 401 by clearing auth and redirecting
+    // Handle 401 by clearing auth and triggering navigation event
     if (normalizedError.status === 401) {
       const currentPath = typeof window !== 'undefined' ? window.location.pathname : '';
       const isOnOnboarding = currentPath === "/onboarding" || currentPath.startsWith("/onboarding/");
@@ -1848,18 +1836,9 @@ api.interceptors.response.use(
         return Promise.reject(normalizedError);
       }
       
-      // Redirect to onboarding if we're not already there and haven't redirected recently
-      // This handles both cases: expired token OR no token (after data deletion)
-      if (!authRedirected) {
-        authRedirected = true;
-        // Use replace to avoid adding to history and ensure clean redirect
-        // Small delay to ensure auth is cleared first
-        setTimeout(() => {
-          if (typeof window !== 'undefined') {
-            window.location.replace("/onboarding");
-          }
-        }, 100);
-      }
+      // Trigger navigation event for React Router to handle
+      // This avoids hard redirects that bypass React Router
+      createNavigationEvent("/onboarding");
       return Promise.reject(normalizedError);
     }
     
