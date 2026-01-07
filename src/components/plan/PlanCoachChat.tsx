@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Brain, X, Send } from 'lucide-react';
+import { MessageCircle, X, Send, Brain } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { sendCoachChat } from '@/lib/api';
 
@@ -50,7 +50,7 @@ export function PlanCoachChat() {
           onClick={() => setIsOpen(true)}
           className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg"
         >
-          <Brain className="h-6 w-6" />
+          <MessageCircle className="h-6 w-6" />
         </Button>
       )}
 
@@ -60,7 +60,7 @@ export function PlanCoachChat() {
           {/* Header */}
           <div className="flex items-center justify-between p-3 border-b border-border bg-muted/50">
             <div className="flex items-center gap-2">
-              <Brain className="h-5 w-5 text-primary" />
+              <Brain className="h-5 w-5 text-[#2F4F4F]" />
               <span className="font-medium text-sm">Ask about this week</span>
             </div>
             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setIsOpen(false)}>

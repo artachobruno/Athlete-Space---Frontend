@@ -105,7 +105,7 @@ export function CoachChat() {
               )}
             >
               {message.role === 'coach' ? (
-                <Brain className="h-4 w-4" />
+                <Brain className="h-4 w-4 text-[#2F4F4F]" />
               ) : (
                 <User className="h-4 w-4" />
               )}
@@ -125,8 +125,8 @@ export function CoachChat() {
 
         {isTyping && (
           <div className="flex gap-3 animate-fade-up">
-            <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center">
-              <Brain className="h-4 w-4" />
+            <div className="w-8 h-8 rounded-full bg-accent text-accent-foreground flex items-center justify-center">
+              <Brain className="h-4 w-4 text-[#2F4F4F]" />
             </div>
             <div className="bg-muted rounded-lg px-4 py-2.5">
               <div className="flex gap-1">

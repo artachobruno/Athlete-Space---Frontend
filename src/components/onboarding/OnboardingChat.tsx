@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Bot, User, Send, Loader2, CheckCircle2 } from 'lucide-react';
+import { Brain, User, Send, Loader2, CheckCircle2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { OnboardingOptionChips } from './OnboardingOptionChips';
 import { StravaConnectCard } from './StravaConnectCard';
@@ -674,7 +674,7 @@ export function OnboardingChat({ onComplete, isComplete }: OnboardingChatProps) 
         {isTyping && (
           <div className="flex gap-3 animate-fade-up">
             <div className="w-9 h-9 rounded-full bg-accent/10 flex items-center justify-center shrink-0">
-              <Bot className="h-4 w-4 text-accent" />
+              <Brain className="h-4 w-4 text-[#2F4F4F]" />
             </div>
             <div className="bg-muted/50 rounded-2xl rounded-tl-sm px-4 py-3">
               <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
@@ -733,7 +733,7 @@ function MessageBubble({ message }: { message: Message }) {
         isCoach ? 'bg-accent/10' : 'bg-muted'
       )}>
         {isCoach ? (
-          <Bot className="h-4 w-4 text-accent" />
+          <Brain className="h-4 w-4 text-[#2F4F4F]" />
         ) : (
           <User className="h-4 w-4 text-muted-foreground" />
         )}

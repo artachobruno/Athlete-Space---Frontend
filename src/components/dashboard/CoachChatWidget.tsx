@@ -76,7 +76,7 @@ export function CoachChatWidget() {
     <Card className="flex flex-col h-full min-h-[200px]">
       <CardHeader className="pb-2 flex-row items-center justify-between space-y-0">
         <div className="flex items-center gap-2">
-          <Brain className="h-4 w-4 text-primary" />
+          <Brain className="h-4 w-4 text-[#2F4F4F]" />
           <CardTitle className="text-sm font-medium text-muted-foreground">Coach</CardTitle>
         </div>
         <Link to="/coach">
@@ -105,7 +105,7 @@ export function CoachChatWidget() {
                 )}
               >
                 {message.role === 'coach' ? (
-                  <Brain className="h-3 w-3" />
+                  <Brain className="h-3 w-3 text-[#2F4F4F]" />
                 ) : (
                   <User className="h-3 w-3" />
                 )}
@@ -125,8 +125,8 @@ export function CoachChatWidget() {
 
           {isTyping && (
             <div className="flex gap-2">
-              <div className="w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center">
-                <Brain className="h-3 w-3" />
+              <div className="w-6 h-6 rounded-full bg-accent text-accent-foreground flex items-center justify-center">
+                <Brain className="h-3 w-3 text-[#2F4F4F]" />
               </div>
               <div className="bg-muted rounded-lg px-3 py-1.5">
                 <div className="flex gap-1">
