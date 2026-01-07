@@ -2,10 +2,10 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation } from "react-router-dom";
+import { BrowserRouter, Routes, Route, useNavigate, useLocation } from "react-router-dom";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
-import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { RequireAuth } from "@/components/auth/RequireAuth";
+import { AuthLanding, PublicOnly } from "@/components/auth/AuthRedirects";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { useSyncActivities } from "@/hooks/useSyncActivities";
 import { useValidateAuth } from "@/hooks/useValidateAuth";
@@ -171,9 +171,23 @@ const AppContent = () => {
       <AuthValidator />
       <AuthRedirectHandler />
       <Routes>
-        <Route path="/" element={<Login />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/signup" element={<Signup />} />
+        <Route path="/" element={<AuthLanding />} />
+        <Route
+          path="/login"
+          element={
+            <PublicOnly>
+              <Login />
+            </PublicOnly>
+          }
+        />
+        <Route
+          path="/signup"
+          element={
+            <PublicOnly>
+              <Signup />
+            </PublicOnly>
+          }
+        />
         <Route path="/onboarding" element={<Onboarding />} />
         <Route path="/privacy" element={<Privacy />} />
         <Route path="/faq" element={<FAQ />} />
