@@ -24,8 +24,11 @@ interface PMCChartProps {
 
 export function PMCChart({ data, isAdvanced }: PMCChartProps) {
   const chartData = useMemo(() => {
+    // Ensure data is an array
+    if (!Array.isArray(data)) return [];
+    
     return data
-      .filter((d) => d && d.date)
+      .filter((d) => d && typeof d === 'object' && d.date)
       .map((d) => {
         const dateLabel = d.date ? (() => {
           try {

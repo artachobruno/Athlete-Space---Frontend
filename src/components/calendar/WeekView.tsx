@@ -103,13 +103,25 @@ export function WeekView({ currentDate, onActivityClick }: WeekViewProps) {
   const weeklyInsight = useMemo(() => {
     if (!overview?.metrics) return null;
     
-    const ctlData = overview.metrics.ctl || [];
-    const atlData = overview.metrics.atl || [];
-    const tsbData = overview.metrics.tsb || [];
+    const ctlData = Array.isArray(overview.metrics.ctl) ? overview.metrics.ctl : [];
+    const atlData = Array.isArray(overview.metrics.atl) ? overview.metrics.atl : [];
+    const tsbData = Array.isArray(overview.metrics.tsb) ? overview.metrics.tsb : [];
     
     if (ctlData.length < 7) return null;
     
-    const trainingLoadData: TrainingLoad[] = ctlData.map(([date, ctl], index) => ({
+    const trainingLoadData: TrainingLoad[] = ctlData.map((item, index) => {
+      // Ensure item is an array with at least 2 elements
+      if (!Array.isArray(item) || item.length < 2) {
+        return {
+          date: '',
+          ctl: 0,
+          atl: 0,
+          tsb: 0,
+          dailyLoad: 0,
+        };
+      }
+      const [date, ctl] = item;
+      return {
       date,
       ctl,
       atl: atlData[index]?.[1] || 0,
@@ -158,19 +170,34 @@ export function WeekView({ currentDate, onActivityClick }: WeekViewProps) {
     const plannedSessions = sessionsArray.filter(s => s?.status === 'planned').length;
     const completedSessions = sessionsArray.filter(s => s?.status === 'completed').length;
     
-    const ctlData = overview.metrics.ctl || [];
-    const atlData = overview.metrics.atl || [];
-    const tsbData = overview.metrics.tsb || [];
+    const ctlData = Array.isArray(overview.metrics.ctl) ? overview.metrics.ctl : [];
+    const atlData = Array.isArray(overview.metrics.atl) ? overview.metrics.atl : [];
+    const tsbData = Array.isArray(overview.metrics.tsb) ? overview.metrics.tsb : [];
     
-    const trainingLoadData: TrainingLoad[] = ctlData.map(([date, ctl], index) => ({
-      date,
-      ctl,
-      atl: atlData[index]?.[1] || 0,
-      tsb: tsbData[index]?.[1] || 0,
-      dailyLoad: 0,
-    })).slice(-14);
+    const trainingLoadData: TrainingLoad[] = ctlData.map((item, index) => {
+      // Ensure item is an array with at least 2 elements
+      if (!Array.isArray(item) || item.length < 2) {
+        return {
+          date: '',
+          ctl: 0,
+          atl: 0,
+          tsb: 0,
+          dailyLoad: 0,
+        };
+      }
+      const [date, ctl] = item;
+      return {
+        date: typeof date === 'string' ? date : '',
+        ctl: typeof ctl === 'number' ? ctl : 0,
+        atl: (Array.isArray(atlData[index]) && typeof atlData[index][1] === 'number') ? atlData[index][1] : 0,
+        tsb: (Array.isArray(tsbData[index]) && typeof tsbData[index][1] === 'number') ? tsbData[index][1] : 0,
+        dailyLoad: 0,
+      };
+    }).filter(item => item.date !== '').slice(-14);
     
-    const totalLoad = (activities || []).reduce((sum, a) => {
+    const activitiesArray = Array.isArray(activities) ? activities : [];
+    const totalLoad = activitiesArray.reduce((sum, a) => {
+      if (!a || typeof a !== 'object') return sum;
       const activityDate = a.date?.split('T')[0] || a.date;
       const weekStartStr = format(weekStart, 'yyyy-MM-dd');
       const weekEndStr = format(weekEnd, 'yyyy-MM-dd');

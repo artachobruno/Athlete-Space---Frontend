@@ -22,17 +22,32 @@ export default function Analytics() {
   const filteredData = useMemo((): TrainingLoad[] => {
     if (!overview?.metrics) return [];
     
-    const ctlData = overview.metrics.ctl || [];
-    const atlData = overview.metrics.atl || [];
-    const tsbData = overview.metrics.tsb || [];
+    const ctlData = Array.isArray(overview.metrics.ctl) ? overview.metrics.ctl : [];
+    const atlData = Array.isArray(overview.metrics.atl) ? overview.metrics.atl : [];
+    const tsbData = Array.isArray(overview.metrics.tsb) ? overview.metrics.tsb : [];
     
-    return ctlData.map(([date, ctl], index) => ({
-      date,
-      ctl,
-      atl: atlData[index]?.[1] || 0,
-      tsb: tsbData[index]?.[1] || 0,
-      dailyLoad: 0, // Would need from API
-    })).slice(-dateRange);
+    if (ctlData.length === 0) return [];
+    
+    return ctlData.map((item, index) => {
+      // Ensure item is an array with at least 2 elements [date, value]
+      if (!Array.isArray(item) || item.length < 2) {
+        return {
+          date: '',
+          ctl: 0,
+          atl: 0,
+          tsb: 0,
+          dailyLoad: 0,
+        };
+      }
+      const [date, ctl] = item;
+      return {
+        date: typeof date === 'string' ? date : '',
+        ctl: typeof ctl === 'number' ? ctl : 0,
+        atl: (Array.isArray(atlData[index]) && typeof atlData[index][1] === 'number') ? atlData[index][1] : 0,
+        tsb: (Array.isArray(tsbData[index]) && typeof tsbData[index][1] === 'number') ? tsbData[index][1] : 0,
+        dailyLoad: 0, // Would need from API
+      };
+    }).filter(item => item.date !== '').slice(-dateRange);
   }, [overview, dateRange]);
 
   if (isLoading) {

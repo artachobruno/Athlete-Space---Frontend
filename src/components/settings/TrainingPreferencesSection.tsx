@@ -127,11 +127,26 @@ export function TrainingPreferencesSection() {
       });
     } catch (error) {
       console.error('Failed to save preferences:', error);
-      toast({
-        title: 'Failed to save preferences',
-        description: error instanceof Error ? error.message : 'Could not save your preferences',
-        variant: 'destructive',
-      });
+      
+      // Check if it's a 405 error (method not allowed) - means endpoint doesn't exist
+      const isMethodNotAllowed = error && typeof error === 'object' && 'status' in error && (error as { status?: number }).status === 405;
+      
+      if (isMethodNotAllowed) {
+        toast({
+          title: 'Preferences update not available',
+          description: 'Preference updates are not currently supported by the backend. Your changes are saved locally but will not persist.',
+          variant: 'default',
+        });
+        // Still update local state for better UX
+        setInitialPreferences({ ...preferences });
+        setHasChanges(false);
+      } else {
+        toast({
+          title: 'Failed to save preferences',
+          description: error instanceof Error ? error.message : 'Could not save your preferences',
+          variant: 'destructive',
+        });
+      }
     } finally {
       setIsSaving(false);
     }

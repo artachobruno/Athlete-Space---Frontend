@@ -124,11 +124,26 @@ export function AthleteProfileSection() {
       });
     } catch (error) {
       console.error('Failed to save profile:', error);
-      toast({
-        title: 'Failed to save profile',
-        description: error instanceof Error ? error.message : 'Could not save your profile',
-        variant: 'destructive',
-      });
+      
+      // Check if it's a 405 error (method not allowed) - means endpoint doesn't exist
+      const isMethodNotAllowed = error && typeof error === 'object' && 'status' in error && (error as { status?: number }).status === 405;
+      
+      if (isMethodNotAllowed) {
+        toast({
+          title: 'Profile update not available',
+          description: 'Profile updates are not currently supported by the backend. Your changes are saved locally but will not persist.',
+          variant: 'default',
+        });
+        // Still update local state for better UX
+        setInitialProfile({ ...profile });
+        setHasChanges(false);
+      } else {
+        toast({
+          title: 'Failed to save profile',
+          description: error instanceof Error ? error.message : 'Could not save your profile',
+          variant: 'destructive',
+        });
+      }
     } finally {
       setIsSaving(false);
     }
