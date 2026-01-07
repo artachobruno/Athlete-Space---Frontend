@@ -1,22 +1,25 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Footprints, Bike, Waves, Clock, Route, Mountain, Heart, Zap, MessageCircle, CheckCircle2, ExternalLink } from 'lucide-react';
+import { Footprints, Bike, Waves, Clock, Route, Mountain, Heart, Zap, MessageCircle, CheckCircle2, ExternalLink, X, SkipForward } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useNavigate } from 'react-router-dom';
 import type { PlannedWorkout, CompletedActivity } from '@/types';
 import { useUnitSystem } from '@/hooks/useUnitSystem';
-import { useQuery } from '@tanstack/react-query';
-import { fetchTrainingLoad } from '@/lib/api';
-import { useMemo } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { fetchTrainingLoad, updateSessionStatus, type CalendarSession } from '@/lib/api';
+import { useMemo, useState } from 'react';
 import { getTssForDate, enrichActivitiesWithTss } from '@/lib/tss-utils';
+import { toast } from '@/hooks/use-toast';
 
 interface ActivityPopupProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   plannedWorkout?: PlannedWorkout | null;
   completedActivity?: CompletedActivity | null;
+  session?: CalendarSession | null;
   onAskCoach?: (context: string) => void;
+  onStatusChange?: () => void;
 }
 
 const sportIcons = {
@@ -47,13 +50,20 @@ export function ActivityPopup({
   onOpenChange, 
   plannedWorkout, 
   completedActivity,
-  onAskCoach 
+  session,
+  onAskCoach,
+  onStatusChange
 }: ActivityPopupProps) {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
+  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
   const { convertDistance, convertElevation, convertPace } = useUnitSystem();
   const workout = plannedWorkout;
   const activity = completedActivity;
   const SportIcon = sportIcons[workout?.sport || activity?.sport || 'running'];
+  
+  // Check if this is a planned session that can be updated
+  const isPlannedSession = session?.status === 'planned' && !activity;
   
   // Parse and convert pace string (format: "X min/km")
   const formatPace = (paceString?: string): string | undefined => {
@@ -104,6 +114,37 @@ export function ActivityPopup({
       navigate(`/activities?activity=${activity.id}`);
     } else {
       navigate('/activities');
+    }
+  };
+
+  const handleStatusUpdate = async (newStatus: 'completed' | 'skipped' | 'cancelled') => {
+    if (!session || !isPlannedSession) return;
+    
+    setIsUpdatingStatus(true);
+    try {
+      await updateSessionStatus(session.id, newStatus);
+      
+      // Invalidate calendar queries to refresh data
+      await queryClient.invalidateQueries({ queryKey: ['calendarWeek'] });
+      await queryClient.invalidateQueries({ queryKey: ['calendarSeason'] });
+      await queryClient.invalidateQueries({ queryKey: ['calendarToday'] });
+      
+      toast({
+        title: 'Session updated',
+        description: `Session marked as ${newStatus}`,
+      });
+      
+      onStatusChange?.();
+      onOpenChange(false);
+    } catch (error) {
+      console.error('Failed to update session status:', error);
+      toast({
+        title: 'Update failed',
+        description: 'Failed to update session status. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsUpdatingStatus(false);
     }
   };
 
@@ -254,28 +295,61 @@ export function ActivityPopup({
           )}
 
           {/* Action buttons */}
-          <div className="flex gap-2">
-            <Button
-              variant="outline"
-              className="flex-1"
-              onClick={() => {
-                onAskCoach?.(workout?.title || activity?.title || '');
-                onOpenChange(false);
-              }}
-            >
-              <MessageCircle className="h-4 w-4 mr-2" />
-              Ask Coach
-            </Button>
-            {activity && (
-              <Button
-                variant="default"
-                className="flex-1"
-                onClick={handleViewDetails}
-              >
-                <ExternalLink className="h-4 w-4 mr-2" />
-                View Details
-              </Button>
+          <div className="flex gap-2 flex-col">
+            {isPlannedSession && (
+              <div className="flex gap-2">
+                <Button
+                  variant="default"
+                  className="flex-1"
+                  onClick={() => handleStatusUpdate('completed')}
+                  disabled={isUpdatingStatus}
+                >
+                  <CheckCircle2 className="h-4 w-4 mr-2" />
+                  Mark Completed
+                </Button>
+                <Button
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => handleStatusUpdate('skipped')}
+                  disabled={isUpdatingStatus}
+                >
+                  <SkipForward className="h-4 w-4 mr-2" />
+                  Skip
+                </Button>
+                <Button
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => handleStatusUpdate('cancelled')}
+                  disabled={isUpdatingStatus}
+                >
+                  <X className="h-4 w-4 mr-2" />
+                  Cancel
+                </Button>
+              </div>
             )}
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                className="flex-1"
+                onClick={() => {
+                  onAskCoach?.(workout?.title || activity?.title || '');
+                  onOpenChange(false);
+                }}
+              >
+                <MessageCircle className="h-4 w-4 mr-2" />
+                Ask Coach
+              </Button>
+              {activity && (
+                <Button
+                  variant="default"
+                  className="flex-1"
+                  onClick={handleViewDetails}
+                >
+                  <ExternalLink className="h-4 w-4 mr-2" />
+                  View Details
+                </Button>
+              )}
+            </div>
           </div>
         </div>
       </DialogContent>

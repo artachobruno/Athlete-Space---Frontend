@@ -8,9 +8,9 @@ import { WeekView } from './WeekView';
 import { SeasonView } from './SeasonView';
 import { CoachDrawer } from './CoachDrawer';
 import { ActivityPopup } from './ActivityPopup';
-import { fetchCalendarSeason } from '@/lib/api';
+import { fetchCalendarSeason, type CalendarSession } from '@/lib/api';
 import { downloadIcsFile } from '@/lib/ics-export';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import type { PlannedWorkout, CompletedActivity } from '@/types';
 
 type ViewType = 'month' | 'week' | 'season';
@@ -23,6 +23,8 @@ export function TrainingCalendar() {
   const [activityPopupOpen, setActivityPopupOpen] = useState(false);
   const [selectedPlannedWorkout, setSelectedPlannedWorkout] = useState<PlannedWorkout | null>(null);
   const [selectedCompletedActivity, setSelectedCompletedActivity] = useState<CompletedActivity | null>(null);
+  const [selectedSession, setSelectedSession] = useState<CalendarSession | null>(null);
+  const queryClient = useQueryClient();
 
   const navigatePrevious = () => {
     if (view === 'month') {
@@ -64,10 +66,18 @@ export function TrainingCalendar() {
     setCoachOpen(true);
   };
 
-  const handleActivityClick = (planned: PlannedWorkout | null, completed: CompletedActivity | null) => {
+  const handleActivityClick = (planned: PlannedWorkout | null, completed: CompletedActivity | null, session?: CalendarSession | null) => {
     setSelectedPlannedWorkout(planned);
     setSelectedCompletedActivity(completed);
+    setSelectedSession(session || null);
     setActivityPopupOpen(true);
+  };
+
+  const handleStatusChange = () => {
+    // Invalidate queries to refresh calendar data
+    queryClient.invalidateQueries({ queryKey: ['calendarWeek'] });
+    queryClient.invalidateQueries({ queryKey: ['calendarSeason'] });
+    queryClient.invalidateQueries({ queryKey: ['calendarToday'] });
   };
 
   const { data: seasonData } = useQuery({
@@ -146,7 +156,9 @@ export function TrainingCalendar() {
         onOpenChange={setActivityPopupOpen}
         plannedWorkout={selectedPlannedWorkout}
         completedActivity={selectedCompletedActivity}
+        session={selectedSession}
         onAskCoach={handleAskCoach}
+        onStatusChange={handleStatusChange}
       />
 
       {/* Coach Drawer */}

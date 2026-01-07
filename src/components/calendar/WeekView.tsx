@@ -9,6 +9,7 @@ import {
 } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { fetchCalendarWeek, fetchActivities, fetchOverview } from '@/lib/api';
+import { mapSessionToWorkout } from '@/lib/session-utils';
 import { Footprints, Bike, Waves, Clock, Route, CheckCircle2, MessageCircle, Loader2, Sparkles, Share2, Copy, Download } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -33,7 +34,7 @@ import { toast } from '@/hooks/use-toast';
 
 interface WeekViewProps {
   currentDate: Date;
-  onActivityClick?: (planned: PlannedWorkout | null, completed: CompletedActivity | null) => void;
+  onActivityClick?: (planned: PlannedWorkout | null, completed: CompletedActivity | null, session?: import('@/lib/api').CalendarSession | null) => void;
 }
 
 const sportIcons = {
@@ -51,20 +52,7 @@ const intentColors = {
   recovery: 'bg-training-recovery/15 text-training-recovery border-training-recovery/30',
 };
 
-const mapSessionToWorkout = (session: import('@/lib/api').CalendarSession): PlannedWorkout | null => {
-  if (session.status === 'completed') return null;
-  return {
-    id: session.id,
-    date: session.date,
-    sport: session.type as PlannedWorkout['sport'],
-    intent: 'aerobic' as PlannedWorkout['intent'],
-    title: session.title,
-    description: session.notes || '',
-    duration: session.duration_minutes || 0,
-    distance: session.distance_km || undefined,
-    completed: false,
-  };
-};
+import { mapSessionToWorkout } from '@/lib/session-utils';
 
 export function WeekView({ currentDate, onActivityClick }: WeekViewProps) {
   const { convertDistance } = useUnitSystem();
@@ -299,7 +287,7 @@ export function WeekView({ currentDate, onActivityClick }: WeekViewProps) {
       const activityDate = a.date?.split('T')[0] || a.date;
       return activityDate === dateStr;
     });
-    return { planned, completed };
+    return { planned, completed, plannedSessions };
   };
 
   if (weekLoading || activitiesLoading) {
@@ -380,7 +368,7 @@ export function WeekView({ currentDate, onActivityClick }: WeekViewProps) {
       {/* Week Grid */}
       <div className="grid grid-cols-1 md:grid-cols-7 gap-3">
       {days.map((day) => {
-        const { planned, completed } = getWorkoutsForDay(day);
+        const { planned, completed, plannedSessions } = getWorkoutsForDay(day);
         const isCurrentDay = isToday(day);
 
         return (
@@ -428,6 +416,7 @@ export function WeekView({ currentDate, onActivityClick }: WeekViewProps) {
                   c.sport === workout.sport
                 );
                 const isCompleted = !!matchingActivity;
+                const session = plannedSessions.find(s => s.id === workout.id);
 
                 return (
                   <div
@@ -438,7 +427,7 @@ export function WeekView({ currentDate, onActivityClick }: WeekViewProps) {
                         ? 'bg-load-fresh/10 border-load-fresh/30'
                         : 'bg-muted/50 border-border'
                     )}
-                    onClick={() => onActivityClick?.(workout, matchingActivity || null)}
+                    onClick={() => onActivityClick?.(workout, matchingActivity || null, session || null)}
                   >
                     <div className="flex items-center gap-2 mb-1">
                       <Icon className="h-4 w-4 text-muted-foreground" />

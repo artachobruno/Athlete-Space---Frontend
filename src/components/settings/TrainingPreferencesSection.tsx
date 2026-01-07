@@ -107,7 +107,7 @@ export function TrainingPreferencesSection() {
 
       // Use backend data if available, otherwise fall back to local
       const effectiveProfile = backendProfile || profile;
-
+      
       // Convert available_days array (backend uses lowercase: ["monday", "tuesday", ...]) to boolean array
       const trainingDaysArray = backendPrefs
         ? weekDays.map(day => {
@@ -121,7 +121,7 @@ export function TrainingPreferencesSection() {
         : effectiveProfile
         ? weekDays.map((_, index) => index < (effectiveProfile.weeklyAvailability?.days || 0))
         : [true, true, true, true, true, true, true];
-
+      
       // Map training_focus: "race_focused" -> "race", "general_fitness" -> "general"
       const trainingFocus: 'race' | 'general' = backendPrefs
         ? (backendPrefs.training_focus === 'race_focused' ? 'race' : 'general')
@@ -135,7 +135,7 @@ export function TrainingPreferencesSection() {
       // Extract target event - prefer backend profile, then local profile
       const targetEventName = effectiveProfile?.targetEvent?.name || '';
       const targetEventDate = effectiveProfile?.targetEvent?.date || '';
-
+      
       const prefsData: PreferencesState = {
         primarySports: (backendPrefs?.primary_sports as Sport[]) || effectiveProfile?.sports || [],
         trainingDays: trainingDaysArray,
@@ -185,21 +185,21 @@ export function TrainingPreferencesSection() {
     try {
       // Save to backend if authenticated
       if (auth.isLoggedIn()) {
-        try {
-          // Convert trainingDays boolean array to available_days string array
-          const availableDays = weekDays.filter((_, index) => preferences.trainingDays[index]);
-          
-          // Map trainingFocus: "race" -> "race_focused", "general" -> "general_fitness"
-          const trainingFocus: 'race_focused' | 'general_fitness' = preferences.trainingFocus === 'race' ? 'race_focused' : 'general_fitness';
+    try {
+      // Convert trainingDays boolean array to available_days string array
+      const availableDays = weekDays.filter((_, index) => preferences.trainingDays[index]);
+      
+      // Map trainingFocus: "race" -> "race_focused", "general" -> "general_fitness"
+      const trainingFocus: 'race_focused' | 'general_fitness' = preferences.trainingFocus === 'race' ? 'race_focused' : 'general_fitness';
 
           // Save training preferences
-          await updateTrainingPreferences({
-            years_of_training: preferences.trainingAge,
-            primary_sports: preferences.primarySports,
-            available_days: availableDays,
-            weekly_hours: preferences.hoursPerWeek,
-            training_focus: trainingFocus,
-            injury_history: preferences.hasInjuryHistory,
+      await updateTrainingPreferences({
+        years_of_training: preferences.trainingAge,
+        primary_sports: preferences.primarySports,
+        available_days: availableDays,
+        weekly_hours: preferences.hoursPerWeek,
+        training_focus: trainingFocus,
+        injury_history: preferences.hasInjuryHistory,
             injury_notes: preferences.injuryNotes || null,
             consistency: preferences.consistency || null,
             goal: preferences.goal || null,

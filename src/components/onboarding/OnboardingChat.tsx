@@ -268,11 +268,11 @@ export function OnboardingChat({ onComplete, isComplete }: OnboardingChatProps) 
     
     setTimeout(() => {
       if (details) {
-        addCoachMessage(
-          "I'll factor that into your training. We'll work around it intelligently.",
-          undefined,
-          () => proceedToStrava()
-        );
+      addCoachMessage(
+        "I'll factor that into your training. We'll work around it intelligently.",
+        undefined,
+        () => proceedToStrava()
+      );
       } else {
         addCoachMessage(
           "Got it. I'll take a conservative approach with your training.",
@@ -372,10 +372,10 @@ export function OnboardingChat({ onComplete, isComplete }: OnboardingChatProps) 
       try {
         // Use the onboarding endpoint to save all data and optionally generate plans
         const weekDays = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
-        const availableDays = weekDays.slice(0, data.availableDays);
-        
-        // Map goal to training focus
-        const trainingFocus = data.goal.toLowerCase().includes('race') ? 'race_focused' : 'general_fitness';
+      const availableDays = weekDays.slice(0, data.availableDays);
+      
+      // Map goal to training focus
+      const trainingFocus = data.goal.toLowerCase().includes('race') ? 'race_focused' : 'general_fitness';
 
         // Prepare profile data for backend (map to backend format - snake_case)
         // Note: primary_sports goes in training_preferences, not profile
@@ -392,12 +392,12 @@ export function OnboardingChat({ onComplete, isComplete }: OnboardingChatProps) 
         const result = await completeOnboarding({
           profile: profileData as Partial<AthleteProfile>,
           training_preferences: {
-            years_of_training: 1, // Default, can be updated later
-            primary_sports: data.sports,
-            available_days: availableDays,
-            weekly_hours: data.hoursPerWeek,
-            training_focus: trainingFocus,
-            injury_history: data.hasInjury,
+        years_of_training: 1, // Default, can be updated later
+        primary_sports: data.sports,
+        available_days: availableDays,
+        weekly_hours: data.hoursPerWeek,
+        training_focus: trainingFocus,
+        injury_history: data.hasInjury,
             injury_notes: data.hasInjury && data.injuryDetails ? data.injuryDetails : null,
             consistency: data.consistency || null,
             goal: data.goal || null,
@@ -449,7 +449,7 @@ export function OnboardingChat({ onComplete, isComplete }: OnboardingChatProps) 
                 "That's everything I need. I'll put together your first week once I have more training data. Let's get started!"
               );
             } else {
-              addCoachMessage(
+      addCoachMessage(
                 "That's everything I need. Connect Strava to get personalized training plans. For now, let's get started!"
               );
             }
@@ -468,10 +468,10 @@ export function OnboardingChat({ onComplete, isComplete }: OnboardingChatProps) 
           }
         }
 
-        setStep('complete');
-        setTimeout(onComplete, 1000);
-      } catch (error) {
-        console.error('Failed to save onboarding data:', error);
+      setStep('complete');
+      setTimeout(onComplete, 1000);
+    } catch (error) {
+      console.error('Failed to save onboarding data:', error);
         // Check if it's an auth error - if so, user needs to authenticate first
         const isAuthError = error && typeof error === 'object' && 'status' in error && (error as { status?: number }).status === 401;
         

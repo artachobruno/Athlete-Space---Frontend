@@ -8,12 +8,16 @@ import { useMemo, useState } from 'react';
 import { format, isToday, parseISO, isYesterday, subDays } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/hooks/use-toast';
+import { useAutoMatchSessions } from '@/hooks/useAutoMatchSessions';
 
 export default function Activities() {
   const [searchParams] = useSearchParams();
   const activityId = searchParams.get('activity');
   const queryClient = useQueryClient();
   const [isSyncing, setIsSyncing] = useState(false);
+  
+  // Auto-match activities to planned sessions
+  useAutoMatchSessions(true);
   
   const { data: activities, isLoading, error, refetch } = useQuery({
     queryKey: ['activities', 'limit', 100],

@@ -5,6 +5,7 @@ import { WeeklyStructureStrip } from '@/components/plan/WeeklyStructureStrip';
 import { DailyWorkoutList } from '@/components/plan/DailyWorkoutList';
 import { PlanChangeHistory } from '@/components/plan/PlanChangeHistory';
 import { PlanCoachChat } from '@/components/plan/PlanCoachChat';
+import { ComplianceDashboard } from '@/components/calendar/ComplianceDashboard';
 
 export default function TrainingPlan() {
   const handleDayClick = useCallback((dateStr: string) => {
@@ -21,6 +22,9 @@ export default function TrainingPlan() {
           <h1 className="text-2xl font-semibold text-foreground">Training Plan</h1>
           <p className="text-muted-foreground mt-1">This week&apos;s training as directed by your coach</p>
         </div>
+
+        {/* Compliance Dashboard */}
+        <ComplianceDashboard showWeekly={true} showSeason={true} />
 
         {/* Weekly Overview */}
         <WeeklyPlanOverview />

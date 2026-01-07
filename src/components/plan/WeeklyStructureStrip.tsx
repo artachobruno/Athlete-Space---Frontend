@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import { startOfWeek, addDays, format, isToday } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { fetchCalendarWeek } from '@/lib/api';
+import { mapSessionToWorkout } from '@/lib/session-utils';
 import { Footprints, Bike, Waves, Moon } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import type { PlannedWorkout } from '@/types';
@@ -21,20 +22,7 @@ const intentColors = {
   recovery: 'bg-training-recovery',
 };
 
-const mapSessionToWorkout = (session: import('@/lib/api').CalendarSession): PlannedWorkout | null => {
-  if (session.status === 'completed') return null;
-  return {
-    id: session.id,
-    date: session.date,
-    sport: session.type as PlannedWorkout['sport'],
-    intent: 'aerobic' as PlannedWorkout['intent'],
-    title: session.title,
-    description: session.notes || '',
-    duration: session.duration_minutes || 0,
-    distance: session.distance_km || undefined,
-    completed: false,
-  };
-};
+import { mapSessionToWorkout } from '@/lib/session-utils';
 
 interface WeeklyStructureStripProps {
   onDayClick?: (dateStr: string) => void;

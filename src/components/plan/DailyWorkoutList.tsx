@@ -1,6 +1,7 @@
 import { useMemo } from 'react';
 import { startOfWeek, addDays, format, isToday, isBefore } from 'date-fns';
 import { fetchCalendarWeek, fetchActivities, fetchTrainingLoad } from '@/lib/api';
+import { mapSessionToWorkout } from '@/lib/session-utils';
 import { getTodayIntelligence } from '@/lib/intelligence';
 import { DailyWorkoutCard } from './DailyWorkoutCard';
 import { useQuery } from '@tanstack/react-query';
@@ -8,20 +9,7 @@ import { Loader2 } from 'lucide-react';
 import type { PlannedWorkout, CompletedActivity } from '@/types';
 import { enrichActivitiesWithTss } from '@/lib/tss-utils';
 
-const mapSessionToWorkout = (session: import('@/lib/api').CalendarSession): PlannedWorkout | null => {
-  if (session.status === 'completed') return null;
-  return {
-    id: session.id,
-    date: session.date,
-    sport: session.type as PlannedWorkout['sport'],
-    intent: 'aerobic' as PlannedWorkout['intent'],
-    title: session.title,
-    description: session.notes || '',
-    duration: session.duration_minutes || 0,
-    distance: session.distance_km || undefined,
-    completed: false,
-  };
-};
+import { mapSessionToWorkout } from '@/lib/session-utils';
 
 export function DailyWorkoutList() {
   const today = new Date();

@@ -13,13 +13,14 @@ import {
 } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { fetchCalendarWeek, fetchActivities } from '@/lib/api';
+import { mapSessionToWorkout } from '@/lib/session-utils';
 import { Footprints, Bike, Waves, CheckCircle2, MessageCircle, Loader2 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import type { PlannedWorkout, CompletedActivity } from '@/types';
 
 interface MonthViewProps {
   currentDate: Date;
-  onActivityClick?: (planned: PlannedWorkout | null, completed: CompletedActivity | null) => void;
+  onActivityClick?: (planned: PlannedWorkout | null, completed: CompletedActivity | null, session?: import('@/lib/api').CalendarSession | null) => void;
 }
 
 const sportIcons = {
@@ -37,20 +38,7 @@ const intentColors = {
   recovery: 'bg-training-recovery',
 };
 
-const mapSessionToWorkout = (session: import('@/lib/api').CalendarSession): PlannedWorkout | null => {
-  if (session.status === 'completed') return null;
-  return {
-    id: session.id,
-    date: session.date,
-    sport: session.type as PlannedWorkout['sport'],
-    intent: 'aerobic' as PlannedWorkout['intent'],
-    title: session.title,
-    description: session.notes || '',
-    duration: session.duration_minutes || 0,
-    distance: session.distance_km || undefined,
-    completed: false,
-  };
-};
+import { mapSessionToWorkout } from '@/lib/session-utils';
 
 export function MonthView({ currentDate, onActivityClick }: MonthViewProps) {
   const monthStart = startOfMonth(currentDate);
@@ -118,7 +106,7 @@ export function MonthView({ currentDate, onActivityClick }: MonthViewProps) {
       const activityDate = a.date?.split('T')[0] || a.date;
       return activityDate === dateStr;
     });
-    return { planned, completed };
+    return { planned, completed, plannedSessions };
   };
 
   if (isLoading) {
@@ -148,7 +136,7 @@ export function MonthView({ currentDate, onActivityClick }: MonthViewProps) {
       {/* Days Grid */}
       <div className="grid grid-cols-7">
         {days.map((day, idx) => {
-          const { planned, completed } = getWorkoutsForDay(day);
+          const { planned, completed, plannedSessions } = getWorkoutsForDay(day);
           const isCurrentMonth = isSameMonth(day, currentDate);
           const isCurrentDay = isToday(day);
 
@@ -184,6 +172,7 @@ export function MonthView({ currentDate, onActivityClick }: MonthViewProps) {
                     c.sport === workout.sport
                   );
                   const isCompleted = !!matchingActivity;
+                  const session = plannedSessions.find(s => s.id === workout.id);
 
                   return (
                     <div
@@ -194,7 +183,7 @@ export function MonthView({ currentDate, onActivityClick }: MonthViewProps) {
                           ? 'bg-load-fresh/20 text-load-fresh'
                           : 'bg-muted text-muted-foreground'
                       )}
-                      onClick={() => onActivityClick?.(workout, matchingActivity || null)}
+                      onClick={() => onActivityClick?.(workout, matchingActivity || null, session || null)}
                     >
                       <Icon className="h-3 w-3 shrink-0" />
                       <span className="truncate">{workout.title}</span>

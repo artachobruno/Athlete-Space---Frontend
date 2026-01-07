@@ -1150,6 +1150,31 @@ export const fetchCalendarSessions = async (params?: { limit?: number; offset?: 
 };
 
 /**
+ * Updates the status of a calendar session.
+ * @param sessionId - The ID of the session to update
+ * @param status - The new status: "completed", "skipped", "cancelled", or "planned"
+ * @param completedActivityId - Optional ID of the completed activity to link to the session
+ */
+export const updateSessionStatus = async (
+  sessionId: string,
+  status: "completed" | "skipped" | "cancelled" | "planned",
+  completedActivityId?: string
+): Promise<CalendarSession> => {
+  console.log("[API] Updating session status:", { sessionId, status, completedActivityId });
+  try {
+    const response = await api.patch(`/calendar/sessions/${sessionId}/status`, {
+      status,
+      completed_activity_id: completedActivityId,
+    });
+    console.log("[API] Session status updated:", response);
+    return response as CalendarSession;
+  } catch (error) {
+    console.error("[API] Failed to update session status:", error);
+    throw error;
+  }
+};
+
+/**
  * Gets athlete sync status and connection state.
  */
 export const fetchUserStatus = async (): Promise<{
