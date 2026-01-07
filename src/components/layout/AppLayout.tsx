@@ -55,9 +55,8 @@ export function AppLayout({ children }: AppLayoutProps) {
         >
           {sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
         </Button>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center">
           <Logo className="h-6 w-auto" />
-          <span className="font-semibold text-foreground">AthleteSpace</span>
         </div>
       </header>
 
@@ -71,10 +70,8 @@ export function AppLayout({ children }: AppLayoutProps) {
       >
         <div className="flex flex-col h-full">
           {/* Logo */}
-          <div className="h-14 lg:h-16 flex items-center gap-2 px-6 border-b border-sidebar-border">
-            <div className="w-1.5 h-5 bg-primary rounded-sm" />
+          <div className="h-14 lg:h-16 flex items-center px-6 border-b border-sidebar-border">
             <Logo className="h-6 w-auto" />
-            <span className="font-semibold text-lg text-sidebar-foreground">AthleteSpace</span>
           </div>
 
           {/* Navigation */}

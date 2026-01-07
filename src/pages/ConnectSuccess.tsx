@@ -70,10 +70,8 @@ export default function ConnectSuccess() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/5 flex flex-col">
       {/* Header */}
-      <header className="p-4 flex items-center gap-3">
-        <div className="w-1.5 h-6 bg-primary rounded-sm" />
+      <header className="p-4 flex items-center">
         <Logo className="h-8 w-auto" />
-        <span className="font-bold text-xl text-foreground">AthleteSpace</span>
       </header>
 
       {/* Main */}
