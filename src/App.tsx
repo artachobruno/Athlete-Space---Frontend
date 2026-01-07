@@ -26,6 +26,7 @@ import Privacy from "./pages/Privacy";
 import FAQ from "./pages/FAQ";
 import ScienceAndAI from "./pages/ScienceAndAI";
 import About from "./pages/About";
+import Terms from "./pages/Terms";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient({
@@ -178,6 +179,7 @@ const AppContent = () => {
         <Route path="/faq" element={<FAQ />} />
         <Route path="/science" element={<ScienceAndAI />} />
         <Route path="/about" element={<About />} />
+        <Route path="/terms" element={<Terms />} />
         <Route
           path="/dashboard"
           element={
