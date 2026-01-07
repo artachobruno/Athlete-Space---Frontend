@@ -12,7 +12,7 @@ export default function Terms() {
             <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-6">
               <FileText className="h-8 w-8 text-primary" />
             </div>
-            <h1 className="text-4xl font-bold text-foreground mb-4">Terms of Service</h1>
+            <h1 className="text-4xl font-bold text-primary mb-4">Terms of Service</h1>
             <p className="text-muted-foreground text-lg">
               Last updated: January 2026
             </p>
@@ -38,7 +38,7 @@ export default function Terms() {
                 <div className="p-2 rounded-lg bg-primary/10">
                   <Brain className="h-5 w-5 text-primary" />
                 </div>
-                <h2 className="text-2xl font-semibold text-foreground">Service Description</h2>
+                <h2 className="text-2xl font-semibold text-primary">Service Description</h2>
               </div>
               <p className="leading-relaxed">
                 Athlete Space provides training and performance insights for endurance athletes. 
@@ -58,7 +58,7 @@ export default function Terms() {
                 <div className="p-2 rounded-lg bg-destructive/10">
                   <AlertTriangle className="h-5 w-5 text-destructive" />
                 </div>
-                <h2 className="text-2xl font-semibold text-foreground">Medical Disclaimer</h2>
+                <h2 className="text-2xl font-semibold text-destructive">Medical Disclaimer</h2>
               </div>
               <div className="bg-destructive/5 border border-destructive/20 rounded-lg p-6 space-y-4">
                 <p className="leading-relaxed font-medium">
@@ -80,10 +80,10 @@ export default function Terms() {
             {/* AI-Generated Content */}
             <section className="space-y-4">
               <div className="flex items-center gap-3 mb-4">
-                <div className="p-2 rounded-lg bg-accent/10">
-                  <Brain className="h-5 w-5 text-accent" />
+                <div className="p-2 rounded-lg bg-primary/10">
+                  <Brain className="h-5 w-5 text-primary" />
                 </div>
-                <h2 className="text-2xl font-semibold text-foreground">AI-Generated Insights</h2>
+                <h2 className="text-2xl font-semibold text-primary">AI-Generated Insights</h2>
               </div>
               <p className="leading-relaxed">
                 Athlete Space uses artificial intelligence to analyze your training data and 
@@ -118,7 +118,7 @@ export default function Terms() {
                 <div className="p-2 rounded-lg bg-primary/10">
                   <UserCheck className="h-5 w-5 text-primary" />
                 </div>
-                <h2 className="text-2xl font-semibold text-foreground">User Responsibility</h2>
+                <h2 className="text-2xl font-semibold text-primary">User Responsibility</h2>
               </div>
               <p className="leading-relaxed">
                 As a user of Athlete Space, you acknowledge and agree that:
@@ -155,10 +155,10 @@ export default function Terms() {
             {/* Limitation of Liability */}
             <section className="space-y-4">
               <div className="flex items-center gap-3 mb-4">
-                <div className="p-2 rounded-lg bg-muted">
-                  <Scale className="h-5 w-5 text-muted-foreground" />
+                <div className="p-2 rounded-lg bg-primary/10">
+                  <Scale className="h-5 w-5 text-primary" />
                 </div>
-                <h2 className="text-2xl font-semibold text-foreground">Limitation of Liability</h2>
+                <h2 className="text-2xl font-semibold text-primary">Limitation of Liability</h2>
               </div>
               <p className="leading-relaxed">
                 To the maximum extent permitted by applicable law, Athlete Space and its creators, 
@@ -199,7 +199,7 @@ export default function Terms() {
                 <div className="p-2 rounded-lg bg-primary/10">
                   <Shield className="h-5 w-5 text-primary" />
                 </div>
-                <h2 className="text-2xl font-semibold text-foreground">Data & Privacy</h2>
+                <h2 className="text-2xl font-semibold text-primary">Data & Privacy</h2>
               </div>
               <p className="leading-relaxed">
                 Your privacy is important to us. For detailed information about how we collect, 
@@ -212,7 +212,7 @@ export default function Terms() {
 
             {/* Changes to Terms */}
             <section className="space-y-4">
-              <h2 className="text-2xl font-semibold text-foreground">Changes to These Terms</h2>
+              <h2 className="text-2xl font-semibold text-primary">Changes to These Terms</h2>
               <p className="leading-relaxed">
                 We may update these Terms of Service from time to time. We will notify users of 
                 any material changes by posting the updated terms on this page with a revised 
@@ -223,7 +223,7 @@ export default function Terms() {
 
             {/* Contact */}
             <section className="space-y-4 pb-8">
-              <h2 className="text-2xl font-semibold text-foreground">Questions?</h2>
+              <h2 className="text-2xl font-semibold text-primary">Questions?</h2>
               <p className="leading-relaxed">
                 If you have any questions about these Terms of Service, please reach out to us 
                 through the platform or consult our{' '}

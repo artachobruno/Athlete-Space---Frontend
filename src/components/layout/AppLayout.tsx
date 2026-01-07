@@ -72,6 +72,7 @@ export function AppLayout({ children }: AppLayoutProps) {
         <div className="flex flex-col h-full">
           {/* Logo */}
           <div className="h-14 lg:h-16 flex items-center gap-2 px-6 border-b border-sidebar-border">
+            <div className="w-1.5 h-5 bg-primary rounded-sm" />
             <img src={logo} alt="AthleteSpace" className="h-6 w-auto dark:invert" />
             <span className="font-semibold text-lg text-sidebar-foreground">AthleteSpace</span>
           </div>
@@ -90,11 +91,11 @@ export function AppLayout({ children }: AppLayoutProps) {
                   className={cn(
                     'flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-colors',
                     isActive
-                      ? 'bg-sidebar-accent text-sidebar-accent-foreground'
+                      ? 'bg-primary/10 text-primary border-l-2 border-primary -ml-[2px] pl-[14px]'
                       : 'text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground'
                   )}
                 >
-                  <Icon className="h-4 w-4" />
+                  <Icon className={cn("h-4 w-4", isActive && "text-primary")} />
                   {item.label}
                 </Link>
               );
@@ -102,18 +103,18 @@ export function AppLayout({ children }: AppLayoutProps) {
           </nav>
 
           {/* Footer */}
-          <div className="p-4 border-t border-sidebar-border space-y-2">
+          <div className="p-4 border-t border-sidebar-border space-y-1">
             <Link
               to="/faq"
               onClick={() => setSidebarOpen(false)}
               className={cn(
                 'flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors w-full',
                 location.pathname === '/faq'
-                  ? 'bg-sidebar-accent text-sidebar-accent-foreground'
-                  : 'text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground'
+                  ? 'bg-primary/10 text-primary'
+                  : 'text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground'
               )}
             >
-              <HelpCircle className="h-4 w-4" />
+              <HelpCircle className={cn("h-4 w-4", location.pathname === '/faq' && "text-primary")} />
               FAQ
             </Link>
             <Link
@@ -122,11 +123,11 @@ export function AppLayout({ children }: AppLayoutProps) {
               className={cn(
                 'flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors w-full',
                 location.pathname === '/privacy'
-                  ? 'bg-sidebar-accent text-sidebar-accent-foreground'
-                  : 'text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground'
+                  ? 'bg-primary/10 text-primary'
+                  : 'text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground'
               )}
             >
-              <Shield className="h-4 w-4" />
+              <Shield className={cn("h-4 w-4", location.pathname === '/privacy' && "text-primary")} />
               Privacy
             </Link>
             <Button

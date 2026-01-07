@@ -31,10 +31,13 @@ export default function About() {
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16">
         {/* Header */}
         <header className="mb-12">
-          <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight text-foreground mb-4">
-            About AthleteSpace
-          </h1>
-          <p className="text-lg text-muted-foreground leading-relaxed">
+          <div className="flex items-center gap-3 mb-4">
+            <div className="w-1 h-8 bg-primary rounded-full" />
+            <h1 className="text-3xl sm:text-4xl font-semibold tracking-tight text-foreground">
+              About AthleteSpace
+            </h1>
+          </div>
+          <p className="text-lg text-muted-foreground leading-relaxed pl-4">
             Helping endurance athletes train smarter, recover better, and make decisions grounded in science rather than hype.
           </p>
         </header>
@@ -43,7 +46,7 @@ export default function About() {
 
         {/* Mission Section */}
         <section className="mb-12">
-          <h2 className="text-xl font-semibold text-foreground mb-4">Our Mission</h2>
+          <h2 className="text-xl font-semibold text-primary mb-4">Our Mission</h2>
           <div className="space-y-4 text-muted-foreground leading-relaxed">
             <p>
               Endurance training is complex. Athletes must balance fitness, fatigue, recovery, and long-term health—often with incomplete or noisy data.
@@ -58,7 +61,7 @@ export default function About() {
 
         {/* Who Builds Section */}
         <section className="mb-12">
-          <h2 className="text-xl font-semibold text-foreground mb-4">Who Builds AthleteSpace</h2>
+          <h2 className="text-xl font-semibold text-primary mb-4">Who Builds AthleteSpace</h2>
           <div className="space-y-4 text-muted-foreground leading-relaxed">
             <p>
             Athlete Space is built by researchers and practitioners with deep backgrounds in applied artificial intelligence and endurance sport. The system is informed by advanced training in AI and machine learning, as well as multiple years of experience building and operating production AI systems within large-scale technology environments.
@@ -76,16 +79,16 @@ export default function About() {
 
         {/* Principles Section */}
         <section className="mb-12">
-          <h2 className="text-xl font-semibold text-foreground mb-6">Our Principles</h2>
+          <h2 className="text-xl font-semibold text-primary mb-6">Our Principles</h2>
           <div className="grid gap-6 sm:grid-cols-2">
             {principles.map((principle) => (
               <div
                 key={principle.title}
-                className="p-5 rounded-lg border border-border bg-card"
+                className="p-5 rounded-lg border border-border bg-card hover:border-primary/20 transition-colors"
               >
                 <div className="flex items-start gap-4">
-                  <div className="flex-shrink-0 p-2 rounded-md bg-muted">
-                    <principle.icon className="h-5 w-5 text-foreground" />
+                  <div className="flex-shrink-0 p-2 rounded-md bg-primary/10">
+                    <principle.icon className="h-5 w-5 text-primary" />
                   </div>
                   <div>
                     <h3 className="font-medium text-foreground mb-1">

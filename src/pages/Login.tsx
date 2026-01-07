@@ -87,10 +87,11 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-accent/5 flex flex-col">
+    <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/3 flex flex-col">
       {/* Header */}
       <header className="p-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
+          <div className="w-1.5 h-6 bg-primary rounded-sm" />
           <img src={logo} alt="AthleteSpace" className="h-8 w-auto dark:invert" />
           <span className="font-bold text-xl text-foreground">AthleteSpace</span>
         </div>
@@ -126,7 +127,7 @@ export default function Login() {
       <main className="flex-1 flex items-center justify-center p-4">
         <div className="w-full max-w-md space-y-6">
           <div className="text-center space-y-2">
-            <h1 className="text-3xl font-bold text-foreground">Welcome</h1>
+            <h1 className="text-3xl font-bold text-primary">Welcome</h1>
             <p className="text-muted-foreground">
               Sign in to continue your training journey
             </p>
