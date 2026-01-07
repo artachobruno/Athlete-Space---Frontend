@@ -1706,7 +1706,8 @@ api.interceptors.response.use(
     
     // Handle 401 by clearing auth and redirecting
     if (normalizedError.status === 401) {
-      const isOnOnboarding = window.location.pathname === "/onboarding";
+      const currentPath = window.location.pathname;
+      const isOnOnboarding = currentPath === "/onboarding" || currentPath.startsWith("/onboarding/");
       
       // Always clear auth token on 401 (it's invalid anyway)
       auth.clear();
@@ -1715,8 +1716,11 @@ api.interceptors.response.use(
       // This handles both cases: expired token OR no token (after data deletion)
       if (!isOnOnboarding && !authRedirected) {
         authRedirected = true;
-        // Use replace to avoid adding to history
-        window.location.replace("/onboarding");
+        // Use replace to avoid adding to history and ensure clean redirect
+        // Small delay to ensure auth is cleared first
+        setTimeout(() => {
+          window.location.replace("/onboarding");
+        }, 100);
       }
       return Promise.reject(normalizedError);
     }

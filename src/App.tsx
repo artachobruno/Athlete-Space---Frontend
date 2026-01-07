@@ -4,6 +4,7 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { useSyncActivities } from "@/hooks/useSyncActivities";
 import { auth } from "@/lib/auth";
 import Dashboard from "./pages/Dashboard";
@@ -87,13 +88,62 @@ const AppContent = () => {
       <Routes>
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
         <Route path="/onboarding" element={<Onboarding />} />
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/calendar" element={<Calendar />} />
-        <Route path="/plan" element={<TrainingPlan />} />
-        <Route path="/activities" element={<Activities />} />
-        <Route path="/analytics" element={<Analytics />} />
-        <Route path="/coach" element={<Coach />} />
-        <Route path="/settings" element={<Settings />} />
+        <Route
+          path="/dashboard"
+          element={
+            <ProtectedRoute>
+              <Dashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/calendar"
+          element={
+            <ProtectedRoute>
+              <Calendar />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/plan"
+          element={
+            <ProtectedRoute>
+              <TrainingPlan />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/activities"
+          element={
+            <ProtectedRoute>
+              <Activities />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/analytics"
+          element={
+            <ProtectedRoute>
+              <Analytics />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/coach"
+          element={
+            <ProtectedRoute>
+              <Coach />
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/settings"
+          element={
+            <ProtectedRoute>
+              <Settings />
+            </ProtectedRoute>
+          }
+        />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </BrowserRouter>
