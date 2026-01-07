@@ -1,4 +1,4 @@
-import axios, { AxiosError } from "axios";
+import axios, { AxiosError, AxiosHeaders } from "axios";
 import type { InternalAxiosRequestConfig } from "axios";
 import { auth } from "./auth";
 
@@ -709,7 +709,7 @@ export const fetchActivities = async (params?: { limit?: number; offset?: number
         }
         
         // Normalize sport to match frontend types
-        const normalizedSport = sportField.toLowerCase();
+        const normalizedSport = typeof sportField === 'string' ? sportField.toLowerCase() : String(sportField).toLowerCase();
         let sport: 'running' | 'cycling' | 'swimming' | 'triathlon' = 'running';
         if (normalizedSport.includes('run')) {
           sport = 'running';
@@ -1070,14 +1070,16 @@ export const fetchCalendarWeek = async (date?: string): Promise<WeekResponse> =>
     console.log("[API] Calendar week response:", response);
     
     // Handle different response formats
-    if (response && typeof response === 'object') {
+    // Axios responses have a .data property
+    const responseData = response.data || response;
+    if (responseData && typeof responseData === 'object') {
       // If response already has the expected structure
-      if ('sessions' in response && Array.isArray(response.sessions)) {
-        return response as WeekResponse;
+      if ('sessions' in responseData && Array.isArray(responseData.sessions)) {
+        return responseData as WeekResponse;
       }
       // If response is wrapped in a data property
-      if ('data' in response && response.data && typeof response.data === 'object') {
-        const data = response.data as { sessions?: unknown[]; week_start?: string; week_end?: string };
+      if ('data' in responseData && responseData.data && typeof responseData.data === 'object') {
+        const data = responseData.data as { sessions?: unknown[]; week_start?: string; week_end?: string };
         if (data.sessions && Array.isArray(data.sessions)) {
           return {
             week_start: data.week_start || '',
@@ -1151,14 +1153,16 @@ export const fetchCalendarSeason = async (): Promise<SeasonResponse> => {
     console.log("[API] Calendar season response:", response);
     
     // Handle different response formats
-    if (response && typeof response === 'object') {
+    // Axios responses have a .data property
+    const responseData = response.data || response;
+    if (responseData && typeof responseData === 'object') {
       // If response already has the expected structure
-      if ('sessions' in response && Array.isArray(response.sessions)) {
-        return response as SeasonResponse;
+      if ('sessions' in responseData && Array.isArray(responseData.sessions)) {
+        return responseData as SeasonResponse;
       }
       // If response is wrapped in a data property
-      if ('data' in response && response.data && typeof response.data === 'object') {
-        const data = response.data as { sessions?: unknown[]; season_start?: string; season_end?: string; total_sessions?: number; completed_sessions?: number; planned_sessions?: number };
+      if ('data' in responseData && responseData.data && typeof responseData.data === 'object') {
+        const data = responseData.data as { sessions?: unknown[]; season_start?: string; season_end?: string; total_sessions?: number; completed_sessions?: number; planned_sessions?: number };
         if (data.sessions && Array.isArray(data.sessions)) {
           return {
             season_start: data.season_start || '',
@@ -1226,7 +1230,9 @@ export const updateSessionStatus = async (
       completed_activity_id: completedActivityId,
     });
     console.log("[API] Session status updated:", response);
-    return response as CalendarSession;
+    // Axios responses have a .data property
+    const responseData = response.data || response;
+    return responseData as CalendarSession;
   } catch (error) {
     console.error("[API] Failed to update session status:", error);
     throw error;
@@ -1863,7 +1869,7 @@ api.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
     // Ensure headers object exists (axios may not initialize it)
     if (!config.headers) {
-      config.headers = {} as Record<string, string>;
+      config.headers = new AxiosHeaders();
     }
     
     const token = auth.getToken();

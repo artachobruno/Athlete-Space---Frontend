@@ -25,6 +25,14 @@ export interface AthleteProfile {
   };
   stravaConnected: boolean;
   onboardingComplete: boolean;
+  // Optional profile fields
+  email?: string;
+  gender?: string;
+  dateOfBirth?: string;
+  weight?: number | string;
+  height?: number | string;
+  location?: string;
+  unitSystem?: 'imperial' | 'metric';
 }
 
 export interface PlannedWorkout {
