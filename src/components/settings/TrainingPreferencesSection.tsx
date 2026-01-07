@@ -6,8 +6,12 @@ import { Switch } from '@/components/ui/switch';
 import { Slider } from '@/components/ui/slider';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Textarea } from '@/components/ui/textarea';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Settings2, Save, Loader2 } from 'lucide-react';
-import { fetchTrainingPreferences, updateTrainingPreferences } from '@/lib/api';
+import { fetchTrainingPreferences, updateTrainingPreferences, updateUserProfile, fetchUserProfile } from '@/lib/api';
+import { auth } from '@/lib/auth';
+import { getStoredProfile, getOnboardingAdditionalData, saveProfile, saveOnboardingAdditionalData } from '@/lib/storage';
 import { toast } from '@/hooks/use-toast';
 import type { Sport } from '@/types';
 
@@ -18,7 +22,8 @@ const sports = [
   { id: 'triathlon', label: 'Triathlon' },
 ];
 
-const weekDays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+const weekDays = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+const weekDaysDisplay = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun']; // For UI display
 
 interface PreferencesState {
   primarySports: Sport[];
@@ -28,7 +33,20 @@ interface PreferencesState {
   hasInjuryHistory: boolean;
   injuryNotes: string;
   trainingAge?: number;
+  // Additional onboarding fields
+  consistency: string;
+  goal: string;
+  raceDetails: string;
+  targetEventName: string;
+  targetEventDate: string;
 }
+
+const consistencyOptions = [
+  'Just getting started',
+  'Training occasionally',
+  'Training consistently',
+  'Structured training for years',
+];
 
 export function TrainingPreferencesSection() {
   const [preferences, setPreferences] = useState<PreferencesState>({
@@ -39,6 +57,11 @@ export function TrainingPreferencesSection() {
     hasInjuryHistory: false,
     injuryNotes: '',
     trainingAge: 0,
+    consistency: '',
+    goal: '',
+    raceDetails: '',
+    targetEventName: '',
+    targetEventDate: '',
   });
 
   const [isLoading, setIsLoading] = useState(true);
@@ -63,22 +86,69 @@ export function TrainingPreferencesSection() {
   const loadPreferences = async () => {
     setIsLoading(true);
     try {
-      const prefs = await fetchTrainingPreferences();
-      
-      // Convert available_days array (["Mon", "Tue", ...]) to boolean array
-      const trainingDaysArray = weekDays.map(day => prefs.available_days.includes(day));
-      
+      // Load from backend if authenticated
+      let backendPrefs = null;
+      let backendProfile = null;
+      if (auth.isLoggedIn()) {
+        try {
+          [backendPrefs, backendProfile] = await Promise.all([
+            fetchTrainingPreferences().catch(() => null),
+            fetchUserProfile().catch(() => null),
+          ]);
+        } catch (error) {
+          // If backend fails, continue with local data
+          console.warn('Failed to load from backend, using local data:', error);
+        }
+      }
+
+      // Load from local storage as fallback
+      const profile = getStoredProfile();
+      const additionalData = getOnboardingAdditionalData();
+
+      // Use backend data if available, otherwise fall back to local
+      const effectiveProfile = backendProfile || profile;
+
+      // Convert available_days array (backend uses lowercase: ["monday", "tuesday", ...]) to boolean array
+      const trainingDaysArray = backendPrefs
+        ? weekDays.map(day => {
+            // Backend may return lowercase full names or abbreviated, handle both
+            const dayLower = day.toLowerCase();
+            return backendPrefs.available_days.some(d => 
+              d.toLowerCase() === dayLower || 
+              d.toLowerCase() === dayLower.substring(0, 3)
+            );
+          })
+        : effectiveProfile
+        ? weekDays.map((_, index) => index < (effectiveProfile.weeklyAvailability?.days || 0))
+        : [true, true, true, true, true, true, true];
+
       // Map training_focus: "race_focused" -> "race", "general_fitness" -> "general"
-      const trainingFocus: 'race' | 'general' = prefs.training_focus === 'race_focused' ? 'race' : 'general';
-      
+      const trainingFocus: 'race' | 'general' = backendPrefs
+        ? (backendPrefs.training_focus === 'race_focused' ? 'race' : 'general')
+        : effectiveProfile?.goals && effectiveProfile.goals.some(g => g.toLowerCase().includes('race'))
+        ? 'race'
+        : 'general';
+
+      // Extract goal - prefer backend, then profile, then additional data
+      const goal = backendPrefs?.goal || effectiveProfile?.goals?.[0] || '';
+
+      // Extract target event - prefer backend profile, then local profile
+      const targetEventName = effectiveProfile?.targetEvent?.name || '';
+      const targetEventDate = effectiveProfile?.targetEvent?.date || '';
+
       const prefsData: PreferencesState = {
-        primarySports: prefs.primary_sports as Sport[],
+        primarySports: (backendPrefs?.primary_sports as Sport[]) || effectiveProfile?.sports || [],
         trainingDays: trainingDaysArray,
-        hoursPerWeek: prefs.weekly_hours,
+        hoursPerWeek: backendPrefs?.weekly_hours || effectiveProfile?.weeklyAvailability?.hoursPerWeek || 10,
         trainingFocus,
-        hasInjuryHistory: prefs.injury_history,
-        injuryNotes: '', // Not in backend API response
-        trainingAge: prefs.years_of_training,
+        hasInjuryHistory: backendPrefs?.injury_history || false,
+        injuryNotes: backendPrefs?.injury_notes || additionalData?.injuryDetails || '',
+        trainingAge: backendPrefs?.years_of_training || effectiveProfile?.trainingAge || 0,
+        consistency: backendPrefs?.consistency || additionalData?.consistency || '',
+        goal,
+        raceDetails: additionalData?.raceDetails || '',
+        targetEventName,
+        targetEventDate,
       };
       setPreferences(prefsData);
       setInitialPreferences(prefsData);
@@ -113,26 +183,104 @@ export function TrainingPreferencesSection() {
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      // Convert trainingDays boolean array to available_days string array
-      const availableDays = weekDays.filter((_, index) => preferences.trainingDays[index]);
-      
-      // Map trainingFocus: "race" -> "race_focused", "general" -> "general_fitness"
-      const trainingFocus: 'race_focused' | 'general_fitness' = preferences.trainingFocus === 'race' ? 'race_focused' : 'general_fitness';
+      // Save to backend if authenticated
+      if (auth.isLoggedIn()) {
+        try {
+          // Convert trainingDays boolean array to available_days string array
+          const availableDays = weekDays.filter((_, index) => preferences.trainingDays[index]);
+          
+          // Map trainingFocus: "race" -> "race_focused", "general" -> "general_fitness"
+          const trainingFocus: 'race_focused' | 'general_fitness' = preferences.trainingFocus === 'race' ? 'race_focused' : 'general_fitness';
 
-      await updateTrainingPreferences({
-        years_of_training: preferences.trainingAge,
-        primary_sports: preferences.primarySports,
-        available_days: availableDays,
-        weekly_hours: preferences.hoursPerWeek,
-        training_focus: trainingFocus,
-        injury_history: preferences.hasInjuryHistory,
-      });
+          // Save training preferences
+          await updateTrainingPreferences({
+            years_of_training: preferences.trainingAge,
+            primary_sports: preferences.primarySports,
+            available_days: availableDays,
+            weekly_hours: preferences.hoursPerWeek,
+            training_focus: trainingFocus,
+            injury_history: preferences.hasInjuryHistory,
+            injury_notes: preferences.injuryNotes || null,
+            consistency: preferences.consistency || null,
+            goal: preferences.goal || null,
+          });
+
+          // Save target_event and goals to profile (backend now supports these)
+          const profileUpdate: Partial<import('@/types').AthleteProfile> = {};
+          
+          // Update target_event if provided
+          if (preferences.targetEventName || preferences.targetEventDate) {
+            profileUpdate.targetEvent = {
+              name: preferences.targetEventName,
+              date: preferences.targetEventDate,
+            };
+          } else if (preferences.trainingFocus !== 'race') {
+            // Clear target_event if not race-focused
+            profileUpdate.targetEvent = null;
+          }
+          
+          // Update goals array
+          if (preferences.goal) {
+            profileUpdate.goals = [preferences.goal];
+          }
+
+          // Only update profile if we have changes
+          if (Object.keys(profileUpdate).length > 0) {
+            await updateUserProfile(profileUpdate);
+          }
+        } catch (error) {
+          console.error('Failed to save to backend:', error);
+          // Continue to save locally even if backend fails
+        }
+      }
+
+      // Always save to local storage
+      const profile = getStoredProfile() || {
+        id: 'local',
+        name: '',
+        sports: [],
+        trainingAge: 0,
+        weeklyAvailability: { days: 0, hoursPerWeek: 0 },
+        goals: [],
+        stravaConnected: false,
+        onboardingComplete: true,
+      };
+
+      // Update profile with new data
+      const updatedProfile = {
+        ...profile,
+        sports: preferences.primarySports,
+        trainingAge: preferences.trainingAge || 0,
+        weeklyAvailability: {
+          days: preferences.trainingDays.filter(Boolean).length,
+          hoursPerWeek: preferences.hoursPerWeek,
+        },
+        goals: preferences.goal ? [preferences.goal] : [],
+        targetEvent: preferences.targetEventName || preferences.targetEventDate
+          ? {
+              name: preferences.targetEventName,
+              date: preferences.targetEventDate,
+            }
+          : undefined,
+      };
+      saveProfile(updatedProfile);
+
+      // Save additional onboarding data
+      const additionalData = {
+        consistency: preferences.consistency,
+        raceDetails: preferences.raceDetails || (preferences.targetEventName ? `${preferences.targetEventName}${preferences.targetEventDate ? ` - ${preferences.targetEventDate}` : ''}` : ''),
+        injuryDetails: preferences.injuryNotes,
+        collectedAt: new Date().toISOString(),
+      };
+      saveOnboardingAdditionalData(additionalData);
 
       setInitialPreferences({ ...preferences });
       setHasChanges(false);
       toast({
         title: 'Preferences updated',
-        description: 'Your training preferences have been saved successfully',
+        description: auth.isLoggedIn()
+          ? 'Your training preferences have been saved successfully'
+          : 'Your preferences have been saved locally. Connect Strava to sync with the backend.',
       });
     } catch (error) {
       console.error('Failed to save preferences:', error);
@@ -183,6 +331,26 @@ export function TrainingPreferencesSection() {
         </div>
       </CardHeader>
       <CardContent className="space-y-8">
+        {/* Training Consistency */}
+        <div className="space-y-3">
+          <Label htmlFor="consistency">Training Consistency</Label>
+          <Select
+            value={preferences.consistency}
+            onValueChange={(value) => setPreferences({ ...preferences, consistency: value })}
+          >
+            <SelectTrigger id="consistency">
+              <SelectValue placeholder="Select your training consistency" />
+            </SelectTrigger>
+            <SelectContent>
+              {consistencyOptions.map((option) => (
+                <SelectItem key={option} value={option}>
+                  {option}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
         {/* Training Age */}
         <div className="space-y-3">
           <Label htmlFor="trainingAge">Years of Structured Training</Label>
@@ -228,7 +396,7 @@ export function TrainingPreferencesSection() {
         <div className="space-y-3">
           <Label>Available Training Days</Label>
           <div className="flex gap-2">
-            {weekDays.map((day, index) => (
+            {weekDaysDisplay.map((day, index) => (
               <button
                 key={day}
                 onClick={() => toggleDay(index)}
@@ -267,6 +435,17 @@ export function TrainingPreferencesSection() {
             <span>3 hrs</span>
             <span>25 hrs</span>
           </div>
+        </div>
+
+        {/* Training Goal */}
+        <div className="space-y-3">
+          <Label htmlFor="goal">Primary Training Goal</Label>
+          <Input
+            id="goal"
+            value={preferences.goal}
+            onChange={(e) => setPreferences({ ...preferences, goal: e.target.value })}
+            placeholder="e.g., Complete a marathon, Improve fitness, Return to training"
+          />
         </div>
 
         {/* Training Focus */}
@@ -309,6 +488,43 @@ export function TrainingPreferencesSection() {
             </label>
           </RadioGroup>
         </div>
+
+        {/* Target Event / Race Details */}
+        {preferences.trainingFocus === 'race' && (
+          <div className="space-y-3">
+            <Label>Target Event / Race</Label>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="targetEventName" className="text-sm">Event Name</Label>
+                <Input
+                  id="targetEventName"
+                  value={preferences.targetEventName}
+                  onChange={(e) => setPreferences({ ...preferences, targetEventName: e.target.value })}
+                  placeholder="e.g., Boston Marathon"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="targetEventDate" className="text-sm">Event Date</Label>
+                <Input
+                  id="targetEventDate"
+                  type="date"
+                  value={preferences.targetEventDate}
+                  onChange={(e) => setPreferences({ ...preferences, targetEventDate: e.target.value })}
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="raceDetails" className="text-sm">Additional Race Details</Label>
+              <Textarea
+                id="raceDetails"
+                value={preferences.raceDetails}
+                onChange={(e) => setPreferences({ ...preferences, raceDetails: e.target.value })}
+                placeholder="Any additional details about your target event..."
+                className="min-h-[80px]"
+              />
+            </div>
+          </div>
+        )}
 
         {/* Injury History */}
         <div className="space-y-3">

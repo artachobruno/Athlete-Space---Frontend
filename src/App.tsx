@@ -91,7 +91,7 @@ const AppContent = () => {
         <Route
           path="/dashboard"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute requireAuth={false}>
               <Dashboard />
             </ProtectedRoute>
           }

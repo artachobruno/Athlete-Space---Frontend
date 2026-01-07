@@ -3,9 +3,12 @@
 const STORAGE_KEYS = {
   ATHLETE_PROFILE: 'coach_athlete_profile',
   ONBOARDING_STATE: 'coach_onboarding_state',
+  ONBOARDING_ADDITIONAL_DATA: 'onboarding_additional_data',
   ACTIVITIES: 'coach_activities',
   TRAINING_LOAD: 'coach_training_load',
   WEEKLY_PLANS: 'coach_weekly_plans',
+  SEASON_PLAN: 'coach_season_plan',
+  ONBOARDING_PLANS: 'onboarding_plans', // Store plans from onboarding response
 } as const;
 
 export function getStoredProfile(): import('@/types').AthleteProfile | null {
@@ -36,6 +39,26 @@ export function saveOnboardingState(state: import('@/types').OnboardingState): v
 
 export function clearOnboardingState(): void {
   localStorage.removeItem(STORAGE_KEYS.ONBOARDING_STATE);
+}
+
+export interface OnboardingAdditionalData {
+  consistency: string;
+  raceDetails: string;
+  injuryDetails: string;
+  collectedAt: string;
+}
+
+export function getOnboardingAdditionalData(): OnboardingAdditionalData | null {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEYS.ONBOARDING_ADDITIONAL_DATA);
+    return stored ? JSON.parse(stored) : null;
+  } catch {
+    return null;
+  }
+}
+
+export function saveOnboardingAdditionalData(data: OnboardingAdditionalData): void {
+  localStorage.setItem(STORAGE_KEYS.ONBOARDING_ADDITIONAL_DATA, JSON.stringify(data));
 }
 
 export function getActivities(): import('@/types').CompletedActivity[] {
@@ -75,6 +98,40 @@ export function getWeeklyPlans(): import('@/types').WeeklyPlan[] {
 
 export function saveWeeklyPlans(plans: import('@/types').WeeklyPlan[]): void {
   localStorage.setItem(STORAGE_KEYS.WEEKLY_PLANS, JSON.stringify(plans));
+}
+
+export interface OnboardingPlans {
+  weekly_intent: any | null;
+  season_plan: any | null;
+  provisional: boolean;
+  warning: string | null;
+  savedAt: string;
+}
+
+export function getOnboardingPlans(): OnboardingPlans | null {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEYS.ONBOARDING_PLANS);
+    return stored ? JSON.parse(stored) : null;
+  } catch {
+    return null;
+  }
+}
+
+export function saveOnboardingPlans(plans: OnboardingPlans): void {
+  localStorage.setItem(STORAGE_KEYS.ONBOARDING_PLANS, JSON.stringify(plans));
+}
+
+export function getSeasonPlan(): any | null {
+  try {
+    const stored = localStorage.getItem(STORAGE_KEYS.SEASON_PLAN);
+    return stored ? JSON.parse(stored) : null;
+  } catch {
+    return null;
+  }
+}
+
+export function saveSeasonPlan(plan: any): void {
+  localStorage.setItem(STORAGE_KEYS.SEASON_PLAN, JSON.stringify(plan));
 }
 
 export function clearAllData(): void {

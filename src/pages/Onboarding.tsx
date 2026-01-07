@@ -1,15 +1,31 @@
 import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { OnboardingChat } from '@/components/onboarding/OnboardingChat';
 import { getStoredProfile } from '@/lib/storage';
+import { auth } from '@/lib/auth';
 
 export default function Onboarding() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [isComplete, setIsComplete] = useState(false);
+
+  // Check for auth token in URL params (from Strava OAuth callback)
+  useEffect(() => {
+    const token = searchParams.get('token');
+    if (token) {
+      auth.setToken(token);
+      // Remove token from URL
+      const newSearchParams = new URLSearchParams(searchParams);
+      newSearchParams.delete('token');
+      const newSearch = newSearchParams.toString();
+      navigate(`/onboarding${newSearch ? `?${newSearch}` : ''}`, { replace: true });
+    }
+  }, [searchParams, navigate]);
 
   useEffect(() => {
     const profile = getStoredProfile();
-    if (profile?.onboardingComplete) {
+    // Only redirect if profile is complete AND user is authenticated
+    if (profile?.onboardingComplete && auth.isLoggedIn()) {
       navigate('/dashboard', { replace: true });
     }
   }, [navigate]);

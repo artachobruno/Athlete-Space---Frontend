@@ -124,6 +124,14 @@ export function AthleteProfileSection() {
   const handleSave = async () => {
     setIsSaving(true);
     try {
+      // Get current profile to preserve target_event and goals (they're managed in TrainingPreferencesSection)
+      let currentProfile: import('@/types').AthleteProfile | null = null;
+      try {
+        currentProfile = await fetchUserProfile();
+      } catch {
+        // If fetch fails, continue without preserving
+      }
+
       const updateData: Partial<import('@/types').AthleteProfile> = {
         name: profile.name,
         email: profile.email,
@@ -131,6 +139,16 @@ export function AthleteProfileSection() {
         location: profile.location,
         unitSystem: profile.unitSystem,
       };
+
+      // Preserve target_event and goals from current profile (they're edited in TrainingPreferencesSection)
+      if (currentProfile) {
+        if (currentProfile.targetEvent) {
+          updateData.targetEvent = currentProfile.targetEvent;
+        }
+        if (currentProfile.goals && currentProfile.goals.length > 0) {
+          updateData.goals = currentProfile.goals;
+        }
+      }
 
       if (profile.weight) {
         // Convert to kg if needed (backend expects weight_kg)

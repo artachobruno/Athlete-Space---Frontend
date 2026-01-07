@@ -185,11 +185,15 @@ export const disconnectStrava = async (): Promise<void> => {
 /**
  * Fetches user profile from the backend.
  * @returns Profile data including onboarding status and source information
+ * 
+ * Note: Backend now supports target_event and goals fields.
+ * Response includes these fields if set.
  */
 export const fetchUserProfile = async (): Promise<import("../types").AthleteProfile> => {
   console.log("[API] Fetching user profile");
   try {
     const response = await api.get("/me/profile");
+    // Backend now supports target_event and goals fields
     return response as unknown as import("../types").AthleteProfile;
   } catch (error) {
     // Don't log CORS errors repeatedly - they're already handled by interceptor
@@ -220,6 +224,14 @@ export const updateUserProfile = async (
     if (profileData.height !== undefined) backendData.height_cm = typeof profileData.height === 'number' ? profileData.height : parseFloat(profileData.height as string);
     if (profileData.location !== undefined) backendData.location = profileData.location;
     if (profileData.unitSystem !== undefined) backendData.unit_system = profileData.unitSystem;
+    
+    // Backend now supports target_event and goals
+    if (profileData.targetEvent !== undefined) {
+      backendData.target_event = profileData.targetEvent;
+    }
+    if (profileData.goals !== undefined) {
+      backendData.goals = profileData.goals;
+    }
 
     const response = await api.put("/me/profile", backendData);
     return response as unknown as import("../types").AthleteProfile;
@@ -239,6 +251,9 @@ export const fetchTrainingPreferences = async (): Promise<{
   weekly_hours: number;
   training_focus: 'race_focused' | 'general_fitness';
   injury_history: boolean;
+  injury_notes: string | null;
+  consistency: string | null;
+  goal: string | null;
 }> => {
   console.log("[API] Fetching training preferences");
   try {
@@ -250,9 +265,78 @@ export const fetchTrainingPreferences = async (): Promise<{
       weekly_hours: number;
       training_focus: 'race_focused' | 'general_fitness';
       injury_history: boolean;
+      injury_notes: string | null;
+      consistency: string | null;
+      goal: string | null;
     };
   } catch (error) {
     console.error("[API] Failed to fetch training preferences:", error);
+    throw error;
+  }
+};
+
+/**
+ * Completes the onboarding process. This endpoint:
+ * 1. Persists all onboarding data (profile and training preferences)
+ * 2. Extracts structured race attributes from free-text goals using LLM
+ * 3. Conditionally generates initial training plans (if user opts in)
+ * 4. Marks onboarding as complete
+ * 
+ * Note: This is the recommended way to complete onboarding, but the frontend
+ * currently uses separate updateUserProfile() and updateTrainingPreferences() calls.
+ * 
+ * @param data - Onboarding data including profile, training preferences, and plan generation flag
+ * @returns Onboarding result with optional plans
+ * 
+ * Reference: See backend docs POST /api/onboarding/complete for complete details
+ */
+export const completeOnboarding = async (data: {
+  profile?: Record<string, unknown>;
+  training_preferences?: {
+    years_of_training?: number;
+    primary_sports?: string[];
+    available_days?: string[];
+    weekly_hours?: number;
+    training_focus?: 'race_focused' | 'general_fitness';
+    injury_history?: boolean;
+    injury_notes?: string | null;
+    consistency?: string | null;
+    goal?: string | null;
+  };
+  generate_initial_plan: boolean;
+}): Promise<{
+  status: 'ok';
+  weekly_intent: any | null;
+  season_plan: any | null;
+  provisional: boolean;
+  warning: string | null;
+}> => {
+  console.log("[API] Completing onboarding");
+  try {
+    // Map frontend profile format to backend format (backend expects snake_case)
+    const backendData: Record<string, unknown> = {
+      generate_initial_plan: data.generate_initial_plan,
+    };
+
+    if (data.profile && Object.keys(data.profile).length > 0) {
+      // Profile data is already in backend format (snake_case) from OnboardingChat
+      backendData.profile = data.profile;
+    }
+
+    if (data.training_preferences) {
+      backendData.training_preferences = data.training_preferences;
+    }
+
+    const response = await api.post("/api/onboarding/complete", backendData);
+    return response as unknown as {
+      status: 'ok';
+      weekly_intent: any | null;
+      season_plan: any | null;
+      provisional: boolean;
+      warning: string | null;
+    };
+  } catch (error) {
+    console.error("[API] Failed to complete onboarding:", error);
     throw error;
   }
 };
@@ -268,6 +352,9 @@ export const updateTrainingPreferences = async (
     weekly_hours?: number;
     training_focus?: 'race_focused' | 'general_fitness';
     injury_history?: boolean;
+    injury_notes?: string | null;
+    consistency?: string | null;
+    goal?: string | null;
   }
 ): Promise<{
   years_of_training: number;
@@ -276,10 +363,25 @@ export const updateTrainingPreferences = async (
   weekly_hours: number;
   training_focus: 'race_focused' | 'general_fitness';
   injury_history: boolean;
+  injury_notes: string | null;
+  consistency: string | null;
+  goal: string | null;
 }> => {
   console.log("[API] Updating training preferences");
   try {
-    const response = await api.put("/me/training-preferences", preferences);
+    // Backend now supports all fields including injury_notes, consistency, and goal
+    const backendPayload: Record<string, unknown> = {};
+    if (preferences.years_of_training !== undefined) backendPayload.years_of_training = preferences.years_of_training;
+    if (preferences.primary_sports !== undefined) backendPayload.primary_sports = preferences.primary_sports;
+    if (preferences.available_days !== undefined) backendPayload.available_days = preferences.available_days;
+    if (preferences.weekly_hours !== undefined) backendPayload.weekly_hours = preferences.weekly_hours;
+    if (preferences.training_focus !== undefined) backendPayload.training_focus = preferences.training_focus;
+    if (preferences.injury_history !== undefined) backendPayload.injury_history = preferences.injury_history;
+    if (preferences.injury_notes !== undefined) backendPayload.injury_notes = preferences.injury_notes;
+    if (preferences.consistency !== undefined) backendPayload.consistency = preferences.consistency;
+    if (preferences.goal !== undefined) backendPayload.goal = preferences.goal;
+
+    const response = await api.put("/me/training-preferences", backendPayload);
     return response as unknown as {
       years_of_training: number;
       primary_sports: string[];
@@ -287,6 +389,9 @@ export const updateTrainingPreferences = async (
       weekly_hours: number;
       training_focus: 'race_focused' | 'general_fitness';
       injury_history: boolean;
+      injury_notes: string | null;
+      consistency: string | null;
+      goal: string | null;
     };
   } catch (error) {
     console.error("[API] Failed to update training preferences:", error);
