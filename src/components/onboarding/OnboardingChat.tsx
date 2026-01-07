@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils';
 import { OnboardingOptionChips } from './OnboardingOptionChips';
 import { StravaConnectCard } from './StravaConnectCard';
 import { CoachSummaryCard } from './CoachSummaryCard';
-import { saveProfile } from '@/lib/storage';
+import { updateUserProfile, updateTrainingPreferences } from '@/lib/api';
 import type { AthleteProfile, Sport } from '@/types';
 
 interface OnboardingChatProps {
@@ -304,32 +304,40 @@ export function OnboardingChat({ onComplete, isComplete }: OnboardingChatProps) 
     }, 300);
   };
 
-  const handleComplete = () => {
-    // Save profile
-    const profile: AthleteProfile = {
-      id: '1',
-      name: '',
-      sports: data.sports,
-      trainingAge: 1,
-      weeklyAvailability: {
-        days: data.availableDays,
-        hoursPerWeek: data.hoursPerWeek,
-      },
-      goals: [data.goal],
-      stravaConnected: data.stravaConnected,
-      onboardingComplete: true,
-    };
-    saveProfile(profile);
-
+  const handleComplete = async () => {
     addAthleteMessage('Ready to start');
 
-    setTimeout(() => {
+    try {
+      // Save training preferences to backend
+      const weekDays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+      const availableDays = weekDays.slice(0, data.availableDays);
+      
+      // Map goal to training focus
+      const trainingFocus = data.goal.toLowerCase().includes('race') ? 'race_focused' : 'general_fitness';
+
+      await updateTrainingPreferences({
+        years_of_training: 1, // Default, can be updated later
+        primary_sports: data.sports,
+        available_days: availableDays,
+        weekly_hours: data.hoursPerWeek,
+        training_focus: trainingFocus,
+        injury_history: data.hasInjury,
+      });
+
       addCoachMessage(
         "That's everything I need. I'll put together your first week now. Let's get to work."
       );
       setStep('complete');
       setTimeout(onComplete, 1000);
-    }, 300);
+    } catch (error) {
+      console.error('Failed to save onboarding data:', error);
+      // Still proceed even if save fails
+      addCoachMessage(
+        "That's everything I need. I'll put together your first week now. Let's get to work."
+      );
+      setStep('complete');
+      setTimeout(onComplete, 1000);
+    }
   };
 
   const getCurrentStepNumber = () => {
