@@ -18,6 +18,7 @@ import Analytics from "./pages/Analytics";
 import Coach from "./pages/Coach";
 import Settings from "./pages/Settings";
 import Onboarding from "./pages/Onboarding";
+import Privacy from "./pages/Privacy";
 import NotFound from "./pages/NotFound";
 
 // Auth context to provide auth state to all components
@@ -215,6 +216,7 @@ const AppContent = () => {
       <Routes>
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
         <Route path="/onboarding" element={<Onboarding />} />
+        <Route path="/privacy" element={<Privacy />} />
         <Route
           path="/dashboard"
           element={

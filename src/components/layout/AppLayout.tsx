@@ -104,9 +104,6 @@ export function AppLayout({ children }: AppLayoutProps) {
               <LogOut className="h-4 w-4 mr-2" />
               Logout
             </Button>
-            <div className="text-xs text-sidebar-foreground/50">
-              Demo Mode
-            </div>
           </div>
         </div>
       </aside>

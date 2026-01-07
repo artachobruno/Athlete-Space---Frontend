@@ -208,8 +208,29 @@ export const fetchUserProfile = async (): Promise<import("../types").AthleteProf
           if (errorStr.includes('column') && errorStr.includes('does not exist') ||
               errorStr.includes('programmingerror') ||
               errorStr.includes('database')) {
-            console.warn("[API] Database schema error detected. This usually means the backend is being updated. The migration should run automatically.");
+            console.warn("[API] Database schema error detected. Returning default profile. The backend migration should run automatically.");
           }
+          
+          // Return default profile instead of throwing to allow UI to continue working
+          // This is a temporary fix until backend is updated
+          // Return backend format (snake_case) since that's what the API returns
+          console.warn("[API] Returning default profile due to 500 error. UI will continue to work.");
+          return {
+            id: '',
+            user_id: '',
+            name: null,
+            email: null,
+            gender: null,
+            date_of_birth: null,
+            weight_kg: null,
+            height_cm: null,
+            location: null,
+            unit_system: 'metric',
+            onboarding_complete: false,
+            target_event: null,
+            goals: [],
+            strava_connected: false,
+          } as unknown as import("../types").AthleteProfile;
         }
       }
     }
@@ -1070,11 +1091,24 @@ export const fetchCalendarWeek = async (date?: string): Promise<WeekResponse> =>
     // Fallback: return empty structure if response doesn't match
     console.warn("[API] Calendar week response doesn't match expected format:", response);
     return {
-      week_start: date,
-      week_end: date,
+      week_start: date || '',
+      week_end: date || '',
       sessions: [],
     };
   } catch (error) {
+    // Handle 500 errors gracefully - return empty week instead of crashing UI
+    if (error && typeof error === 'object' && 'status' in error) {
+      const apiError = error as { status?: number; message?: string };
+      if (apiError.status === 500) {
+        console.warn("[API] Calendar week returned 500 error. Returning empty week. UI will continue to work.");
+        const fallbackDate = date || new Date().toISOString().split('T')[0];
+        return {
+          week_start: fallbackDate,
+          week_end: fallbackDate,
+          sessions: [],
+        };
+      }
+    }
     console.error("[API] Failed to fetch calendar week:", error);
     throw error;
   }
@@ -1090,6 +1124,18 @@ export const fetchCalendarToday = async (date?: string): Promise<TodayResponse> 
     const response = await api.get("/calendar/today");
     return response as unknown as TodayResponse;
   } catch (error) {
+    // Handle 500 errors gracefully - return empty today instead of crashing UI
+    if (error && typeof error === 'object' && 'status' in error) {
+      const apiError = error as { status?: number; message?: string };
+      if (apiError.status === 500) {
+        console.warn("[API] Calendar today returned 500 error. Returning empty today. UI will continue to work.");
+        const fallbackDate = date || new Date().toISOString().split('T')[0];
+        return {
+          date: fallbackDate,
+          sessions: [],
+        };
+      }
+    }
     console.error("[API] Failed to fetch calendar today:", error);
     throw error;
   }
