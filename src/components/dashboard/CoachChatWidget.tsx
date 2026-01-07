@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Send, Bot, User, Maximize2 } from 'lucide-react';
+import { Send, Brain, User, Maximize2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Link } from 'react-router-dom';
 import { sendCoachChat } from '@/lib/api';
@@ -76,7 +76,7 @@ export function CoachChatWidget() {
     <Card className="flex flex-col h-full min-h-[200px]">
       <CardHeader className="pb-2 flex-row items-center justify-between space-y-0">
         <div className="flex items-center gap-2">
-          <Bot className="h-4 w-4 text-muted-foreground" />
+          <Brain className="h-4 w-4 text-primary" />
           <CardTitle className="text-sm font-medium text-muted-foreground">Coach</CardTitle>
         </div>
         <Link to="/coach">
@@ -100,12 +100,12 @@ export function CoachChatWidget() {
                 className={cn(
                   'w-6 h-6 rounded-full flex items-center justify-center shrink-0',
                   message.role === 'coach'
-                    ? 'bg-accent text-accent-foreground'
+                    ? 'bg-primary/10 text-primary'
                     : 'bg-muted text-muted-foreground'
                 )}
               >
                 {message.role === 'coach' ? (
-                  <Bot className="h-3 w-3" />
+                  <Brain className="h-3 w-3" />
                 ) : (
                   <User className="h-3 w-3" />
                 )}
@@ -125,8 +125,8 @@ export function CoachChatWidget() {
 
           {isTyping && (
             <div className="flex gap-2">
-              <div className="w-6 h-6 rounded-full bg-accent text-accent-foreground flex items-center justify-center">
-                <Bot className="h-3 w-3" />
+              <div className="w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center">
+                <Brain className="h-3 w-3" />
               </div>
               <div className="bg-muted rounded-lg px-3 py-1.5">
                 <div className="flex gap-1">
