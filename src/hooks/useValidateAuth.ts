@@ -31,6 +31,19 @@ export function useValidateAuth() {
         return;
       }
 
+      // Check if token is expired first (before making API call)
+      if (auth.isTokenExpired()) {
+        console.log('[Auth] Token is expired, clearing and redirecting to onboarding');
+        auth.clear();
+        setIsValid(false);
+        setIsValidating(false);
+        // Only redirect if not already on onboarding
+        if (location.pathname !== '/onboarding') {
+          navigate('/onboarding', { replace: true });
+        }
+        return;
+      }
+
       // Try to fetch profile to validate token
       try {
         await fetchUserProfile();
@@ -42,7 +55,7 @@ export function useValidateAuth() {
         const apiError = error as { status?: number };
         if (apiError.status === 401) {
           // Token is invalid - clear it
-          console.log('[Auth] Token is invalid, clearing and redirecting to onboarding');
+          console.log('[Auth] Token is invalid (401), clearing and redirecting to onboarding');
           auth.clear();
           setIsValid(false);
           setIsValidating(false);

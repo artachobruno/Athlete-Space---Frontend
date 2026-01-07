@@ -1795,8 +1795,19 @@ api.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
     if (config.headers) {
       const token = auth.getToken();
+      
+      // Check if token is expired before adding it
       if (token) {
-        config.headers.Authorization = `Bearer ${token}`;
+        if (auth.isTokenExpired()) {
+          // Token is expired - clear it and don't add to request
+          // The response interceptor will handle the 401 and redirect
+          console.log('[API] Token expired, clearing and will redirect on 401');
+          auth.clear();
+        } else {
+          // Token is valid - add Authorization header with correct format
+          // Format: "Bearer <token>" (note the space after "Bearer")
+          config.headers.Authorization = `Bearer ${token}`;
+        }
       }
       // Content-Type is set automatically by axios for JSON requests
     }

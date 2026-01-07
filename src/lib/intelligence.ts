@@ -200,15 +200,25 @@ export const getTodayIntelligence = async (decisionDate?: string): Promise<Daily
     // Extract the decision from the response
     if (data.decision) {
       // Confidence is now an object from the API with score and explanation
-      const confidence = (data.decision as { confidence?: { score?: number; explanation?: string } }).confidence;
+      const confidenceData = (data.decision as { confidence?: { score?: number; explanation?: string } }).confidence;
+      
+      // Ensure confidence has required properties
+      const confidence: { score: number; explanation: string } = confidenceData && 
+        typeof confidenceData.score === 'number' && 
+        typeof confidenceData.explanation === 'string'
+        ? {
+            score: confidenceData.score,
+            explanation: confidenceData.explanation,
+          }
+        : {
+            score: 0.8,
+            explanation: 'Based on current training state',
+          };
       
       return {
         recommendation: data.decision.recommendation || '',
         explanation: data.decision.rationale || data.decision.recommendation || '',
-        confidence: confidence || {
-          score: 0.8,
-          explanation: 'Based on current training state',
-        },
+        confidence,
       };
     }
     
