@@ -11,6 +11,11 @@ export default function Onboarding() {
 
   // Check for auth token in URL params (from Strava OAuth callback)
   useEffect(() => {
+    // Log full URL for debugging
+    console.log('[Onboarding] Current URL:', window.location.href);
+    console.log('[Onboarding] Search params:', searchParams.toString());
+    console.log('[Onboarding] All URL params:', Object.fromEntries(searchParams.entries()));
+    
     const token = searchParams.get('token');
     const error = searchParams.get('error');
     

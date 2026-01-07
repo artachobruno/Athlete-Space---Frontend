@@ -2,7 +2,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, Navigate, useNavigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation } from "react-router-dom";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { useSyncActivities } from "@/hooks/useSyncActivities";
@@ -148,6 +148,59 @@ const AuthProvider = ({ children }: { children: React.ReactNode }) => {
   );
 };
 
+// Component to handle OAuth token from URL (works on any route)
+const OAuthTokenHandler = () => {
+  const navigate = useNavigate();
+  const location = useLocation();
+  
+  useEffect(() => {
+    // Check for token in URL params (from Strava OAuth callback)
+    // This can happen on any route, not just /onboarding
+    const searchParams = new URLSearchParams(location.search);
+    const token = searchParams.get('token');
+    const error = searchParams.get('error');
+    
+    if (error) {
+      console.error('[OAuth] Error in URL:', error);
+      // Remove error from URL and redirect to onboarding
+      const newSearchParams = new URLSearchParams(searchParams);
+      newSearchParams.delete('error');
+      const newSearch = newSearchParams.toString();
+      navigate(`/onboarding${newSearch ? `?${newSearch}` : ''}`, { replace: true });
+      return;
+    }
+    
+    if (token) {
+      console.log('[OAuth] Token found in URL on route:', location.pathname, {
+        tokenLength: token.length,
+        tokenPreview: token.substring(0, 30) + '...',
+      });
+      
+      // Store the token
+      auth.setToken(token);
+      
+      // Verify token was stored
+      const storedToken = auth.getToken();
+      if (storedToken) {
+        console.log('[OAuth] ✅ Token stored successfully');
+      } else {
+        console.error('[OAuth] ❌ Failed to store token!');
+      }
+      
+      // Remove token from URL
+      const newSearchParams = new URLSearchParams(searchParams);
+      newSearchParams.delete('token');
+      const newSearch = newSearchParams.toString();
+      const currentPath = location.pathname;
+      
+      // Navigate to same path without token
+      navigate(`${currentPath}${newSearch ? `?${newSearch}` : ''}`, { replace: true });
+    }
+  }, [location, navigate]);
+  
+  return null;
+};
+
 // Component to handle sync on app mount and auth redirects
 const AppContent = () => {
   // Only sync activities when auth is ready and user is authenticated
@@ -156,6 +209,7 @@ const AppContent = () => {
   
   return (
     <BrowserRouter>
+      <OAuthTokenHandler />
       <AuthValidator />
       <AuthRedirectHandler />
       <Routes>
