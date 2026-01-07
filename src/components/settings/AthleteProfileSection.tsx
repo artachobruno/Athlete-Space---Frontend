@@ -72,6 +72,27 @@ export function AthleteProfileSection() {
     setIsLoading(true);
     try {
       const userProfile = await fetchUserProfile();
+      
+      // Handle null response (profile is optional)
+      if (!userProfile) {
+        console.log('Profile not available - user may need to complete onboarding');
+        // Set default empty profile
+        const defaultProfile: ProfileState = {
+          name: '',
+          email: '',
+          gender: '',
+          weight: '',
+          unitSystem: 'imperial',
+          location: '',
+          dateOfBirth: '',
+          height: '',
+        };
+        setProfile(defaultProfile);
+        setInitialProfile(defaultProfile);
+        setIsLoading(false);
+        return;
+      }
+      
       // Backend returns weight_kg, height_cm, date_of_birth, unit_system
       const unitSystem = (userProfile as { unit_system?: 'imperial' | 'metric' }).unit_system || (userProfile as { unitSystem?: 'imperial' | 'metric' }).unitSystem || 'imperial';
       const weightKg = (userProfile as { weight_kg?: number }).weight_kg || (userProfile as { weight?: number }).weight;
@@ -125,12 +146,8 @@ export function AthleteProfileSection() {
     setIsSaving(true);
     try {
       // Get current profile to preserve target_event and goals (they're managed in TrainingPreferencesSection)
-      let currentProfile: import('@/types').AthleteProfile | null = null;
-      try {
-        currentProfile = await fetchUserProfile();
-      } catch {
-        // If fetch fails, continue without preserving
-      }
+      // fetchUserProfile now returns null on failure (it's optional)
+      const currentProfile = await fetchUserProfile();
 
       const updateData: Partial<import('@/types').AthleteProfile> = {
         name: profile.name,

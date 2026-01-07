@@ -91,9 +91,10 @@ export function TrainingPreferencesSection() {
       let backendProfile = null;
       if (auth.isLoggedIn()) {
         try {
+          // fetchUserProfile now returns null on failure (it's optional)
           [backendPrefs, backendProfile] = await Promise.all([
             fetchTrainingPreferences().catch(() => null),
-            fetchUserProfile().catch(() => null),
+            fetchUserProfile(),
           ]);
         } catch (error) {
           // If backend fails, continue with local data

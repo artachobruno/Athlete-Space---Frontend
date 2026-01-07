@@ -29,6 +29,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const refreshUser = async () => {
     try {
       const currentUser = await fetchCurrentUser();
+      
+      // Validate response is not undefined/null
+      if (!currentUser || typeof currentUser !== 'object') {
+        console.warn("[AuthContext] /me returned invalid response");
+        setUser(null);
+        setLoading(false);
+        return;
+      }
+      
       setUser(currentUser);
     } catch (error) {
       console.error("[AuthContext] Failed to fetch user:", error);

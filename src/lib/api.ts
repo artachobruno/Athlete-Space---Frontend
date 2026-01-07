@@ -1,6 +1,7 @@
 import axios, { AxiosError, AxiosHeaders } from "axios";
 import type { InternalAxiosRequestConfig } from "axios";
 import { auth } from "./auth";
+import type { AthleteProfileOut } from "./apiValidation";
 
 const getBaseURL = () => {
   if (import.meta.env.PROD) {
@@ -184,57 +185,65 @@ export const disconnectStrava = async (): Promise<void> => {
 
 /**
  * Fetches user profile from the backend.
- * @returns Profile data including onboarding status and source information
+ * 
+ * IMPORTANT: This endpoint is OPTIONAL. If it fails, returns null.
+ * The app should redirect to onboarding if profile is missing.
+ * 
+ * @returns Profile data including onboarding status and source information, or null if not available
  * 
  * Note: Backend now supports target_event and goals fields.
  * Response includes these fields if set.
  */
-export const fetchUserProfile = async (): Promise<import("../types").AthleteProfile> => {
-  console.log("[API] Fetching user profile");
+export const fetchUserProfile = async (): Promise<AthleteProfileOut | null> => {
+  console.log("[API] Fetching user profile (optional)");
   try {
     const response = await api.get("/me/profile");
+    
+    // Validate response is not undefined/null
+    if (!response || typeof response !== 'object') {
+      console.warn("[API] /me/profile returned invalid response:", response);
+      return null;
+    }
+    
     // Backend now supports target_event and goals fields
-    return response as unknown as import("../types").AthleteProfile;
+    return response as unknown as AthleteProfileOut;
   } catch (error) {
     // Don't log CORS errors repeatedly - they're already handled by interceptor
     if (!isCorsError(error)) {
-      console.error("[API] Failed to fetch profile:", error);
+      console.warn("[API] Failed to fetch profile (this is optional):", error);
       
       // Check for database errors and provide helpful context
       if (error && typeof error === 'object' && 'status' in error) {
         const apiError = error as { status?: number; message?: string };
+        
+        // 500 errors mean backend is broken - return null
         if (apiError.status === 500) {
           const errorStr = (apiError.message || '').toLowerCase();
           if (errorStr.includes('column') && errorStr.includes('does not exist') ||
               errorStr.includes('programmingerror') ||
               errorStr.includes('database')) {
-            console.warn("[API] Database schema error detected. Returning default profile. The backend migration should run automatically.");
+            console.warn("[API] Database schema error detected. Profile endpoint unavailable.");
           }
-          
-          // Return default profile instead of throwing to allow UI to continue working
-          // This is a temporary fix until backend is updated
-          // Return backend format (snake_case) since that's what the API returns
-          console.warn("[API] Returning default profile due to 500 error. UI will continue to work.");
-          return {
-            id: '',
-            user_id: '',
-            name: null,
-            email: null,
-            gender: null,
-            date_of_birth: null,
-            weight_kg: null,
-            height_cm: null,
-            location: null,
-            unit_system: 'imperial',
-            onboarding_complete: false,
-            target_event: null,
-            goals: [],
-            strava_connected: false,
-          } as unknown as import("../types").AthleteProfile;
+          console.warn("[API] /me/profile returned 500 - treating as optional and returning null");
+          return null;
+        }
+        
+        // 404 means profile doesn't exist yet - this is expected for new users
+        if (apiError.status === 404) {
+          console.log("[API] Profile not found (404) - user needs to complete onboarding");
+          return null;
+        }
+        
+        // 401 means not authenticated - return null (auth will be handled elsewhere)
+        if (apiError.status === 401) {
+          console.log("[API] Not authenticated (401) - profile unavailable");
+          return null;
         }
       }
     }
-    throw error;
+    
+    // For any other error, return null (treat as optional)
+    return null;
   }
 };
 
@@ -244,35 +253,58 @@ export const fetchUserProfile = async (): Promise<import("../types").AthleteProf
  * @returns Updated profile data
  */
 export const updateUserProfile = async (
-  profileData: Partial<import("../types").AthleteProfile>
-): Promise<import("../types").AthleteProfile> => {
+  profileData: Partial<AthleteProfileOut>
+): Promise<AthleteProfileOut> => {
   console.log("[API] Updating user profile");
   try {
     // Map frontend fields to backend format
-    // Explicitly exclude trainingAge - it's managed via training preferences, not profile
+    // Note: profileData may use camelCase (frontend) or snake_case (backend)
+    // We need to handle both formats
     const backendData: Record<string, unknown> = {};
+    
+    // Handle both camelCase and snake_case field names
     if (profileData.name !== undefined) backendData.name = profileData.name;
     if (profileData.email !== undefined) backendData.email = profileData.email;
     if (profileData.gender !== undefined) backendData.gender = profileData.gender;
-    if (profileData.dateOfBirth !== undefined) backendData.date_of_birth = profileData.dateOfBirth;
-    if (profileData.weight !== undefined) backendData.weight_kg = typeof profileData.weight === 'number' ? profileData.weight : parseFloat(profileData.weight as string);
-    if (profileData.height !== undefined) backendData.height_cm = typeof profileData.height === 'number' ? profileData.height : parseFloat(profileData.height as string);
+    
+    // Handle date_of_birth (snake_case) or dateOfBirth (camelCase)
+    const dateOfBirth = (profileData as { date_of_birth?: string; dateOfBirth?: string }).date_of_birth 
+      || (profileData as { date_of_birth?: string; dateOfBirth?: string }).dateOfBirth;
+    if (dateOfBirth !== undefined) backendData.date_of_birth = dateOfBirth;
+    
+    // Handle weight_kg (snake_case) or weight (camelCase)
+    const weight = (profileData as { weight_kg?: number; weight?: number | string }).weight_kg 
+      || (profileData as { weight_kg?: number; weight?: number | string }).weight;
+    if (weight !== undefined) {
+      backendData.weight_kg = typeof weight === 'number' ? weight : parseFloat(String(weight));
+    }
+    
+    // Handle height_cm (snake_case) or height (camelCase)
+    const height = (profileData as { height_cm?: number; height?: number | string }).height_cm 
+      || (profileData as { height_cm?: number; height?: number | string }).height;
+    if (height !== undefined) {
+      backendData.height_cm = typeof height === 'number' ? height : parseFloat(String(height));
+    }
+    
     if (profileData.location !== undefined) backendData.location = profileData.location;
-    if (profileData.unitSystem !== undefined) backendData.unit_system = profileData.unitSystem;
+    
+    // Handle unit_system (snake_case) or unitSystem (camelCase)
+    const unitSystem = (profileData as { unit_system?: 'imperial' | 'metric'; unitSystem?: 'imperial' | 'metric' }).unit_system 
+      || (profileData as { unit_system?: 'imperial' | 'metric'; unitSystem?: 'imperial' | 'metric' }).unitSystem;
+    if (unitSystem !== undefined) backendData.unit_system = unitSystem;
     
     // Backend now supports target_event and goals
-    if (profileData.targetEvent !== undefined) {
-      backendData.target_event = profileData.targetEvent;
+    const targetEvent = (profileData as { target_event?: unknown; targetEvent?: unknown }).target_event 
+      || (profileData as { target_event?: unknown; targetEvent?: unknown }).targetEvent;
+    if (targetEvent !== undefined) {
+      backendData.target_event = targetEvent;
     }
     if (profileData.goals !== undefined) {
       backendData.goals = profileData.goals;
     }
 
-    // Explicitly exclude trainingAge and other fields that shouldn't be in profile updates
-    // trainingAge is managed via /me/training-preferences endpoint
-
     const response = await api.put("/me/profile", backendData);
-    return response as unknown as import("../types").AthleteProfile;
+    return response as unknown as AthleteProfileOut;
   } catch (error) {
     console.error("[API] Failed to update profile:", error);
     
@@ -1787,6 +1819,28 @@ export const syncStravaData = async (): Promise<void> => {
   }
 };
 
+/**
+ * Safe API call wrapper that handles undefined/null responses gracefully.
+ * Never assumes success - always checks if result is valid.
+ * 
+ * @param fn - Function that returns a Promise
+ * @returns Promise that resolves to the result or null on error
+ */
+export async function safeApiCall<T>(fn: () => Promise<T>): Promise<T | null> {
+  try {
+    const result = await fn();
+    // Check if result is actually valid (not undefined/null)
+    if (result === undefined || result === null) {
+      console.warn("[API] safeApiCall: Function returned undefined/null");
+      return null;
+    }
+    return result;
+  } catch (err) {
+    console.error("[API] safeApiCall error:", err);
+    return null;
+  }
+}
+
 const normalizeError = (error: unknown): ApiError => {
   if (axios.isAxiosError(error)) {
     // Backend error format: {"error": "error_code", "message": "human readable message"}
@@ -1969,6 +2023,16 @@ const createNavigationEvent = (path: string) => {
 
 api.interceptors.response.use(
   (response) => {
+    // Guard against undefined/null responses
+    // Backend may return 200 with broken/empty payload
+    if (response.data === undefined || response.data === null) {
+      console.warn("[API] Response interceptor: response.data is undefined/null", {
+        status: response.status,
+        url: response.config?.url,
+      });
+      // Return empty object instead of undefined to prevent .then() errors
+      return {};
+    }
     return response.data;
   },
   (error) => {

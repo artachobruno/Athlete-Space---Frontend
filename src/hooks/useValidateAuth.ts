@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { auth } from '@/lib/auth';
-import { fetchUserProfile } from '@/lib/api';
+import { api } from '@/lib/api';
 
 /**
  * Hook to validate authentication token on app load.
+ * Uses /me endpoint (REQUIRED) instead of /me/profile (OPTIONAL).
  * If token exists but is invalid, clears it and redirects to onboarding.
  * Only validates when not already on onboarding page.
  */
@@ -46,9 +47,23 @@ export function useValidateAuth() {
         return;
       }
 
-      // Try to fetch profile to validate token
+      // Use /me endpoint (REQUIRED) to validate token
+      // /me/profile is OPTIONAL and should not be used for auth validation
       try {
-        await fetchUserProfile();
+        const response = await api.get("/me");
+        
+        // Validate response is not undefined/null
+        if (!response || typeof response !== 'object') {
+          console.warn('[Auth] /me returned invalid response, clearing token');
+          auth.clear();
+          setIsValid(false);
+          setIsValidating(false);
+          if (location.pathname !== '/login' && location.pathname !== '/onboarding') {
+            navigate('/login', { replace: true });
+          }
+          return;
+        }
+        
         // If successful, token is valid
         setIsValid(true);
         setIsValidating(false);

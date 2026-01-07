@@ -198,31 +198,26 @@ export async function logout(): Promise<void> {
 
 /**
  * Fetch current user profile.
- * Tries /me endpoint first, falls back to /me/profile if /me doesn't exist.
+ * Uses /me endpoint (REQUIRED for auth).
+ * /me/profile is OPTIONAL and fetched separately if needed.
+ * 
  * @returns User profile if authenticated, null otherwise
  */
 export async function fetchCurrentUser(): Promise<AthleteProfile | null> {
   try {
-    // Try /me endpoint first (as per auth specs)
+    // /me endpoint is REQUIRED - this validates authentication
     const response = await api.get("/me");
+    
+    // Validate response is not undefined/null
+    if (!response || typeof response !== 'object') {
+      console.warn("[Auth] /me returned invalid response:", response);
+      auth.clear();
+      return null;
+    }
+    
     return response as unknown as AthleteProfile;
   } catch (error) {
     const apiError = error as { status?: number };
-    
-    // If /me doesn't exist (404), try /me/profile (existing endpoint)
-    if (apiError.status === 404) {
-      try {
-        const profileResponse = await api.get("/me/profile");
-        return profileResponse as unknown as AthleteProfile;
-      } catch (profileError) {
-        const profileApiError = profileError as { status?: number };
-        if (profileApiError.status === 401) {
-          auth.clear();
-          return null;
-        }
-        throw profileError;
-      }
-    }
     
     if (apiError.status === 401) {
       // User is not authenticated
@@ -230,7 +225,9 @@ export async function fetchCurrentUser(): Promise<AthleteProfile | null> {
       return null;
     }
     
-    throw error;
+    // For other errors, log and return null
+    console.warn("[Auth] Failed to fetch /me:", error);
+    return null;
   }
 }
 

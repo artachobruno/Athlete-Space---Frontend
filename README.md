@@ -100,6 +100,38 @@ VITE_API_URL=http://localhost:8000
 
 For production, set `VITE_API_URL` in your Render dashboard to point to your backend API.
 
+## Type Generation from Backend OpenAPI
+
+This project uses **generated TypeScript types** from the backend OpenAPI schema to ensure type safety.
+
+### Setup
+
+1. **Install dependencies** (includes `openapi-typescript`):
+   ```bash
+   npm install
+   ```
+
+2. **Generate types** (make sure backend is running):
+   ```bash
+   # For local development (defaults to http://localhost:8000)
+   npm run generate-types
+   
+   # For production (uses VITE_API_URL env var)
+   VITE_API_URL=https://your-backend.com npm run generate-types:prod
+   ```
+
+3. **Generated file**: `src/types/api.ts`
+   - This file is **READ-ONLY** - never edit manually
+   - Regenerate after every backend schema change
+
+### Usage
+
+- **Import generated types**: `import type { components } from "@/types/api"`
+- **Use centralized API client**: All API calls go through `src/lib/apiClient.ts`
+- **Runtime validation**: Zod schemas in `src/lib/apiValidation.ts` validate responses
+
+See `docs/TYPE_GENERATION.md` for complete documentation.
+
 ## Can I connect a custom domain to my Lovable project?
 
 Yes, you can!

@@ -1,24 +1,17 @@
-import { useQuery } from '@tanstack/react-query';
-import { fetchUserProfile } from '@/lib/api';
+import { useAuth } from '@/context/AuthContext';
 
 type UnitSystem = 'imperial' | 'metric';
 
+/**
+ * Hook to get unit system from user profile.
+ * Uses AuthContext as single source of truth - no duplicate API calls.
+ */
 export function useUnitSystem() {
-  const { data: profile } = useQuery({
-    queryKey: ['userProfile'],
-    queryFn: fetchUserProfile,
-    retry: (failureCount, error) => {
-      // Don't retry on CORS errors - they won't resolve with retries
-      if (error && typeof error === 'object' && 'code' in error && error.code === 'ERR_NETWORK') {
-        return false;
-      }
-      // Retry once for other errors
-      return failureCount < 1;
-    },
-    staleTime: 5 * 60 * 1000, // 5 minutes
-  });
+  const { user } = useAuth();
 
-  const unitSystem: UnitSystem = (profile as { unitSystem?: UnitSystem })?.unitSystem || 'imperial';
+  // Get unit system from AuthContext (user comes from /me endpoint)
+  // Default to 'imperial' if not set
+  const unitSystem: UnitSystem = (user as { unitSystem?: UnitSystem })?.unitSystem || 'imperial';
 
   const convertDistance = (km: number): { value: number; unit: string } => {
     if (unitSystem === 'imperial') {

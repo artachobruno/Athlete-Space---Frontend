@@ -31,13 +31,14 @@ export function DataManagementSection() {
   const handleExportData = async () => {
     setIsExporting(true);
     try {
+      // fetchUserProfile now returns null on failure (it's optional)
       const [activities, profile] = await Promise.all([
         fetchActivities({ limit: 1000 }),
         fetchUserProfile(),
       ]);
 
       const exportData = {
-        profile,
+        profile: profile || null, // Explicitly handle null
         activities,
         exportDate: new Date().toISOString(),
         version: '1.0',

@@ -8,32 +8,14 @@ export type DailyDecision = 'proceed' | 'modify' | 'replace' | 'rest';
 
 export type LoadStatus = 'fresh' | 'optimal' | 'overreaching' | 'overtraining';
 
-export interface AthleteProfile {
-  id: string;
-  name: string;
-  sports: Sport[];
-  trainingAge: number; // years of structured training
-  weeklyAvailability: {
-    days: number;
-    hoursPerWeek: number;
-  };
-  goals: string[];
-  targetEvent?: {
-    name: string;
-    date: string;
-    distance?: string;
-  };
-  stravaConnected: boolean;
-  onboardingComplete: boolean;
-  // Optional profile fields
-  email?: string;
-  gender?: string;
-  dateOfBirth?: string;
-  weight?: number | string;
-  height?: number | string;
-  location?: string;
-  unitSystem?: 'imperial' | 'metric';
-}
+/**
+ * @deprecated Use generated types from @/types/api instead.
+ * Import from api.ts: import type { components } from "@/types/api";
+ * Then use: components["schemas"]["AthleteProfileOut"]
+ * 
+ * This interface was removed to enforce type generation from backend OpenAPI schema.
+ * Run: npm run generate-types
+ */
 
 export interface PlannedWorkout {
   id: string;
