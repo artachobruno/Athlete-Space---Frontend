@@ -1793,24 +1793,65 @@ const normalizeError = (error: unknown): ApiError => {
 // Request interceptor: Adds Authorization header for authenticated requests
 api.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
-    if (config.headers) {
-      const token = auth.getToken();
-      
-      // Check if token is expired before adding it
-      if (token) {
-        if (auth.isTokenExpired()) {
-          // Token is expired - clear it and don't add to request
-          // The response interceptor will handle the 401 and redirect
-          console.log('[API] Token expired, clearing and will redirect on 401');
-          auth.clear();
-        } else {
-          // Token is valid - add Authorization header with correct format
-          // Format: "Bearer <token>" (note the space after "Bearer")
-          config.headers.Authorization = `Bearer ${token}`;
-        }
-      }
-      // Content-Type is set automatically by axios for JSON requests
+    // Ensure headers object exists (axios may not initialize it)
+    if (!config.headers) {
+      config.headers = {} as Record<string, string>;
     }
+    
+    const token = auth.getToken();
+    
+    // Check if token is expired before adding it
+    if (token) {
+      if (auth.isTokenExpired()) {
+        // Token is expired - clear it and don't add to request
+        // The response interceptor will handle the 401 and redirect
+        console.log('[API] Token expired, clearing and will redirect on 401');
+        auth.clear();
+      } else {
+        // Token is valid - add Authorization header with correct format
+        // Format: "Bearer <token>" (note the space after "Bearer")
+        // CRITICAL: Use exact header name "Authorization" (capital A)
+        const authHeader = `Bearer ${token}`;
+        
+        // Set header - axios accepts both object property and set() method
+        // Use multiple methods to ensure it's set correctly
+        if (typeof (config.headers as { set?: (name: string, value: string) => void }).set === 'function') {
+          // AxiosHeaders instance - use set method
+          (config.headers as { set: (name: string, value: string) => void }).set('Authorization', authHeader);
+        } else {
+          // Plain object - set directly
+          (config.headers as Record<string, string>)['Authorization'] = authHeader;
+          (config.headers as Record<string, string>).Authorization = authHeader;
+        }
+        
+        // Debug logging (always log to help diagnose)
+        console.log('[API] Adding Authorization header:', {
+          hasToken: !!token,
+          tokenLength: token.length,
+          headerValue: authHeader.substring(0, 30) + '...',
+          url: config.url,
+          method: config.method?.toUpperCase(),
+          headersType: typeof config.headers,
+        });
+      }
+    } else {
+      // No token available
+      console.warn('[API] No token available for request:', {
+        url: config.url,
+        method: config.method?.toUpperCase(),
+      });
+    }
+    
+    // Ensure Content-Type is set for POST/PUT requests with data
+    if ((config.method === 'post' || config.method === 'put' || config.method === 'patch') && config.data) {
+      const contentType = 'application/json';
+      if (typeof (config.headers as { set?: (name: string, value: string) => void }).set === 'function') {
+        (config.headers as { set: (name: string, value: string) => void }).set('Content-Type', contentType);
+      } else {
+        (config.headers as Record<string, string>)['Content-Type'] = contentType;
+      }
+    }
+    
     return config;
   },
   (error) => Promise.reject(error)

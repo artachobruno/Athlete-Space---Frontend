@@ -1,8 +1,9 @@
 import { createRoot } from "react-dom/client";
 import App from "./App.tsx";
 import "./index.css";
-// Import auth debug utilities (makes them available in console)
+// Import debug utilities (makes them available in console)
 import "./lib/auth-debug";
+import "./lib/api-debug";
 import "leaflet/dist/leaflet.css";
 
 // Global error handlers to catch errors from browser extensions or other external sources
