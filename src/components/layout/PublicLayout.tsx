@@ -1,6 +1,6 @@
 import { ReactNode } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Shield, HelpCircle, Brain } from 'lucide-react';
+import { Shield, HelpCircle, Brain, Info } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface PublicLayoutProps {
@@ -21,7 +21,19 @@ export function PublicLayout({ children }: PublicLayoutProps) {
             </Link>
             
             {/* Navigation */}
-            <nav className="flex items-center gap-4">
+            <nav className="flex items-center gap-2 sm:gap-4">
+              <Link
+                to="/about"
+                className={cn(
+                  'flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors',
+                  location.pathname === '/about'
+                    ? 'text-foreground bg-muted'
+                    : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
+                )}
+              >
+                <Info className="h-4 w-4" />
+                <span className="hidden sm:inline">About</span>
+              </Link>
               <Link
                 to="/science"
                 className={cn(
@@ -32,7 +44,7 @@ export function PublicLayout({ children }: PublicLayoutProps) {
                 )}
               >
                 <Brain className="h-4 w-4" />
-                Science & AI
+                <span className="hidden sm:inline">Science & AI</span>
               </Link>
               <Link
                 to="/privacy"
@@ -44,7 +56,7 @@ export function PublicLayout({ children }: PublicLayoutProps) {
                 )}
               >
                 <Shield className="h-4 w-4" />
-                Privacy
+                <span className="hidden sm:inline">Privacy</span>
               </Link>
               <Link
                 to="/faq"
@@ -56,7 +68,7 @@ export function PublicLayout({ children }: PublicLayoutProps) {
                 )}
               >
                 <HelpCircle className="h-4 w-4" />
-                FAQ
+                <span className="hidden sm:inline">FAQ</span>
               </Link>
             </nav>
           </div>
