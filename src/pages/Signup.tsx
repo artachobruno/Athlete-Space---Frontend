@@ -76,6 +76,7 @@ export default function Signup() {
       {/* Header */}
       <header className="p-4 flex items-center justify-between">
         <div className="flex items-center gap-3">
+          <div className="w-1.5 h-6 bg-primary rounded-sm" />
           <img src={logo} alt="AthleteSpace" className="h-8 w-auto dark:invert" />
           <span className="font-bold text-xl text-foreground">AthleteSpace</span>
         </div>
@@ -99,7 +100,7 @@ export default function Signup() {
       <main className="flex-1 flex items-center justify-center p-4">
         <div className="w-full max-w-md space-y-6">
           <div className="text-center space-y-2">
-            <h1 className="text-3xl font-bold text-foreground">Create Account</h1>
+            <h1 className="text-3xl font-bold text-primary">Create Account</h1>
             <p className="text-muted-foreground">
               Start your personalized training journey
             </p>
