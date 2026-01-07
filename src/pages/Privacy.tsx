@@ -1,9 +1,9 @@
-import { AppLayout } from '@/components/layout/AppLayout';
+import { PublicLayout } from '@/components/layout/PublicLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 export default function Privacy() {
   return (
-    <AppLayout>
+    <PublicLayout>
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="mb-8">
@@ -102,7 +102,7 @@ export default function Privacy() {
           </CardContent>
         </Card>
       </div>
-    </AppLayout>
+    </PublicLayout>
   );
 }
 

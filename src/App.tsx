@@ -20,6 +20,7 @@ import Coach from "./pages/Coach";
 import Settings from "./pages/Settings";
 import Onboarding from "./pages/Onboarding";
 import Privacy from "./pages/Privacy";
+import FAQ from "./pages/FAQ";
 import NotFound from "./pages/NotFound";
 
 // Auth context to provide auth state to all components
@@ -218,6 +219,7 @@ const AppContent = () => {
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
         <Route path="/onboarding" element={<Onboarding />} />
         <Route path="/privacy" element={<Privacy />} />
+        <Route path="/faq" element={<FAQ />} />
         <Route
           path="/dashboard"
           element={
