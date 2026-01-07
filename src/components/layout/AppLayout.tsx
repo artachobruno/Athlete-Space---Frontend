@@ -10,7 +10,7 @@ import {
   Settings,
   Menu,
   X,
-  MessageCircle,
+  Brain,
   LogOut,
   Shield,
   HelpCircle,
@@ -29,7 +29,7 @@ const navItems = [
   { path: '/plan', label: 'Training Plan', icon: ClipboardList },
   { path: '/activities', label: 'Activities', icon: Activity },
   { path: '/analytics', label: 'Analytics', icon: BarChart3 },
-  { path: '/coach', label: 'Coach', icon: MessageCircle },
+  { path: '/coach', label: 'Coach', icon: Brain },
   { path: '/settings', label: 'Settings', icon: Settings },
 ];
 
