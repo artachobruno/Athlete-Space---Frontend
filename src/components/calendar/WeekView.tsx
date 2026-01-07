@@ -76,10 +76,13 @@ export function WeekView({ currentDate, onActivityClick }: WeekViewProps) {
     console.error('[WeekView] Error loading week data:', weekError);
   }
 
+  // Use consistent query key to share cache with other components
   const { data: activities, isLoading: activitiesLoading } = useQuery({
-    queryKey: ['activities', 'week'],
+    queryKey: ['activities', 'limit', 100],
     queryFn: () => fetchActivities({ limit: 100 }),
     retry: 1,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 30 * 60 * 1000, // 30 minutes
   });
 
   const { data: overview } = useQuery({

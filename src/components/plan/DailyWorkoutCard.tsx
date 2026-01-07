@@ -50,8 +50,9 @@ const coachNotes: Record<string, string> = {
 
 export function DailyWorkoutCard({ date, dateId, workout, completed, status, dailyDecision }: DailyWorkoutCardProps) {
   const { convertDistance } = useUnitSystem();
-  const isRestDay = !workout;
-  const Icon = workout ? sportIcons[workout.sport] : Moon;
+  const isRestDay = !workout && !completed;
+  // Use activity icon if no workout but has completed activity
+  const Icon = workout ? sportIcons[workout.sport] : (completed ? sportIcons[completed.sport] : Moon);
   const decisionInfo = dailyDecision ? decisionConfig[dailyDecision.decision] : null;
   const DecisionIcon = decisionInfo?.icon;
 
@@ -109,7 +110,7 @@ export function DailyWorkoutCard({ date, dateId, workout, completed, status, dai
                   Recovery and adaptation. Stay active with light movement if desired.
                 </p>
               </div>
-            ) : (
+            ) : workout ? (
               <>
                 {/* Workout header */}
                 <div className="flex items-center gap-3 mb-2">
@@ -197,7 +198,54 @@ export function DailyWorkoutCard({ date, dateId, workout, completed, status, dai
                   </div>
                 )}
               </>
-            )}
+            ) : completed ? (
+              <>
+                {/* Completed activity without planned workout */}
+                <div className="flex items-center gap-3 mb-2">
+                  <div className="p-2 bg-accent/10 rounded-lg">
+                    <Icon className="h-5 w-5 text-accent" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h4 className="font-semibold text-foreground truncate">{completed.title}</h4>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-xs text-muted-foreground capitalize">{completed.sport}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Metrics */}
+                <div className="flex items-center gap-4 text-sm text-muted-foreground mb-3">
+                  <span className="flex items-center gap-1">
+                    <Clock className="h-4 w-4" />
+                    {completed.duration} min
+                  </span>
+                  {completed.distance && (
+                    <span className="flex items-center gap-1">
+                      <Route className="h-4 w-4" />
+                      {(() => {
+                        const dist = convertDistance(completed.distance);
+                        return `${dist.value.toFixed(1)} ${dist.unit}`;
+                      })()}
+                    </span>
+                  )}
+                  {completed.avgHeartRate && (
+                    <span className="flex items-center gap-1">
+                      <Heart className="h-4 w-4" />
+                      {completed.avgHeartRate} bpm
+                    </span>
+                  )}
+                </div>
+
+                {/* Coach feedback if available */}
+                {completed.coachFeedback && (
+                  <div className="mt-3 p-3 bg-load-fresh/5 rounded-lg border border-load-fresh/20">
+                    <p className="text-xs text-muted-foreground italic">
+                      &ldquo;{completed.coachFeedback.slice(0, 150)}...&rdquo;
+                    </p>
+                  </div>
+                )}
+              </>
+            ) : null}
           </div>
 
           {/* Right: Daily decision (for today) or coach note */}

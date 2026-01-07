@@ -9,8 +9,6 @@ import { Loader2 } from 'lucide-react';
 import type { PlannedWorkout, CompletedActivity } from '@/types';
 import { enrichActivitiesWithTss } from '@/lib/tss-utils';
 
-import { mapSessionToWorkout } from '@/lib/session-utils';
-
 export function DailyWorkoutList() {
   const today = new Date();
   const weekStart = startOfWeek(today, { weekStartsOn: 1 });
@@ -63,22 +61,31 @@ export function DailyWorkoutList() {
   }, [activities, trainingLoadData]);
 
   const weekDays = useMemo(() => {
-    if (!weekData || !enrichedActivities) return [];
-
+    // Allow activities even if weekData is not loaded yet
+    const activitiesArray = enrichedActivities || [];
+    
     return Array.from({ length: 7 }, (_, i) => {
       const date = addDays(weekStart, i);
       const dateStr = format(date, 'yyyy-MM-dd');
       
-      const session = weekData.sessions?.find(s => s.date === dateStr && s.status === 'planned');
+      // Find planned session if weekData is available
+      const session = weekData?.sessions?.find(s => s.date === dateStr && s.status === 'planned');
       const workout = session ? mapSessionToWorkout(session) : null;
       
-      const completed = enrichedActivities.find((a: CompletedActivity) => a.date === dateStr);
+      // Find completed activity - use activities even if not in planned sessions
+      const completed = activitiesArray.find((a: CompletedActivity) => {
+        if (!a || typeof a !== 'object') return false;
+        const activityDate = a.date?.split('T')[0] || a.date;
+        return activityDate === dateStr;
+      });
       
       // Determine status
       let status: 'upcoming' | 'today' | 'completed' | 'missed' = 'upcoming';
       if (isToday(date)) {
         status = 'today';
       } else if (isBefore(date, today) && !isToday(date)) {
+        // If there's a completed activity, mark as completed
+        // Otherwise, if there was a planned workout, mark as missed
         status = completed ? 'completed' : (workout ? 'missed' : 'upcoming');
       }
 
@@ -99,7 +106,8 @@ export function DailyWorkoutList() {
     });
   }, [weekData, enrichedActivities, weekStart, today, todayIntelligence]);
 
-  if (weekLoading || activitiesLoading) {
+  // Show loading only if both are loading, but allow activities to show even if weekData is loading
+  if (weekLoading && activitiesLoading) {
     return (
       <div className="space-y-3">
         <h3 className="text-lg font-semibold text-foreground">Daily Schedule</h3>
