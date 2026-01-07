@@ -1,5 +1,14 @@
 import { api } from "./api";
-import type { AthleteProfile } from "@/types";
+import type { UserOut } from "./apiValidation";
+
+// Minimal user type for auth context (matches what /me returns)
+// This is a subset of the full profile - just enough for authentication
+export type AuthUser = {
+  id: string;
+  email: string | null;
+  onboarding_complete: boolean;
+  strava_connected: boolean;
+};
 
 const TOKEN_KEY = "auth_token";
 
@@ -206,7 +215,7 @@ let fetchCurrentUserPromise: Promise<AthleteProfile | null> | null = null;
  * 
  * @returns User profile if authenticated, null otherwise
  */
-export async function fetchCurrentUser(): Promise<AthleteProfile | null> {
+export async function fetchCurrentUser(): Promise<AuthUser | null> {
   // If a request is already in flight, return the same promise
   if (fetchCurrentUserPromise) {
     return fetchCurrentUserPromise;
@@ -224,7 +233,29 @@ export async function fetchCurrentUser(): Promise<AthleteProfile | null> {
         return null;
       }
       
-      return response as unknown as AthleteProfile;
+      // Backend may return minimal response: {"user_id": "...", "authenticated": true}
+      // Or full UserOut: {"id": "...", "email": "...", "onboarding_complete": true, "strava_connected": true}
+      // Transform it to match expected AuthUser shape
+      const backendResponse = response as { user_id?: string; id?: string; authenticated?: boolean; email?: string | null; onboarding_complete?: boolean; strava_connected?: boolean };
+      
+      // Extract user_id or id (backend may use either)
+      const userId = backendResponse.id || backendResponse.user_id;
+      if (!userId) {
+        console.warn("[Auth] /me response missing user_id/id:", response);
+        auth.clear();
+        return null;
+      }
+      
+      // Create a valid user object from the response
+      // Default values for optional fields if backend doesn't provide them
+      const userProfile: AuthUser = {
+        id: userId,
+        email: backendResponse.email ?? null,
+        onboarding_complete: backendResponse.onboarding_complete ?? false,
+        strava_connected: backendResponse.strava_connected ?? false,
+      };
+      
+      return userProfile;
     } catch (error) {
       const apiError = error as { status?: number };
       

@@ -1,9 +1,8 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
-import { fetchCurrentUser, logout as logoutApi } from "@/lib/auth";
-import type { AthleteProfile } from "@/types";
+import { fetchCurrentUser, logout as logoutApi, type AuthUser } from "@/lib/auth";
 
 interface AuthContextValue {
-  user: AthleteProfile | null;
+  user: AuthUser | null;
   loading: boolean;
   refreshUser: () => Promise<void>;
   logout: () => Promise<void>;
@@ -23,7 +22,7 @@ interface AuthProviderProps {
 }
 
 export function AuthProvider({ children }: AuthProviderProps) {
-  const [user, setUser] = useState<AthleteProfile | null>(null);
+  const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
