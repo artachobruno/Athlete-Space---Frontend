@@ -7,7 +7,14 @@ export function useUnitSystem() {
   const { data: profile } = useQuery({
     queryKey: ['userProfile'],
     queryFn: fetchUserProfile,
-    retry: 1,
+    retry: (failureCount, error) => {
+      // Don't retry on CORS errors - they won't resolve with retries
+      if (error && typeof error === 'object' && 'code' in error && error.code === 'ERR_NETWORK') {
+        return false;
+      }
+      // Retry once for other errors
+      return failureCount < 1;
+    },
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
 

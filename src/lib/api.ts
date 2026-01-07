@@ -79,6 +79,38 @@ export const api = axios.create({
   timeout: 30000,
 });
 
+/**
+ * Checks if an error is a CORS error
+ */
+const isCorsError = (error: unknown): boolean => {
+  if (!error || typeof error !== 'object') return false;
+  
+  const err = error as { code?: string; message?: string; response?: { status?: number } };
+  
+  // CORS errors typically show up as:
+  // - ERR_NETWORK code
+  // - Status 0 or 500 with CORS message
+  // - Message containing "CORS" or "Cross-Origin"
+  if (err.code === 'ERR_NETWORK') {
+    return true;
+  }
+  
+  if (err.message && (
+    err.message.includes('CORS') ||
+    err.message.includes('Cross-Origin') ||
+    err.message.includes('Access-Control-Allow-Origin')
+  )) {
+    return true;
+  }
+  
+  // Status 500 with ERR_NETWORK is often a CORS issue
+  if (err.response?.status === 500 && err.code === 'ERR_NETWORK') {
+    return true;
+  }
+  
+  return false;
+};
+
 export const getApiUrl = (path: string): string => {
   const cleanPath = path.startsWith("/") ? path : `/${path}`;
   
@@ -160,7 +192,10 @@ export const fetchUserProfile = async (): Promise<import("../types").AthleteProf
     const response = await api.get("/me/profile");
     return response as unknown as import("../types").AthleteProfile;
   } catch (error) {
-    console.error("[API] Failed to fetch profile:", error);
+    // Don't log CORS errors repeatedly - they're already handled by interceptor
+    if (!isCorsError(error)) {
+      console.error("[API] Failed to fetch profile:", error);
+    }
     throw error;
   }
 };
@@ -635,38 +670,6 @@ export const fetchActivity = async (id: string): Promise<import("../types").Comp
     console.error("[API] Failed to fetch activity:", error);
     throw error;
   }
-};
-
-/**
- * Checks if an error is a CORS error
- */
-const isCorsError = (error: unknown): boolean => {
-  if (!error || typeof error !== 'object') return false;
-  
-  const err = error as { code?: string; message?: string; response?: { status?: number } };
-  
-  // CORS errors typically show up as:
-  // - ERR_NETWORK code
-  // - Status 0 or 500 with CORS message
-  // - Message containing "CORS" or "Cross-Origin"
-  if (err.code === 'ERR_NETWORK') {
-    return true;
-  }
-  
-  if (err.message && (
-    err.message.includes('CORS') ||
-    err.message.includes('Cross-Origin') ||
-    err.message.includes('Access-Control-Allow-Origin')
-  )) {
-    return true;
-  }
-  
-  // Status 500 with ERR_NETWORK is often a CORS issue
-  if (err.response?.status === 500 && err.code === 'ERR_NETWORK') {
-    return true;
-  }
-  
-  return false;
 };
 
 /**

@@ -82,10 +82,20 @@ export function AthleteProfileSection() {
       setProfile(profileData);
       setInitialProfile(profileData);
     } catch (error) {
-      console.error('Failed to load profile:', error);
+      // Check if it's a CORS error
+      const isCorsError = error && typeof error === 'object' && 'code' in error && error.code === 'ERR_NETWORK';
+      
+      if (!isCorsError) {
+        console.error('Failed to load profile:', error);
+      }
+      
+      const errorMessage = isCorsError
+        ? 'Unable to connect to the server. Please check your connection or try again later.'
+        : (error instanceof Error ? error.message : 'Could not load your profile data');
+      
       toast({
         title: 'Failed to load profile',
-        description: error instanceof Error ? error.message : 'Could not load your profile data',
+        description: errorMessage,
         variant: 'destructive',
       });
     } finally {
