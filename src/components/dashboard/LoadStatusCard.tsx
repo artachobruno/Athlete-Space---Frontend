@@ -55,13 +55,21 @@ export function LoadStatusCard() {
     );
   }
 
-  const { ctl, atl, tsb } = overview.today;
+  // Safely extract today's values with fallbacks
+  const today = overview?.today || {};
+  const ctl = typeof today.ctl === 'number' ? today.ctl : 0;
+  const atl = typeof today.atl === 'number' ? today.atl : 0;
+  const tsb = typeof today.tsb === 'number' ? today.tsb : 0;
+  
   const loadStatus = getLoadStatus(tsb);
   
   // Calculate CTL trend from metrics
-  const ctlData = Array.isArray(overview.metrics.ctl) ? overview.metrics.ctl : [];
+  const metrics = overview?.metrics || {};
+  const ctlData = Array.isArray(metrics.ctl) ? metrics.ctl : [];
   const latestCtl = ctl;
-  const previousCtl = ctlData.length >= 7 ? ctlData[ctlData.length - 7]?.[1] || ctl : ctl;
+  const previousCtl = ctlData.length >= 7 && ctlData[ctlData.length - 7]?.[1] !== undefined
+    ? ctlData[ctlData.length - 7][1]
+    : ctl;
   const ctlTrend = latestCtl - previousCtl;
   const TrendIcon = ctlTrend > 2 ? TrendingUp : ctlTrend < -2 ? TrendingDown : Minus;
 
