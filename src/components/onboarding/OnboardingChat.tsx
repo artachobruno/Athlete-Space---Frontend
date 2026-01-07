@@ -713,6 +713,7 @@ export function OnboardingChat({ onComplete, isComplete }: OnboardingChatProps) 
               if (step === 'injury-details') handleInjuryDetails();
             }}
             disabled={step === 'race-details' && !textInput.trim()}
+            className="bg-[#2F4F4F] hover:bg-[#2F4F4F]/90 text-white"
             // Allow proceeding with injury details even if empty (user can skip details)
           >
             <Send className="h-4 w-4" />
@@ -730,7 +731,7 @@ function MessageBubble({ message }: { message: Message }) {
     <div className={cn('flex gap-3', !isCoach && 'flex-row-reverse')}>
       <div className={cn(
         'w-9 h-9 rounded-full flex items-center justify-center shrink-0',
-        isCoach ? 'bg-accent/10' : 'bg-muted'
+        isCoach ? 'bg-[#2F4F4F]/10' : 'bg-muted'
       )}>
         {isCoach ? (
           <Brain className="h-4 w-4 text-[#2F4F4F]" />
@@ -741,7 +742,7 @@ function MessageBubble({ message }: { message: Message }) {
       <div className={cn(
         'max-w-[80%] rounded-2xl px-4 py-3',
         isCoach 
-          ? 'bg-muted/50 rounded-tl-sm text-foreground' 
+          ? 'bg-[#2F4F4F]/10 rounded-tl-sm text-foreground' 
           : 'bg-accent text-accent-foreground rounded-tr-sm'
       )}>
         <p className="text-sm leading-relaxed">{message.content}</p>

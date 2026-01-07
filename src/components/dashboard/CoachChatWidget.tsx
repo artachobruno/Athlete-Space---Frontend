@@ -100,7 +100,7 @@ export function CoachChatWidget() {
                 className={cn(
                   'w-6 h-6 rounded-full flex items-center justify-center shrink-0',
                   message.role === 'coach'
-                    ? 'bg-primary/10 text-primary'
+                    ? 'bg-[#2F4F4F]/10 text-[#2F4F4F]'
                     : 'bg-muted text-muted-foreground'
                 )}
               >
@@ -114,7 +114,7 @@ export function CoachChatWidget() {
                 className={cn(
                   'max-w-[80%] rounded-lg px-3 py-1.5 text-xs',
                   message.role === 'coach'
-                    ? 'bg-muted text-foreground'
+                    ? 'bg-[#2F4F4F]/10 text-foreground'
                     : 'bg-accent text-accent-foreground'
                 )}
               >
@@ -128,7 +128,7 @@ export function CoachChatWidget() {
               <div className="w-6 h-6 rounded-full bg-accent text-accent-foreground flex items-center justify-center">
                 <Brain className="h-3 w-3 text-[#2F4F4F]" />
               </div>
-              <div className="bg-muted rounded-lg px-3 py-1.5">
+              <div className="bg-[#2F4F4F]/10 rounded-lg px-3 py-1.5">
                 <div className="flex gap-1">
                   <span className="w-1.5 h-1.5 bg-muted-foreground/50 rounded-full animate-pulse-subtle" />
                   <span className="w-1.5 h-1.5 bg-muted-foreground/50 rounded-full animate-pulse-subtle [animation-delay:150ms]" />
@@ -152,7 +152,7 @@ export function CoachChatWidget() {
             onClick={sendMessage}
             disabled={!input.trim() || isTyping}
             size="icon"
-            className="h-9 w-9 shrink-0"
+            className="h-9 w-9 shrink-0 bg-[#2F4F4F] hover:bg-[#2F4F4F]/90 text-white"
           >
             <Send className="h-3.5 w-3.5" />
           </Button>
