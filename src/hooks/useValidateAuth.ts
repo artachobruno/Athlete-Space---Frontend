@@ -68,11 +68,12 @@ export function useValidateAuth() {
         setIsValid(true);
         setIsValidating(false);
       } catch (error) {
-        // Check if it's a 401 error (invalid token)
+        // Check if it's a 401 or 404 error (invalid token or endpoint broken)
         const apiError = error as { status?: number };
-        if (apiError.status === 401) {
-          // Token is invalid - clear it
-          console.log('[Auth] Token is invalid (401), clearing and redirecting to login');
+        if (apiError.status === 401 || apiError.status === 404) {
+          // Token is invalid OR endpoint doesn't exist = not authenticated
+          // 404 on /me means backend contract is broken, but from frontend perspective = not authenticated
+          console.log(`[Auth] Token is invalid (${apiError.status}), clearing and redirecting to login`);
           auth.clear();
           setIsValid(false);
           setIsValidating(false);
@@ -81,8 +82,8 @@ export function useValidateAuth() {
             navigate('/login', { replace: true });
           }
         } else {
-          // Other error (network, etc.) - assume token might still be valid
-          // Don't clear token on network errors
+          // Other error (network, 500, etc.) - assume token might still be valid
+          // Don't clear token on network errors - might be temporary
           setIsValid(true);
           setIsValidating(false);
         }

@@ -196,6 +196,9 @@ export async function logout(): Promise<void> {
   }
 }
 
+// Guard to prevent multiple simultaneous calls to /me
+let fetchCurrentUserPromise: Promise<AthleteProfile | null> | null = null;
+
 /**
  * Fetch current user profile.
  * Uses /me endpoint (REQUIRED for auth).
@@ -204,30 +207,45 @@ export async function logout(): Promise<void> {
  * @returns User profile if authenticated, null otherwise
  */
 export async function fetchCurrentUser(): Promise<AthleteProfile | null> {
-  try {
-    // /me endpoint is REQUIRED - this validates authentication
-    const response = await api.get("/me");
-    
-    // Validate response is not undefined/null
-    if (!response || typeof response !== 'object') {
-      console.warn("[Auth] /me returned invalid response:", response);
-      auth.clear();
-      return null;
-    }
-    
-    return response as unknown as AthleteProfile;
-  } catch (error) {
-    const apiError = error as { status?: number };
-    
-    if (apiError.status === 401) {
-      // User is not authenticated
-      auth.clear();
-      return null;
-    }
-    
-    // For other errors, log and return null
-    console.warn("[Auth] Failed to fetch /me:", error);
-    return null;
+  // If a request is already in flight, return the same promise
+  if (fetchCurrentUserPromise) {
+    return fetchCurrentUserPromise;
   }
+  
+  fetchCurrentUserPromise = (async () => {
+    try {
+      // /me endpoint is REQUIRED - this validates authentication
+      const response = await api.get("/me");
+      
+      // Validate response is not undefined/null
+      if (!response || typeof response !== 'object') {
+        console.warn("[Auth] /me returned invalid response:", response);
+        auth.clear();
+        return null;
+      }
+      
+      return response as unknown as AthleteProfile;
+    } catch (error) {
+      const apiError = error as { status?: number };
+      
+      // 401 = not authenticated (handled by interceptor, but clear here too)
+      // 404 = endpoint doesn't exist OR user doesn't exist = not authenticated
+      if (apiError.status === 401 || apiError.status === 404) {
+        // User is not authenticated or endpoint is broken
+        auth.clear();
+        return null;
+      }
+      
+      // For other errors (network, 500, etc.), log and return null
+      // Don't clear token on network errors - might be temporary
+      console.warn("[Auth] Failed to fetch /me:", error);
+      return null;
+    } finally {
+      // Clear the promise so future calls can make new requests
+      fetchCurrentUserPromise = null;
+    }
+  })();
+  
+  return fetchCurrentUserPromise;
 }
 

@@ -25,8 +25,15 @@ interface AuthProviderProps {
 export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<AthleteProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const refreshUser = async () => {
+    // Prevent multiple simultaneous calls
+    if (isRefreshing) {
+      return;
+    }
+    
+    setIsRefreshing(true);
     try {
       const currentUser = await fetchCurrentUser();
       
@@ -44,6 +51,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setUser(null);
     } finally {
       setLoading(false);
+      setIsRefreshing(false);
     }
   };
 

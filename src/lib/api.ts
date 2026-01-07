@@ -2037,6 +2037,18 @@ api.interceptors.response.use(
   },
   (error) => {
     const normalizedError = normalizeError(error);
+    const requestUrl = error?.config?.url || '';
+    const isMeEndpoint = requestUrl === '/me' || requestUrl.endsWith('/me');
+    
+    // CRITICAL: Treat 404 on /me as 401 (not authenticated)
+    // If /me doesn't exist, the backend contract is broken, but from the frontend's
+    // perspective, this means "user not found" = "not authenticated"
+    if (normalizedError.status === 404 && isMeEndpoint) {
+      console.warn("[API] /me returned 404 - treating as not authenticated (backend contract issue)");
+      // Convert 404 to 401 behavior for /me endpoint
+      normalizedError.status = 401;
+      normalizedError.message = "Authentication required. Please log in.";
+    }
     
     // Handle 401 by clearing auth and triggering navigation event
     if (normalizedError.status === 401) {
