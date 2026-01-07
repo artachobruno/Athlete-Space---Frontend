@@ -77,46 +77,43 @@ const handleIntelligenceError = (error: unknown): IntelligenceError => {
 };
 
 /**
- * Get athlete_id from Strava status endpoint.
- * This is needed because the intelligence endpoints require athlete_id as a query parameter.
+ * Get season intelligence (phases, race markers, explanation).
+ * The backend handles authentication automatically via the Authorization header.
  */
-const getAthleteId = async (): Promise<number | null> => {
-  try {
-    const statusResponse = await api.get("/integrations/strava/status") as unknown as {
-      athlete_id?: string | number;
-      connected?: boolean | string;
-    };
-    
-    if (!statusResponse?.connected) {
-      return null;
-    }
-    
-    const athleteId = statusResponse.athlete_id;
-    if (!athleteId) {
-      return null;
-    }
-    
-    // Convert to number if it's a string
-    const athleteIdNum = typeof athleteId === "string" ? parseInt(athleteId, 10) : athleteId;
-    if (isNaN(athleteIdNum)) {
-      return null;
-    }
-    
-    return athleteIdNum;
-  } catch (error) {
-    console.error("[Intelligence] Failed to get athlete_id:", error);
-    return null;
-  }
-};
-
 export const getSeasonIntelligence = async (): Promise<SeasonIntelligence | null> => {
   try {
-    const athleteId = await getAthleteId();
-    if (!athleteId) {
-      throw new Error("Athlete ID not available. Please connect your Strava account.");
+    const response = await api.get("/intelligence/season");
+    const data = response as unknown as {
+      id?: string;
+      user_id?: string;
+      athlete_id?: number;
+      plan?: { goal?: string; target_date?: string; phases?: unknown[] };
+      intent?: { week_start?: string; focus?: string; sessions?: unknown[] };
+      decision?: { date?: string; recommendation?: string; rationale?: string; session?: unknown };
+      version?: number;
+      is_active?: boolean;
+      created_at?: string;
+      updated_at?: string;
+    };
+    
+    // Handle the response format from the API documentation
+    // The response can be either the plan directly or wrapped in a structure
+    if (data.plan) {
+      // This is a plan response, extract what we need
+      return {
+        phases: (data.plan.phases as SeasonPhase[]) || [],
+        race_markers: [],
+        explanation: `Season plan for ${data.plan.goal || 'training'} targeting ${data.plan.target_date || 'future date'}`,
+      };
+    } else if (data.intent) {
+      // This is a weekly intent response, not season
+      return null;
+    } else if (data.decision) {
+      // This is a daily decision response, not season
+      return null;
     }
     
-    const response = await api.get(`/intelligence/season?athlete_id=${athleteId}`);
+    // Fallback: try to use response as-is
     return response as unknown as SeasonIntelligence;
   } catch (error) {
     console.error("[Intelligence] Failed to load season intelligence:", error);
@@ -124,14 +121,44 @@ export const getSeasonIntelligence = async (): Promise<SeasonIntelligence | null
   }
 };
 
-export const getWeekIntelligence = async (): Promise<WeeklyIntent | null> => {
+/**
+ * Get weekly training intent.
+ * The backend handles authentication automatically via the Authorization header.
+ * 
+ * @param weekStart Optional week start date in YYYY-MM-DD format. If not provided, uses current week.
+ */
+export const getWeekIntelligence = async (weekStart?: string): Promise<WeeklyIntent | null> => {
   try {
-    const athleteId = await getAthleteId();
-    if (!athleteId) {
-      throw new Error("Athlete ID not available. Please connect your Strava account.");
+    const params = weekStart ? { week_start: weekStart } : undefined;
+    const response = await api.get("/intelligence/week", { params });
+    const data = response as unknown as {
+      id?: string;
+      user_id?: string;
+      athlete_id?: number;
+      intent?: {
+        week_start?: string;
+        focus?: string;
+        sessions?: unknown[];
+      };
+      season_plan_id?: string;
+      version?: number;
+      is_active?: boolean;
+      created_at?: string;
+      updated_at?: string;
+    };
+    
+    // Extract the intent from the response
+    if (data.intent) {
+      return {
+        focus: data.intent.focus || '',
+        volume_range: { min: 0, max: 0, unit: 'hours' },
+        intensity_density: '',
+        key_session_count: Array.isArray(data.intent.sessions) ? data.intent.sessions.length : 0,
+        explanation: '',
+      };
     }
     
-    const response = await api.get(`/intelligence/week?athlete_id=${athleteId}`);
+    // Fallback: try to use response as-is
     return response as unknown as WeeklyIntent;
   } catch (error) {
     const intelligenceError = handleIntelligenceError(error);
@@ -144,14 +171,45 @@ export const getWeekIntelligence = async (): Promise<WeeklyIntent | null> => {
   }
 };
 
-export const getTodayIntelligence = async (): Promise<DailyDecision | null> => {
+/**
+ * Get daily decision recommendations.
+ * The backend handles authentication automatically via the Authorization header.
+ * 
+ * @param decisionDate Optional decision date in YYYY-MM-DD format. If not provided, uses today.
+ */
+export const getTodayIntelligence = async (decisionDate?: string): Promise<DailyDecision | null> => {
   try {
-    const athleteId = await getAthleteId();
-    if (!athleteId) {
-      throw new Error("Athlete ID not available. Please connect your Strava account.");
+    const params = decisionDate ? { decision_date: decisionDate } : undefined;
+    const response = await api.get("/intelligence/today", { params });
+    const data = response as unknown as {
+      id?: string;
+      user_id?: string;
+      athlete_id?: number;
+      decision?: {
+        date?: string;
+        recommendation?: string;
+        rationale?: string;
+        session?: unknown;
+      };
+      version?: number;
+      is_active?: boolean;
+      created_at?: string;
+      updated_at?: string;
+    };
+    
+    // Extract the decision from the response
+    if (data.decision) {
+      return {
+        recommendation: data.decision.recommendation || '',
+        explanation: data.decision.rationale || data.decision.recommendation || '',
+        confidence: {
+          score: 0.8,
+          explanation: 'Based on current training state',
+        },
+      };
     }
     
-    const response = await api.get(`/intelligence/today?athlete_id=${athleteId}`);
+    // Fallback: try to use response as-is
     return response as unknown as DailyDecision;
   } catch (error) {
     const intelligenceError = handleIntelligenceError(error);

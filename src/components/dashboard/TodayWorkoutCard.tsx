@@ -53,7 +53,7 @@ export function TodayWorkoutCard() {
 
   const { data: todayIntelligence } = useQuery({
     queryKey: ['todayIntelligence'],
-    queryFn: getTodayIntelligence,
+    queryFn: () => getTodayIntelligence(),
     retry: 1,
   });
 
@@ -128,7 +128,7 @@ export function TodayWorkoutCard() {
         </div>
 
         {/* Coach Explanation */}
-        {todayIntelligence?.explanation && (
+        {todayIntelligence && 'explanation' in todayIntelligence && todayIntelligence.explanation && (
           <div className="bg-accent/5 border border-accent/20 rounded-lg p-3">
             <div className="flex items-start gap-2">
               <MessageSquare className="h-4 w-4 text-accent mt-0.5 shrink-0" />

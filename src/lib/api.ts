@@ -186,11 +186,11 @@ export const updateUserProfile = async (
 /**
  * Gets Strava integration status.
  */
-export const getStravaStatus = async (): Promise<{ connected: boolean; athlete_id?: string | number }> => {
+export const getStravaStatus = async (): Promise<{ connected: boolean; activity_count?: number }> => {
   console.log("[API] Fetching Strava status");
   try {
-    const response = await api.get("/integrations/strava/status");
-    return response as unknown as { connected: boolean; athlete_id?: string | number };
+    const response = await api.get("/strava/status");
+    return response as unknown as { connected: boolean; activity_count?: number };
   } catch (error) {
     console.error("[API] Failed to fetch Strava status:", error);
     throw error;
@@ -567,7 +567,10 @@ export const fetchActivityStreams = async (id: string): Promise<ActivityStreamsR
 };
 
 /**
- * Fetches training load data including TSS.
+ * Fetches training load data including TSS, CTL, ATL, TSB.
+ * All metrics are normalized to -100 to 100 scale.
+ * 
+ * @param days Optional number of days to look back (default: 60)
  */
 export const fetchTrainingLoad = async (days?: number): Promise<{
   dates: string[];
@@ -583,7 +586,8 @@ export const fetchTrainingLoad = async (days?: number): Promise<{
 }> => {
   console.log("[API] Fetching training load");
   try {
-    const response = await api.get("/state/training-load", { params: days ? { days } : undefined });
+    const params = days ? { days } : undefined;
+    const response = await api.get("/state/training-load", { params });
     return response as unknown as {
       dates: string[];
       daily_load: number[];
@@ -631,20 +635,22 @@ export const fetchOverview = async (days?: number): Promise<{
 };
 
 /**
- * Fetches coach summary.
+ * Fetches coaching summary from real LLM.
  */
 export const fetchCoachSummary = async (): Promise<{
-  insights?: string[];
-  risk_level?: string;
-  recommendations?: string[];
+  summary: string;
+  current_state: string;
+  next_focus: string;
+  last_updated: string;
 }> => {
   console.log("[API] Fetching coach summary");
   try {
     const response = await api.get("/coach/summary");
     return response as unknown as {
-      insights?: string[];
-      risk_level?: string;
-      recommendations?: string[];
+      summary: string;
+      current_state: string;
+      next_focus: string;
+      last_updated: string;
     };
   } catch (error) {
     console.error("[API] Failed to fetch coach summary:", error);
@@ -653,29 +659,30 @@ export const fetchCoachSummary = async (): Promise<{
 };
 
 /**
+ * @deprecated This endpoint doesn't exist in the API. The coach chat endpoint handles context automatically.
  * Fetches coach context for personalized greetings.
  */
 export const fetchCoachContext = async (): Promise<import("../types").CoachContext | null> => {
-  console.log("[API] Fetching coach context");
-  try {
-    const response = await api.get("/coach/context");
-    return response as unknown as import("../types").CoachContext;
-  } catch (error) {
-    console.error("[API] Failed to fetch coach context:", error);
-    // Return null if endpoint doesn't exist yet - graceful degradation
-    return null;
-  }
+  console.warn("[API] fetchCoachContext is deprecated - endpoint doesn't exist");
+  // Return null since endpoint doesn't exist
+  return null;
 };
 
 /**
  * Sends a chat message to the coach.
  */
-export const sendCoachChat = async (message: string, context?: unknown): Promise<{ reply?: string; intent?: string }> => {
+export const sendCoachChat = async (
+  message: string,
+  options?: { days?: number; days_to_race?: number | null }
+): Promise<{ reply?: string; intent?: string }> => {
   console.log("[API] Sending coach chat message");
   try {
-    const payload: { message: string; context?: unknown } = { message };
-    if (context) {
-      payload.context = context;
+    const payload: { message: string; days?: number; days_to_race?: number | null } = { message };
+    if (options?.days !== undefined) {
+      payload.days = options.days;
+    }
+    if (options?.days_to_race !== undefined) {
+      payload.days_to_race = options.days_to_race;
     }
     const response = await api.post("/coach/chat", payload);
     return response as unknown as { reply?: string; intent?: string };
@@ -686,12 +693,13 @@ export const sendCoachChat = async (message: string, context?: unknown): Promise
 };
 
 /**
- * Fetches calendar week data.
+ * Fetches calendar week data for the current week.
+ * Note: The API endpoint doesn't accept a date parameter - it returns the current week.
  */
-export const fetchCalendarWeek = async (date: string): Promise<WeekResponse> => {
-  console.log("[API] Fetching calendar week for date:", date);
+export const fetchCalendarWeek = async (date?: string): Promise<WeekResponse> => {
+  console.log("[API] Fetching calendar week", date ? `(requested date: ${date} - API returns current week)` : "");
   try {
-    const response = await api.get("/calendar/week", { params: { date } });
+    const response = await api.get("/calendar/week");
     console.log("[API] Calendar week response:", response);
     
     // Handle different response formats
@@ -728,11 +736,12 @@ export const fetchCalendarWeek = async (date: string): Promise<WeekResponse> => 
 
 /**
  * Fetches calendar today data.
+ * Note: The API endpoint doesn't accept a date parameter - it returns today's data.
  */
-export const fetchCalendarToday = async (date: string): Promise<TodayResponse> => {
-  console.log("[API] Fetching calendar today");
+export const fetchCalendarToday = async (date?: string): Promise<TodayResponse> => {
+  console.log("[API] Fetching calendar today", date ? `(requested date: ${date} - API returns today)` : "");
   try {
-    const response = await api.get("/calendar/today", { params: { date } });
+    const response = await api.get("/calendar/today");
     return response as unknown as TodayResponse;
   } catch (error) {
     console.error("[API] Failed to fetch calendar today:", error);
@@ -788,16 +797,499 @@ export const fetchCalendarSeason = async (): Promise<SeasonResponse> => {
 };
 
 /**
+ * Fetches calendar sessions (paginated).
+ */
+export const fetchCalendarSessions = async (params?: { limit?: number; offset?: number }): Promise<{
+  sessions: CalendarSession[];
+  total: number;
+}> => {
+  console.log("[API] Fetching calendar sessions");
+  try {
+    const response = await api.get("/calendar/sessions", { params });
+    return response as unknown as {
+      sessions: CalendarSession[];
+      total: number;
+    };
+  } catch (error) {
+    console.error("[API] Failed to fetch calendar sessions:", error);
+    throw error;
+  }
+};
+
+/**
+ * Gets athlete sync status and connection state.
+ */
+export const fetchUserStatus = async (): Promise<{
+  connected: boolean;
+  last_sync: string;
+  state: "ok" | "syncing" | "stale";
+}> => {
+  console.log("[API] Fetching user status");
+  try {
+    const response = await api.get("/me/status");
+    return response as unknown as {
+      connected: boolean;
+      last_sync: string;
+      state: "ok" | "syncing" | "stale";
+    };
+  } catch (error) {
+    console.error("[API] Failed to fetch user status:", error);
+    throw error;
+  }
+};
+
+/**
+ * Triggers full historical backfill from Strava.
+ */
+export const triggerHistoricalSync = async (): Promise<{
+  success: boolean;
+  message: string;
+  user_id: string;
+  last_sync: string;
+}> => {
+  console.log("[API] Triggering historical sync");
+  try {
+    const response = await api.post("/me/sync/history");
+    return response as unknown as {
+      success: boolean;
+      message: string;
+      user_id: string;
+      last_sync: string;
+    };
+  } catch (error) {
+    console.error("[API] Failed to trigger historical sync:", error);
+    throw error;
+  }
+};
+
+/**
+ * Gets debug overview data with server timestamp.
+ */
+export const fetchOverviewDebug = async (days?: number): Promise<{
+  server_time: string;
+  overview: {
+    connected: boolean;
+    last_sync: string;
+    data_quality: string;
+    metrics: {
+      ctl?: [string, number][];
+      atl?: [string, number][];
+      tsb?: [string, number][];
+    };
+    today: {
+      ctl: number;
+      atl: number;
+      tsb: number;
+      tsb_7d_avg?: number;
+    };
+  };
+}> => {
+  console.log("[API] Fetching overview debug");
+  try {
+    const params = days ? { days } : undefined;
+    const response = await api.get("/me/overview/debug", { params });
+    return response as unknown as {
+      server_time: string;
+      overview: {
+        connected: boolean;
+        last_sync: string;
+        data_quality: string;
+        metrics: {
+          ctl?: [string, number][];
+          atl?: [string, number][];
+          tsb?: [string, number][];
+        };
+        today: {
+          ctl: number;
+          atl: number;
+          tsb: number;
+          tsb_7d_avg?: number;
+        };
+      };
+    };
+  } catch (error) {
+    console.error("[API] Failed to fetch overview debug:", error);
+    throw error;
+  }
+};
+
+/**
+ * Gets current training state and metrics.
+ */
+export const fetchTrainingState = async (): Promise<{
+  current: {
+    ctl: number;
+    atl: number;
+    tsb: number;
+    trend: "increasing" | "stable" | "decreasing";
+  };
+  week_volume_hours: number;
+  week_load: number;
+  month_volume_hours: number;
+  month_load: number;
+  last_updated: string;
+}> => {
+  console.log("[API] Fetching training state");
+  try {
+    const response = await api.get("/training/state");
+    return response as unknown as {
+      current: {
+        ctl: number;
+        atl: number;
+        tsb: number;
+        trend: "increasing" | "stable" | "decreasing";
+      };
+      week_volume_hours: number;
+      week_load: number;
+      month_volume_hours: number;
+      month_load: number;
+      last_updated: string;
+    };
+  } catch (error) {
+    console.error("[API] Failed to fetch training state:", error);
+    throw error;
+  }
+};
+
+/**
+ * Gets training distribution across zones and activity types.
+ */
+export const fetchTrainingDistribution = async (period?: "week" | "month" | "season"): Promise<{
+  period: string;
+  total_hours: number;
+  zones: Array<{
+    zone: string;
+    hours: number;
+    percentage: number;
+  }>;
+  by_type: Record<string, number>;
+}> => {
+  console.log("[API] Fetching training distribution");
+  try {
+    const params = period ? { period } : undefined;
+    const response = await api.get("/training/distribution", { params });
+    return response as unknown as {
+      period: string;
+      total_hours: number;
+      zones: Array<{
+        zone: string;
+        hours: number;
+        percentage: number;
+      }>;
+      by_type: Record<string, number>;
+    };
+  } catch (error) {
+    console.error("[API] Failed to fetch training distribution:", error);
+    throw error;
+  }
+};
+
+/**
+ * Gets training signals and observations.
+ */
+export const fetchTrainingSignals = async (): Promise<{
+  signals: Array<{
+    id: string;
+    type: "fatigue" | "overreaching" | "undertraining" | "readiness";
+    severity: "low" | "moderate" | "high";
+    message: string;
+    timestamp: string;
+    metrics?: Record<string, number>;
+  }>;
+  summary: string;
+  recommendation: string;
+}> => {
+  console.log("[API] Fetching training signals");
+  try {
+    const response = await api.get("/training/signals");
+    return response as unknown as {
+      signals: Array<{
+        id: string;
+        type: "fatigue" | "overreaching" | "undertraining" | "readiness";
+        severity: "low" | "moderate" | "high";
+        message: string;
+        timestamp: string;
+        metrics?: Record<string, number>;
+      }>;
+      summary: string;
+      recommendation: string;
+    };
+  } catch (error) {
+    console.error("[API] Failed to fetch training signals:", error);
+    throw error;
+  }
+};
+
+/**
+ * Gets coaching insights from the LLM Coach.
+ */
+export const fetchCoachState = async (): Promise<{
+  summary: string;
+  insights: string[];
+  recommendations: string[];
+  risk_level: "none" | "low" | "moderate" | "high";
+  intervention: boolean;
+  follow_up_prompts: string[] | null;
+}> => {
+  console.log("[API] Fetching coach state");
+  try {
+    const response = await api.get("/state/coach");
+    return response as unknown as {
+      summary: string;
+      insights: string[];
+      recommendations: string[];
+      risk_level: "none" | "low" | "moderate" | "high";
+      intervention: boolean;
+      follow_up_prompts: string[] | null;
+    };
+  } catch (error) {
+    console.error("[API] Failed to fetch coach state:", error);
+    throw error;
+  }
+};
+
+/**
+ * Gets initial coach message for new users or users with insufficient data.
+ */
+export const fetchCoachInitial = async (): Promise<{
+  summary: string;
+  insights: string[];
+  recommendations: string[];
+  risk_level: "none" | "low" | "moderate" | "high";
+  intervention: boolean;
+  follow_up_prompts: string[] | null;
+  data_quality?: string;
+  activity_count?: number;
+}> => {
+  console.log("[API] Fetching coach initial message");
+  try {
+    const response = await api.get("/state/coach/initial");
+    return response as unknown as {
+      summary: string;
+      insights: string[];
+      recommendations: string[];
+      risk_level: "none" | "low" | "moderate" | "high";
+      intervention: boolean;
+      follow_up_prompts: string[] | null;
+      data_quality?: string;
+      activity_count?: number;
+    };
+  } catch (error) {
+    console.error("[API] Failed to fetch coach initial:", error);
+    throw error;
+  }
+};
+
+/**
+ * Gets coaching observations from real LLM.
+ */
+export const fetchCoachObservations = async (): Promise<{
+  observations: Array<{
+    id: string;
+    category: "volume" | "intensity" | "recovery" | "consistency" | "general";
+    observation: string;
+    timestamp: string;
+    related_metrics?: Record<string, number>;
+  }>;
+  total: number;
+}> => {
+  console.log("[API] Fetching coach observations");
+  try {
+    const response = await api.get("/coach/observations");
+    return response as unknown as {
+      observations: Array<{
+        id: string;
+        category: "volume" | "intensity" | "recovery" | "consistency" | "general";
+        observation: string;
+        timestamp: string;
+        related_metrics?: Record<string, number>;
+      }>;
+      total: number;
+    };
+  } catch (error) {
+    console.error("[API] Failed to fetch coach observations:", error);
+    throw error;
+  }
+};
+
+/**
+ * Gets coaching recommendations from real LLM.
+ */
+export const fetchCoachRecommendations = async (): Promise<{
+  recommendations: Array<{
+    id: string;
+    priority: "high" | "medium" | "low";
+    category: "intensity" | "volume" | "recovery" | "structure" | "general";
+    recommendation: string;
+    rationale: string;
+    timestamp: string;
+  }>;
+  total: number;
+}> => {
+  console.log("[API] Fetching coach recommendations");
+  try {
+    const response = await api.get("/coach/recommendations");
+    return response as unknown as {
+      recommendations: Array<{
+        id: string;
+        priority: "high" | "medium" | "low";
+        category: "intensity" | "volume" | "recovery" | "structure" | "general";
+        recommendation: string;
+        rationale: string;
+        timestamp: string;
+      }>;
+      total: number;
+    };
+  } catch (error) {
+    console.error("[API] Failed to fetch coach recommendations:", error);
+    throw error;
+  }
+};
+
+/**
+ * Gets confidence scores for coach outputs based on real data quality.
+ */
+export const fetchCoachConfidence = async (): Promise<{
+  overall: number;
+  data_quality: number;
+  recommendations: number;
+  observations: number;
+  factors: string[];
+  last_updated: string;
+}> => {
+  console.log("[API] Fetching coach confidence");
+  try {
+    const response = await api.get("/coach/confidence");
+    return response as unknown as {
+      overall: number;
+      data_quality: number;
+      recommendations: number;
+      observations: number;
+      factors: string[];
+      last_updated: string;
+    };
+  } catch (error) {
+    console.error("[API] Failed to fetch coach confidence:", error);
+    throw error;
+  }
+};
+
+/**
+ * Asks the coach a question using real LLM.
+ */
+export const askCoach = async (
+  message: string,
+  context?: { days?: number; days_to_race?: number | null }
+): Promise<{
+  reply: string;
+  intent: string;
+  confidence: number;
+}> => {
+  console.log("[API] Asking coach question");
+  try {
+    const payload: { message: string; context?: { days?: number; days_to_race?: number | null } } = { message };
+    if (context) {
+      payload.context = context;
+    }
+    const response = await api.post("/coach/ask", payload);
+    return response as unknown as {
+      reply: string;
+      intent: string;
+      confidence: number;
+    };
+  } catch (error) {
+    console.error("[API] Failed to ask coach:", error);
+    throw error;
+  }
+};
+
+/**
+ * Gets training metrics (CTL, ATL, TSB) with daily aggregations for charting.
+ */
+export const fetchAnalyticsMetrics = async (days?: number): Promise<{
+  chart: Array<{
+    date: string;
+    CTL: number;
+    ATL: number;
+    TSB: number;
+    hr: number;
+    dist: number;
+    time: number;
+  }>;
+}> => {
+  console.log("[API] Fetching analytics metrics");
+  try {
+    const params = days ? { days } : undefined;
+    const response = await api.get("/analytics/metrics", { params });
+    return response as unknown as {
+      chart: Array<{
+        date: string;
+        CTL: number;
+        ATL: number;
+        TSB: number;
+        hr: number;
+        dist: number;
+        time: number;
+      }>;
+    };
+  } catch (error) {
+    console.error("[API] Failed to fetch analytics metrics:", error);
+    throw error;
+  }
+};
+
+/**
+ * Gets sync progress information for the current user.
+ */
+export const fetchStravaSyncProgress = async (): Promise<{
+  last_sync: string | null;
+  sync_in_progress: boolean;
+  total_activities: number;
+}> => {
+  console.log("[API] Fetching Strava sync progress");
+  try {
+    const response = await api.get("/strava/sync-progress");
+    return response as unknown as {
+      last_sync: string | null;
+      sync_in_progress: boolean;
+      total_activities: number;
+    };
+  } catch (error) {
+    console.error("[API] Failed to fetch Strava sync progress:", error);
+    throw error;
+  }
+};
+
+/**
+ * Gets user-specific Strava connection status.
+ */
+export const getUserStravaStatus = async (): Promise<{
+  connected: boolean;
+  athlete_id: string;
+  last_sync_at: number;
+}> => {
+  console.log("[API] Fetching user-specific Strava status");
+  try {
+    const response = await api.get("/integrations/strava/status");
+    return response as unknown as {
+      connected: boolean;
+      athlete_id: string;
+      last_sync_at: number;
+    };
+  } catch (error) {
+    console.error("[API] Failed to fetch user Strava status:", error);
+    throw error;
+  }
+};
+
+/**
+ * @deprecated This endpoint doesn't exist in the API documentation. Use syncStravaData() instead.
  * Triggers Strava data aggregation.
  */
 export const aggregateStravaData = async (): Promise<void> => {
-  console.log("[API] Aggregating Strava data");
-  try {
-    await api.post("/strava/aggregate");
-  } catch (error) {
-    console.error("[API] Failed to aggregate Strava data:", error);
-    throw error;
-  }
+  console.warn("[API] aggregateStravaData is deprecated - endpoint doesn't exist in API documentation");
+  // Call sync instead as a fallback
+  return syncStravaData();
 };
 
 /**
