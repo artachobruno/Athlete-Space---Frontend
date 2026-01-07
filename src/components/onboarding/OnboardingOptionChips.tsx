@@ -28,14 +28,16 @@ export function OnboardingOptionChips({ options, multiSelect = false, onSelect }
     } else {
       // Single select - submit immediately
       setIsSubmitted(true);
-      onSelect([options.find(o => o.id === id)?.label || id]);
+      // Pass the id, not the label, so handlers can use the raw value
+      onSelect([id]);
     }
   };
 
   const handleConfirm = () => {
     if (selected.length === 0) return;
     setIsSubmitted(true);
-    onSelect(selected.map(id => options.find(o => o.id === id)?.label || id));
+    // Pass the ids, not the labels, so handlers can use the raw values
+    onSelect(selected);
   };
 
   if (isSubmitted) return null;

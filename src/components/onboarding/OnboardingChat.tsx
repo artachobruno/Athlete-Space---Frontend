@@ -42,6 +42,7 @@ export function OnboardingChat({ onComplete, isComplete }: OnboardingChatProps) 
     consistency: '',
     goal: '',
     raceDetails: '',
+    raceGoalTime: '',
     availableDays: 0,
     hoursPerWeek: 0,
     hasInjury: false,
@@ -122,16 +123,24 @@ export function OnboardingChat({ onComplete, isComplete }: OnboardingChatProps) 
     }, 300);
   };
 
-  const handleConsistencySelect = (value: string) => {
-    setData(prev => ({ ...prev, consistency: value }));
-    addAthleteMessage(value);
+  const handleConsistencySelect = (id: string) => {
+    // Map id to label for display
+    const labelMap: Record<string, string> = {
+      'starting': 'Just getting started',
+      'occasional': 'Training occasionally',
+      'consistent': 'Training consistently',
+      'structured': 'Structured / competitive',
+    };
+    const label = labelMap[id] || id;
+    setData(prev => ({ ...prev, consistency: label }));
+    addAthleteMessage(label);
 
     setTimeout(() => {
-      const response = value.includes('Just getting') 
+      const response = id === 'starting'
         ? "Starting fresh gives us a clean slate to build on."
-        : value.includes('occasionally')
+        : id === 'occasional'
         ? "Occasional training means we'll focus on building consistency first."
-        : value.includes('consistently')
+        : id === 'consistent'
         ? "Consistent training is a great foundation. We can build intensity gradually."
         : "Structured training means you're ready for focused, progressive work.";
 
@@ -147,20 +156,28 @@ export function OnboardingChat({ onComplete, isComplete }: OnboardingChatProps) 
     }, 300);
   };
 
-  const handleGoalSelect = (value: string) => {
-    setData(prev => ({ ...prev, goal: value }));
-    addAthleteMessage(value);
+  const handleGoalSelect = (id: string) => {
+    // Map id to label for display
+    const labelMap: Record<string, string> = {
+      'race': 'A specific race or event',
+      'performance': 'Improving performance',
+      'returning': 'Returning after a break',
+      'maintaining': 'Maintaining fitness',
+    };
+    const label = labelMap[id] || id;
+    setData(prev => ({ ...prev, goal: label }));
+    addAthleteMessage(label);
 
     setTimeout(() => {
-      if (value.includes('race') || value.includes('event')) {
+      if (id === 'race') {
         addCoachMessage(
-          "Do you have a target event or date in mind? If so, tell me about it.",
+          "Do you have a target event or date in mind? If so, tell me about it, including your goals.",
           'text-input'
         );
         setStep('race-details');
         setShowTextInput(true);
       } else {
-        proceedToAvailability(value);
+        proceedToAvailability(label);
       }
     }, 300);
   };
@@ -185,14 +202,44 @@ export function OnboardingChat({ onComplete, isComplete }: OnboardingChatProps) 
 
   const handleRaceDetails = () => {
     if (!textInput.trim()) return;
-    setData(prev => ({ ...prev, raceDetails: textInput }));
-    addAthleteMessage(textInput);
+    const input = textInput.trim();
+    
+    // Try to extract goal time from the input (look for patterns like "2:25", "sub-3:00", "3:30:00", "2:25 goal time", etc.)
+    const goalTimePatterns = [
+      /(\d{1,2}:\d{2}(?::\d{2})?)\s*(?:goal\s*time|target|goal)/i,
+      /(?:goal\s*time|target|goal)[\s:]+(\d{1,2}:\d{2}(?::\d{2})?)/i,
+      /(?:targeting|aiming for|goal of)[\s:]+(\d{1,2}:\d{2}(?::\d{2})?)/i,
+      /(sub-)?(\d{1,2}:\d{2}(?::\d{2})?)/i,
+    ];
+    
+    let goalTime = '';
+    for (const pattern of goalTimePatterns) {
+      const match = input.match(pattern);
+      if (match) {
+        goalTime = match[1] || match[2] || '';
+        if (match[0].includes('sub-')) {
+          goalTime = `sub-${goalTime}`;
+        }
+        break;
+      }
+    }
+    
+    setData(prev => ({ 
+      ...prev, 
+      raceDetails: input,
+      raceGoalTime: goalTime 
+    }));
+    addAthleteMessage(input);
     setTextInput('');
     setShowTextInput(false);
 
     setTimeout(() => {
+      const response = goalTime
+        ? `Noted. I'll structure your training to peak at the right time and help you hit that ${goalTime} target.`
+        : "Noted. I'll structure your training to peak at the right time.";
+      
       addCoachMessage(
-        "Noted. I'll structure your training to peak at the right time.",
+        response,
         undefined,
         () => {
           setTimeout(() => {
