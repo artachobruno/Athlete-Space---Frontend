@@ -19,7 +19,7 @@ export default function TrainingPlan() {
     <AppLayout>
       <div className="space-y-6">
         <div>
-          <h1 className="text-2xl font-semibold text-foreground">Training Plan</h1>
+          <h1 className="text-2xl font-semibold text-primary">Training Plan</h1>
           <p className="text-muted-foreground mt-1">This week&apos;s training as directed by your coach</p>
         </div>
 

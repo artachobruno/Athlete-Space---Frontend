@@ -7,7 +7,7 @@ export default function Privacy() {
       <div className="max-w-4xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-foreground">Privacy Policy</h1>
+          <h1 className="text-3xl font-bold text-primary">Privacy Policy</h1>
           <p className="text-muted-foreground mt-2">AthleteSpace (Pre-Launch)</p>
         </div>
 
@@ -28,7 +28,7 @@ export default function Privacy() {
 
               {/* Section 1 */}
               <section>
-                <h2 className="text-xl font-semibold text-foreground mb-4">1. Data We Collect</h2>
+                <h2 className="text-xl font-semibold text-primary mb-4">1. Data We Collect</h2>
                 <p className="text-muted-foreground leading-relaxed mb-3">
                   With your explicit consent, Athlete Space may collect fitness and wellness data from connected third-party services, including but not limited to:
                 </p>
@@ -42,7 +42,7 @@ export default function Privacy() {
 
               {/* Section 2 */}
               <section>
-                <h2 className="text-xl font-semibold text-foreground mb-4">2. How We Use Your Data</h2>
+                <h2 className="text-xl font-semibold text-primary mb-4">2. How We Use Your Data</h2>
                 <p className="text-muted-foreground leading-relaxed mb-3">
                   We use collected data solely to:
                 </p>
@@ -58,7 +58,7 @@ export default function Privacy() {
 
               {/* Section 3 */}
               <section>
-                <h2 className="text-xl font-semibold text-foreground mb-4">3. Data Sharing</h2>
+                <h2 className="text-xl font-semibold text-primary mb-4">3. Data Sharing</h2>
                 <p className="text-muted-foreground leading-relaxed mb-3">
                   We do not sell, rent, or share individual user data with advertisers or third parties.
                 </p>
@@ -69,7 +69,7 @@ export default function Privacy() {
 
               {/* Section 4 */}
               <section>
-                <h2 className="text-xl font-semibold text-foreground mb-4">4. Data Security</h2>
+                <h2 className="text-xl font-semibold text-primary mb-4">4. Data Security</h2>
                 <p className="text-muted-foreground leading-relaxed">
                   We implement reasonable technical and organizational safeguards to protect your data, including encrypted storage and secure communication protocols.
                 </p>
@@ -77,7 +77,7 @@ export default function Privacy() {
 
               {/* Section 5 */}
               <section>
-                <h2 className="text-xl font-semibold text-foreground mb-4">5. User Control & Consent</h2>
+                <h2 className="text-xl font-semibold text-primary mb-4">5. User Control & Consent</h2>
                 <p className="text-muted-foreground leading-relaxed">
                   You control which services you connect and may revoke access at any time. Upon request, we will delete your personal data in accordance with applicable laws.
                 </p>
@@ -85,7 +85,7 @@ export default function Privacy() {
 
               {/* Section 6 */}
               <section>
-                <h2 className="text-xl font-semibold text-foreground mb-4">6. Third-Party Services</h2>
+                <h2 className="text-xl font-semibold text-primary mb-4">6. Third-Party Services</h2>
                 <p className="text-muted-foreground leading-relaxed">
                   Athlete Space integrates with third-party fitness platforms only with user authorization and in accordance with their respective privacy policies.
                 </p>
@@ -93,7 +93,7 @@ export default function Privacy() {
 
               {/* Section 7 */}
               <section>
-                <h2 className="text-xl font-semibold text-foreground mb-4">7. Contact</h2>
+                <h2 className="text-xl font-semibold text-primary mb-4">7. Contact</h2>
                 <p className="text-muted-foreground leading-relaxed">
                   This policy may be updated as the product evolves. Changes will be reflected on this page.
                 </p>

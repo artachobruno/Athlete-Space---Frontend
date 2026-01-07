@@ -145,10 +145,10 @@ export default function FAQ() {
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8 text-center">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-accent/10 mb-4">
-            <HelpCircle className="h-8 w-8 text-accent" />
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-4">
+            <HelpCircle className="h-8 w-8 text-primary" />
           </div>
-          <h1 className="text-3xl font-bold text-foreground mb-2">Frequently Asked Questions</h1>
+          <h1 className="text-3xl font-bold text-primary mb-2">Frequently Asked Questions</h1>
           <p className="text-muted-foreground">Find answers to common questions about Athlete Space</p>
         </div>
 

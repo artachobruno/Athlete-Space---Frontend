@@ -8,10 +8,10 @@ export default function ScienceAndAI() {
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
         {/* Header */}
         <div className="text-center mb-10">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-accent/10 mb-4">
-            <Brain className="h-8 w-8 text-accent" />
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-4">
+            <Brain className="h-8 w-8 text-primary" />
           </div>
-          <h1 className="text-3xl font-bold text-foreground mb-3">
+          <h1 className="text-3xl font-bold text-primary mb-3">
             Science & AI Methodology
           </h1>
           <p className="text-muted-foreground max-w-2xl mx-auto">
@@ -25,8 +25,8 @@ export default function ScienceAndAI() {
           {/* Section 1 */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Activity className="h-5 w-5 text-accent" />
+              <CardTitle className="flex items-center gap-2 text-primary">
+                <Activity className="h-5 w-5" />
                 Science First, Always
               </CardTitle>
             </CardHeader>
@@ -49,8 +49,8 @@ export default function ScienceAndAI() {
           {/* Section 2 */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <LineChart className="h-5 w-5 text-accent" />
+              <CardTitle className="flex items-center gap-2 text-primary">
+                <LineChart className="h-5 w-5" />
                 What the AI Actually Does
               </CardTitle>
             </CardHeader>
@@ -72,8 +72,8 @@ export default function ScienceAndAI() {
           {/* Section 3 */}
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <ShieldCheck className="h-5 w-5 text-accent" />
+              <CardTitle className="flex items-center gap-2 text-primary">
+                <ShieldCheck className="h-5 w-5" />
                 Research-Led and Responsible
               </CardTitle>
             </CardHeader>
@@ -93,9 +93,9 @@ export default function ScienceAndAI() {
           </Card>
 
           {/* Section 4 */}
-          <Card className="bg-accent/5 border-accent/20">
+          <Card className="bg-primary/5 border-primary/20">
             <CardContent className="pt-6 text-center">
-              <p className="font-medium text-foreground">
+              <p className="font-medium text-primary">
                 Bottom line
               </p>
               <p className="text-muted-foreground mt-2 max-w-2xl mx-auto">
