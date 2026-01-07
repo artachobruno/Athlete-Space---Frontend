@@ -7,7 +7,7 @@ import { Slider } from '@/components/ui/slider';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Textarea } from '@/components/ui/textarea';
 import { Settings2, Save, Loader2 } from 'lucide-react';
-import { fetchUserProfile, updateUserProfile } from '@/lib/api';
+import { fetchTrainingPreferences, updateTrainingPreferences } from '@/lib/api';
 import { toast } from '@/hooks/use-toast';
 import type { Sport } from '@/types';
 
@@ -60,18 +60,22 @@ export function TrainingPreferencesSection() {
   const loadPreferences = async () => {
     setIsLoading(true);
     try {
-      const userProfile = await fetchUserProfile();
-      const daysAvailable = (userProfile.weeklyAvailability?.days || 7);
-      const trainingDaysArray = Array(7).fill(false).map((_, i) => i < daysAvailable);
+      const prefs = await fetchTrainingPreferences();
+      
+      // Convert available_days array (["Mon", "Tue", ...]) to boolean array
+      const trainingDaysArray = weekDays.map(day => prefs.available_days.includes(day));
+      
+      // Map training_focus: "race_focused" -> "race", "general_fitness" -> "general"
+      const trainingFocus: 'race' | 'general' = prefs.training_focus === 'race_focused' ? 'race' : 'general';
       
       const prefsData: PreferencesState = {
-        primarySports: userProfile.sports || [],
+        primarySports: prefs.primary_sports as Sport[],
         trainingDays: trainingDaysArray,
-        hoursPerWeek: userProfile.weeklyAvailability?.hoursPerWeek || 10,
-        trainingFocus: (userProfile as { trainingFocus?: 'race' | 'general' }).trainingFocus || 'general',
-        hasInjuryHistory: (userProfile as { hasInjuryHistory?: boolean }).hasInjuryHistory || false,
-        injuryNotes: (userProfile as { injuryNotes?: string }).injuryNotes || '',
-        trainingAge: userProfile.trainingAge || 0,
+        hoursPerWeek: prefs.weekly_hours,
+        trainingFocus,
+        hasInjuryHistory: prefs.injury_history,
+        injuryNotes: '', // Not in backend API response
+        trainingAge: prefs.years_of_training,
       };
       setPreferences(prefsData);
       setInitialPreferences(prefsData);
@@ -106,19 +110,21 @@ export function TrainingPreferencesSection() {
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      const updateData: Record<string, unknown> = {
-        sports: preferences.primarySports,
-        weeklyAvailability: {
-          days: preferences.trainingDays.filter(Boolean).length,
-          hoursPerWeek: preferences.hoursPerWeek,
-        },
-        trainingFocus: preferences.trainingFocus,
-        hasInjuryHistory: preferences.hasInjuryHistory,
-        injuryNotes: preferences.injuryNotes,
-        trainingAge: preferences.trainingAge,
-      };
+      // Convert trainingDays boolean array to available_days string array
+      const availableDays = weekDays.filter((_, index) => preferences.trainingDays[index]);
+      
+      // Map trainingFocus: "race" -> "race_focused", "general" -> "general_fitness"
+      const trainingFocus: 'race_focused' | 'general_fitness' = preferences.trainingFocus === 'race' ? 'race_focused' : 'general_fitness';
 
-      await updateUserProfile(updateData);
+      await updateTrainingPreferences({
+        years_of_training: preferences.trainingAge,
+        primary_sports: preferences.primarySports,
+        available_days: availableDays,
+        weekly_hours: preferences.hoursPerWeek,
+        training_focus: trainingFocus,
+        injury_history: preferences.hasInjuryHistory,
+      });
+
       setInitialPreferences({ ...preferences });
       setHasChanges(false);
       toast({
@@ -127,26 +133,11 @@ export function TrainingPreferencesSection() {
       });
     } catch (error) {
       console.error('Failed to save preferences:', error);
-      
-      // Check if it's a 405 error (method not allowed) - means endpoint doesn't exist
-      const isMethodNotAllowed = error && typeof error === 'object' && 'status' in error && (error as { status?: number }).status === 405;
-      
-      if (isMethodNotAllowed) {
-        toast({
-          title: 'Preferences update not available',
-          description: 'Preference updates are not currently supported by the backend. Your changes are saved locally but will not persist.',
-          variant: 'default',
-        });
-        // Still update local state for better UX
-        setInitialPreferences({ ...preferences });
-        setHasChanges(false);
-      } else {
-        toast({
-          title: 'Failed to save preferences',
-          description: error instanceof Error ? error.message : 'Could not save your preferences',
-          variant: 'destructive',
-        });
-      }
+      toast({
+        title: 'Failed to save preferences',
+        description: error instanceof Error ? error.message : 'Could not save your preferences',
+        variant: 'destructive',
+      });
     } finally {
       setIsSaving(false);
     }

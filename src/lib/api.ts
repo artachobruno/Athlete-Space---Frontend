@@ -167,8 +167,7 @@ export const fetchUserProfile = async (): Promise<import("../types").AthleteProf
 
 /**
  * Updates user profile on the backend.
- * Note: The API documentation doesn't specify an update endpoint. Trying PATCH first, then POST as fallback.
- * @param profileData - Partial profile data to update
+ * @param profileData - Profile data to update (will be mapped to backend format)
  * @returns Updated profile data
  */
 export const updateUserProfile = async (
@@ -176,27 +175,231 @@ export const updateUserProfile = async (
 ): Promise<import("../types").AthleteProfile> => {
   console.log("[API] Updating user profile");
   try {
-    // Try PATCH first (standard REST for partial updates)
-    let response;
-    try {
-      response = await api.patch("/me/profile", profileData);
-    } catch (patchError) {
-      // If PATCH fails, try POST
-      if ((patchError as { response?: { status?: number } })?.response?.status === 405) {
-        console.log("[API] PATCH not supported, trying POST");
-        response = await api.post("/me/profile", profileData);
-      } else {
-        throw patchError;
-      }
-    }
+    // Map frontend fields to backend format
+    const backendData: Record<string, unknown> = {};
+    if (profileData.name !== undefined) backendData.name = profileData.name;
+    if (profileData.email !== undefined) backendData.email = profileData.email;
+    if (profileData.gender !== undefined) backendData.gender = profileData.gender;
+    if (profileData.dateOfBirth !== undefined) backendData.date_of_birth = profileData.dateOfBirth;
+    if (profileData.weight !== undefined) backendData.weight_kg = typeof profileData.weight === 'number' ? profileData.weight : parseFloat(profileData.weight as string);
+    if (profileData.height !== undefined) backendData.height_cm = typeof profileData.height === 'number' ? profileData.height : parseFloat(profileData.height as string);
+    if (profileData.location !== undefined) backendData.location = profileData.location;
+    if (profileData.unitSystem !== undefined) backendData.unit_system = profileData.unitSystem;
+
+    const response = await api.put("/me/profile", backendData);
     return response as unknown as import("../types").AthleteProfile;
   } catch (error) {
     console.error("[API] Failed to update profile:", error);
-    // If update endpoint doesn't exist, log a warning but don't break the UI
-    const status = (error as { response?: { status?: number } })?.response?.status;
-    if (status === 404 || status === 405) {
-      console.warn("[API] Profile update endpoint not available. Profile updates may not be supported yet.");
-    }
+    throw error;
+  }
+};
+
+/**
+ * Fetches training preferences from the backend.
+ */
+export const fetchTrainingPreferences = async (): Promise<{
+  years_of_training: number;
+  primary_sports: string[];
+  available_days: string[];
+  weekly_hours: number;
+  training_focus: 'race_focused' | 'general_fitness';
+  injury_history: boolean;
+}> => {
+  console.log("[API] Fetching training preferences");
+  try {
+    const response = await api.get("/me/training-preferences");
+    return response as unknown as {
+      years_of_training: number;
+      primary_sports: string[];
+      available_days: string[];
+      weekly_hours: number;
+      training_focus: 'race_focused' | 'general_fitness';
+      injury_history: boolean;
+    };
+  } catch (error) {
+    console.error("[API] Failed to fetch training preferences:", error);
+    throw error;
+  }
+};
+
+/**
+ * Updates training preferences on the backend.
+ */
+export const updateTrainingPreferences = async (
+  preferences: {
+    years_of_training?: number;
+    primary_sports?: string[];
+    available_days?: string[];
+    weekly_hours?: number;
+    training_focus?: 'race_focused' | 'general_fitness';
+    injury_history?: boolean;
+  }
+): Promise<{
+  years_of_training: number;
+  primary_sports: string[];
+  available_days: string[];
+  weekly_hours: number;
+  training_focus: 'race_focused' | 'general_fitness';
+  injury_history: boolean;
+}> => {
+  console.log("[API] Updating training preferences");
+  try {
+    const response = await api.put("/me/training-preferences", preferences);
+    return response as unknown as {
+      years_of_training: number;
+      primary_sports: string[];
+      available_days: string[];
+      weekly_hours: number;
+      training_focus: 'race_focused' | 'general_fitness';
+      injury_history: boolean;
+    };
+  } catch (error) {
+    console.error("[API] Failed to update training preferences:", error);
+    throw error;
+  }
+};
+
+/**
+ * Fetches privacy settings from the backend.
+ */
+export const fetchPrivacySettings = async (): Promise<{
+  profile_visibility: 'public' | 'private' | 'coaches';
+  share_activity_data: boolean;
+  share_training_metrics: boolean;
+}> => {
+  console.log("[API] Fetching privacy settings");
+  try {
+    const response = await api.get("/me/privacy-settings");
+    return response as unknown as {
+      profile_visibility: 'public' | 'private' | 'coaches';
+      share_activity_data: boolean;
+      share_training_metrics: boolean;
+    };
+  } catch (error) {
+    console.error("[API] Failed to fetch privacy settings:", error);
+    throw error;
+  }
+};
+
+/**
+ * Updates privacy settings on the backend.
+ */
+export const updatePrivacySettings = async (
+  settings: {
+    profile_visibility?: 'public' | 'private' | 'coaches';
+    share_activity_data?: boolean;
+    share_training_metrics?: boolean;
+  }
+): Promise<{
+  profile_visibility: 'public' | 'private' | 'coaches';
+  share_activity_data: boolean;
+  share_training_metrics: boolean;
+}> => {
+  console.log("[API] Updating privacy settings");
+  try {
+    const response = await api.put("/me/privacy-settings", settings);
+    return response as unknown as {
+      profile_visibility: 'public' | 'private' | 'coaches';
+      share_activity_data: boolean;
+      share_training_metrics: boolean;
+    };
+  } catch (error) {
+    console.error("[API] Failed to update privacy settings:", error);
+    throw error;
+  }
+};
+
+/**
+ * Fetches notification preferences from the backend.
+ */
+export const fetchNotificationPreferences = async (): Promise<{
+  email_notifications: boolean;
+  push_notifications: boolean;
+  workout_reminders: boolean;
+  training_load_alerts: boolean;
+  race_reminders: boolean;
+  weekly_summary: boolean;
+  goal_achievements: boolean;
+  coach_messages: boolean;
+}> => {
+  console.log("[API] Fetching notification preferences");
+  try {
+    const response = await api.get("/me/notifications");
+    return response as unknown as {
+      email_notifications: boolean;
+      push_notifications: boolean;
+      workout_reminders: boolean;
+      training_load_alerts: boolean;
+      race_reminders: boolean;
+      weekly_summary: boolean;
+      goal_achievements: boolean;
+      coach_messages: boolean;
+    };
+  } catch (error) {
+    console.error("[API] Failed to fetch notification preferences:", error);
+    throw error;
+  }
+};
+
+/**
+ * Updates notification preferences on the backend.
+ */
+export const updateNotificationPreferences = async (
+  preferences: {
+    email_notifications?: boolean;
+    push_notifications?: boolean;
+    workout_reminders?: boolean;
+    training_load_alerts?: boolean;
+    race_reminders?: boolean;
+    weekly_summary?: boolean;
+    goal_achievements?: boolean;
+    coach_messages?: boolean;
+  }
+): Promise<{
+  email_notifications: boolean;
+  push_notifications: boolean;
+  workout_reminders: boolean;
+  training_load_alerts: boolean;
+  race_reminders: boolean;
+  weekly_summary: boolean;
+  goal_achievements: boolean;
+  coach_messages: boolean;
+}> => {
+  console.log("[API] Updating notification preferences");
+  try {
+    const response = await api.put("/me/notifications", preferences);
+    return response as unknown as {
+      email_notifications: boolean;
+      push_notifications: boolean;
+      workout_reminders: boolean;
+      training_load_alerts: boolean;
+      race_reminders: boolean;
+      weekly_summary: boolean;
+      goal_achievements: boolean;
+      coach_messages: boolean;
+    };
+  } catch (error) {
+    console.error("[API] Failed to update notification preferences:", error);
+    throw error;
+  }
+};
+
+/**
+ * Changes user password.
+ */
+export const changePassword = async (
+  passwordData: {
+    current_password: string;
+    new_password: string;
+    confirm_password: string;
+  }
+): Promise<{ success: boolean; message: string }> => {
+  console.log("[API] Changing password");
+  try {
+    const response = await api.post("/me/change-password", passwordData);
+    return response as unknown as { success: boolean; message: string };
+  } catch (error) {
+    console.error("[API] Failed to change password:", error);
     throw error;
   }
 };

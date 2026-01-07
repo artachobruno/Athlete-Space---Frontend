@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { MessageCircle, X, Send, Bot } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { sendCoachChat } from '@/lib/api';
 
 export function PlanCoachChat() {
   const [isOpen, setIsOpen] = useState(false);
@@ -15,26 +16,30 @@ export function PlanCoachChat() {
   ]);
   const [isTyping, setIsTyping] = useState(false);
 
-  const sendMessage = () => {
+  const sendMessage = async () => {
     if (!input.trim()) return;
 
-    setMessages(prev => [...prev, { role: 'athlete', content: input }]);
+    const userMessage = { role: 'athlete' as const, content: input };
+    setMessages(prev => [...prev, userMessage]);
+    const messageText = input.trim();
     setInput('');
     setIsTyping(true);
 
-    setTimeout(() => {
-      const responses = [
-        "Looking at your current load, that adjustment makes sense. The key this week is consistency over intensity.",
-        "The threshold session on Thursday targets your lactate turnpoint. Keep the recovery intervals truly easy.",
-        "Your long run should feel controlled through the first half. Save the marathon-pace work for when you're warmed up.",
-        "Based on your recent data, you're absorbing training well. Stay the course this week.",
-      ];
+    try {
+      const response = await sendCoachChat(messageText);
       setMessages(prev => [...prev, {
-        role: 'coach',
-        content: responses[Math.floor(Math.random() * responses.length)],
+        role: 'coach' as const,
+        content: response.reply || 'I understand. Let me think about that.',
       }]);
+    } catch (error) {
+      console.error('Failed to send message:', error);
+      setMessages(prev => [...prev, {
+        role: 'coach' as const,
+        content: 'Sorry, I encountered an error. Please try again.',
+      }]);
+    } finally {
       setIsTyping(false);
-    }, 800);
+    }
   };
 
   return (

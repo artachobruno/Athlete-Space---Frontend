@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
@@ -20,6 +20,7 @@ import {
 import { Shield, Lock, Eye, EyeOff, Loader2, Trash2 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { auth } from '@/lib/auth';
+import { fetchPrivacySettings, updatePrivacySettings, changePassword } from '@/lib/api';
 
 export function PrivacySecuritySection() {
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
@@ -32,12 +33,31 @@ export function PrivacySecuritySection() {
   });
   const [isChangingPassword, setIsChangingPassword] = useState(false);
   const [privacySettings, setPrivacySettings] = useState({
-    profileVisibility: 'private' as 'public' | 'private' | 'friends',
+    profileVisibility: 'private' as 'public' | 'private' | 'coaches',
     shareActivityData: false,
     shareTrainingMetrics: false,
-    allowDataAnalytics: true,
   });
   const [isSavingPrivacy, setIsSavingPrivacy] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+
+  // Load privacy settings on mount
+  useEffect(() => {
+    const loadPrivacySettings = async () => {
+      try {
+        const settings = await fetchPrivacySettings();
+        setPrivacySettings({
+          profileVisibility: settings.profile_visibility,
+          shareActivityData: settings.share_activity_data,
+          shareTrainingMetrics: settings.share_training_metrics,
+        });
+      } catch (error) {
+        console.error('Failed to load privacy settings:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    loadPrivacySettings();
+  }, []);
 
   const handlePasswordChange = async () => {
     if (!passwordData.currentPassword || !passwordData.newPassword) {
@@ -69,8 +89,11 @@ export function PrivacySecuritySection() {
 
     setIsChangingPassword(true);
     try {
-      // In a real app, this would call an API endpoint
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      await changePassword({
+        current_password: passwordData.currentPassword,
+        new_password: passwordData.newPassword,
+        confirm_password: passwordData.confirmPassword,
+      });
       toast({
         title: 'Password changed',
         description: 'Your password has been updated successfully',
@@ -95,7 +118,11 @@ export function PrivacySecuritySection() {
   const handlePrivacySave = async () => {
     setIsSavingPrivacy(true);
     try {
-      localStorage.setItem('privacy_settings', JSON.stringify(privacySettings));
+      await updatePrivacySettings({
+        profile_visibility: privacySettings.profileVisibility,
+        share_activity_data: privacySettings.shareActivityData,
+        share_training_metrics: privacySettings.shareTrainingMetrics,
+      });
       toast({
         title: 'Privacy settings updated',
         description: 'Your privacy preferences have been saved',
@@ -104,7 +131,7 @@ export function PrivacySecuritySection() {
       console.error('Failed to save privacy settings:', error);
       toast({
         title: 'Failed to save settings',
-        description: 'Could not save your privacy preferences',
+        description: error instanceof Error ? error.message : 'Could not save your privacy preferences',
         variant: 'destructive',
       });
     } finally {
@@ -266,7 +293,7 @@ export function PrivacySecuritySection() {
                 value={privacySettings.profileVisibility}
                 onValueChange={(value) => setPrivacySettings({
                   ...privacySettings,
-                  profileVisibility: value as 'public' | 'private' | 'friends',
+                  profileVisibility: value as 'public' | 'private' | 'coaches',
                 })}
               >
                 <SelectTrigger id="profile-visibility">
@@ -274,7 +301,7 @@ export function PrivacySecuritySection() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="private">Private - Only you</SelectItem>
-                  <SelectItem value="friends">Friends - Only connected users</SelectItem>
+                  <SelectItem value="coaches">Coaches - Only your coaches</SelectItem>
                   <SelectItem value="public">Public - Everyone</SelectItem>
                 </SelectContent>
               </Select>

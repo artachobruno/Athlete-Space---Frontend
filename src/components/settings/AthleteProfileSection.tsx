@@ -56,16 +56,28 @@ export function AthleteProfileSection() {
     setIsLoading(true);
     try {
       const userProfile = await fetchUserProfile();
-      const genderValue = (userProfile as { gender?: string }).gender || '';
+      // Backend returns weight_kg, height_cm, date_of_birth, unit_system
+      const unitSystem = (userProfile as { unit_system?: 'imperial' | 'metric' }).unit_system || (userProfile as { unitSystem?: 'imperial' | 'metric' }).unitSystem || 'imperial';
+      const weightKg = (userProfile as { weight_kg?: number }).weight_kg || (userProfile as { weight?: number }).weight;
+      const heightCm = (userProfile as { height_cm?: number }).height_cm || (userProfile as { height?: number }).height;
+      
+      // Convert from backend units (kg/cm) to display units based on unit system
+      const displayWeight = weightKg ? (unitSystem === 'metric' ? weightKg.toString() : (weightKg / 0.453592).toString()) : '';
+      const displayHeight = heightCm ? (unitSystem === 'metric' ? heightCm.toString() : (heightCm / 2.54).toString()) : '';
+      
+      // Map backend gender format (M/F) to frontend format
+      const backendGender = (userProfile as { gender?: string }).gender || '';
+      const displayGender = backendGender === 'M' || backendGender === 'F' ? backendGender : '';
+      
       const profileData: ProfileState = {
-        name: userProfile.name || '',
+        name: (userProfile as { name?: string }).name || '',
         email: (userProfile as { email?: string }).email || '',
-        gender: genderValue || '', // Keep empty string in state, convert for Select display
-        weight: (userProfile as { weight?: number | string }).weight?.toString() || '',
-        unitSystem: (userProfile as { unitSystem?: 'imperial' | 'metric' }).unitSystem || 'imperial',
+        gender: displayGender,
+        weight: displayWeight,
+        unitSystem,
         location: (userProfile as { location?: string }).location || '',
-        dateOfBirth: (userProfile as { dateOfBirth?: string }).dateOfBirth || '',
-        height: (userProfile as { height?: number | string }).height?.toString() || '',
+        dateOfBirth: (userProfile as { date_of_birth?: string }).date_of_birth || (userProfile as { dateOfBirth?: string }).dateOfBirth || '',
+        height: displayHeight,
       };
       setProfile(profileData);
       setInitialProfile(profileData);
@@ -81,16 +93,12 @@ export function AthleteProfileSection() {
     }
   };
 
-  // Convert weight based on unit system
-  const displayWeight = profile.unitSystem === 'metric' && profile.weight
-    ? Math.round(parseFloat(profile.weight) * 0.453592).toString()
-    : profile.weight;
   const weightUnit = profile.unitSystem === 'metric' ? 'kg' : 'lbs';
 
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      const updateData: Record<string, unknown> = {
+      const updateData: Partial<import('@/types').AthleteProfile> = {
         name: profile.name,
         email: profile.email,
         gender: profile.gender === 'not-specified' ? '' : profile.gender,
@@ -99,10 +107,11 @@ export function AthleteProfileSection() {
       };
 
       if (profile.weight) {
-        const weightValue = profile.unitSystem === 'metric'
-          ? Math.round(parseFloat(profile.weight) / 0.453592).toString()
-          : profile.weight;
-        updateData.weight = parseFloat(weightValue);
+        // Convert to kg if needed (backend expects weight_kg)
+        const weightInKg = profile.unitSystem === 'metric'
+          ? parseFloat(profile.weight)
+          : parseFloat(profile.weight) * 0.453592;
+        updateData.weight = weightInKg;
       }
 
       if (profile.dateOfBirth) {
@@ -110,7 +119,11 @@ export function AthleteProfileSection() {
       }
 
       if (profile.height) {
-        updateData.height = parseFloat(profile.height);
+        // Convert to cm if needed (backend expects height_cm)
+        const heightInCm = profile.unitSystem === 'metric'
+          ? parseFloat(profile.height)
+          : parseFloat(profile.height) * 2.54;
+        updateData.height = heightInCm;
       }
 
       await updateUserProfile(updateData);
@@ -124,26 +137,11 @@ export function AthleteProfileSection() {
       });
     } catch (error) {
       console.error('Failed to save profile:', error);
-      
-      // Check if it's a 405 error (method not allowed) - means endpoint doesn't exist
-      const isMethodNotAllowed = error && typeof error === 'object' && 'status' in error && (error as { status?: number }).status === 405;
-      
-      if (isMethodNotAllowed) {
-        toast({
-          title: 'Profile update not available',
-          description: 'Profile updates are not currently supported by the backend. Your changes are saved locally but will not persist.',
-          variant: 'default',
-        });
-        // Still update local state for better UX
-        setInitialProfile({ ...profile });
-        setHasChanges(false);
-      } else {
-        toast({
-          title: 'Failed to save profile',
-          description: error instanceof Error ? error.message : 'Could not save your profile',
-          variant: 'destructive',
-        });
-      }
+      toast({
+        title: 'Failed to save profile',
+        description: error instanceof Error ? error.message : 'Could not save your profile',
+        variant: 'destructive',
+      });
     } finally {
       setIsSaving(false);
     }
@@ -220,8 +218,8 @@ export function AthleteProfileSection() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="not-specified">Not specified</SelectItem>
-                <SelectItem value="male">Male</SelectItem>
-                <SelectItem value="female">Female</SelectItem>
+                <SelectItem value="M">Male</SelectItem>
+                <SelectItem value="F">Female</SelectItem>
               </SelectContent>
             </Select>
           </div>
@@ -243,14 +241,8 @@ export function AthleteProfileSection() {
               <Input
                 id="weight"
                 type="number"
-                value={displayWeight}
-                onChange={(e) => {
-                  const value = e.target.value;
-                  const inLbs = profile.unitSystem === 'metric' 
-                    ? (value ? Math.round(parseFloat(value) / 0.453592).toString() : '')
-                    : value;
-                  setProfile({ ...profile, weight: inLbs });
-                }}
+                value={profile.weight}
+                onChange={(e) => setProfile({ ...profile, weight: e.target.value })}
                 className="flex-1"
                 placeholder="0"
               />

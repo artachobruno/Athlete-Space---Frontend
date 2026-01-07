@@ -44,9 +44,14 @@ export function createTssMap(trainingLoadData: TrainingLoadData | null | undefin
  * Enriches activities with TSS data from training load endpoint
  */
 export function enrichActivitiesWithTss(
-  activities: CompletedActivity[],
+  activities: CompletedActivity[] | null | undefined,
   trainingLoadData: TrainingLoadData | null | undefined
 ): CompletedActivity[] {
+  // Ensure activities is an array
+  if (!activities || !Array.isArray(activities)) {
+    return [];
+  }
+  
   const tssMap = createTssMap(trainingLoadData);
   
   return activities.map(activity => {

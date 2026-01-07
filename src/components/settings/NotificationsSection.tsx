@@ -6,6 +6,7 @@ import { Switch } from '@/components/ui/switch';
 import { Separator } from '@/components/ui/separator';
 import { Bell, Save, Loader2 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
+import { fetchNotificationPreferences, updateNotificationPreferences } from '@/lib/api';
 
 interface NotificationPreferences {
   emailNotifications: boolean;
@@ -49,16 +50,27 @@ export function NotificationsSection() {
   const loadPreferences = async () => {
     setIsLoading(true);
     try {
-      const stored = localStorage.getItem('notification_preferences');
-      if (stored) {
-        const prefs = JSON.parse(stored) as NotificationPreferences;
-        setPreferences(prefs);
-        setInitialPreferences(prefs);
-      } else {
-        setInitialPreferences({ ...preferences });
-      }
+      const prefs = await fetchNotificationPreferences();
+      // Map backend snake_case to frontend camelCase
+      const frontendPrefs: NotificationPreferences = {
+        emailNotifications: prefs.email_notifications,
+        pushNotifications: prefs.push_notifications,
+        workoutReminders: prefs.workout_reminders,
+        trainingLoadAlerts: prefs.training_load_alerts,
+        raceReminders: prefs.race_reminders,
+        weeklySummary: prefs.weekly_summary,
+        goalAchievements: prefs.goal_achievements,
+        coachMessages: prefs.coach_messages,
+      };
+      setPreferences(frontendPrefs);
+      setInitialPreferences(frontendPrefs);
     } catch (error) {
       console.error('Failed to load notification preferences:', error);
+      toast({
+        title: 'Failed to load preferences',
+        description: error instanceof Error ? error.message : 'Could not load your notification preferences',
+        variant: 'destructive',
+      });
     } finally {
       setIsLoading(false);
     }
@@ -67,7 +79,17 @@ export function NotificationsSection() {
   const handleSave = async () => {
     setIsSaving(true);
     try {
-      localStorage.setItem('notification_preferences', JSON.stringify(preferences));
+      // Map frontend camelCase to backend snake_case
+      await updateNotificationPreferences({
+        email_notifications: preferences.emailNotifications,
+        push_notifications: preferences.pushNotifications,
+        workout_reminders: preferences.workoutReminders,
+        training_load_alerts: preferences.trainingLoadAlerts,
+        race_reminders: preferences.raceReminders,
+        weekly_summary: preferences.weeklySummary,
+        goal_achievements: preferences.goalAchievements,
+        coach_messages: preferences.coachMessages,
+      });
       setInitialPreferences({ ...preferences });
       setHasChanges(false);
       toast({
@@ -78,7 +100,7 @@ export function NotificationsSection() {
       console.error('Failed to save preferences:', error);
       toast({
         title: 'Failed to save preferences',
-        description: 'Could not save your notification settings',
+        description: error instanceof Error ? error.message : 'Could not save your notification settings',
         variant: 'destructive',
       });
     } finally {

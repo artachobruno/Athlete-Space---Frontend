@@ -42,6 +42,10 @@ export function ActivityList({ activities, initialExpandedId = null }: ActivityL
   
   // Enrich activities with TSS from training load endpoint
   const enrichedActivities = useMemo(() => {
+    // Ensure activities is an array before enriching
+    if (!activities || !Array.isArray(activities)) {
+      return [];
+    }
     return enrichActivitiesWithTss(activities, trainingLoadData);
   }, [activities, trainingLoadData]);
   
