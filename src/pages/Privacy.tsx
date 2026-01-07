@@ -8,13 +8,13 @@ export default function Privacy() {
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-foreground">Privacy Policy</h1>
-          <p className="text-muted-foreground mt-2">Athlete Space (Pre-Launch)</p>
+          <p className="text-muted-foreground mt-2">AthleteSpace (Pre-Launch)</p>
         </div>
 
         {/* Privacy Policy Content */}
         <Card>
           <CardHeader>
-            <CardTitle>Privacy Policy – Athlete Space (Pre-Launch)</CardTitle>
+            <CardTitle>Privacy Policy – AthleteSpace (Pre-Launch)</CardTitle>
             <p className="text-sm text-muted-foreground mt-2">Last updated: January 2026</p>
           </CardHeader>
           <CardContent className="space-y-8">
@@ -22,7 +22,7 @@ export default function Privacy() {
               {/* Introduction */}
               <section className="mb-6">
                 <p className="text-muted-foreground leading-relaxed">
-                  Athlete Space ("we", "our", "us") is a pre-launch fitness and performance application designed to provide training insights to endurance athletes. We respect your privacy and are committed to protecting your personal data.
+                  AthleteSpace ("we", "our", "us") is a pre-launch fitness and performance application designed to provide training insights to endurance athletes. We respect your privacy and are committed to protecting your personal data.
                 </p>
               </section>
 
