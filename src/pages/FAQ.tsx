@@ -12,51 +12,78 @@ interface FAQItem {
 const faqItems: FAQItem[] = [
   {
     question: 'What is Athlete Space?',
-    answer: 'Athlete Space is a fitness and performance application designed to provide personalized training insights to endurance athletes. We help you track your activities, analyze your performance, and get AI-powered coaching recommendations.',
+    answer:
+      'Athlete Space is an AI-powered performance intelligence platform for endurance athletes. We combine proven exercise science with modern AI to help you understand your training load, recovery, and readiness, and to support better day-to-day training decisions.',
   },
   {
-    question: 'How do I connect my Strava account?',
-    answer: 'During the onboarding process, you\'ll be prompted to connect your Strava account. Simply click the "Connect Strava" button and authorize Athlete Space to access your activity data. You can also connect or disconnect Strava at any time from the Settings page.',
+    question: 'Is Athlete Space really AI-driven, or just a calculator?',
+    answer:
+      'Athlete Space uses validated sports science models as its foundation, and applies AI on top of them. The science defines how training stress and adaptation work, while AI personalizes those models to you, selects the best signals based on available data, and adapts as your fitness changes.',
   },
   {
-    question: 'What data does Athlete Space collect?',
-    answer: 'With your explicit consent, Athlete Space collects fitness and wellness data from connected third-party services, including activity data (workouts, duration, distance), heart rate metrics, sleep and recovery data, and training load indicators. We only collect data you explicitly authorize us to access.',
+    question: 'What science is Athlete Space based on?',
+    answer:
+      'Athlete Space is built on widely accepted endurance training models used by elite coaches and Olympic programs, including Training Stress Score (TSS), the Performance Manager model (CTL, ATL, Form), Banister TRIMP (heart-rate impulse), and session-based perceived exertion models. These approaches are supported by decades of peer-reviewed research.',
   },
   {
-    question: 'How is my data used?',
-    answer: 'We use your data solely to provide personalized training insights, performance analysis, recovery and fatigue trends, and to improve the functionality and accuracy of the application. We do not sell, rent, or share individual user data with advertisers or third parties.',
+    question: 'Who builds and validates Athlete Space?',
+    answer:
+      'Athlete Space is designed and continuously reviewed by Ph.D.-level researchers in physiology, AI, and applied data science. Our goal is not to invent new physiology, but to correctly apply and personalize the best existing science using modern machine learning.',
   },
   {
-    question: 'Is my data secure?',
-    answer: 'Yes, we implement reasonable technical and organizational safeguards to protect your data, including encrypted storage and secure communication protocols. Your data is stored securely and only accessed for the purposes you\'ve authorized.',
+    question: 'How does Athlete Space measure training stress?',
+    answer:
+      'We calculate training stress using the best available data for each session. When power or pace data is available, we use intensity relative to your personal threshold. When it is not, we fall back to heart-rate physiology models or perceived effort. AI ensures everything is converted into a single, consistent training load scale.',
   },
   {
-    question: 'Can I use Athlete Space without Strava?',
-    answer: 'Yes, you can use Athlete Space without connecting Strava. However, connecting Strava allows us to automatically sync your activities and provide more comprehensive training insights. You can manually log activities or connect other fitness platforms in the future.',
+    question: 'What are TSS, CTL, ATL, and Form?',
+    answer:
+      'TSS (Training Stress Score) measures how demanding a single workout was. CTL (Chronic Training Load) represents long-term fitness built over weeks. ATL (Acute Training Load) reflects short-term fatigue from recent days. Form (also called Training Stress Balance) is the difference between fitness and fatigue and helps indicate readiness to perform.',
+  },
+  {
+    question: 'Why not just track heart rate, pace, or mileage?',
+    answer:
+      'Single metrics are often misleading. Physiological stress is not linear, and the same pace or heart rate can represent very different strain depending on fatigue, heat, terrain, and fitness. Athlete Space uses non-linear, science-backed models that better reflect how the body actually responds to training.',
+  },
+  {
+    question: 'Does Athlete Space work if my data is incomplete?',
+    answer:
+      'Yes. Athlete Space is designed for real-world training. If some sensors are missing or unreliable, AI automatically selects appropriate fallback models and maintains continuity in your fitness and fatigue tracking.',
   },
   {
     question: 'How does the AI coach work?',
-    answer: 'Our AI coach analyzes your training data, performance metrics, and goals to provide personalized recommendations. It considers factors like training load, recovery status, and upcoming events to suggest when to train hard, when to rest, and how to modify your workouts.',
+    answer:
+      'The AI coach analyzes your training load, recovery trends, and recent patterns to provide context-aware recommendations. It helps answer questions like when to push, when to back off, and when recovery matters more than intensity, using both data and established training principles.',
   },
   {
-    question: 'What training metrics does Athlete Space track?',
-    answer: 'Athlete Space tracks various training metrics including CTL (Chronic Training Load), ATL (Acute Training Load), TSB (Training Stress Balance), training load, heart rate zones, pace, power, and more. These metrics help you understand your fitness, fatigue, and form.',
+    question: 'Does Athlete Space replace a human coach?',
+    answer:
+      'No. Athlete Space is a decision-support tool. It helps athletes and coaches make better-informed choices, improves consistency, and highlights risk or opportunity, but it does not replace human judgment or coaching relationships.',
   },
   {
-    question: 'Can I export my data?',
-    answer: 'Yes, you can export your calendar data in ICS format from the Calendar page. For other data exports, please contact us through the Settings page. We\'re committed to data portability and will help you export your data upon request.',
+    question: 'What data does Athlete Space collect?',
+    answer:
+      'With your explicit consent, Athlete Space collects training and wellness data from connected platforms such as activity details, heart rate, recovery indicators, and training load metrics. We only collect data you authorize and only for performance and training insight purposes.',
   },
   {
-    question: 'How do I delete my account?',
-    answer: 'To delete your account and all associated data, please contact us through the Settings page. We will process your request in accordance with applicable data protection laws and delete your personal data within a reasonable timeframe.',
+    question: 'How is my data used?',
+    answer:
+      'Your data is used solely to generate personalized training insights, fitness and fatigue trends, and AI-driven recommendations. Athlete Space does not sell or share individual user data with advertisers or third parties.',
+  },
+  {
+    question: 'Is my data secure?',
+    answer:
+      'Yes. We use secure communication protocols and encrypted storage to protect your data. Access is limited to systems required to provide the service you’ve authorized.',
   },
   {
     question: 'Does Athlete Space provide medical advice?',
-    answer: 'No, Athlete Space does not provide medical diagnosis or treatment. Our insights and recommendations are for training and performance purposes only. Always consult with a healthcare professional for medical concerns or before starting a new training program.',
+    answer:
+      'No. Athlete Space does not provide medical diagnosis or treatment. All insights are for training and performance purposes only. Always consult a qualified healthcare professional for medical concerns.',
   },
   {
     question: 'Is Athlete Space free to use?',
-    answer: 'Athlete Space is currently in pre-launch. Please check our website or contact us for information about pricing and availability. We may offer both free and premium tiers in the future.',
+    answer:
+      'Athlete Space is currently in pre-launch and private beta. We plan to offer a free tier and optional premium features in the future. Details will be shared as the product evolves.',
   },
 ];
 
