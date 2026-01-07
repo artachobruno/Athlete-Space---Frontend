@@ -225,7 +225,7 @@ export const fetchUserProfile = async (): Promise<import("../types").AthleteProf
             weight_kg: null,
             height_cm: null,
             location: null,
-            unit_system: 'metric',
+            unit_system: 'imperial',
             onboarding_complete: false,
             target_event: null,
             goals: [],
@@ -249,6 +249,7 @@ export const updateUserProfile = async (
   console.log("[API] Updating user profile");
   try {
     // Map frontend fields to backend format
+    // Explicitly exclude trainingAge - it's managed via training preferences, not profile
     const backendData: Record<string, unknown> = {};
     if (profileData.name !== undefined) backendData.name = profileData.name;
     if (profileData.email !== undefined) backendData.email = profileData.email;
@@ -267,10 +268,22 @@ export const updateUserProfile = async (
       backendData.goals = profileData.goals;
     }
 
+    // Explicitly exclude trainingAge and other fields that shouldn't be in profile updates
+    // trainingAge is managed via /me/training-preferences endpoint
+
     const response = await api.put("/me/profile", backendData);
     return response as unknown as import("../types").AthleteProfile;
   } catch (error) {
     console.error("[API] Failed to update profile:", error);
+    
+    // Check if error is related to missing database column
+    if (error && typeof error === 'object' && 'message' in error) {
+      const errorMessage = String(error.message);
+      if (errorMessage.includes('years_training') || errorMessage.includes('UndefinedColumn')) {
+        console.warn("[API] Backend database schema issue detected - years_training column missing. This is a backend issue that needs to be fixed.");
+      }
+    }
+    
     throw error;
   }
 };

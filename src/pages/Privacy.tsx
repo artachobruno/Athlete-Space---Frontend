@@ -1,24 +1,12 @@
-import { Link } from 'react-router-dom';
-import { ArrowLeft } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { AppLayout } from '@/components/layout/AppLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
 export default function Privacy() {
   return (
-    <div className="min-h-screen bg-background">
-      <div className="max-w-4xl mx-auto px-4 py-8 lg:py-12">
-        {/* Header with back button */}
+    <AppLayout>
+      <div className="max-w-4xl mx-auto">
+        {/* Header */}
         <div className="mb-8">
-          <Button
-            variant="ghost"
-            asChild
-            className="mb-4"
-          >
-            <Link to="/dashboard">
-              <ArrowLeft className="h-4 w-4 mr-2" />
-              Back to Dashboard
-            </Link>
-          </Button>
           <h1 className="text-3xl font-bold text-foreground">Privacy Policy</h1>
           <p className="text-muted-foreground mt-2">Athlete Space (Pre-Launch)</p>
         </div>
@@ -114,7 +102,7 @@ export default function Privacy() {
           </CardContent>
         </Card>
       </div>
-    </div>
+    </AppLayout>
   );
 }
 

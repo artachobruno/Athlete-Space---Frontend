@@ -176,32 +176,7 @@ export default function Activities() {
             </p>
           </div>
         ) : (
-          <>
-            {missingRecentActivities && (
-              <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-4 mb-4">
-                <div className="flex items-start gap-3">
-                  <div className="text-yellow-500 mt-0.5">⚠️</div>
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-foreground mb-1">
-                      Recent activities may be missing
-                    </p>
-                    <p className="text-xs text-muted-foreground mb-2">
-                      {missingRecentActivities.includes('today') && "Today's activity is not showing up. "}
-                      {missingRecentActivities.includes('yesterday') && "Yesterday's activity is not showing up. "}
-                      New activities may take a few minutes to sync from Strava.
-                    </p>
-                    <button
-                      onClick={() => refetch()}
-                      className="text-xs text-accent hover:underline font-medium"
-                    >
-                      Refresh activities
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
-            <ActivityList activities={activities || []} initialExpandedId={activityId || null} />
-          </>
+          <ActivityList activities={activities || []} initialExpandedId={activityId || null} />
         )}
       </div>
     </AppLayout>

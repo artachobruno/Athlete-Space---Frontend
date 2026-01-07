@@ -20,6 +20,24 @@
     <meta name="twitter:title" content="Athlete Space | AI Endurance Coaching" />
     <meta name="twitter:description" content="Your AI-powered endurance training coach. Personalized plans and intelligent analysis." />
     <meta name="twitter:image" content="https://athletespace.ai/og-image.png" />
+    <script>
+      // Apply theme immediately on page load to prevent flash
+      (function() {
+        const stored = localStorage.getItem('theme');
+        const theme = stored && ['light', 'dark', 'system'].includes(stored) ? stored : 
+          (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'system' : 'light');
+        
+        const root = document.documentElement;
+        root.classList.remove('light', 'dark');
+        
+        if (theme === 'system') {
+          const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+          root.classList.add(systemTheme);
+        } else {
+          root.classList.add(theme);
+        }
+      })();
+    </script>
   </head>
 
   <body>
