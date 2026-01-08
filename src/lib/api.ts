@@ -888,6 +888,93 @@ export const fetchActivity = async (id: string): Promise<import("../types").Comp
  * 
  * Note: Stops retrying immediately on CORS errors to avoid console spam.
  */
+const unwrapStreamArray = (value: unknown): unknown[] | undefined => {
+  if (Array.isArray(value)) return value;
+  if (!value || typeof value !== 'object') return undefined;
+
+  const v = value as Record<string, unknown>;
+  if (Array.isArray(v.data)) return v.data;
+  if (Array.isArray(v.values)) return v.values;
+  if (Array.isArray(v.items)) return v.items;
+
+  return undefined;
+};
+
+const unwrapNumberArray = (value: unknown): number[] | undefined => {
+  const arr = unwrapStreamArray(value);
+  if (!arr) return undefined;
+  const nums = arr
+    .map((x) => (typeof x === 'number' ? x : Number(x)))
+    .filter((x) => Number.isFinite(x));
+  return nums;
+};
+
+const unwrapNullableNumberArray = (value: unknown): (number | null)[] | undefined => {
+  const arr = unwrapStreamArray(value);
+  if (!arr) return undefined;
+  return arr.map((x) => {
+    if (x === null || x === undefined) return null;
+    const n = typeof x === 'number' ? x : Number(x);
+    return Number.isFinite(n) ? n : null;
+  });
+};
+
+const unwrapCoordArray = (value: unknown): number[][] | undefined => {
+  const arr = unwrapStreamArray(value);
+  if (!arr) return undefined;
+
+  const coords = arr
+    .map((coord) => {
+      if (!Array.isArray(coord) || coord.length < 2) return null;
+      const lat = typeof coord[0] === 'number' ? coord[0] : Number(coord[0]);
+      const lng = typeof coord[1] === 'number' ? coord[1] : Number(coord[1]);
+      if (!Number.isFinite(lat) || !Number.isFinite(lng)) return null;
+      return [lat, lng] as [number, number];
+    })
+    .filter((c): c is [number, number] => c !== null);
+
+  return coords;
+};
+
+const normalizeActivityStreamsResponse = (raw: unknown): ActivityStreamsResponse => {
+  const root = raw && typeof raw === 'object' ? (raw as Record<string, unknown>) : {};
+  const maybeStreams = root.streams && typeof root.streams === 'object' ? (root.streams as Record<string, unknown>) : root;
+  const base = maybeStreams.data && typeof maybeStreams.data === 'object' ? (maybeStreams.data as Record<string, unknown>) : maybeStreams;
+
+  const time = unwrapNumberArray(base.time) ?? [];
+  const distance = unwrapNumberArray(base.distance) ?? [];
+
+  // Prefer route_points; fallback to Strava-style latlng.
+  const route_points =
+    unwrapCoordArray(base.route_points) ??
+    unwrapCoordArray(base.latlng) ??
+    [];
+
+  const elevation = unwrapNumberArray(base.elevation) ?? [];
+  const pace = unwrapNullableNumberArray(base.pace) ?? [];
+
+  const heartrateArr = unwrapNumberArray(base.heartrate ?? base.heart_rate);
+  const powerArr = unwrapNumberArray(base.power ?? base.watts);
+  const cadenceArr = unwrapNumberArray(base.cadence);
+
+  const data_points =
+    typeof base.data_points === 'number' && Number.isFinite(base.data_points)
+      ? base.data_points
+      : time.length;
+
+  return {
+    time,
+    route_points,
+    elevation,
+    pace,
+    distance,
+    data_points,
+    ...(heartrateArr && heartrateArr.length ? { heartrate: heartrateArr } : {}),
+    ...(powerArr && powerArr.length ? { power: powerArr } : {}),
+    ...(cadenceArr && cadenceArr.length ? { cadence: cadenceArr } : {}),
+  };
+};
+
 export const fetchActivityStreams = async (id: string): Promise<ActivityStreamsResponse> => {
   console.log("[API] Fetching activity streams", id);
   try {
@@ -948,7 +1035,7 @@ export const fetchActivityStreams = async (id: string): Promise<ActivityStreamsR
     for (let attempt = 0; attempt < maxRetries; attempt++) {
       try {
         const response = await api.get(`/activities/${id}/streams`);
-        return response as unknown as ActivityStreamsResponse;
+        return normalizeActivityStreamsResponse(response);
       } catch (error) {
         // Stop immediately on CORS errors - don't retry
         if (isCorsError(error)) {
