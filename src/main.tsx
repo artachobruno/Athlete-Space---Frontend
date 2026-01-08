@@ -9,6 +9,10 @@ import "leaflet/dist/leaflet.css";
 // Global error handlers to catch errors from browser extensions or other external sources
 // CRITICAL: These errors must NEVER affect app state, cause redirects, or break bootstrap
 // They should be silently swallowed to prevent app crashes during hydration
+//
+// NOTE: The real fix is in App.tsx (SafeThirdPartyInit component) which gates
+// detectStore() and analytics.init() behind auth status. This error handler
+// is a fallback for any edge cases or browser extensions that inject code.
 
 // Handle unhandled promise rejections (e.g., detectStore().then() when detectStore is undefined)
 window.addEventListener('unhandledrejection', (event) => {

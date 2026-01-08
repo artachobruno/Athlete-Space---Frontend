@@ -12,6 +12,7 @@ import { useValidateAuth } from "@/hooks/useValidateAuth";
 import { auth } from "@/lib/auth";
 import { useEffect } from "react";
 import { ThemeProvider } from "@/hooks/useTheme";
+import { safeDetectStore, safeInitAnalytics } from "@/lib/safe-analytics";
 import Dashboard from "./pages/Dashboard";
 import Calendar from "./pages/Calendar";
 import TrainingPlan from "./pages/TrainingPlan";
@@ -159,6 +160,37 @@ const OAuthTokenHandler = () => {
   return null;
 };
 
+// Component to safely initialize third-party libraries (analytics, browser extensions)
+// ONLY runs when user is authenticated to prevent crashes
+const SafeThirdPartyInit = () => {
+  const { status } = useAuth();
+
+  useEffect(() => {
+    // CRITICAL: Only initialize when authenticated
+    // This prevents detectStore().then() crashes when logged out
+    if (status !== "authenticated") {
+      return;
+    }
+
+    // Safely handle detectStore (from browser extensions or third-party libraries)
+    // detectStore might be undefined or might not return a Promise
+    // safeDetectStore handles both cases
+    const detectStoreFn = (window as { detectStore?: () => unknown | Promise<unknown> }).detectStore;
+    safeDetectStore(detectStoreFn)
+      .then(() => {
+        // Only initialize analytics after detectStore completes (if it exists)
+        // If detectStore was undefined, this still runs immediately
+        const analyticsInit = (window as { analytics?: { init?: () => void | Promise<void> } }).analytics?.init;
+        safeInitAnalytics(status, analyticsInit);
+      })
+      .catch(() => {
+        // Already handled by safeDetectStore, but catch just in case
+      });
+  }, [status]);
+
+  return null;
+};
+
 // Component to handle sync on app mount and auth redirects
 const AppContent = () => {
   // Only sync activities when auth is ready and user is authenticated
@@ -170,6 +202,7 @@ const AppContent = () => {
       <OAuthTokenHandler />
       <AuthValidator />
       <AuthRedirectHandler />
+      <SafeThirdPartyInit />
       <Routes>
         <Route path="/" element={<AuthLanding />} />
         <Route
