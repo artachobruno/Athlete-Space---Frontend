@@ -15,10 +15,27 @@ export default function ConnectSuccess() {
 
   const [syncStatus, setSyncStatus] = useState<SyncStatus>("idle");
   const [syncMessage, setSyncMessage] = useState<string | null>(null);
+  const [hasRefreshed, setHasRefreshed] = useState(false);
 
-  // Kick off sync once we have a user
+  // Refresh user to get latest strava_connected / onboarding_complete FIRST
+  // This is critical - we need fresh user data after OAuth callback
   useEffect(() => {
-    if (authLoading) return;
+    if (!hasRefreshed) {
+      refreshUser()
+        .then(() => {
+          setHasRefreshed(true);
+        })
+        .catch((err) => {
+          console.error("[ConnectSuccess] Failed to refresh user:", err);
+          setHasRefreshed(true); // Still continue even if refresh fails
+        });
+    }
+  }, [hasRefreshed, refreshUser]);
+
+  // Kick off sync once we have refreshed user data
+  useEffect(() => {
+    // Wait for auth to load AND user to be refreshed
+    if (authLoading || !hasRefreshed) return;
 
     // If no user at all, send to login
     if (!user) {
@@ -37,7 +54,7 @@ export default function ConnectSuccess() {
       return;
     }
 
-    // Start syncing
+    // Start syncing only if Strava is connected
     if (syncStatus === "idle") {
       setSyncStatus("syncing");
       setSyncMessage("Importing your activities from Strava…");
@@ -54,13 +71,7 @@ export default function ConnectSuccess() {
           setSyncMessage("We'll continue syncing in the background.");
         });
     }
-  }, [authLoading, user, syncStatus, navigate]);
-
-  // Refresh user to get latest strava_connected / onboarding_complete
-  useEffect(() => {
-    refreshUser();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [authLoading, user, syncStatus, navigate, hasRefreshed]);
 
   const handleContinue = () => {
     // Always go to dashboard if onboarding is complete
