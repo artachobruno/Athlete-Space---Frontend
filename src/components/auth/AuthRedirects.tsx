@@ -22,10 +22,10 @@ function FullPageSkeleton() {
  * - Authenticated + onboarding complete → /dashboard
  */
 export function AuthLanding() {
-  const { user, loading } = useAuth();
+  const { user, loading, status } = useAuth();
 
-  if (loading) return <FullPageSkeleton />;
-  if (!user) return <Navigate to="/login" replace />;
+  if (status === "loading" || loading) return <FullPageSkeleton />;
+  if (status === "unauthenticated" || !user) return <Navigate to="/login" replace />;
 
   return user.onboarding_complete
     ? <Navigate to="/dashboard" replace />
@@ -37,10 +37,10 @@ export function AuthLanding() {
  * Prevents showing auth forms to already-authenticated users.
  */
 export function PublicOnly({ children }: { children: ReactNode }) {
-  const { user, loading } = useAuth();
+  const { user, loading, status } = useAuth();
 
-  if (loading) return <FullPageSkeleton />;
-  if (user) {
+  if (status === "loading" || loading) return <FullPageSkeleton />;
+  if (status === "authenticated" && user) {
     return user.onboarding_complete
       ? <Navigate to="/dashboard" replace />
       : <Navigate to="/onboarding" replace />;

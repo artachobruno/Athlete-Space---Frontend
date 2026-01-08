@@ -1,9 +1,12 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { fetchCurrentUser, logout as logoutApi, type AuthUser } from "@/lib/auth";
 
+export type AuthStatus = "loading" | "unauthenticated" | "authenticated";
+
 interface AuthContextValue {
   user: AuthUser | null;
   loading: boolean;
+  status: AuthStatus;
   refreshUser: () => Promise<void>;
   logout: () => Promise<void>;
 }
@@ -11,6 +14,7 @@ interface AuthContextValue {
 const AuthContext = createContext<AuthContextValue>({
   user: null,
   loading: true,
+  status: "loading",
   refreshUser: async () => {},
   logout: async () => {},
 });
@@ -24,6 +28,7 @@ interface AuthProviderProps {
 export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
+  const [status, setStatus] = useState<AuthStatus>("loading");
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   const refreshUser = async () => {
@@ -33,36 +38,48 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
     
     setIsRefreshing(true);
+    setLoading(true);
+    setStatus("loading");
+    
     try {
       const currentUser = await fetchCurrentUser();
       
       console.log("[AuthContext] fetchCurrentUser returned:", currentUser);
       
-      // Validate response is not undefined/null
+      // Explicitly handle null/undefined as unauthenticated
       if (!currentUser || typeof currentUser !== 'object') {
-        console.warn("[AuthContext] /me returned invalid response:", currentUser);
-        // Only clear user if we're certain auth failed (not on transient errors)
-        // Don't clear on network errors or other non-auth failures
+        console.log("[AuthContext] No user found - setting unauthenticated state");
         setUser(null);
+        setStatus("unauthenticated");
         setLoading(false);
         return;
       }
       
+      // User is authenticated
       console.log("[AuthContext] Setting user:", currentUser);
       setUser(currentUser);
+      setStatus("authenticated");
     } catch (error) {
       // Check if error is actually an auth failure (401) vs other errors
       const apiError = error as { status?: number };
       console.error("[AuthContext] Failed to fetch user:", error);
       
-      // Only clear user on actual auth failures (401)
-      // Don't clear on network errors, 404, 500, etc. - might be temporary
+      // Only set unauthenticated on actual auth failures (401)
+      // For other errors, keep existing state (don't change on transient errors)
       if (apiError.status === 401) {
-        console.warn("[AuthContext] Auth failed (401), clearing user");
+        console.log("[AuthContext] Auth failed (401), setting unauthenticated");
         setUser(null);
+        setStatus("unauthenticated");
       } else {
-        // For other errors, keep existing user state (don't clear on transient errors)
-        console.warn("[AuthContext] Non-auth error, keeping existing user state");
+        // For other errors, if we have no user, set unauthenticated
+        // Otherwise keep existing state (might be transient network error)
+        if (!user) {
+          console.log("[AuthContext] Non-auth error with no existing user, setting unauthenticated");
+          setStatus("unauthenticated");
+        } else {
+          console.warn("[AuthContext] Non-auth error, keeping existing authenticated state");
+          // Keep existing user and status
+        }
       }
     } finally {
       setLoading(false);
@@ -77,6 +94,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       console.error("[AuthContext] Logout error:", error);
     } finally {
       setUser(null);
+      setStatus("unauthenticated");
       setLoading(false);
     }
   };
@@ -87,7 +105,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, loading, refreshUser, logout }}>
+    <AuthContext.Provider value={{ user, loading, status, refreshUser, logout }}>
       {children}
     </AuthContext.Provider>
   );

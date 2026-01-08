@@ -16,13 +16,12 @@ interface RequireAuthProps {
  * - Renders children if user is authenticated
  */
 export function RequireAuth({ children }: RequireAuthProps) {
-  const { user, loading } = useAuth();
+  const { user, loading, status } = useAuth();
 
-  console.log("[RequireAuth] Auth state:", { user, loading, hasUser: !!user });
+  console.log("[RequireAuth] Auth state:", { user, loading, status, hasUser: !!user });
 
-  // Always show loading state while auth is being determined
-  // This prevents redirects during initial load or errors
-  if (loading) {
+  // Show loading state while auth is being determined
+  if (status === "loading" || loading) {
     console.log("[RequireAuth] Still loading, showing skeleton");
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -35,13 +34,13 @@ export function RequireAuth({ children }: RequireAuthProps) {
     );
   }
 
-  // Only redirect if loading is complete AND user is definitively null
-  // This ensures we don't redirect on transient errors or render issues
-  if (!user) {
-    console.warn("[RequireAuth] No user found after loading complete, redirecting to login");
+  // Explicitly check for unauthenticated status
+  if (status === "unauthenticated" || !user) {
+    console.log("[RequireAuth] User not authenticated, redirecting to login");
     return <Navigate to="/login" replace />;
   }
 
+  // User is authenticated
   console.log("[RequireAuth] User authenticated, rendering children");
   return <>{children}</>;
 }

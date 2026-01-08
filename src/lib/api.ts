@@ -2172,21 +2172,29 @@ const createNavigationEvent = (path: string) => {
 
 api.interceptors.response.use(
   (response) => {
+    const requestUrl = response.config?.url || '';
+    const isMeEndpoint = requestUrl === '/me' || requestUrl.endsWith('/me');
+    
     // Guard against undefined/null responses
     // Backend may return 200 with broken/empty payload
     if (response.data === undefined || response.data === null) {
       console.warn("[API] Response interceptor: response.data is undefined/null", {
         status: response.status,
-        url: response.config?.url,
+        url: requestUrl,
       });
-      // Return empty object instead of undefined to prevent .then() errors
+      
+      // For /me endpoint, return null explicitly (means not authenticated)
+      // For other endpoints, return {} to prevent .then() errors while maintaining compatibility
+      if (isMeEndpoint) {
+        return null;
+      }
       return {};
     }
     
     // Log /me responses for debugging
-    if (response.config?.url === '/me' || response.config?.url?.endsWith('/me')) {
+    if (isMeEndpoint) {
       console.log("[API] /me response interceptor:", {
-        url: response.config?.url,
+        url: requestUrl,
         status: response.status,
         data: response.data,
         dataType: typeof response.data,
