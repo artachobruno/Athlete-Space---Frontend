@@ -131,6 +131,27 @@ export function saveOnboardingPlans(plans: OnboardingPlans): void {
   localStorage.setItem(STORAGE_KEYS.ONBOARDING_PLANS, JSON.stringify(plans));
 }
 
+/**
+ * Marks onboarding as completed in localStorage.
+ * This is a safeguard against backend bugs that reset onboarding_complete.
+ */
+export function markOnboardingCompleted(): void {
+  localStorage.setItem('onboarding_completed_flag', 'true');
+  localStorage.setItem('onboarding_completed_at', new Date().toISOString());
+}
+
+/**
+ * Checks if onboarding was ever completed (localStorage flag).
+ * This is a safeguard against backend bugs that reset onboarding_complete.
+ */
+export function wasOnboardingCompleted(): boolean {
+  try {
+    return localStorage.getItem('onboarding_completed_flag') === 'true';
+  } catch {
+    return false;
+  }
+}
+
 export function getSeasonPlan(): any | null {
   try {
     const stored = localStorage.getItem(STORAGE_KEYS.SEASON_PLAN);

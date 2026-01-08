@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { fetchCurrentUser, logout as logoutApi, type AuthUser } from "@/lib/auth";
+import { wasOnboardingCompleted } from "@/lib/storage";
 
 export type AuthStatus = "loading" | "unauthenticated" | "authenticated";
 
@@ -50,7 +51,20 @@ export function AuthProvider({ children }: AuthProviderProps) {
         setStatus("unauthenticated");
       } else {
         // User is authenticated
-        setUser(currentUser);
+        // CRITICAL: If backend says onboarding_complete is false but localStorage flag says it was completed,
+        // use the localStorage flag as a safeguard against backend bugs
+        const localStorageSaysComplete = wasOnboardingCompleted();
+        let finalUser = currentUser;
+        if (!currentUser.onboarding_complete && localStorageSaysComplete) {
+          console.warn("[AuthContext] ⚠️ Backend bug detected: onboarding_complete is false but localStorage flag says it was completed.");
+          console.warn("[AuthContext] Using localStorage flag as fallback. Backend should preserve onboarding_complete after Strava connection.");
+          // Override the backend value with the localStorage flag
+          finalUser = {
+            ...currentUser,
+            onboarding_complete: true,
+          };
+        }
+        setUser(finalUser);
         setStatus("authenticated");
       }
     } catch (error) {

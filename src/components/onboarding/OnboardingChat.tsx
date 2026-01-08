@@ -8,7 +8,7 @@ import { StravaConnectCard } from './StravaConnectCard';
 import { CoachSummaryCard } from './CoachSummaryCard';
 import { completeOnboarding } from '@/lib/api';
 import { auth } from '@/lib/auth';
-import { saveProfile, saveOnboardingAdditionalData, saveOnboardingPlans, saveSeasonPlan } from '@/lib/storage';
+import { saveProfile, saveOnboardingAdditionalData, saveOnboardingPlans, saveSeasonPlan, markOnboardingCompleted } from '@/lib/storage';
 import { toast } from '@/hooks/use-toast';
 import type { AthleteProfile, Sport } from '@/types';
 
@@ -476,6 +476,10 @@ export function OnboardingChat({ onComplete, isComplete }: OnboardingChatProps) 
 
         // Handle onboarding response
         if (result.status === 'ok') {
+          // CRITICAL: Mark onboarding as completed in localStorage
+          // This is a safeguard against backend bugs that reset onboarding_complete
+          markOnboardingCompleted();
+          
           // Store plans in local storage
           saveOnboardingPlans({
             weekly_intent: result.weekly_intent,
@@ -544,6 +548,9 @@ export function OnboardingChat({ onComplete, isComplete }: OnboardingChatProps) 
         // Check if it's an auth error - if so, user needs to authenticate first
         const isAuthError = error && typeof error === 'object' && 'status' in error && (error as { status?: number }).status === 401;
         
+        // Mark onboarding as completed even if API call failed (data saved locally)
+        markOnboardingCompleted();
+        
         if (isAuthError) {
           addCoachMessage(
             "I've saved your preferences. You'll need to connect Strava or log in to sync with the backend. For now, let's get started!"
@@ -559,6 +566,9 @@ export function OnboardingChat({ onComplete, isComplete }: OnboardingChatProps) 
     } else {
       // User is not authenticated - data already saved locally above
       // Preferences can be saved later when user authenticates
+      // Mark onboarding as completed (data saved locally)
+      markOnboardingCompleted();
+      
       addCoachMessage(
         "That's everything I need. Connect Strava or log in to sync your preferences with the backend. For now, let's get started!"
       );

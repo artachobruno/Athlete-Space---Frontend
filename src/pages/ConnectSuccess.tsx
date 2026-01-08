@@ -6,6 +6,7 @@ import { CheckCircle2, Loader2, Activity, ArrowRight } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { triggerHistoricalSync } from "@/lib/api";
 import { Logo } from "@/components/Logo";
+import { wasOnboardingCompleted } from "@/lib/storage";
 
 type SyncStatus = "idle" | "syncing" | "done" | "error";
 
@@ -57,10 +58,18 @@ export default function ConnectSuccess() {
       email: user.email,
     });
 
-    // CRITICAL: If onboarding is complete, go directly to dashboard
-    // This prevents users from being sent back to onboarding
-    if (user.onboarding_complete) {
-      console.log("[ConnectSuccess] ✅ Onboarding complete, redirecting to dashboard");
+    // CRITICAL: Check if onboarding is complete (backend OR localStorage fallback)
+    // Backend bug: Sometimes returns onboarding_complete: false even after completion
+    // Use localStorage flag as safeguard
+    const backendSaysComplete = user.onboarding_complete;
+    const localStorageSaysComplete = wasOnboardingCompleted();
+    
+    if (backendSaysComplete || localStorageSaysComplete) {
+      if (localStorageSaysComplete && !backendSaysComplete) {
+        console.warn("[ConnectSuccess] ⚠️ Backend says onboarding not complete, but localStorage flag says it was completed. Using localStorage flag as fallback.");
+        console.warn("[ConnectSuccess] This indicates a backend bug - onboarding_complete should be preserved after Strava connection.");
+      }
+      console.log("[ConnectSuccess] ✅ Onboarding complete (backend:", backendSaysComplete, "localStorage:", localStorageSaysComplete, "), redirecting to dashboard");
       navigate("/dashboard", { replace: true });
       return;
     }
@@ -111,11 +120,14 @@ export default function ConnectSuccess() {
       console.error("[ConnectSuccess] Failed to refresh user in handleContinue:", err);
     }
 
-    // Get fresh user data after refresh
-    // Note: refreshUser updates the context, but we need to wait for it to propagate
-    // For now, check the current user state - the auto-redirect useEffect should catch it if stale
-    // Always go to dashboard if onboarding is complete
-    if (user?.onboarding_complete) {
+    // Check both backend and localStorage flag (safeguard against backend bug)
+    const backendSaysComplete = user?.onboarding_complete;
+    const localStorageSaysComplete = wasOnboardingCompleted();
+    
+    if (backendSaysComplete || localStorageSaysComplete) {
+      if (localStorageSaysComplete && !backendSaysComplete) {
+        console.warn("[ConnectSuccess] handleContinue: ⚠️ Backend bug detected - using localStorage flag");
+      }
       console.log("[ConnectSuccess] handleContinue: Onboarding complete, going to dashboard");
       navigate("/dashboard", { replace: true });
     } else {
