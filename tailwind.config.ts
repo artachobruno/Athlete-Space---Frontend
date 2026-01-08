@@ -27,6 +27,10 @@ export default {
           DEFAULT: "hsl(var(--primary))",
           foreground: "hsl(var(--primary-foreground))",
         },
+        coach: {
+          DEFAULT: "hsl(var(--coach))",
+          foreground: "hsl(var(--coach-foreground))",
+        },
         secondary: {
           DEFAULT: "hsl(var(--secondary))",
           foreground: "hsl(var(--secondary-foreground))",

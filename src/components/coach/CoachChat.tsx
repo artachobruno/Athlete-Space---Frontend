@@ -100,7 +100,7 @@ export function CoachChat() {
               className={cn(
                 'w-8 h-8 rounded-full flex items-center justify-center shrink-0',
                 message.role === 'coach'
-                  ? 'bg-primary text-primary-foreground'
+                  ? 'bg-coach text-coach-foreground'
                   : 'bg-muted text-muted-foreground'
               )}
             >
@@ -114,7 +114,7 @@ export function CoachChat() {
               className={cn(
                 'max-w-[75%] rounded-lg px-4 py-2.5',
                 message.role === 'coach'
-                  ? 'bg-primary text-primary-foreground'
+                  ? 'bg-coach text-coach-foreground'
                   : 'bg-accent text-accent-foreground'
               )}
             >
@@ -125,10 +125,10 @@ export function CoachChat() {
 
         {isTyping && (
           <div className="flex gap-3 animate-fade-up">
-            <div className="w-8 h-8 rounded-full bg-primary text-primary-foreground flex items-center justify-center">
+            <div className="w-8 h-8 rounded-full bg-coach text-coach-foreground flex items-center justify-center">
               <Brain className="h-4 w-4" />
             </div>
-            <div className="bg-primary text-primary-foreground rounded-lg px-4 py-2.5">
+            <div className="bg-coach text-coach-foreground rounded-lg px-4 py-2.5">
               <div className="flex gap-1">
                 <span className="w-2 h-2 bg-muted-foreground/50 rounded-full animate-pulse-subtle" />
                 <span className="w-2 h-2 bg-muted-foreground/50 rounded-full animate-pulse-subtle [animation-delay:150ms]" />
@@ -156,7 +156,7 @@ export function CoachChat() {
             onClick={sendMessage}
             disabled={!input.trim() || isTyping}
             size="icon"
-            className="shrink-0 bg-primary hover:bg-primary/90 text-primary-foreground"
+            className="shrink-0 bg-coach hover:bg-coach/90 text-coach-foreground"
           >
             <Send className="h-4 w-4" />
           </Button>
