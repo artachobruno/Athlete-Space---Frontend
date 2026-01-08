@@ -11,6 +11,7 @@ import { useUnitSystem } from '@/hooks/useUnitSystem';
 import { useQuery } from '@tanstack/react-query';
 import { fetchActivityStreams } from '@/lib/api';
 import { useMemo } from 'react';
+import { normalizeRoutePointsFromStreams } from '@/lib/route-utils';
 
 interface ActivityExpandedContentProps {
   activity: CompletedActivity;
@@ -37,7 +38,7 @@ export function ActivityExpandedContent({ activity }: ActivityExpandedContentPro
     enabled: !!activity.id,
   });
 
-  // Extract route coordinates from streams
+  // Extract route coordinates from streams using normalization utility
   const routeCoordinates = useMemo<[number, number][] | undefined>(() => {
     // Debug logging
     if (streamsData) {
@@ -52,42 +53,18 @@ export function ActivityExpandedContent({ activity }: ActivityExpandedContentPro
       console.warn('[ActivityExpandedContent] Streams error:', streamsError);
     }
     
-    const routePoints = streamsData?.route_points;
+    // Use normalization utility to handle all route point formats
+    const coords = normalizeRoutePointsFromStreams(streamsData);
     
-    // Ensure routePoints is actually an array
-    if (!routePoints || !Array.isArray(routePoints) || routePoints.length === 0) {
-      console.log('[ActivityExpandedContent] No route points available:', {
-        hasRoutePoints: !!routePoints,
-        isArray: Array.isArray(routePoints),
-        length: Array.isArray(routePoints) ? routePoints.length : 'N/A',
-      });
+    console.debug('[ActivityExpandedContent] Normalized coordinates:', coords.length, 'points');
+    
+    // Return undefined if no valid coordinates found
+    if (coords.length === 0) {
+      console.log('[ActivityExpandedContent] No valid route points after normalization');
       return undefined;
     }
     
-    // Convert number[][] to [number, number][]
-    // route_points is in format [[lat, lng], [lat, lng], ...]
-    try {
-      const coords = routePoints
-        .map((coord): [number, number] | null => {
-          if (Array.isArray(coord) && coord.length >= 2) {
-            const lat = typeof coord[0] === 'number' ? coord[0] : 0;
-            const lng = typeof coord[1] === 'number' ? coord[1] : 0;
-            return [lat, lng];
-          }
-          return null;
-        })
-        .filter((coord): coord is [number, number] => coord !== null && (coord[0] !== 0 || coord[1] !== 0));
-      
-      console.log('[ActivityExpandedContent] Processed coordinates:', {
-        total: coords.length,
-        sample: coords.length > 0 ? coords[0] : null,
-      });
-      
-      return coords.length > 0 ? coords : undefined;
-    } catch (error) {
-      console.error('[ActivityExpandedContent] Error processing route points:', error);
-      return undefined;
-    }
+    return coords;
   }, [streamsData, streamsError]);
   
   // Calculate comparison (using km for calculations, convert for display)

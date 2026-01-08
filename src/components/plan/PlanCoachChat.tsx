@@ -32,10 +32,13 @@ export function PlanCoachChat() {
         content: response.reply || 'I understand. Let me think about that.',
       }]);
     } catch (error) {
+      const apiError = error as { message?: string; status?: number };
+      const errorContent = apiError.message || 'Sorry, I encountered an error. Please try again.';
+      
       console.error('Failed to send message:', error);
       setMessages(prev => [...prev, {
         role: 'coach' as const,
-        content: 'Sorry, I encountered an error. Please try again.',
+        content: errorContent,
       }]);
     } finally {
       setIsTyping(false);

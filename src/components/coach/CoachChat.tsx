@@ -65,10 +65,13 @@ export function CoachChat() {
       };
       setMessages(prev => [...prev, coachMessage]);
     } catch (error) {
+      const apiError = error as { message?: string; status?: number };
+      const errorContent = apiError.message || 'Sorry, I encountered an error. Please try again.';
+      
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: 'coach',
-        content: 'Sorry, I encountered an error. Please try again.',
+        content: errorContent,
         timestamp: new Date(),
       };
       setMessages(prev => [...prev, errorMessage]);

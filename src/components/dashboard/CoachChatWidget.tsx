@@ -42,10 +42,13 @@ export function CoachChatWidget() {
       };
       setMessages(prev => [...prev, coachMessage]);
     } catch (error) {
+      const apiError = error as { message?: string; status?: number };
+      const errorContent = apiError.message || 'Sorry, please try again.';
+      
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: 'coach',
-        content: 'Sorry, please try again.',
+        content: errorContent,
       };
       setMessages(prev => [...prev, errorMessage]);
     } finally {

@@ -1111,10 +1111,34 @@ export const sendCoachChat = async (
     if (options?.days_to_race !== undefined) {
       payload.days_to_race = options.days_to_race;
     }
+    
+    console.log("[API] Coach chat payload:", { 
+      messageLength: message.length,
+      hasDays: options?.days !== undefined,
+      hasDaysToRace: options?.days_to_race !== undefined 
+    });
+    
     const response = await api.post("/coach/chat", payload);
     return response as unknown as { reply?: string; intent?: string };
   } catch (error) {
-    console.error("[API] Failed to send coach chat:", error);
+    const apiError = error as ApiError;
+    console.error("[API] Failed to send coach chat:", {
+      message: apiError.message,
+      status: apiError.status,
+      code: apiError.code,
+      details: apiError.details,
+      userMessage: message.substring(0, 50) + (message.length > 50 ? '...' : ''),
+    });
+    
+    // Provide more specific error messages based on status code
+    if (apiError.status === 500) {
+      const enhancedError: ApiError = {
+        ...apiError,
+        message: "The coach service is temporarily unavailable. Please try again in a moment.",
+      };
+      throw enhancedError;
+    }
+    
     throw error;
   }
 };
