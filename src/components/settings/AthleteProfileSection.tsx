@@ -151,7 +151,7 @@ export function AthleteProfileSection() {
 
       const updateData: Partial<import('@/types').AthleteProfile> = {
         name: profile.name,
-        email: profile.email,
+        // Email is changed through /auth/change-email endpoint, not through profile update
         gender: profile.gender === 'not-specified' ? '' : profile.gender,
         location: profile.location,
         unitSystem: profile.unitSystem,
@@ -261,8 +261,12 @@ export function AthleteProfileSection() {
               id="email"
               type="email"
               value={profile.email}
-              onChange={(e) => setProfile({ ...profile, email: e.target.value })}
+              disabled
+              className="bg-muted"
             />
+            <p className="text-xs text-muted-foreground">
+              Email cannot be changed here. Use the Privacy & Security section to change your email.
+            </p>
           </div>
         </div>
 

@@ -1,45 +1,32 @@
 import { ReactNode, useEffect } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
 import { auth } from '@/lib/auth';
-import { getStoredProfile } from '@/lib/storage';
 
 interface ProtectedRouteProps {
   children: ReactNode;
-  requireAuth?: boolean; // If false, allows access after onboarding even without auth
 }
 
 /**
- * ProtectedRoute component that redirects to onboarding if user is not authenticated.
- * This prevents users from accessing protected routes without a valid auth token.
+ * ProtectedRoute component that redirects to login if user is not authenticated.
+ * This enforces that all protected routes require valid credentials.
  * 
- * If requireAuth is false, allows access after onboarding completion even without full auth.
+ * Since credentials are mandatory, there is no path that allows access without auth.
  */
-export function ProtectedRoute({ children, requireAuth = true }: ProtectedRouteProps) {
+export function ProtectedRoute({ children }: ProtectedRouteProps) {
   const location = useLocation();
   const isAuthenticated = auth.isLoggedIn();
 
   useEffect(() => {
-    // If not authenticated and not already on onboarding, redirect
-    if (!isAuthenticated && location.pathname !== '/onboarding') {
-      // Clear any stale token
+    // If not authenticated, clear any stale token
+    if (!isAuthenticated) {
       auth.clear();
     }
-  }, [isAuthenticated, location.pathname]);
+  }, [isAuthenticated]);
 
-  // If auth is required, check for token
-  if (requireAuth && !isAuthenticated) {
-    // Redirect to onboarding, preserving the attempted route for after login
-    return <Navigate to="/onboarding" replace state={{ from: location }} />;
-  }
-
-  // If auth is not required, check if onboarding is complete
-  if (!requireAuth && !isAuthenticated) {
-    const profile = getStoredProfile();
-    if (!profile?.onboardingComplete) {
-      // Onboarding not complete, redirect to onboarding
-      return <Navigate to="/onboarding" replace state={{ from: location }} />;
-    }
-    // Onboarding complete but no auth - allow access (user can connect Strava later)
+  // Always require authentication - credentials are mandatory
+  if (!isAuthenticated) {
+    // Redirect to login, preserving the attempted route for after login
+    return <Navigate to="/login" replace state={{ from: location }} />;
   }
 
   return <>{children}</>;

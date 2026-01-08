@@ -628,6 +628,25 @@ export const changePassword = async (
 };
 
 /**
+ * Changes user email.
+ */
+export const changeEmail = async (
+  emailData: {
+    new_email: string;
+    password: string;
+  }
+): Promise<{ success: boolean; message: string }> => {
+  console.log("[API] Changing email");
+  try {
+    const response = await api.post("/auth/change-email", emailData);
+    return response as unknown as { success: boolean; message: string };
+  } catch (error) {
+    console.error("[API] Failed to change email:", error);
+    throw error;
+  }
+};
+
+/**
  * Gets Strava integration status.
  */
 export const getStravaStatus = async (): Promise<{ connected: boolean; activity_count?: number }> => {

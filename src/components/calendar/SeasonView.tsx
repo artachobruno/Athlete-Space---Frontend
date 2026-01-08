@@ -14,8 +14,9 @@ import { fetchCalendarSeason, fetchActivities, fetchOverview } from '@/lib/api';
 import { getSeasonIntelligence } from '@/lib/intelligence';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueries } from '@tanstack/react-query';
 import { Loader2, Flag, Target, RefreshCw } from 'lucide-react';
+import type { CompletedActivity } from '@/types';
 
 interface SeasonViewProps {
   currentDate: Date;
@@ -44,14 +45,69 @@ export function SeasonView({ currentDate }: SeasonViewProps) {
     retry: 1,
   });
 
-  // Use consistent query key to share cache
-  const { data: activities, isLoading: activitiesLoading } = useQuery({
-    queryKey: ['activities', 'limit', 100],
-    queryFn: () => fetchActivities({ limit: 100 }),
-    retry: 1,
-    staleTime: 5 * 60 * 1000, // 5 minutes
-    gcTime: 30 * 60 * 1000, // 30 minutes
+  // Calculate how many months back we need to fetch activities for
+  // We'll fetch activities for the current season plus buffer months to ensure we have historical data
+  const monthsToFetch = useMemo(() => {
+    const now = new Date();
+    const monthsDiff = (currentDate.getFullYear() - now.getFullYear()) * 12 + (currentDate.getMonth() - now.getMonth());
+    return Math.max(0, monthsDiff + 3);
+  }, [currentDate]);
+
+  // Fetch activities with pagination to cover the date range being viewed
+  const activityQueryConfigs = useMemo(() => {
+    const configs = [];
+    // Always fetch the first page (most recent 100 activities)
+    configs.push({
+      queryKey: ['activities', 'limit', 100, 'offset', 0],
+      queryFn: () => fetchActivities({ limit: 100, offset: 0 }),
+    });
+    
+    // If we need to go back further, fetch additional pages
+    const pagesNeeded = Math.ceil(monthsToFetch / 3); // ~3 months per 100 activities
+    for (let page = 1; page <= pagesNeeded && page <= 10; page++) { // Limit to 10 pages (1000 activities max)
+      configs.push({
+        queryKey: ['activities', 'limit', 100, 'offset', page * 100],
+        queryFn: () => fetchActivities({ limit: 100, offset: page * 100 }),
+      });
+    }
+    return configs;
+  }, [monthsToFetch]);
+
+  // Execute all activity queries using useQueries
+  const activityQueryResults = useQueries({
+    queries: activityQueryConfigs.map(config => ({
+      ...config,
+      retry: 1,
+      staleTime: 5 * 60 * 1000, // 5 minutes
+      gcTime: 30 * 60 * 1000, // 30 minutes
+    })),
   });
+
+  // Combine all activity results
+  const activities = useMemo(() => {
+    const allActivities: CompletedActivity[] = [];
+    const seenIds = new Set<string>();
+    
+    for (const result of activityQueryResults) {
+      if (result.data && Array.isArray(result.data)) {
+        for (const activity of result.data) {
+          if (activity && activity.id && !seenIds.has(activity.id)) {
+            seenIds.add(activity.id);
+            allActivities.push(activity);
+          }
+        }
+      }
+    }
+    
+    // Sort by date descending (most recent first)
+    return allActivities.sort((a, b) => {
+      const dateA = new Date(a.date).getTime();
+      const dateB = new Date(b.date).getTime();
+      return dateB - dateA;
+    });
+  }, [activityQueryResults]);
+
+  const activitiesLoading = activityQueryResults.some(q => q.isLoading);
 
   const { data: overview, isLoading: overviewLoading } = useQuery({
     queryKey: ['overview', 90],

@@ -4,9 +4,10 @@ import type { AthleteProfile } from "@/types";
 
 // Minimal user type for auth context (matches what /me returns)
 // This is a subset of the full profile - just enough for authentication
+// Email is now mandatory - all users must have credentials
 export type AuthUser = {
   id: string;
-  email: string | null;
+  email: string; // Required - all users must have email
   onboarding_complete: boolean;
   strava_connected: boolean;
 };
@@ -266,10 +267,16 @@ export async function fetchCurrentUser(): Promise<AuthUser | null> {
       }
       
       // Create a valid user object from the response
-      // Default values for optional fields if backend doesn't provide them
+      // Email is mandatory - if backend doesn't provide it, this is an error state
+      if (!backendResponse.email) {
+        console.warn("[Auth] /me response missing email (email is mandatory):", response);
+        auth.clear();
+        return null;
+      }
+      
       const userProfile: AuthUser = {
         id: userId,
-        email: backendResponse.email ?? null,
+        email: backendResponse.email,
         onboarding_complete: backendResponse.onboarding_complete ?? false,
         strava_connected: backendResponse.strava_connected ?? false,
       };

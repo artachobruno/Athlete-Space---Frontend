@@ -17,12 +17,18 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { Shield, Lock, Eye, EyeOff, Loader2, Trash2 } from 'lucide-react';
+import { Shield, Lock, Eye, EyeOff, Loader2, Trash2, Mail } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { auth } from '@/lib/auth';
-import { fetchPrivacySettings, updatePrivacySettings, changePassword } from '@/lib/api';
+import { useAuth } from '@/context/AuthContext';
+import { fetchPrivacySettings, updatePrivacySettings, changePassword, changeEmail } from '@/lib/api';
 
 export function PrivacySecuritySection() {
+  const { user } = useAuth();
+  const [newEmail, setNewEmail] = useState('');
+  const [emailPassword, setEmailPassword] = useState('');
+  const [showEmailPassword, setShowEmailPassword] = useState(false);
+  const [isChangingEmail, setIsChangingEmail] = useState(false);
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -58,6 +64,71 @@ export function PrivacySecuritySection() {
     };
     loadPrivacySettings();
   }, []);
+
+  const handleEmailChange = async () => {
+    if (!newEmail || !emailPassword) {
+      toast({
+        title: 'Missing fields',
+        description: 'Please fill in both email and password fields',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    // Basic email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(newEmail)) {
+      toast({
+        title: 'Invalid email',
+        description: 'Please enter a valid email address',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (newEmail === user?.email) {
+      toast({
+        title: 'Email unchanged',
+        description: 'New email is the same as current email',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setIsChangingEmail(true);
+    try {
+      await changeEmail({
+        new_email: newEmail,
+        password: emailPassword,
+      });
+      toast({
+        title: 'Email changed',
+        description: 'Your email has been updated successfully. Please log in with your new email.',
+      });
+      setNewEmail('');
+      setEmailPassword('');
+      // Refresh user to get updated email
+      window.location.reload();
+    } catch (error) {
+      console.error('Failed to change email:', error);
+      const apiError = error as { status?: number; message?: string };
+      let errorMessage = 'Could not update email';
+      if (apiError.status === 401) {
+        errorMessage = 'Incorrect password';
+      } else if (apiError.status === 409) {
+        errorMessage = 'This email is already in use';
+      } else if (apiError.message) {
+        errorMessage = apiError.message;
+      }
+      toast({
+        title: 'Failed to change email',
+        description: errorMessage,
+        variant: 'destructive',
+      });
+    } finally {
+      setIsChangingEmail(false);
+    }
+  };
 
   const handlePasswordChange = async () => {
     if (!passwordData.currentPassword || !passwordData.newPassword) {
@@ -173,6 +244,95 @@ export function PrivacySecuritySection() {
         </div>
       </CardHeader>
       <CardContent className="space-y-8">
+        {/* Change Email */}
+        <div className="space-y-4">
+          <div>
+            <h3 className="text-sm font-medium text-foreground mb-1">Change Email</h3>
+            <p className="text-xs text-muted-foreground">
+              Update your email address. You'll need to log in with your new email after the change.
+            </p>
+          </div>
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="current-email">Current Email</Label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  id="current-email"
+                  type="email"
+                  value={user?.email || ''}
+                  disabled
+                  className="pl-10 bg-muted"
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="new-email">New Email</Label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  id="new-email"
+                  type="email"
+                  placeholder="new@example.com"
+                  value={newEmail}
+                  onChange={(e) => setNewEmail(e.target.value)}
+                  className="pl-10"
+                  disabled={isChangingEmail}
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="email-password">Password</Label>
+              <div className="relative">
+                <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                <Input
+                  id="email-password"
+                  type={showEmailPassword ? 'text' : 'password'}
+                  placeholder="Enter your password to confirm"
+                  value={emailPassword}
+                  onChange={(e) => setEmailPassword(e.target.value)}
+                  className="pl-10"
+                  disabled={isChangingEmail}
+                />
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
+                  onClick={() => setShowEmailPassword(!showEmailPassword)}
+                >
+                  {showEmailPassword ? (
+                    <EyeOff className="h-4 w-4 text-muted-foreground" />
+                  ) : (
+                    <Eye className="h-4 w-4 text-muted-foreground" />
+                  )}
+                </Button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                Enter your password to confirm the email change
+              </p>
+            </div>
+            <Button
+              onClick={handleEmailChange}
+              disabled={isChangingEmail || !newEmail || !emailPassword}
+            >
+              {isChangingEmail ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Changing...
+                </>
+              ) : (
+                <>
+                  <Mail className="h-4 w-4 mr-2" />
+                  Change Email
+                </>
+              )}
+            </Button>
+          </div>
+        </div>
+
+        <Separator />
+
         {/* Change Password */}
         <div className="space-y-4">
           <div>

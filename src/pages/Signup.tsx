@@ -4,10 +4,9 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Activity, Mail, Lock, HelpCircle, Shield, AlertCircle } from 'lucide-react';
+import { Mail, Lock, HelpCircle, Shield, AlertCircle } from 'lucide-react';
 import { signupWithEmail } from '@/lib/auth';
 import { useAuth } from '@/context/AuthContext';
-import { initiateStravaConnect } from '@/lib/api';
 import { Logo } from '@/components/Logo';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
@@ -61,16 +60,6 @@ export default function Signup() {
     }
   };
 
-  const handleStravaSignup = async () => {
-    try {
-      await initiateStravaConnect();
-      // User will be redirected to Strava, then back to /onboarding with token
-    } catch (err) {
-      setError('Failed to connect with Strava. Please try again.');
-      console.error('[Signup] Strava connection error:', err);
-    }
-  };
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-accent/5 flex flex-col">
       {/* Header */}
@@ -106,26 +95,6 @@ export default function Signup() {
 
           <Card className="border-border/50 shadow-lg">
             <CardContent className="space-y-4 pt-6">
-              {/* Strava - Primary CTA */}
-              <Button
-                className="w-full"
-                size="lg"
-                onClick={handleStravaSignup}
-                disabled={isLoading}
-              >
-                <Activity className="h-4 w-4 mr-2 text-[#FC4C02]" />
-                Continue with Strava (recommended)
-              </Button>
-
-              <div className="relative">
-                <div className="absolute inset-0 flex items-center">
-                  <span className="w-full border-t border-border" />
-                </div>
-                <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-card px-2 text-muted-foreground">Or sign up with email</span>
-                </div>
-              </div>
-
               {/* Email Signup Form */}
               <form onSubmit={handleSignup} className="space-y-4">
                 {error && (
@@ -136,7 +105,7 @@ export default function Signup() {
                 )}
 
                 <div className="space-y-2">
-                  <Label htmlFor="signup-email">Email</Label>
+                  <Label htmlFor="signup-email">Email <span className="text-destructive">*</span></Label>
                   <div className="relative">
                     <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
@@ -150,12 +119,13 @@ export default function Signup() {
                       }}
                       className="pl-10"
                       disabled={isLoading}
+                      required
                     />
                   </div>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="signup-password">Password</Label>
+                  <Label htmlFor="signup-password">Password <span className="text-destructive">*</span></Label>
                   <div className="relative">
                     <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
@@ -169,6 +139,8 @@ export default function Signup() {
                       }}
                       className="pl-10"
                       disabled={isLoading}
+                      required
+                      minLength={8}
                     />
                   </div>
                   <p className="text-xs text-muted-foreground">
@@ -177,7 +149,7 @@ export default function Signup() {
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="signup-confirm-password">Confirm Password</Label>
+                  <Label htmlFor="signup-confirm-password">Confirm Password <span className="text-destructive">*</span></Label>
                   <div className="relative">
                     <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                     <Input
@@ -191,6 +163,8 @@ export default function Signup() {
                       }}
                       className="pl-10"
                       disabled={isLoading}
+                      required
+                      minLength={8}
                     />
                   </div>
                 </div>
