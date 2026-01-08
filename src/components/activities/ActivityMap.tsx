@@ -1,11 +1,17 @@
 import { MapPin, Navigation } from 'lucide-react';
 import RouteMap from '../RouteMap';
+import { useEffect } from 'react';
 
 interface ActivityMapProps {
   coordinates?: [number, number][]; // [lat, lng]
 }
 
 export function ActivityMap({ coordinates }: ActivityMapProps) {
+  // Debug logging
+  useEffect(() => {
+    console.log("[ActivityMap] Received coordinates:", coordinates?.length || 0, "points");
+  }, [coordinates]);
+
   // If coordinates are provided, render the actual map
   if (coordinates && coordinates.length > 0) {
     return <RouteMap coordinates={coordinates} height="h-64" />;

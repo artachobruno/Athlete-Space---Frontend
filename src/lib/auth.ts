@@ -217,6 +217,20 @@ let fetchCurrentUserPromise: Promise<AuthUser | null> | null = null;
  * @returns User profile if authenticated, null otherwise
  */
 export async function fetchCurrentUser(): Promise<AuthUser | null> {
+  // If no token exists, don't even try to fetch
+  const token = auth.getToken();
+  if (!token) {
+    console.log("[Auth] No token found, skipping /me call");
+    return null;
+  }
+  
+  // If token is expired, clear it and return null
+  if (auth.isTokenExpired()) {
+    console.log("[Auth] Token is expired, clearing");
+    auth.clear();
+    return null;
+  }
+  
   // If a request is already in flight, return the same promise
   if (fetchCurrentUserPromise) {
     return fetchCurrentUserPromise;
