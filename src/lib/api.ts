@@ -172,13 +172,57 @@ export const initiateStravaConnect = async (): Promise<void> => {
 
 /**
  * Disconnects Strava integration.
+ * Treats as success if:
+ * - HTTP 200, OR
+ * - Response has connected === false
+ * Only throws errors for status >= 500
  */
 export const disconnectStrava = async (): Promise<void> => {
   console.log("[API] Disconnecting Strava");
   try {
-    await api.post("/auth/strava/disconnect");
+    const response = await api.post("/auth/strava/disconnect");
+    
+    // Check if response indicates disconnection was successful
+    const responseData = response && typeof response === 'object' ? response : {};
+    const connected = (responseData as { connected?: boolean }).connected;
+    
+    // Success if HTTP 200 OR connected === false
+    if (connected === false) {
+      console.log("[API] Strava disconnected successfully (connected: false)");
+      return;
+    }
+    
+    // If we got here, it's HTTP 200 (success)
+    console.log("[API] Strava disconnected successfully (HTTP 200)");
   } catch (error) {
-    console.error("[API] Failed to disconnect Strava:", error);
+    const apiError = error as { status?: number; message?: string };
+    
+    // Only throw errors for status >= 500 (server errors)
+    // Treat 4xx (client errors) as success - user is already disconnected
+    if (apiError.status && apiError.status >= 500) {
+      console.error("[API] Failed to disconnect Strava (server error):", error);
+      throw error;
+    }
+    
+    // For 4xx errors, check if response indicates already disconnected
+    if (apiError.status && apiError.status < 500) {
+      // Check if error response has connected === false
+      const errorDetails = apiError as { details?: { connected?: boolean } };
+      if (errorDetails.details && typeof errorDetails.details === 'object') {
+        const connected = (errorDetails.details as { connected?: boolean }).connected;
+        if (connected === false) {
+          console.log("[API] Strava already disconnected (connected: false in error response)");
+          return;
+        }
+      }
+      
+      // For other 4xx errors, still treat as success (user is likely already disconnected)
+      console.log("[API] Strava disconnect treated as success (4xx error, likely already disconnected)");
+      return;
+    }
+    
+    // If no status code, it might be a network error - throw it
+    console.error("[API] Failed to disconnect Strava (unknown error):", error);
     throw error;
   }
 };

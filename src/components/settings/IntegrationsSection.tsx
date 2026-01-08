@@ -134,12 +134,23 @@ export function IntegrationsSection() {
           description: 'Your Strava account has been disconnected',
         });
       } catch (error) {
-        console.error('Failed to disconnect Strava:', error);
-        toast({
-          title: 'Failed to disconnect',
-          description: error instanceof Error ? error.message : 'Could not disconnect Strava',
-          variant: 'destructive',
-        });
+        // Only show error if status >= 500 (server errors)
+        const apiError = error as { status?: number; message?: string };
+        if (apiError.status && apiError.status >= 500) {
+          console.error('Failed to disconnect Strava:', error);
+          toast({
+            title: 'Failed to disconnect',
+            description: error instanceof Error ? error.message : 'Could not disconnect Strava',
+            variant: 'destructive',
+          });
+        } else {
+          // For 4xx or other errors, treat as success (user is likely already disconnected)
+          setStravaStatus({ connected: false });
+          toast({
+            title: 'Strava disconnected',
+            description: 'Your Strava account has been disconnected',
+          });
+        }
       } finally {
         setConnectingId(null);
       }

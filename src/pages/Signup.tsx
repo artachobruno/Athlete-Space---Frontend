@@ -67,7 +67,8 @@ export default function Signup() {
       console.log("[SIGNUP] Token stored, refreshing user state...");
       await refreshUser();
       console.log("[SIGNUP] User state refreshed, navigating to onboarding");
-      navigate('/onboarding');
+      // Use replace: true to prevent back button from going back to signup
+      navigate('/onboarding', { replace: true });
     } catch (err: unknown) {
       const apiError = err as { status?: number; message?: string };
       if (apiError.status === 409) {
