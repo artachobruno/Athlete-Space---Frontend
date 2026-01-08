@@ -21,23 +21,30 @@ interface ActivityChartsProps {
 
 // Process real stream data from backend API only
 function processStreamData(
-  streamsData: { time?: number[]; route_points?: number[][]; elevation?: number[]; pace?: (number | null)[]; heartrate?: number[]; power?: number[]; cadence?: number[] } | undefined
+  streamsData: { time?: unknown; route_points?: unknown; elevation?: unknown; pace?: unknown; heartrate?: unknown; power?: unknown; cadence?: unknown } | undefined
 ) {
-  // Only process if we have time stream data from backend
-  if (!streamsData?.time || streamsData.time.length === 0) {
+  // Only process if we have a real time array
+  if (!streamsData || !Array.isArray(streamsData.time) || streamsData.time.length === 0) {
     return [];
   }
-  
+
   const timeArray = streamsData.time;
+
+  const heartrate = Array.isArray(streamsData.heartrate) ? streamsData.heartrate : undefined;
+  const paceStream = Array.isArray(streamsData.pace) ? streamsData.pace : undefined;
+  const powerStream = Array.isArray(streamsData.power) ? streamsData.power : undefined;
+  const elevationStream = Array.isArray(streamsData.elevation) ? streamsData.elevation : undefined;
+  const cadenceStream = Array.isArray(streamsData.cadence) ? streamsData.cadence : undefined;
+
   const maxPoints = Math.min(timeArray.length, 200); // Limit to 200 points for performance
   const step = Math.max(1, Math.floor(timeArray.length / maxPoints));
-  
-  const hasHeartRate = streamsData.heartrate && streamsData.heartrate.length > 0;
-  const hasPace = streamsData.pace && streamsData.pace.length > 0;
-  const hasPower = streamsData.power && streamsData.power.length > 0;
-  const hasElevation = streamsData.elevation && streamsData.elevation.length > 0;
-  const hasCadence = streamsData.cadence && streamsData.cadence.length > 0;
-  
+
+  const hasHeartRate = !!heartrate?.length;
+  const hasPace = !!paceStream?.length;
+  const hasPower = !!powerStream?.length;
+  const hasElevation = !!elevationStream?.length;
+  const hasCadence = !!cadenceStream?.length;
+
   return timeArray
     .filter((_, index) => index % step === 0)
     .slice(0, maxPoints)
@@ -45,44 +52,32 @@ function processStreamData(
       const actualIndex = index * step;
       const time = Math.round(timeSeconds);
       const timeLabel = `${Math.floor(time / 60)}:${String(time % 60).padStart(2, '0')}`;
-      
+
       // Get heart rate from real stream data only
-      const heartRate = hasHeartRate && streamsData.heartrate
-        ? (streamsData.heartrate[actualIndex] !== null && streamsData.heartrate[actualIndex] !== undefined
-            ? Math.round(streamsData.heartrate[actualIndex])
-            : undefined)
-        : undefined;
-      
+      const hrValue = hasHeartRate ? heartrate?.[actualIndex] : undefined;
+      const heartRate = typeof hrValue === 'number' && Number.isFinite(hrValue) ? Math.round(hrValue) : undefined;
+
       // Get pace from real stream data (already in min/km, null when stopped)
       let pace: number | undefined;
-      if (hasPace && streamsData.pace) {
-        const paceValue = streamsData.pace[actualIndex];
-        if (paceValue !== null && paceValue !== undefined && paceValue > 0) {
+      if (hasPace) {
+        const paceValue = paceStream?.[actualIndex];
+        if (typeof paceValue === 'number' && Number.isFinite(paceValue) && paceValue > 0) {
           pace = paceValue;
         }
       }
-      
+
       // Get power from real stream data only
-      const power = hasPower && streamsData.power
-        ? (streamsData.power[actualIndex] !== null && streamsData.power[actualIndex] !== undefined
-            ? Math.round(streamsData.power[actualIndex])
-            : undefined)
-        : undefined;
-      
+      const powerValue = hasPower ? powerStream?.[actualIndex] : undefined;
+      const power = typeof powerValue === 'number' && Number.isFinite(powerValue) ? Math.round(powerValue) : undefined;
+
       // Get elevation from real stream data only
-      const elevation = hasElevation && streamsData.elevation
-        ? (streamsData.elevation[actualIndex] !== null && streamsData.elevation[actualIndex] !== undefined
-            ? streamsData.elevation[actualIndex]
-            : 0)
-        : 0;
-      
+      const elevationValue = hasElevation ? elevationStream?.[actualIndex] : undefined;
+      const elevation = typeof elevationValue === 'number' && Number.isFinite(elevationValue) ? elevationValue : 0;
+
       // Get cadence from real stream data only
-      const cadence = hasCadence && streamsData.cadence
-        ? (streamsData.cadence[actualIndex] !== null && streamsData.cadence[actualIndex] !== undefined
-            ? Math.round(streamsData.cadence[actualIndex])
-            : undefined)
-        : undefined;
-      
+      const cadenceValue = hasCadence ? cadenceStream?.[actualIndex] : undefined;
+      const cadence = typeof cadenceValue === 'number' && Number.isFinite(cadenceValue) ? Math.round(cadenceValue) : undefined;
+
       return {
         time,
         timeLabel,
