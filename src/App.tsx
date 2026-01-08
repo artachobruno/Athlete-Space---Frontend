@@ -95,10 +95,12 @@ const AuthRedirectHandler = () => {
 };
 
 // Component to validate auth on app load (inside router for navigation)
-// Note: This hook may still be used by other parts of the app
-// The AuthContext now handles the main auth state via /me endpoint
+// NOTE: AuthContext already handles auth validation via /me endpoint
+// This component is kept for backward compatibility but does nothing
+// AuthContext.refreshUser() is called on mount and handles all auth state
 const AuthValidator = () => {
-  useValidateAuth();
+  // AuthContext already handles auth validation - no need to duplicate
+  // useValidateAuth() is redundant and can cause race conditions
   return null;
 };
 

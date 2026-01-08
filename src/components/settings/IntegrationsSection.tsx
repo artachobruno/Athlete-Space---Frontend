@@ -9,6 +9,7 @@ import {
 } from 'lucide-react';
 import { getStravaStatus, initiateStravaConnect, disconnectStrava, syncStravaData } from '@/lib/api';
 import { toast } from '@/hooks/use-toast';
+import { useAuth } from '@/context/AuthContext';
 
 interface Integration {
   id: string;
@@ -67,6 +68,7 @@ const integrations: Integration[] = [
 ];
 
 export function IntegrationsSection() {
+  const { user, status } = useAuth();
   const [connectingId, setConnectingId] = useState<string | null>(null);
   const [stravaStatus, setStravaStatus] = useState<{ connected: boolean; athlete_id?: string | number } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -74,8 +76,12 @@ export function IntegrationsSection() {
   const [lastSync, setLastSync] = useState<string | null>(null);
 
   useEffect(() => {
+    // Only load integration status when authenticated
+    // This component is inside RequireAuth, but gate the API call anyway
+    if (status !== "authenticated" || !user) return;
+    
     loadIntegrationStatus();
-  }, []);
+  }, [status, user]);
 
   const loadIntegrationStatus = async () => {
     setIsLoading(true);

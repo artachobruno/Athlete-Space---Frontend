@@ -1,9 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useAuth } from '@/context/AuthContext';
 import { auth } from '@/lib/auth';
 
 /**
  * Auth state that tracks if authentication is ready.
  * This prevents race conditions where API calls are made before auth is initialized.
+ * 
+ * Now uses AuthContext for consistency instead of checking localStorage directly.
  */
 export interface AuthState {
   isLoaded: boolean;
@@ -29,46 +31,15 @@ export interface AuthState {
  * ```
  */
 export function useAuthState(): AuthState {
-  const [state, setState] = useState<AuthState>({
-    isLoaded: false,
-    isAuthenticated: false,
-    token: null,
-  });
-
-  useEffect(() => {
-    // Check auth state on mount and when storage changes
-    const checkAuth = () => {
-      const token = auth.getToken();
-      const isAuthenticated = auth.isLoggedIn(); // This checks token exists and is not expired
-      
-      setState({
-        isLoaded: true,
-        isAuthenticated,
-        token: isAuthenticated ? token : null,
-      });
-    };
-
-    // Initial check
-    checkAuth();
-
-    // Listen for storage changes (token might be set in another tab/window)
-    const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'auth_token') {
-        checkAuth();
-      }
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-
-    // Also check periodically in case token is set in same window
-    const interval = setInterval(checkAuth, 1000);
-
-    return () => {
-      window.removeEventListener('storage', handleStorageChange);
-      clearInterval(interval);
-    };
-  }, []);
-
-  return state;
+  const { status, user, loading } = useAuth();
+  const token = auth.getToken();
+  
+  // isLoaded = auth check is complete (not loading)
+  // isAuthenticated = user exists and status is authenticated
+  return {
+    isLoaded: !loading && status !== "loading",
+    isAuthenticated: status === "authenticated" && !!user,
+    token: status === "authenticated" ? token : null,
+  };
 }
 
