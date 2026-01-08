@@ -1,19 +1,26 @@
 import { useLocation, Navigate } from "react-router-dom";
 import { useEffect } from "react";
-import { auth } from "@/lib/auth";
+import { useAuth } from "@/context/AuthContext";
 
 const NotFound = () => {
   const location = useLocation();
-  const isAuthenticated = auth.isLoggedIn();
+  const { user, status } = useAuth();
 
   useEffect(() => {
     console.error("404 Error: User attempted to access non-existent route:", location.pathname);
   }, [location.pathname]);
 
-  // If user is not authenticated, redirect to onboarding instead of showing 404
-  if (!isAuthenticated) {
+  // If user is not authenticated, redirect to login
+  if (status === "unauthenticated" || !user) {
+    return <Navigate to="/login" replace />;
+  }
+
+  // If authenticated but onboarding incomplete, redirect to onboarding
+  if (status === "authenticated" && user && !user.onboarding_complete) {
     return <Navigate to="/onboarding" replace />;
   }
+
+  // If onboarding complete, show 404 (user can navigate back to dashboard)
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-muted">

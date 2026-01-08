@@ -109,7 +109,7 @@ const AuthValidator = () => {
 const OAuthTokenHandler = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { refreshUser } = useAuth();
+  const { refreshUser, user } = useAuth();
   
   useEffect(() => {
     // Check for token in URL params (from Strava OAuth callback)
@@ -120,11 +120,17 @@ const OAuthTokenHandler = () => {
     
     if (error) {
       console.error('[OAuth] Error in URL:', error);
-      // Remove error from URL and redirect to onboarding
+      // Remove error from URL and redirect appropriately
       const newSearchParams = new URLSearchParams(searchParams);
       newSearchParams.delete('error');
       const newSearch = newSearchParams.toString();
-      navigate(`/onboarding${newSearch ? `?${newSearch}` : ''}`, { replace: true });
+      
+      // If onboarding already complete, go to dashboard; otherwise onboarding
+      if (user?.onboarding_complete) {
+        navigate(`/dashboard${newSearch ? `?${newSearch}` : ''}`, { replace: true });
+      } else {
+        navigate(`/onboarding${newSearch ? `?${newSearch}` : ''}`, { replace: true });
+      }
       return;
     }
     
@@ -155,7 +161,7 @@ const OAuthTokenHandler = () => {
         console.error('[OAuth] ❌ Failed to store token!');
       }
     }
-  }, [location, navigate, refreshUser]);
+  }, [location, navigate, refreshUser, user]);
   
   return null;
 };

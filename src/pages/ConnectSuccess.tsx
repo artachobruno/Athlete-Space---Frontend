@@ -26,9 +26,14 @@ export default function ConnectSuccess() {
       return;
     }
 
-    // If Strava isn't connected, send to onboarding
+    // If Strava isn't connected, check onboarding status
     if (!user.strava_connected) {
-      navigate("/onboarding", { replace: true });
+      // If onboarding already complete, go to dashboard (user can connect Strava from settings)
+      if (user.onboarding_complete) {
+        navigate("/dashboard", { replace: true });
+      } else {
+        navigate("/onboarding", { replace: true });
+      }
       return;
     }
 
@@ -58,6 +63,7 @@ export default function ConnectSuccess() {
   }, []);
 
   const handleContinue = () => {
+    // Always go to dashboard if onboarding is complete
     if (user?.onboarding_complete) {
       navigate("/dashboard", { replace: true });
     } else {
