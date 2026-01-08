@@ -2130,6 +2130,11 @@ api.interceptors.request.use(
     
     const token = auth.getToken();
     
+    // STEP 5: Verify interceptor is reading from localStorage
+    if (config.url === '/me' || config.url?.endsWith('/me')) {
+      console.log("[API] Interceptor token check for /me:", token ? token.slice(0, 10) + "..." : "NONE");
+    }
+    
     // Check if token is expired before adding it
     if (token) {
       // Check expiration without clearing (isTokenExpired doesn't clear)
@@ -2156,7 +2161,18 @@ api.interceptors.request.use(
           (config.headers as Record<string, string>).Authorization = authHeader;
         }
         
+        // STEP 6: Confirm /me is called with Authorization header
         // Debug logging (always log to help diagnose)
+        const isMeEndpoint = config.url === '/me' || config.url?.endsWith('/me');
+        if (isMeEndpoint) {
+          console.log('[API] Adding Authorization header for /me:', {
+            hasToken: !!token,
+            tokenLength: token.length,
+            headerValue: authHeader.substring(0, 30) + '...',
+            method: config.method?.toUpperCase(),
+          });
+        }
+        
         console.log('[API] Adding Authorization header:', {
           hasToken: !!token,
           tokenLength: token.length,

@@ -132,7 +132,7 @@ export const auth = {
 
 /**
  * Login with email and password.
- * Backend returns: {"token": "..."} on success
+ * Backend returns: {"access_token": "...", "token_type": "bearer", "user_id": "...", "email": "..."} on success
  * Backend returns: {"error": "user_not_found", "message": "..."} with 404
  * Backend returns: {"error": "invalid_credentials", "message": "..."} with 401
  * @throws Error with status code: 404 (account not found), 401 (wrong password), 500 (server error)
@@ -140,17 +140,42 @@ export const auth = {
 export async function loginWithEmail(email: string, password: string): Promise<void> {
   try {
     const response = await api.post("/auth/login", { email, password });
-    // Backend returns token in response: {"token": "..."}
-    if (response && typeof response === 'object' && 'token' in response) {
-      const token = (response as { token: string }).token;
-      if (token && typeof token === 'string') {
-        auth.setToken(token);
-      } else {
-        throw new Error("Backend returned invalid token format");
-      }
-    } else {
-      throw new Error("Backend did not return a token");
+    
+    // Log RAW response for debugging
+    console.log("[LOGIN] RAW RESPONSE:", response);
+    console.log("[LOGIN] RESPONSE.DATA:", response.data);
+    console.log("[LOGIN] RESPONSE.DATA KEYS:", Object.keys(response.data || {}));
+    
+    // Extract token from correct field (access_token, not token)
+    // API interceptor returns response.data directly, so response IS the data
+    const responseData = response && typeof response === 'object' ? response : {};
+    // Try both access_token and token for backward compatibility
+    const token = (responseData as { access_token?: string; token?: string }).access_token 
+      || (responseData as { access_token?: string; token?: string }).token;
+    
+    // Verify token exists and store immediately
+    if (!token || typeof token !== 'string') {
+      console.error("[LOGIN] access_token/token missing from response", responseData);
+      throw new Error("Login succeeded but access_token missing from response");
     }
+    
+    console.log("[LOGIN] Token extracted. Length:", token.length);
+    console.log("[LOGIN] Token preview:", token.substring(0, 20) + "...");
+    
+    // Store token immediately (no conditionals)
+    auth.setToken(token);
+    
+    // Verify token was stored
+    const storedToken = auth.getToken();
+    if (!storedToken || storedToken !== token) {
+      console.error("[LOGIN] Token storage failed!", {
+        expected: token.substring(0, 20),
+        stored: storedToken?.substring(0, 20),
+      });
+      throw new Error("Failed to store authentication token");
+    }
+    
+    console.log("[LOGIN] Token stored successfully. Length:", storedToken.length);
   } catch (error) {
     // normalizeError already extracts message from backend's {"message": "..."} format
     const apiError = error as { status?: number; message?: string; details?: unknown };
@@ -164,24 +189,47 @@ export async function loginWithEmail(email: string, password: string): Promise<v
 
 /**
  * Sign up with email and password.
- * Backend returns: {"token": "..."} on success
+ * Backend returns: {"access_token": "...", "token_type": "bearer", "user_id": "...", "email": "..."} on success
  * Backend returns: {"error": "email_already_exists", "message": "..."} with 409
  * @throws Error with status code: 409 (account exists), 400 (validation error), 500 (server error)
  */
 export async function signupWithEmail(email: string, password: string): Promise<void> {
   try {
     const response = await api.post("/auth/signup", { email, password });
-    // Backend returns token in response: {"token": "..."}
-    if (response && typeof response === 'object' && 'token' in response) {
-      const token = (response as { token: string }).token;
-      if (token && typeof token === 'string') {
-        auth.setToken(token);
-      } else {
-        throw new Error("Backend returned invalid token format");
-      }
-    } else {
-      throw new Error("Backend did not return a token");
+    
+    // STEP 1: Log RAW response for debugging
+    console.log("[SIGNUP] RAW RESPONSE:", response);
+    console.log("[SIGNUP] RESPONSE.DATA:", response.data);
+    console.log("[SIGNUP] RESPONSE.DATA KEYS:", Object.keys(response.data || {}));
+    
+    // STEP 2: Extract token from correct field (access_token, not token)
+    // API interceptor returns response.data directly, so response IS the data
+    const responseData = response && typeof response === 'object' ? response : {};
+    const token = (responseData as { access_token?: string }).access_token;
+    
+    // STEP 3: Verify token exists and store immediately
+    if (!token || typeof token !== 'string') {
+      console.error("[SIGNUP] access_token missing from response", responseData);
+      throw new Error("Signup succeeded but access_token missing from response");
     }
+    
+    console.log("[SIGNUP] Token extracted. Length:", token.length);
+    console.log("[SIGNUP] Token preview:", token.substring(0, 20) + "...");
+    
+    // Store token immediately (no conditionals)
+    auth.setToken(token);
+    
+    // Verify token was stored
+    const storedToken = auth.getToken();
+    if (!storedToken || storedToken !== token) {
+      console.error("[SIGNUP] Token storage failed!", {
+        expected: token.substring(0, 20),
+        stored: storedToken?.substring(0, 20),
+      });
+      throw new Error("Failed to store authentication token");
+    }
+    
+    console.log("[SIGNUP] Token stored successfully. Length:", storedToken.length);
   } catch (error) {
     // normalizeError already extracts message from backend's {"message": "..."} format
     const apiError = error as { status?: number; message?: string; details?: unknown };

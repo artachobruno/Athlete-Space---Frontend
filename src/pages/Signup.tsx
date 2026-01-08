@@ -62,8 +62,11 @@ export default function Signup() {
     setIsLoading(true);
 
     try {
+      // STEP 4: Force auth state refresh after token is stored
       await signupWithEmail(email, password);
+      console.log("[SIGNUP] Token stored, refreshing user state...");
       await refreshUser();
+      console.log("[SIGNUP] User state refreshed, navigating to onboarding");
       navigate('/onboarding');
     } catch (err: unknown) {
       const apiError = err as { status?: number; message?: string };
