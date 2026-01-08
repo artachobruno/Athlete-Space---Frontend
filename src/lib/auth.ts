@@ -163,7 +163,7 @@ export async function loginWithEmail(email: string, password: string): Promise<v
     console.log("[LOGIN] Token preview:", token.substring(0, 20) + "...");
     
     // Store token immediately (no conditionals)
-    auth.setToken(token);
+        auth.setToken(token);
     
     // Verify token was stored
     const storedToken = auth.getToken();
@@ -217,7 +217,7 @@ export async function signupWithEmail(email: string, password: string): Promise<
     console.log("[SIGNUP] Token preview:", token.substring(0, 20) + "...");
     
     // Store token immediately (no conditionals)
-    auth.setToken(token);
+        auth.setToken(token);
     
     // Verify token was stored
     const storedToken = auth.getToken();

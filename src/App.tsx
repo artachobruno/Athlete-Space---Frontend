@@ -139,18 +139,32 @@ const OAuthTokenHandler = () => {
         tokenLength: token.length,
         tokenPreview: token.substring(0, 30) + '...',
       });
-
-      // Store the token immediately
+      
+      // Store the token
       auth.setToken(token);
-
-      // IMPORTANT: Navigate to the post-OAuth page immediately.
-      // This avoids race conditions with PublicOnly redirects on /login or /signup.
-      navigate('/connect-success', { replace: true });
-
-      // Refresh user state in the background (ConnectSuccess also refreshes on mount)
-      refreshUser().catch((err) => {
-        console.error('[OAuth] Failed to refresh user after token storage:', err);
-      });
+      
+      // Verify token was stored
+      const storedToken = auth.getToken();
+      if (storedToken) {
+        console.log('[OAuth] ✅ Token stored successfully');
+        // Refresh user state from backend, then send to appropriate page
+        refreshUser()
+          .then(() => {
+            // After refresh, check if user has completed onboarding
+            // If yes, go directly to dashboard (they can see Strava is connected in settings)
+            // If no, go to connect-success page
+            // Note: We need to check user state after refresh, but refreshUser doesn't return the user
+            // So we'll let connect-success page handle the redirect based on onboarding_complete
+            navigate('/connect-success', { replace: true });
+          })
+          .catch((err) => {
+            console.error('[OAuth] Failed to refresh user after token storage:', err);
+            // Still navigate to success page – it will handle missing user
+            navigate('/connect-success', { replace: true });
+          });
+      } else {
+        console.error('[OAuth] ❌ Failed to store token!');
+      }
     }
   }, [location, navigate, refreshUser, user]);
   

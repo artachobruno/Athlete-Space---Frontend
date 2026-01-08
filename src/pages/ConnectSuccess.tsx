@@ -35,7 +35,7 @@ export default function ConnectSuccess() {
     }
   }, [hasRefreshed, refreshUser]);
 
-  // Kick off sync once we have refreshed user data
+  // Auto-redirect to dashboard if onboarding is complete (don't wait for user to click Continue)
   useEffect(() => {
     // Wait for auth to load AND user to be refreshed
     if (authLoading || !hasRefreshed) return;
@@ -46,15 +46,29 @@ export default function ConnectSuccess() {
       return;
     }
 
-    // If we've already started sync, don't redirect - we're in the middle of the flow
-    // This prevents redirect loops when strava_connected hasn't been updated yet
+    // CRITICAL: If onboarding is complete, go directly to dashboard
+    // This prevents users from being sent back to onboarding
+    if (user.onboarding_complete) {
+      console.log("[ConnectSuccess] Onboarding complete, redirecting to dashboard");
+      navigate("/dashboard", { replace: true });
+      return;
+    }
+  }, [authLoading, user, navigate, hasRefreshed]);
+
+  // Kick off sync once we have refreshed user data (only if onboarding not complete)
+  useEffect(() => {
+    // Wait for auth to load AND user to be refreshed
+    if (authLoading || !hasRefreshed) return;
+
+    // If no user at all, skip sync
+    if (!user) return;
+
+    // If onboarding is complete, skip sync (we're redirecting to dashboard)
+    if (user.onboarding_complete) return;
+
+    // If we've already started sync, don't start again
     if (syncStartedRef.current) return;
 
-    // IMPORTANT: We trust that the OAuth flow brought us here correctly.
-    // The backend OAuth callback should have already connected Strava.
-    // If strava_connected is false, it might just be a race condition with the refresh.
-    // Instead of redirecting immediately, start the sync anyway - it will fail gracefully if not connected.
-    
     // Start syncing - the triggerHistoricalSync will handle the case where Strava isn't connected
     if (syncStatus === "idle") {
       syncStartedRef.current = true;
@@ -75,11 +89,24 @@ export default function ConnectSuccess() {
     }
   }, [authLoading, user, syncStatus, navigate, hasRefreshed]);
 
-  const handleContinue = () => {
+  const handleContinue = async () => {
+    // Refresh user to get latest onboarding_complete status before redirecting
+    // This ensures we have the most up-to-date data
+    try {
+      await refreshUser();
+    } catch (err) {
+      console.error("[ConnectSuccess] Failed to refresh user in handleContinue:", err);
+    }
+
+    // Get fresh user data after refresh
+    // Note: refreshUser updates the context, but we need to wait for it to propagate
+    // For now, check the current user state - the auto-redirect useEffect should catch it if stale
     // Always go to dashboard if onboarding is complete
     if (user?.onboarding_complete) {
+      console.log("[ConnectSuccess] handleContinue: Onboarding complete, going to dashboard");
       navigate("/dashboard", { replace: true });
     } else {
+      console.log("[ConnectSuccess] handleContinue: Onboarding not complete, going to onboarding");
       navigate("/onboarding", { replace: true });
     }
   };

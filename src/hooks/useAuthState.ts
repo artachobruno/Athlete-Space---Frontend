@@ -32,7 +32,7 @@ export interface AuthState {
  */
 export function useAuthState(): AuthState {
   const { status, user, loading } = useAuth();
-  const token = auth.getToken();
+      const token = auth.getToken();
   
   // isLoaded = auth check is complete (not loading)
   // isAuthenticated = user exists and status is authenticated
