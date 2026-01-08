@@ -31,7 +31,7 @@ export function useAutoMatchSessions(enabled: boolean = true) {
         const weekStartStr = weekStart.toISOString().split('T')[0];
 
         const weekData = await fetchCalendarWeek(weekStartStr);
-        const sessions = weekData?.sessions || [];
+        const sessions = Array.isArray(weekData?.sessions) ? weekData.sessions : [];
 
         // Filter to only planned sessions
         const plannedSessions = sessions.filter(
