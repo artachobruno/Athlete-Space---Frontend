@@ -60,7 +60,7 @@ export function PlanCoachChat() {
           {/* Header */}
           <div className="flex items-center justify-between p-3 border-b border-border bg-muted/50">
             <div className="flex items-center gap-2">
-              <Brain className="h-5 w-5 text-primary" />
+              <Brain className="h-5 w-5 text-coach" />
               <span className="font-medium text-sm">Ask about this week</span>
             </div>
             <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setIsOpen(false)}>
@@ -82,7 +82,7 @@ export function PlanCoachChat() {
                   className={cn(
                     'max-w-[85%] rounded-lg px-3 py-2 text-sm',
                     msg.role === 'coach'
-                      ? 'bg-primary text-primary-foreground'
+                      ? 'bg-coach text-coach-foreground'
                       : 'bg-accent text-accent-foreground'
                   )}
                 >
@@ -92,7 +92,7 @@ export function PlanCoachChat() {
             ))}
             {isTyping && (
               <div className="flex">
-                <div className="bg-primary text-primary-foreground rounded-lg px-3 py-2">
+                <div className="bg-coach text-coach-foreground rounded-lg px-3 py-2">
                   <div className="flex gap-1">
                     <span className="w-1.5 h-1.5 bg-muted-foreground/50 rounded-full animate-pulse-subtle" />
                     <span className="w-1.5 h-1.5 bg-muted-foreground/50 rounded-full animate-pulse-subtle [animation-delay:150ms]" />
@@ -117,7 +117,7 @@ export function PlanCoachChat() {
                 onClick={sendMessage}
                 disabled={!input.trim() || isTyping}
                 size="icon"
-                className="h-9 w-9 shrink-0 bg-primary hover:bg-primary/90 text-primary-foreground"
+                className="h-9 w-9 shrink-0 bg-coach hover:bg-coach/90 text-coach-foreground"
               >
                 <Send className="h-4 w-4" />
               </Button>

@@ -88,7 +88,7 @@ export function AppLayout({ children }: AppLayoutProps) {
                   className={cn(
                     'flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-colors',
                     isActive
-                      ? 'bg-primary text-primary-foreground border-l-2 border-primary -ml-[2px] pl-[14px]'
+                      ? 'bg-coach text-coach-foreground border-l-2 border-coach -ml-[2px] pl-[14px]'
                       : 'text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground'
                   )}
                 >
@@ -107,7 +107,7 @@ export function AppLayout({ children }: AppLayoutProps) {
               className={cn(
                 'flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors w-full',
                 location.pathname === '/faq'
-                  ? 'bg-primary text-primary-foreground'
+                  ? 'bg-coach text-coach-foreground'
                   : 'text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground'
               )}
             >
@@ -120,7 +120,7 @@ export function AppLayout({ children }: AppLayoutProps) {
               className={cn(
                 'flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors w-full',
                 location.pathname === '/privacy'
-                  ? 'bg-primary text-primary-foreground'
+                  ? 'bg-coach text-coach-foreground'
                   : 'text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground'
               )}
             >

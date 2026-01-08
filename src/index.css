@@ -23,6 +23,10 @@
     --primary: 220 45% 20%;
     --primary-foreground: 40 20% 98%;
 
+    /* Coach - consistent deep slate blue in all modes */
+    --coach: 220 45% 20%;
+    --coach-foreground: 40 20% 98%;
+
     /* Secondary - subtle warm gray */
     --secondary: 40 10% 94%;
     --secondary-foreground: 220 25% 15%;
@@ -95,6 +99,10 @@
 
     --primary: 40 15% 92%;
     --primary-foreground: 220 25% 8%;
+
+    /* Coach - consistent deep slate blue in all modes */
+    --coach: 220 45% 25%;
+    --coach-foreground: 40 20% 98%;
 
     --secondary: 220 20% 16%;
     --secondary-foreground: 40 15% 92%;
