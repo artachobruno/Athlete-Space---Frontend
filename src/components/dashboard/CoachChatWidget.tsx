@@ -76,7 +76,7 @@ export function CoachChatWidget() {
     <Card className="flex flex-col h-full min-h-[200px]">
       <CardHeader className="pb-2 flex-row items-center justify-between space-y-0">
         <div className="flex items-center gap-2">
-          <Brain className="h-4 w-4 text-[#2F4F4F]" />
+          <Brain className="h-4 w-4 text-primary" />
           <CardTitle className="text-sm font-medium text-muted-foreground">Coach</CardTitle>
         </div>
         <Link to="/coach">
@@ -100,12 +100,12 @@ export function CoachChatWidget() {
                 className={cn(
                   'w-6 h-6 rounded-full flex items-center justify-center shrink-0',
                   message.role === 'coach'
-                    ? 'bg-[#2F4F4F]/10 text-[#2F4F4F]'
+                    ? 'bg-primary text-primary-foreground'
                     : 'bg-muted text-muted-foreground'
                 )}
               >
                 {message.role === 'coach' ? (
-                  <Brain className="h-3 w-3 text-[#2F4F4F]" />
+                  <Brain className="h-3 w-3" />
                 ) : (
                   <User className="h-3 w-3" />
                 )}
@@ -114,7 +114,7 @@ export function CoachChatWidget() {
                 className={cn(
                   'max-w-[80%] rounded-lg px-3 py-1.5 text-xs',
                   message.role === 'coach'
-                    ? 'bg-[#2F4F4F]/20 text-foreground'
+                    ? 'bg-primary text-primary-foreground'
                     : 'bg-accent text-accent-foreground'
                 )}
               >
@@ -125,10 +125,10 @@ export function CoachChatWidget() {
 
           {isTyping && (
             <div className="flex gap-2">
-              <div className="w-6 h-6 rounded-full bg-accent text-accent-foreground flex items-center justify-center">
-                <Brain className="h-3 w-3 text-[#2F4F4F]" />
+              <div className="w-6 h-6 rounded-full bg-primary text-primary-foreground flex items-center justify-center">
+                <Brain className="h-3 w-3" />
               </div>
-            <div className="bg-[#2F4F4F]/20 rounded-lg px-3 py-1.5">
+            <div className="bg-primary text-primary-foreground rounded-lg px-3 py-1.5">
               <div className="flex gap-1">
                 <span className="w-1.5 h-1.5 bg-muted-foreground/50 rounded-full animate-pulse-subtle" />
                 <span className="w-1.5 h-1.5 bg-muted-foreground/50 rounded-full animate-pulse-subtle [animation-delay:150ms]" />
@@ -152,7 +152,7 @@ export function CoachChatWidget() {
             onClick={sendMessage}
             disabled={!input.trim() || isTyping}
             size="icon"
-            className="h-9 w-9 shrink-0 bg-[#2F4F4F] hover:bg-[#2F4F4F]/90 text-white"
+            className="h-9 w-9 shrink-0 bg-primary hover:bg-primary/90 text-primary-foreground"
           >
             <Send className="h-3.5 w-3.5" />
           </Button>
