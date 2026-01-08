@@ -273,17 +273,21 @@ export const updateUserProfile = async (
     if (dateOfBirth !== undefined) backendData.date_of_birth = dateOfBirth;
     
     // Handle weight_kg (snake_case) or weight (camelCase)
+    // Backend expects integer, so round any fractional values
     const weight = (profileData as { weight_kg?: number; weight?: number | string }).weight_kg 
       || (profileData as { weight_kg?: number; weight?: number | string }).weight;
     if (weight !== undefined) {
-      backendData.weight_kg = typeof weight === 'number' ? weight : parseFloat(String(weight));
+      const weightValue = typeof weight === 'number' ? weight : parseFloat(String(weight));
+      backendData.weight_kg = Math.round(weightValue);
     }
     
     // Handle height_cm (snake_case) or height (camelCase)
+    // Backend expects integer, so round any fractional values
     const height = (profileData as { height_cm?: number; height?: number | string }).height_cm 
       || (profileData as { height_cm?: number; height?: number | string }).height;
     if (height !== undefined) {
-      backendData.height_cm = typeof height === 'number' ? height : parseFloat(String(height));
+      const heightValue = typeof height === 'number' ? height : parseFloat(String(height));
+      backendData.height_cm = Math.round(heightValue);
     }
     
     if (profileData.location !== undefined) backendData.location = profileData.location;

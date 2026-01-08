@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
-import { Bot, TrendingUp, TrendingDown, Minus, AlertTriangle, Zap } from 'lucide-react';
+import { Brain, TrendingUp, TrendingDown, Minus, AlertTriangle, Zap } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { TrainingLoad } from '@/types';
 
@@ -99,8 +99,8 @@ export function CoachInterpretation({ data, isAdvanced }: CoachInterpretationPro
     <Card>
       <CardContent className="p-5">
         <div className="flex items-start gap-4">
-          <div className={cn('p-2.5 rounded-lg bg-accent/10', analysis.stateColor)}>
-            <Bot className="h-5 w-5" />
+          <div className="p-2.5 rounded-lg bg-coach text-coach-foreground">
+            <Brain className="h-5 w-5" />
           </div>
           <div className="flex-1">
             <div className="flex items-center gap-2 mb-2">

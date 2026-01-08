@@ -673,8 +673,8 @@ export function OnboardingChat({ onComplete, isComplete }: OnboardingChatProps) 
 
         {isTyping && (
           <div className="flex gap-3 animate-fade-up">
-            <div className="w-9 h-9 rounded-full bg-accent/10 flex items-center justify-center shrink-0">
-              <Brain className="h-4 w-4 text-[#2F4F4F]" />
+            <div className="w-9 h-9 rounded-full bg-coach text-coach-foreground flex items-center justify-center shrink-0">
+              <Brain className="h-4 w-4" />
             </div>
             <div className="bg-muted/50 rounded-2xl rounded-tl-sm px-4 py-3">
               <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
@@ -731,10 +731,10 @@ function MessageBubble({ message }: { message: Message }) {
     <div className={cn('flex gap-3', !isCoach && 'flex-row-reverse')}>
       <div className={cn(
         'w-9 h-9 rounded-full flex items-center justify-center shrink-0',
-        isCoach ? 'bg-[#2F4F4F]/10' : 'bg-muted'
+        isCoach ? 'bg-coach text-coach-foreground' : 'bg-muted'
       )}>
         {isCoach ? (
-          <Brain className="h-4 w-4 text-[#2F4F4F]" />
+          <Brain className="h-4 w-4" />
         ) : (
           <User className="h-4 w-4 text-muted-foreground" />
         )}

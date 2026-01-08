@@ -168,11 +168,11 @@ export function AthleteProfileSection() {
       }
 
       if (profile.weight) {
-        // Convert to kg if needed (backend expects weight_kg)
+        // Convert to kg if needed (backend expects weight_kg as integer)
         const weightInKg = profile.unitSystem === 'metric'
           ? parseFloat(profile.weight)
           : parseFloat(profile.weight) * 0.453592;
-        updateData.weight = weightInKg;
+        updateData.weight = Math.round(weightInKg);
       }
 
       if (profile.dateOfBirth) {
@@ -180,11 +180,11 @@ export function AthleteProfileSection() {
       }
 
       if (profile.height) {
-        // Convert to cm if needed (backend expects height_cm)
+        // Convert to cm if needed (backend expects height_cm as integer)
         const heightInCm = profile.unitSystem === 'metric'
           ? parseFloat(profile.height)
           : parseFloat(profile.height) * 2.54;
-        updateData.height = heightInCm;
+        updateData.height = Math.round(heightInCm);
       }
 
       await updateUserProfile(updateData);
