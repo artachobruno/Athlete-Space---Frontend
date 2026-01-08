@@ -731,7 +731,7 @@ function MessageBubble({ message }: { message: Message }) {
     <div className={cn('flex gap-3', !isCoach && 'flex-row-reverse')}>
       <div className={cn(
         'w-9 h-9 rounded-full flex items-center justify-center shrink-0',
-        isCoach ? 'bg-[#2F4F4F]/20' : 'bg-muted'
+        isCoach ? 'bg-[#2F4F4F]/10' : 'bg-muted'
       )}>
         {isCoach ? (
           <Brain className="h-4 w-4 text-[#2F4F4F]" />
@@ -742,7 +742,7 @@ function MessageBubble({ message }: { message: Message }) {
       <div className={cn(
         'max-w-[80%] rounded-2xl px-4 py-3',
         isCoach 
-          ? 'bg-[#2F4F4F]/20 rounded-tl-sm text-foreground' 
+          ? 'bg-[#2F4F4F]/10 rounded-tl-sm text-foreground' 
           : 'bg-accent text-accent-foreground rounded-tr-sm'
       )}>
         <p className="text-sm leading-relaxed">{message.content}</p>

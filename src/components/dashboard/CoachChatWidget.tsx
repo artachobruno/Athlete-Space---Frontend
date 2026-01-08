@@ -114,7 +114,7 @@ export function CoachChatWidget() {
                 className={cn(
                   'max-w-[80%] rounded-lg px-3 py-1.5 text-xs',
                   message.role === 'coach'
-                    ? 'bg-coach text-coach-foreground'
+                    ? 'bg-[#2F4F4F]/10 text-foreground'
                     : 'bg-accent text-accent-foreground'
                 )}
               >

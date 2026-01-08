@@ -30,7 +30,7 @@ export function ActivityExpandedContent({ activity }: ActivityExpandedContentPro
   
   // Fetch activity streams for route data
   // Note: retry is set to false to avoid retrying on CORS errors
-  const { data: streamsData, error: streamsError } = useQuery({
+  const { data: streamsData, error: streamsError, isLoading: streamsLoading } = useQuery({
     queryKey: ['activityStreams', activity.id],
     queryFn: () => fetchActivityStreams(activity.id),
     retry: false, // Don't retry - CORS errors won't resolve with retries
@@ -39,17 +39,35 @@ export function ActivityExpandedContent({ activity }: ActivityExpandedContentPro
 
   // Extract route coordinates from streams
   const routeCoordinates = useMemo<[number, number][] | undefined>(() => {
+    // Debug logging
+    if (streamsData) {
+      console.log('[ActivityExpandedContent] Streams data received:', {
+        hasRoutePoints: !!streamsData.route_points,
+        routePointsType: Array.isArray(streamsData.route_points) ? 'array' : typeof streamsData.route_points,
+        routePointsLength: Array.isArray(streamsData.route_points) ? streamsData.route_points.length : 0,
+      });
+    }
+    
+    if (streamsError) {
+      console.warn('[ActivityExpandedContent] Streams error:', streamsError);
+    }
+    
     const routePoints = streamsData?.route_points;
     
     // Ensure routePoints is actually an array
     if (!routePoints || !Array.isArray(routePoints) || routePoints.length === 0) {
+      console.log('[ActivityExpandedContent] No route points available:', {
+        hasRoutePoints: !!routePoints,
+        isArray: Array.isArray(routePoints),
+        length: Array.isArray(routePoints) ? routePoints.length : 'N/A',
+      });
       return undefined;
     }
     
     // Convert number[][] to [number, number][]
     // route_points is in format [[lat, lng], [lat, lng], ...]
     try {
-      return routePoints
+      const coords = routePoints
         .map((coord): [number, number] | null => {
           if (Array.isArray(coord) && coord.length >= 2) {
             const lat = typeof coord[0] === 'number' ? coord[0] : 0;
@@ -59,11 +77,18 @@ export function ActivityExpandedContent({ activity }: ActivityExpandedContentPro
           return null;
         })
         .filter((coord): coord is [number, number] => coord !== null && (coord[0] !== 0 || coord[1] !== 0));
+      
+      console.log('[ActivityExpandedContent] Processed coordinates:', {
+        total: coords.length,
+        sample: coords.length > 0 ? coords[0] : null,
+      });
+      
+      return coords.length > 0 ? coords : undefined;
     } catch (error) {
       console.error('[ActivityExpandedContent] Error processing route points:', error);
       return undefined;
     }
-  }, [streamsData]);
+  }, [streamsData, streamsError]);
   
   // Calculate comparison (using km for calculations, convert for display)
   const durationDiff = ((activity.duration - mockPlannedData.duration) / mockPlannedData.duration) * 100;
@@ -181,7 +206,24 @@ export function ActivityExpandedContent({ activity }: ActivityExpandedContentPro
           <ActivityCharts activity={activity} />
         </TabsContent>
         <TabsContent value="map" className="mt-4">
-          <ActivityMap coordinates={routeCoordinates} />
+          {streamsLoading ? (
+            <div className="flex items-center justify-center h-64 text-muted-foreground">
+              <div className="text-center">
+                <p className="text-sm">Loading route data...</p>
+              </div>
+            </div>
+          ) : streamsError ? (
+            <div className="flex items-center justify-center h-64 text-muted-foreground">
+              <div className="text-center">
+                <p className="text-sm font-medium mb-1">Unable to load route map</p>
+                <p className="text-xs">
+                  {streamsError instanceof Error ? streamsError.message : 'Failed to fetch route data'}
+                </p>
+              </div>
+            </div>
+          ) : (
+            <ActivityMap coordinates={routeCoordinates} />
+          )}
         </TabsContent>
       </Tabs>
     </div>

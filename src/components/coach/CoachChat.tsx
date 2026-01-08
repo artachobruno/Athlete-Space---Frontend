@@ -114,7 +114,7 @@ export function CoachChat() {
               className={cn(
                 'max-w-[75%] rounded-lg px-4 py-2.5',
                 message.role === 'coach'
-                  ? 'bg-coach text-coach-foreground'
+                  ? 'bg-[#2F4F4F]/10 text-foreground'
                   : 'bg-accent text-accent-foreground'
               )}
             >
@@ -128,7 +128,7 @@ export function CoachChat() {
             <div className="w-8 h-8 rounded-full bg-coach text-coach-foreground flex items-center justify-center">
               <Brain className="h-4 w-4" />
             </div>
-            <div className="bg-coach text-coach-foreground rounded-lg px-4 py-2.5">
+            <div className="bg-[#2F4F4F]/10 rounded-lg px-4 py-2.5">
               <div className="flex gap-1">
                 <span className="w-2 h-2 bg-muted-foreground/50 rounded-full animate-pulse-subtle" />
                 <span className="w-2 h-2 bg-muted-foreground/50 rounded-full animate-pulse-subtle [animation-delay:150ms]" />
