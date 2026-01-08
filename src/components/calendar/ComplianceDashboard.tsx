@@ -46,13 +46,13 @@ export function ComplianceDashboard({
   });
 
   const weeklyStats = useMemo<ComplianceStats | null>(() => {
-    if (!weekData?.sessions) return null;
+    const sessions = Array.isArray(weekData?.sessions) ? weekData.sessions as CalendarSession[] : [];
+    if (sessions.length === 0) return null;
 
-    const sessions = weekData.sessions as CalendarSession[];
-    const planned = sessions.filter(s => s.status === 'planned' || s.status === 'completed');
-    const completed = sessions.filter(s => s.status === 'completed');
-    const skipped = sessions.filter(s => s.status === 'skipped');
-    const cancelled = sessions.filter(s => s.status === 'cancelled');
+    const planned = sessions.filter(s => s?.status === 'planned' || s?.status === 'completed');
+    const completed = sessions.filter(s => s?.status === 'completed');
+    const skipped = sessions.filter(s => s?.status === 'skipped');
+    const cancelled = sessions.filter(s => s?.status === 'cancelled');
 
     const complianceRate = planned.length > 0 
       ? Math.round((completed.length / planned.length) * 100)
@@ -70,13 +70,13 @@ export function ComplianceDashboard({
   }, [weekData]);
 
   const seasonStats = useMemo<ComplianceStats | null>(() => {
-    if (!seasonData?.sessions) return null;
+    const sessions = Array.isArray(seasonData?.sessions) ? seasonData.sessions as CalendarSession[] : [];
+    if (sessions.length === 0) return null;
 
-    const sessions = seasonData.sessions as CalendarSession[];
-    const planned = sessions.filter(s => s.status === 'planned' || s.status === 'completed');
-    const completed = sessions.filter(s => s.status === 'completed');
-    const skipped = sessions.filter(s => s.status === 'skipped');
-    const cancelled = sessions.filter(s => s.status === 'cancelled');
+    const planned = sessions.filter(s => s?.status === 'planned' || s?.status === 'completed');
+    const completed = sessions.filter(s => s?.status === 'completed');
+    const skipped = sessions.filter(s => s?.status === 'skipped');
+    const cancelled = sessions.filter(s => s?.status === 'cancelled');
 
     const complianceRate = planned.length > 0 
       ? Math.round((completed.length / planned.length) * 100)
