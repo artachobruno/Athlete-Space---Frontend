@@ -148,13 +148,15 @@ const OAuthTokenHandler = () => {
       if (storedToken) {
         console.log('[OAuth] ✅ Token stored successfully');
         // Refresh user state from backend, then send to appropriate page
+        // CRITICAL: Wait for refreshUser to complete and check onboarding status
         refreshUser()
           .then(() => {
-            // After refresh, check if user has completed onboarding
-            // If yes, go directly to dashboard (they can see Strava is connected in settings)
-            // If no, go to connect-success page
-            // Note: We need to check user state after refresh, but refreshUser doesn't return the user
-            // So we'll let connect-success page handle the redirect based on onboarding_complete
+            // After refresh, get the updated user from context
+            // We need to check onboarding_complete after refresh
+            // But refreshUser updates the context, so we need to wait a tick for React to update
+            // For now, navigate to connect-success which will check onboarding_complete
+            // and redirect appropriately
+            console.log('[OAuth] User refreshed, navigating to connect-success');
             navigate('/connect-success', { replace: true });
           })
           .catch((err) => {

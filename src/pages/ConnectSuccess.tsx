@@ -38,21 +38,34 @@ export default function ConnectSuccess() {
   // Auto-redirect to dashboard if onboarding is complete (don't wait for user to click Continue)
   useEffect(() => {
     // Wait for auth to load AND user to be refreshed
-    if (authLoading || !hasRefreshed) return;
+    if (authLoading || !hasRefreshed) {
+      console.log("[ConnectSuccess] Waiting for auth/user refresh:", { authLoading, hasRefreshed });
+      return;
+    }
 
     // If no user at all, send to login
     if (!user) {
+      console.log("[ConnectSuccess] No user found, redirecting to login");
       navigate("/login", { replace: true });
       return;
     }
 
+    // Log user state for debugging
+    console.log("[ConnectSuccess] User state after refresh:", {
+      onboarding_complete: user.onboarding_complete,
+      strava_connected: user.strava_connected,
+      email: user.email,
+    });
+
     // CRITICAL: If onboarding is complete, go directly to dashboard
     // This prevents users from being sent back to onboarding
     if (user.onboarding_complete) {
-      console.log("[ConnectSuccess] Onboarding complete, redirecting to dashboard");
+      console.log("[ConnectSuccess] ✅ Onboarding complete, redirecting to dashboard");
       navigate("/dashboard", { replace: true });
       return;
     }
+
+    console.log("[ConnectSuccess] Onboarding not complete, staying on connect-success page");
   }, [authLoading, user, navigate, hasRefreshed]);
 
   // Kick off sync once we have refreshed user data (only if onboarding not complete)
