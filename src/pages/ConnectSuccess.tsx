@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -16,6 +16,9 @@ export default function ConnectSuccess() {
   const [syncStatus, setSyncStatus] = useState<SyncStatus>("idle");
   const [syncMessage, setSyncMessage] = useState<string | null>(null);
   const [hasRefreshed, setHasRefreshed] = useState(false);
+  
+  // Track if we've already started syncing to prevent redirect loops
+  const syncStartedRef = useRef(false);
 
   // Refresh user to get latest strava_connected / onboarding_complete FIRST
   // This is critical - we need fresh user data after OAuth callback
@@ -43,19 +46,18 @@ export default function ConnectSuccess() {
       return;
     }
 
-    // If Strava isn't connected, check onboarding status
-    if (!user.strava_connected) {
-      // If onboarding already complete, go to dashboard (user can connect Strava from settings)
-      if (user.onboarding_complete) {
-        navigate("/dashboard", { replace: true });
-      } else {
-        navigate("/onboarding", { replace: true });
-      }
-      return;
-    }
+    // If we've already started sync, don't redirect - we're in the middle of the flow
+    // This prevents redirect loops when strava_connected hasn't been updated yet
+    if (syncStartedRef.current) return;
 
-    // Start syncing only if Strava is connected
+    // IMPORTANT: We trust that the OAuth flow brought us here correctly.
+    // The backend OAuth callback should have already connected Strava.
+    // If strava_connected is false, it might just be a race condition with the refresh.
+    // Instead of redirecting immediately, start the sync anyway - it will fail gracefully if not connected.
+    
+    // Start syncing - the triggerHistoricalSync will handle the case where Strava isn't connected
     if (syncStatus === "idle") {
+      syncStartedRef.current = true;
       setSyncStatus("syncing");
       setSyncMessage("Importing your activities from Strava…");
 
