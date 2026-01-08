@@ -64,10 +64,11 @@ export function RecentActivitiesCard() {
     queryKey: ['trainingLoad', 60],
     queryFn: () => fetchTrainingLoad(60),
     retry: (failureCount, error) => {
-      // Don't retry on timeout errors
-      if (error && typeof error === 'object' && 'code' in error) {
-        const apiError = error as { code?: string; message?: string };
-        if (apiError.code === 'ECONNABORTED' || 
+      // Don't retry on timeout errors or 500 errors (fetchTrainingLoad returns empty response for 500s)
+      if (error && typeof error === 'object') {
+        const apiError = error as { code?: string; message?: string; status?: number };
+        if (apiError.status === 500 || apiError.status === 503 ||
+            apiError.code === 'ECONNABORTED' || 
             (apiError.message && apiError.message.includes('timed out'))) {
           return false;
         }
@@ -79,6 +80,11 @@ export function RecentActivitiesCard() {
   const recentActivities = useMemo(() => {
     const activitiesArray = Array.isArray(activities) ? activities : [];
     const enriched = enrichActivitiesWithTss(activitiesArray, trainingLoadData);
+    
+    // Ensure enriched is an array
+    if (!Array.isArray(enriched)) {
+      return [];
+    }
     
     // Sort by date (most recent first) and take only the 4 most recent
     const sorted = enriched.sort((a, b) => {
@@ -92,7 +98,8 @@ export function RecentActivitiesCard() {
       }
     });
     
-    return sorted.slice(0, 4); // Return only 4 most recent
+    // Ensure we return an array
+    return Array.isArray(sorted) ? sorted.slice(0, 4) : []; // Return only 4 most recent
   }, [activities, trainingLoadData]);
 
   return (
@@ -132,7 +139,7 @@ export function RecentActivitiesCard() {
           </div>
         ) : (
           <div className="space-y-3">
-            {recentActivities
+            {(Array.isArray(recentActivities) ? recentActivities : [])
               .filter((activity) => activity && activity.date && activity.id)
               .map((activity) => {
                 const Icon = sportIcons[activity.sport] || Footprints;

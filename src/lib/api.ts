@@ -1013,6 +1013,21 @@ export const fetchTrainingLoad = async (days?: number): Promise<{
       last_updated?: string;
     };
   } catch (error) {
+    // Return default empty response for 500 errors - training load is optional
+    // This prevents retry spam and allows components to handle gracefully
+    const apiError = error as { status?: number; code?: string; message?: string };
+    if (apiError.status === 500 || apiError.status === 503) {
+      console.warn("[API] Training load endpoint returned 500, returning empty response");
+      return {
+        dates: [],
+        daily_load: [],
+        daily_tss: [],
+        ctl: [],
+        atl: [],
+        tsb: [],
+      };
+    }
+    // For other errors (timeouts, network, etc.), still throw to allow components to handle
     console.error("[API] Failed to fetch training load:", error);
     throw error;
   }

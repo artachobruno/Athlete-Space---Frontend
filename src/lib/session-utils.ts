@@ -78,6 +78,11 @@ export function matchActivityToSession(
   sessions: CalendarSession[],
   dateTolerance: number = 0 // Days tolerance (0 = same day only)
 ): string | null {
+  // Ensure sessions is an array
+  if (!Array.isArray(sessions)) {
+    return null;
+  }
+
   const activityDate = new Date(activity.date);
   const activitySport = activity.sport.toLowerCase();
 

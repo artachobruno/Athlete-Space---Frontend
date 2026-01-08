@@ -85,10 +85,11 @@ export function ActivityPopup({
     queryKey: ['trainingLoad', 60],
     queryFn: () => fetchTrainingLoad(60),
     retry: (failureCount, error) => {
-      // Don't retry on timeout errors
-      if (error && typeof error === 'object' && 'code' in error) {
-        const apiError = error as { code?: string; message?: string };
-        if (apiError.code === 'ECONNABORTED' || 
+      // Don't retry on timeout errors or 500 errors (fetchTrainingLoad returns empty response for 500s)
+      if (error && typeof error === 'object') {
+        const apiError = error as { code?: string; message?: string; status?: number };
+        if (apiError.status === 500 || apiError.status === 503 ||
+            apiError.code === 'ECONNABORTED' || 
             (apiError.message && apiError.message.includes('timed out'))) {
           return false;
         }

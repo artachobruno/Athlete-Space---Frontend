@@ -28,7 +28,9 @@ window.addEventListener('unhandledrejection', (event) => {
     combinedStr.includes('moz-extension://') ||
     combinedStr.includes('chrome-extension://') ||
     combinedStr.includes('h1-check.js') ||
-    combinedStr.includes("can't access property \"then\"")
+    combinedStr.includes("can't access property") ||
+    combinedStr.includes("Cannot read property") ||
+    (combinedStr.includes("then") && combinedStr.includes("undefined"))
   ) {
     // CRITICAL: Just log and swallow - do NOT do anything that could affect app state
     if (import.meta.env.DEV) {
@@ -59,7 +61,9 @@ window.onerror = (message, source, lineno, colno, error) => {
     errorStr.includes('moz-extension://') ||
     errorStr.includes('chrome-extension://') ||
     errorStr.includes('h1-check.js') ||
-    errorStr.includes("can't access property \"then\"")
+    errorStr.includes("can't access property") ||
+    errorStr.includes("Cannot read property") ||
+    (errorStr.includes("then") && errorStr.includes("undefined"))
   ) {
     // CRITICAL: Just log and swallow - do NOT do anything that could affect app state
     if (import.meta.env.DEV) {

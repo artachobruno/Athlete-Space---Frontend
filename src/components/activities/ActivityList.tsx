@@ -38,10 +38,11 @@ export function ActivityList({ activities, initialExpandedId = null }: ActivityL
     queryKey: ['trainingLoad', 60],
     queryFn: () => fetchTrainingLoad(60),
     retry: (failureCount, error) => {
-      // Don't retry on timeout errors
-      if (error && typeof error === 'object' && 'code' in error) {
-        const apiError = error as { code?: string; message?: string };
-        if (apiError.code === 'ECONNABORTED' || 
+      // Don't retry on timeout errors or 500 errors (fetchTrainingLoad returns empty response for 500s)
+      if (error && typeof error === 'object') {
+        const apiError = error as { code?: string; message?: string; status?: number };
+        if (apiError.status === 500 || apiError.status === 503 ||
+            apiError.code === 'ECONNABORTED' || 
             (apiError.message && apiError.message.includes('timed out'))) {
           return false;
         }
@@ -56,12 +57,14 @@ export function ActivityList({ activities, initialExpandedId = null }: ActivityL
     if (!activities || !Array.isArray(activities)) {
       return [];
     }
-    return enrichActivitiesWithTss(activities, trainingLoadData);
+    const enriched = enrichActivitiesWithTss(activities, trainingLoadData);
+    // Ensure we always return an array
+    return Array.isArray(enriched) ? enriched : [];
   }, [activities, trainingLoadData]);
   
   // Expand the activity if initialExpandedId is provided
   useEffect(() => {
-    if (initialExpandedId && activities.length > 0) {
+    if (initialExpandedId && Array.isArray(activities) && activities.length > 0) {
       setExpandedId(initialExpandedId);
       // Scroll to the expanded activity after a delay to ensure it's rendered
       setTimeout(() => {
@@ -70,14 +73,14 @@ export function ActivityList({ activities, initialExpandedId = null }: ActivityL
         }
       }, 300);
     }
-  }, [initialExpandedId, activities.length]);
+  }, [initialExpandedId, activities]);
 
   const toggleExpand = (id: string) => {
     setExpandedId(expandedId === id ? null : id);
   };
 
   // Filter out invalid/empty activities
-  const validActivities = enrichedActivities.filter((activity) => {
+  const validActivities = (Array.isArray(enrichedActivities) ? enrichedActivities : []).filter((activity) => {
     if (!activity || !activity.id) {
       return false;
     }
