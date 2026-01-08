@@ -184,6 +184,43 @@ export const disconnectStrava = async (): Promise<void> => {
 };
 
 /**
+ * Initiates Google OAuth connection.
+ * Fetches OAuth URL from backend and redirects to Google.
+ */
+export const initiateGoogleConnect = async (): Promise<void> => {
+  console.log("[API] Initiating Google connect");
+  
+  try {
+    const response = await api.get("/auth/google") as unknown as { redirect_url?: string; oauth_url?: string; url?: string };
+    
+    const oauthUrl = response.redirect_url || response.oauth_url || response.url;
+    
+    if (!oauthUrl) {
+      throw new Error("Backend did not return OAuth URL");
+    }
+
+    console.log("[API] Redirecting to Google OAuth URL");
+    window.location.href = oauthUrl;
+  } catch (error) {
+    console.error("[API] Failed to initiate Google connect:", error);
+    throw error;
+  }
+};
+
+/**
+ * Disconnects Google integration.
+ */
+export const disconnectGoogle = async (): Promise<void> => {
+  console.log("[API] Disconnecting Google");
+  try {
+    await api.post("/auth/google/disconnect");
+  } catch (error) {
+    console.error("[API] Failed to disconnect Google:", error);
+    throw error;
+  }
+};
+
+/**
  * Fetches user profile from the backend.
  * 
  * IMPORTANT: This endpoint is OPTIONAL. If it fails, returns null.
