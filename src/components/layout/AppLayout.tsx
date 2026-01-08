@@ -88,11 +88,11 @@ export function AppLayout({ children }: AppLayoutProps) {
                   className={cn(
                     'flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium transition-colors',
                     isActive
-                      ? 'bg-[#2F4F4F]/20 text-[#2F4F4F] border-l-2 border-[#2F4F4F] -ml-[2px] pl-[14px]'
+                      ? 'bg-primary text-primary-foreground border-l-2 border-primary -ml-[2px] pl-[14px]'
                       : 'text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground'
                   )}
                 >
-                  <Icon className={cn("h-4 w-4", isActive && "text-[#2F4F4F]")} />
+                  <Icon className="h-4 w-4" />
                   {item.label}
                 </Link>
               );
@@ -107,11 +107,11 @@ export function AppLayout({ children }: AppLayoutProps) {
               className={cn(
                 'flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors w-full',
                 location.pathname === '/faq'
-                  ? 'bg-[#2F4F4F]/20 text-[#2F4F4F]'
+                  ? 'bg-primary text-primary-foreground'
                   : 'text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground'
               )}
             >
-              <HelpCircle className={cn("h-4 w-4", location.pathname === '/faq' && "text-[#2F4F4F]")} />
+              <HelpCircle className="h-4 w-4" />
               FAQ
             </Link>
             <Link
@@ -120,11 +120,11 @@ export function AppLayout({ children }: AppLayoutProps) {
               className={cn(
                 'flex items-center gap-2 px-3 py-2 rounded-md text-sm font-medium transition-colors w-full',
                 location.pathname === '/privacy'
-                  ? 'bg-[#2F4F4F]/20 text-[#2F4F4F]'
+                  ? 'bg-primary text-primary-foreground'
                   : 'text-sidebar-foreground/60 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground'
               )}
             >
-              <Shield className={cn("h-4 w-4", location.pathname === '/privacy' && "text-[#2F4F4F]")} />
+              <Shield className="h-4 w-4" />
               Privacy
             </Link>
             <Button
