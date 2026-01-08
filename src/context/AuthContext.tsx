@@ -44,43 +44,19 @@ export function AuthProvider({ children }: AuthProviderProps) {
     try {
       const currentUser = await fetchCurrentUser();
       
-      console.log("[AuthContext] fetchCurrentUser returned:", currentUser);
-      
-      // Explicitly handle null/undefined as unauthenticated
-      if (!currentUser || typeof currentUser !== 'object') {
-        console.log("[AuthContext] No user found - setting unauthenticated state");
-        setUser(null);
-        setStatus("unauthenticated");
-        setLoading(false);
-        return;
-      }
-      
-      // User is authenticated
-      console.log("[AuthContext] Setting user:", currentUser);
-      setUser(currentUser);
-      setStatus("authenticated");
-    } catch (error) {
-      // Check if error is actually an auth failure (401) vs other errors
-      const apiError = error as { status?: number };
-      console.error("[AuthContext] Failed to fetch user:", error);
-      
-      // Only set unauthenticated on actual auth failures (401)
-      // For other errors, keep existing state (don't change on transient errors)
-      if (apiError.status === 401) {
-        console.log("[AuthContext] Auth failed (401), setting unauthenticated");
+      // Null means no token or unauthenticated - this is expected, not an error
+      if (!currentUser) {
         setUser(null);
         setStatus("unauthenticated");
       } else {
-        // For other errors, if we have no user, set unauthenticated
-        // Otherwise keep existing state (might be transient network error)
-        if (!user) {
-          console.log("[AuthContext] Non-auth error with no existing user, setting unauthenticated");
-          setStatus("unauthenticated");
-        } else {
-          console.warn("[AuthContext] Non-auth error, keeping existing authenticated state");
-          // Keep existing user and status
-        }
+        // User is authenticated
+        setUser(currentUser);
+        setStatus("authenticated");
       }
+    } catch (error) {
+      console.error("[AuthContext] Unexpected error:", error);
+      setUser(null);
+      setStatus("unauthenticated");
     } finally {
       setLoading(false);
       setIsRefreshing(false);
