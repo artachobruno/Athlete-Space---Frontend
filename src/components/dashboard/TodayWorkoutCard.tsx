@@ -42,7 +42,10 @@ export function TodayWorkoutCard() {
 
   const { data: trainingLoadData } = useAuthenticatedQuery<TrainingLoadData>({
     queryKey: ['trainingLoad', 7],
-    queryFn: () => fetchTrainingLoad(7),
+    queryFn: () => {
+      console.log('[TodayWorkoutCard] Fetching training load for 7 days');
+      return fetchTrainingLoad(7);
+    },
     retry: (failureCount, error) => {
       // Don't retry on timeout errors or 500 errors (fetchTrainingLoad returns empty response for 500s)
       if (error && typeof error === 'object') {
@@ -55,6 +58,10 @@ export function TodayWorkoutCard() {
       }
       return failureCount < 1;
     },
+    staleTime: 0, // Always refetch - training load changes frequently
+    refetchOnMount: true, // Force fresh data on page load
+    refetchOnWindowFocus: true, // Refetch when window regains focus
+    gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes after unmount
   });
 
   const { data: activities } = useAuthenticatedQuery({

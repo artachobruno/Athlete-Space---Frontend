@@ -36,7 +36,10 @@ export function ActivityList({ activities, initialExpandedId = null }: ActivityL
   // Fetch training load data to enrich activities with TSS
   const { data: trainingLoadData } = useQuery({
     queryKey: ['trainingLoad', 60],
-    queryFn: () => fetchTrainingLoad(60),
+    queryFn: () => {
+      console.log('[ActivityList] Fetching training load for 60 days');
+      return fetchTrainingLoad(60);
+    },
     retry: (failureCount, error) => {
       // Don't retry on timeout errors or 500 errors (fetchTrainingLoad returns empty response for 500s)
       if (error && typeof error === 'object') {
@@ -49,6 +52,10 @@ export function ActivityList({ activities, initialExpandedId = null }: ActivityL
       }
       return failureCount < 1;
     },
+    staleTime: 0, // Always refetch - training load changes frequently
+    refetchOnMount: true, // Force fresh data on page load
+    refetchOnWindowFocus: true, // Refetch when window regains focus
+    gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes after unmount
   });
   
   // Enrich activities with TSS from training load endpoint

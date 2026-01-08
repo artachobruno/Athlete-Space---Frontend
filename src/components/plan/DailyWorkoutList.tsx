@@ -31,7 +31,10 @@ export function DailyWorkoutList() {
 
   const { data: trainingLoadData } = useQuery({
     queryKey: ['trainingLoad', 14],
-    queryFn: () => fetchTrainingLoad(14),
+    queryFn: () => {
+      console.log('[DailyWorkoutList] Fetching training load for 14 days');
+      return fetchTrainingLoad(14);
+    },
     retry: (failureCount, error) => {
       // Don't retry on timeout errors or 500 errors (fetchTrainingLoad returns empty response for 500s)
       if (error && typeof error === 'object') {
@@ -44,6 +47,10 @@ export function DailyWorkoutList() {
       }
       return failureCount < 1;
     },
+    staleTime: 0, // Always refetch - training load changes frequently
+    refetchOnMount: true, // Force fresh data on page load
+    refetchOnWindowFocus: true, // Refetch when window regains focus
+    gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes after unmount
   });
 
   const { data: todayIntelligence } = useQuery({

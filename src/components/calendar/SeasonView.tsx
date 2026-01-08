@@ -55,8 +55,15 @@ export function SeasonView({ currentDate }: SeasonViewProps) {
 
   const { data: overview, isLoading: overviewLoading } = useQuery({
     queryKey: ['overview', 90],
-    queryFn: () => fetchOverview(90),
+    queryFn: () => {
+      console.log('[SeasonView] Fetching overview for 90 days');
+      return fetchOverview(90);
+    },
     retry: 1,
+    staleTime: 0, // Always refetch - training load changes frequently
+    refetchOnMount: true, // Force fresh data on page load
+    refetchOnWindowFocus: true, // Refetch when window regains focus
+    gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes after unmount
   });
 
   const { data: seasonIntelligence } = useQuery({

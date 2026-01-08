@@ -13,8 +13,15 @@ export function WeeklyLoadCard() {
 
   const { data: overview, isLoading: overviewLoading } = useAuthenticatedQuery({
     queryKey: ['overview', 7],
-    queryFn: () => fetchOverview(7),
+    queryFn: () => {
+      console.log('[WeeklyLoadCard] Fetching overview for 7 days');
+      return fetchOverview(7);
+    },
     retry: 1,
+    staleTime: 0, // Always refetch - training load changes frequently
+    refetchOnMount: true, // Force fresh data on page load
+    refetchOnWindowFocus: true, // Refetch when window regains focus
+    gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes after unmount
   });
 
   const { data: weekData, isLoading: weekLoading } = useAuthenticatedQuery({
@@ -25,7 +32,10 @@ export function WeeklyLoadCard() {
 
   const { data: trainingLoadData, isLoading: trainingLoadLoading } = useAuthenticatedQuery({
     queryKey: ['trainingLoad', 7],
-    queryFn: () => fetchTrainingLoad(7),
+    queryFn: () => {
+      console.log('[WeeklyLoadCard] Fetching training load for 7 days');
+      return fetchTrainingLoad(7);
+    },
     retry: (failureCount, error) => {
       // Don't retry on timeout errors or 500 errors (fetchTrainingLoad returns empty response for 500s)
       if (error && typeof error === 'object') {
@@ -38,6 +48,10 @@ export function WeeklyLoadCard() {
       }
       return failureCount < 1;
     },
+    staleTime: 0, // Always refetch - training load changes frequently
+    refetchOnMount: true, // Force fresh data on page load
+    refetchOnWindowFocus: true, // Refetch when window regains focus
+    gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes after unmount
   });
 
   const isLoading = overviewLoading || weekLoading || trainingLoadLoading;
@@ -57,6 +71,13 @@ export function WeeklyLoadCard() {
 
     // Map actual daily TSS data from training load
     if (trainingLoadData?.dates && trainingLoadData?.daily_tss) {
+      console.debug('[WeeklyLoadCard] Training load data received:', {
+        datesCount: trainingLoadData.dates.length,
+        tssCount: trainingLoadData.daily_tss.length,
+        sampleDates: trainingLoadData.dates.slice(0, 3),
+        sampleTss: trainingLoadData.daily_tss.slice(0, 3),
+      });
+      
       trainingLoadData.dates.forEach((dateStr, index) => {
         const tss = trainingLoadData.daily_tss[index];
         // Find matching day in chart data

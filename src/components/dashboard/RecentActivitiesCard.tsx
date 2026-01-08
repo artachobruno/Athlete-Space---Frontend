@@ -62,7 +62,10 @@ export function RecentActivitiesCard() {
 
   const { data: trainingLoadData } = useAuthenticatedQuery({
     queryKey: ['trainingLoad', 60],
-    queryFn: () => fetchTrainingLoad(60),
+    queryFn: () => {
+      console.log('[RecentActivitiesCard] Fetching training load for 60 days');
+      return fetchTrainingLoad(60);
+    },
     retry: (failureCount, error) => {
       // Don't retry on timeout errors or 500 errors (fetchTrainingLoad returns empty response for 500s)
       if (error && typeof error === 'object') {
@@ -75,6 +78,10 @@ export function RecentActivitiesCard() {
       }
       return failureCount < 1;
     },
+    staleTime: 0, // Always refetch - training load changes frequently
+    refetchOnMount: true, // Force fresh data on page load
+    refetchOnWindowFocus: true, // Refetch when window regains focus
+    gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes after unmount
   });
 
   const recentActivities = useMemo(() => {

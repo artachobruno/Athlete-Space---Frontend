@@ -85,8 +85,15 @@ export function WeekView({ currentDate, onActivityClick }: WeekViewProps) {
 
   const { data: overview } = useQuery({
     queryKey: ['overview', 14],
-    queryFn: () => fetchOverview(14),
+    queryFn: () => {
+      console.log('[WeekView] Fetching overview for 14 days');
+      return fetchOverview(14);
+    },
     retry: 1,
+    staleTime: 0, // Always refetch - training load changes frequently
+    refetchOnMount: true, // Force fresh data on page load
+    refetchOnWindowFocus: true, // Refetch when window regains focus
+    gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes after unmount
   });
 
   const weeklyInsight = useMemo(() => {

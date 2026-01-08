@@ -21,8 +21,15 @@ const getLoadStatus = (tsb: number): { status: keyof typeof statusStyles; descri
 export function LoadStatusCard() {
   const { data: overview, isLoading, error } = useAuthenticatedQuery({
     queryKey: ['overview', 60],
-    queryFn: () => fetchOverview(60),
+    queryFn: () => {
+      console.log('[LoadStatusCard] Fetching overview for 60 days');
+      return fetchOverview(60);
+    },
     retry: 1,
+    staleTime: 0, // Always refetch - training load changes frequently
+    refetchOnMount: true, // Force fresh data on page load
+    refetchOnWindowFocus: true, // Refetch when window regains focus
+    gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes after unmount
   });
 
   if (isLoading) {
@@ -60,6 +67,8 @@ export function LoadStatusCard() {
   const ctl = typeof today.ctl === 'number' ? today.ctl : 0;
   const atl = typeof today.atl === 'number' ? today.atl : 0;
   const tsb = typeof today.tsb === 'number' ? today.tsb : 0;
+  
+  console.debug('[LoadStatusCard] Today metrics:', { ctl, atl, tsb });
   
   const loadStatus = getLoadStatus(tsb);
   

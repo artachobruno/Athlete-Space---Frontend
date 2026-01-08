@@ -74,6 +74,11 @@ export function saveActivities(activities: import('@/types').CompletedActivity[]
   localStorage.setItem(STORAGE_KEYS.ACTIVITIES, JSON.stringify(activities));
 }
 
+/**
+ * @deprecated DO NOT USE - Training load should always be fetched fresh from API.
+ * Using localStorage for training load causes stale metrics to persist.
+ * Training load data changes frequently and must always come from the backend.
+ */
 export function getTrainingLoad(): import('@/types').TrainingLoad[] {
   try {
     const stored = localStorage.getItem(STORAGE_KEYS.TRAINING_LOAD);
@@ -83,6 +88,11 @@ export function getTrainingLoad(): import('@/types').TrainingLoad[] {
   }
 }
 
+/**
+ * @deprecated DO NOT USE - Training load should always be fetched fresh from API.
+ * Using localStorage for training load causes stale metrics to persist.
+ * Training load data changes frequently and must always come from the backend.
+ */
 export function saveTrainingLoad(load: import('@/types').TrainingLoad[]): void {
   localStorage.setItem(STORAGE_KEYS.TRAINING_LOAD, JSON.stringify(load));
 }

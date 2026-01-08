@@ -16,17 +16,36 @@ export default function Analytics() {
 
   const { data: overview, isLoading, error } = useAuthenticatedQuery({
     queryKey: ['overview', dateRange],
-    queryFn: () => fetchOverview(dateRange),
+    queryFn: () => {
+      console.log('[Analytics] Fetching overview for', dateRange, 'days');
+      return fetchOverview(dateRange);
+    },
     retry: 1,
+    staleTime: 0, // Always refetch - training load changes frequently
+    refetchOnMount: true, // Force fresh data on page load
+    refetchOnWindowFocus: true, // Refetch when window regains focus
+    gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes after unmount
   });
 
   // Convert metrics to TrainingLoad format for components
   const filteredData = useMemo((): TrainingLoad[] => {
-    if (!overview?.metrics) return [];
+    if (!overview?.metrics) {
+      console.log('[Analytics] No overview metrics available');
+      return [];
+    }
     
     const ctlData = Array.isArray(overview.metrics.ctl) ? overview.metrics.ctl : [];
     const atlData = Array.isArray(overview.metrics.atl) ? overview.metrics.atl : [];
     const tsbData = Array.isArray(overview.metrics.tsb) ? overview.metrics.tsb : [];
+    
+    console.debug('[Analytics] Metrics received:', {
+      ctlCount: ctlData.length,
+      atlCount: atlData.length,
+      tsbCount: tsbData.length,
+      sampleCtl: ctlData[0],
+      sampleAtl: atlData[0],
+      sampleTsb: tsbData[0],
+    });
     
     if (ctlData.length === 0) return [];
     
