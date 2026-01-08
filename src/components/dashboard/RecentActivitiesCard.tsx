@@ -78,10 +78,19 @@ export function RecentActivitiesCard() {
   });
 
   const recentActivities = useMemo(() => {
-    const activitiesArray = Array.isArray(activities) ? activities : [];
+    // Defensive: ensure activities is always an array
+    let activitiesArray: typeof activities = [];
+    if (Array.isArray(activities)) {
+      activitiesArray = activities;
+    } else if (activities && typeof activities === 'object' && 'activities' in activities) {
+      // Handle case where API returns { activities: [...] }
+      const nested = (activities as { activities?: unknown }).activities;
+      activitiesArray = Array.isArray(nested) ? nested : [];
+    }
+    
     const enriched = enrichActivitiesWithTss(activitiesArray, trainingLoadData);
     
-    // Ensure enriched is an array
+    // Ensure enriched is an array before sorting
     if (!Array.isArray(enriched)) {
       return [];
     }

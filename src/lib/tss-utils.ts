@@ -23,7 +23,10 @@ export interface TrainingLoadData {
 export function createTssMap(trainingLoadData: TrainingLoadData | null | undefined): Map<string, number> {
   const tssMap = new Map<string, number>();
   
-  if (!trainingLoadData || !trainingLoadData.dates || !trainingLoadData.daily_tss) {
+  // Ensure trainingLoadData exists and has the required array properties
+  if (!trainingLoadData || 
+      !Array.isArray(trainingLoadData.dates) || 
+      !Array.isArray(trainingLoadData.daily_tss)) {
     return tssMap;
   }
   
@@ -77,7 +80,10 @@ export function getTssForDate(
   date: string,
   trainingLoadData: TrainingLoadData | null | undefined
 ): number | null {
-  if (!trainingLoadData || !trainingLoadData.dates || !trainingLoadData.daily_tss) {
+  // Ensure trainingLoadData exists and has the required array properties
+  if (!trainingLoadData || 
+      !Array.isArray(trainingLoadData.dates) || 
+      !Array.isArray(trainingLoadData.daily_tss)) {
     return null;
   }
   

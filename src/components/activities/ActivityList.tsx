@@ -53,11 +53,17 @@ export function ActivityList({ activities, initialExpandedId = null }: ActivityL
   
   // Enrich activities with TSS from training load endpoint
   const enrichedActivities = useMemo(() => {
-    // Ensure activities is an array before enriching
-    if (!activities || !Array.isArray(activities)) {
-      return [];
+    // Defensive: ensure activities is always an array
+    let activitiesArray: typeof activities = [];
+    if (Array.isArray(activities)) {
+      activitiesArray = activities;
+    } else if (activities && typeof activities === 'object' && 'activities' in activities) {
+      // Handle case where API returns { activities: [...] }
+      const nested = (activities as { activities?: unknown }).activities;
+      activitiesArray = Array.isArray(nested) ? nested : [];
     }
-    const enriched = enrichActivitiesWithTss(activities, trainingLoadData);
+    
+    const enriched = enrichActivitiesWithTss(activitiesArray, trainingLoadData);
     // Ensure we always return an array
     return Array.isArray(enriched) ? enriched : [];
   }, [activities, trainingLoadData]);
