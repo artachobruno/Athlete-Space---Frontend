@@ -6,8 +6,10 @@ import { DailyWorkoutList } from '@/components/plan/DailyWorkoutList';
 import { PlanChangeHistory } from '@/components/plan/PlanChangeHistory';
 import { PlanCoachChat } from '@/components/plan/PlanCoachChat';
 import { ComplianceDashboard } from '@/components/calendar/ComplianceDashboard';
+import { useSyncTodayWorkout } from '@/hooks/useSyncTodayWorkout';
 
 export default function TrainingPlan() {
+  useSyncTodayWorkout();
   const handleDayClick = useCallback((dateStr: string) => {
     const element = document.getElementById(`workout-${dateStr}`);
     if (element) {

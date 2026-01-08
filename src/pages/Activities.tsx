@@ -10,8 +10,10 @@ import { format, isToday, parseISO, isYesterday, subDays } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/hooks/use-toast';
 import { useAutoMatchSessions } from '@/hooks/useAutoMatchSessions';
+import { useSyncTodayWorkout } from '@/hooks/useSyncTodayWorkout';
 
 export default function Activities() {
+  useSyncTodayWorkout();
   const [searchParams] = useSearchParams();
   const activityId = searchParams.get('activity');
   const queryClient = useQueryClient();

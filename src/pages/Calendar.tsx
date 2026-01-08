@@ -1,7 +1,9 @@
 import { AppLayout } from '@/components/layout/AppLayout';
 import { TrainingCalendar } from '@/components/calendar/TrainingCalendar';
+import { useSyncTodayWorkout } from '@/hooks/useSyncTodayWorkout';
 
 export default function Calendar() {
+  useSyncTodayWorkout();
   return (
     <AppLayout>
       <div className="space-y-6">

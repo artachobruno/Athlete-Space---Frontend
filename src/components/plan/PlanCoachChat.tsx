@@ -82,7 +82,7 @@ export function PlanCoachChat() {
                   className={cn(
                     'max-w-[85%] rounded-lg px-3 py-2 text-sm',
                     msg.role === 'coach'
-                      ? 'bg-[#2F4F4F]/10 text-foreground'
+                      ? 'bg-[#2F4F4F]/20 text-foreground'
                       : 'bg-accent text-accent-foreground'
                   )}
                 >
@@ -92,7 +92,7 @@ export function PlanCoachChat() {
             ))}
             {isTyping && (
               <div className="flex">
-                <div className="bg-[#2F4F4F]/10 rounded-lg px-3 py-2">
+                <div className="bg-[#2F4F4F]/20 rounded-lg px-3 py-2">
                   <div className="flex gap-1">
                     <span className="w-1.5 h-1.5 bg-muted-foreground/50 rounded-full animate-pulse-subtle" />
                     <span className="w-1.5 h-1.5 bg-muted-foreground/50 rounded-full animate-pulse-subtle [animation-delay:150ms]" />

@@ -114,7 +114,7 @@ export function CoachChatWidget() {
                 className={cn(
                   'max-w-[80%] rounded-lg px-3 py-1.5 text-xs',
                   message.role === 'coach'
-                    ? 'bg-[#2F4F4F]/10 text-foreground'
+                    ? 'bg-[#2F4F4F]/20 text-foreground'
                     : 'bg-accent text-accent-foreground'
                 )}
               >
@@ -128,13 +128,13 @@ export function CoachChatWidget() {
               <div className="w-6 h-6 rounded-full bg-accent text-accent-foreground flex items-center justify-center">
                 <Brain className="h-3 w-3 text-[#2F4F4F]" />
               </div>
-              <div className="bg-[#2F4F4F]/10 rounded-lg px-3 py-1.5">
-                <div className="flex gap-1">
-                  <span className="w-1.5 h-1.5 bg-muted-foreground/50 rounded-full animate-pulse-subtle" />
-                  <span className="w-1.5 h-1.5 bg-muted-foreground/50 rounded-full animate-pulse-subtle [animation-delay:150ms]" />
-                  <span className="w-1.5 h-1.5 bg-muted-foreground/50 rounded-full animate-pulse-subtle [animation-delay:300ms]" />
-                </div>
+            <div className="bg-[#2F4F4F]/20 rounded-lg px-3 py-1.5">
+              <div className="flex gap-1">
+                <span className="w-1.5 h-1.5 bg-muted-foreground/50 rounded-full animate-pulse-subtle" />
+                <span className="w-1.5 h-1.5 bg-muted-foreground/50 rounded-full animate-pulse-subtle [animation-delay:150ms]" />
+                <span className="w-1.5 h-1.5 bg-muted-foreground/50 rounded-full animate-pulse-subtle [animation-delay:300ms]" />
               </div>
+            </div>
             </div>
           )}
         </div>

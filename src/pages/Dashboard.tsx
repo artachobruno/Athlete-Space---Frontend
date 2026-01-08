@@ -5,8 +5,10 @@ import { WeeklyLoadCard } from '@/components/dashboard/WeeklyLoadCard';
 import { RecentActivitiesCard } from '@/components/dashboard/RecentActivitiesCard';
 import { LoadStatusCard } from '@/components/dashboard/LoadStatusCard';
 import { CoachChatWidget } from '@/components/dashboard/CoachChatWidget';
+import { useSyncTodayWorkout } from '@/hooks/useSyncTodayWorkout';
 
 export default function Dashboard() {
+  useSyncTodayWorkout();
   return (
     <AppLayout>
       <div className="space-y-6">

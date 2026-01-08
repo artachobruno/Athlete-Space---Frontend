@@ -1,7 +1,9 @@
 import { AppLayout } from '@/components/layout/AppLayout';
 import { CoachChat } from '@/components/coach/CoachChat';
+import { useSyncTodayWorkout } from '@/hooks/useSyncTodayWorkout';
 
 export default function Coach() {
+  useSyncTodayWorkout();
   return (
     <AppLayout>
       <div className="h-[calc(100vh-7rem)] lg:h-[calc(100vh-4rem)] flex flex-col">

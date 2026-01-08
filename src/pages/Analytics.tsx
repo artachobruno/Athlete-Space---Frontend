@@ -7,8 +7,10 @@ import { fetchOverview } from '@/lib/api';
 import { useAuthenticatedQuery } from '@/hooks/useAuthenticatedQuery';
 import { Loader2 } from 'lucide-react';
 import type { TrainingLoad } from '@/types';
+import { useSyncTodayWorkout } from '@/hooks/useSyncTodayWorkout';
 
 export default function Analytics() {
+  useSyncTodayWorkout();
   const [isAdvanced, setIsAdvanced] = useState(false);
   const [dateRange, setDateRange] = useState<30 | 90>(30);
 
