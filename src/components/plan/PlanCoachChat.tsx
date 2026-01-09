@@ -12,6 +12,7 @@ interface Message {
   content: string;
   show_plan?: boolean;
   plan_items?: PlanItem[];
+  response_type?: 'plan' | 'weekly_plan' | 'season_plan' | 'session_plan' | 'recommendation' | 'summary' | 'greeting' | 'question' | 'explanation' | 'smalltalk';
 }
 
 export function PlanCoachChat() {
@@ -48,6 +49,7 @@ export function PlanCoachChat() {
         content: response.reply || 'I understand. Let me think about that.',
         show_plan: response.show_plan === true,
         plan_items: response.show_plan === true && response.plan_items && response.plan_items.length > 0 ? response.plan_items : undefined,
+        response_type: response.response_type,
       }]);
     } catch (error) {
       const apiError = error as { message?: string; status?: number };
@@ -113,13 +115,18 @@ export function PlanCoachChat() {
                   </div>
                 </div>
                 {/* Plan List - rendered inline with coach message that produced it */}
-                {msg.role === 'coach' && msg.show_plan && msg.plan_items && msg.plan_items.length > 0 && (
-                  <div className={cn('flex', msg.role === 'athlete' && 'justify-end')}>
-                    <div className="max-w-[85%]">
-                      <PlanList planItems={msg.plan_items} />
+                {msg.role === 'coach' &&
+                  msg.show_plan &&
+                  msg.plan_items &&
+                  msg.plan_items.length > 0 &&
+                  (!msg.response_type ||
+                    ['plan', 'weekly_plan', 'season_plan', 'session_plan', 'recommendation', 'summary'].includes(msg.response_type)) && (
+                    <div className={cn('flex', msg.role === 'athlete' && 'justify-end')}>
+                      <div className="max-w-[85%]">
+                        <PlanList planItems={msg.plan_items} />
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
               </div>
             ))}
             {isTyping && (

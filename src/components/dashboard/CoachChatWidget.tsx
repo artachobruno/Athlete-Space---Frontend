@@ -16,6 +16,7 @@ interface Message {
   content: string;
   show_plan?: boolean;
   plan_items?: PlanItem[];
+  response_type?: 'plan' | 'weekly_plan' | 'season_plan' | 'session_plan' | 'recommendation' | 'summary' | 'greeting' | 'question' | 'explanation' | 'smalltalk';
 }
 
 export function CoachChatWidget() {
@@ -52,6 +53,7 @@ export function CoachChatWidget() {
         content: response.reply || 'I understand.',
         show_plan: response.show_plan === true,
         plan_items: response.show_plan === true && response.plan_items && response.plan_items.length > 0 ? response.plan_items : undefined,
+        response_type: response.response_type,
       };
       setMessages(prev => [...prev, coachMessage]);
     } catch (error) {
@@ -140,14 +142,19 @@ export function CoachChatWidget() {
                 </div>
               </div>
               {/* Plan List - rendered inline with coach message that produced it */}
-              {message.role === 'coach' && message.show_plan && message.plan_items && message.plan_items.length > 0 && (
-                <div className={cn('flex gap-2', message.role === 'athlete' && 'flex-row-reverse')}>
-                  <div className="w-6 shrink-0" />
-                  <div className="max-w-[80%]">
-                    <PlanList planItems={message.plan_items} />
+              {message.role === 'coach' &&
+                message.show_plan &&
+                message.plan_items &&
+                message.plan_items.length > 0 &&
+                (!message.response_type ||
+                  ['plan', 'weekly_plan', 'season_plan', 'session_plan', 'recommendation', 'summary'].includes(message.response_type)) && (
+                  <div className={cn('flex gap-2', message.role === 'athlete' && 'flex-row-reverse')}>
+                    <div className="w-6 shrink-0" />
+                    <div className="max-w-[80%]">
+                      <PlanList planItems={message.plan_items} />
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
             </div>
           ))}
 

@@ -1384,6 +1384,7 @@ export interface CoachChatResponse {
   conversation_id?: string;
   show_plan?: boolean;
   plan_items?: PlanItem[];
+  response_type?: 'plan' | 'weekly_plan' | 'season_plan' | 'session_plan' | 'recommendation' | 'summary' | 'greeting' | 'question' | 'explanation' | 'smalltalk';
 }
 
 export const sendCoachChat = async (

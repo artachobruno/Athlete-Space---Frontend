@@ -110,7 +110,7 @@ export function TrainingPreferencesSection() {
       const effectiveProfile = backendProfile || profile;
       
       // Convert available_days array (backend uses lowercase: ["monday", "tuesday", ...]) to boolean array
-      const trainingDaysArray = backendPrefs
+      const trainingDaysArray = backendPrefs && Array.isArray(backendPrefs.available_days)
         ? weekDays.map(day => {
             // Backend may return lowercase full names or abbreviated, handle both
             const dayLower = day.toLowerCase();
