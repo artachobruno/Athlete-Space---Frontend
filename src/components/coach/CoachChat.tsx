@@ -5,6 +5,7 @@ import { Send, Brain, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { sendCoachChat } from '@/lib/api';
 import { generateCoachGreeting } from '@/lib/coachGreeting';
+import { CoachProgressPanel } from './CoachProgressPanel';
 
 interface Message {
   id: string;
@@ -17,6 +18,7 @@ export function CoachChat() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const [conversationId, setConversationId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -57,6 +59,12 @@ export function CoachChat() {
 
     try {
       const response = await sendCoachChat(messageText);
+      
+      // Track conversation ID from response if provided
+      if (response.conversation_id) {
+        setConversationId(response.conversation_id);
+      }
+      
       const coachMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: 'coach',
@@ -91,6 +99,8 @@ export function CoachChat() {
     <div className="flex-1 flex flex-col bg-card rounded-lg border border-border overflow-hidden">
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
+        {/* Coach Progress Panel - shown above messages when conversation is active */}
+        {conversationId && <CoachProgressPanel conversationId={conversationId} />}
         {messages.map((message) => (
           <div
             key={message.id}

@@ -1372,7 +1372,7 @@ export const fetchCoachContext = async (): Promise<import("../types").CoachConte
 export const sendCoachChat = async (
   message: string,
   options?: { days?: number; days_to_race?: number | null }
-): Promise<{ reply?: string; intent?: string }> => {
+): Promise<{ reply?: string; intent?: string; conversation_id?: string }> => {
   console.log("[API] Sending coach chat message");
   try {
     const payload: { message: string; days?: number; days_to_race?: number | null } = { message };
@@ -1390,7 +1390,7 @@ export const sendCoachChat = async (
     });
     
     const response = await api.post("/coach/chat", payload);
-    return response as unknown as { reply?: string; intent?: string };
+    return response as unknown as { reply?: string; intent?: string; conversation_id?: string };
   } catch (error) {
     const apiError = error as ApiError;
     console.error("[API] Failed to send coach chat:", {
