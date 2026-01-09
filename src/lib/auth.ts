@@ -1,7 +1,7 @@
 import { api } from "./api";
 import type { UserOut } from "./apiValidation";
 import type { AthleteProfile } from "@/types";
-import { Browser } from "@capacitor/browser";
+import { Browser } from "@/lib/capacitor-stubs/browser";
 import { isNative } from "./platform";
 
 // Minimal user type for auth context (matches what /me returns)

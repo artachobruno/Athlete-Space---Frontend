@@ -242,11 +242,11 @@ export function TrainingPreferencesSection() {
             // FE-3: Don't delete race info when toggling focus
             // Keep existing race data if it exists
             const currentProfile = await fetchUserProfile();
-            if (currentProfile?.targetEvent) {
+            if (currentProfile?.target_event) {
               // Preserve existing race data
-              profileUpdate.targetEvent = currentProfile.targetEvent;
+              profileUpdate.target_event = currentProfile.target_event;
             } else {
-              profileUpdate.targetEvent = null;
+              profileUpdate.target_event = null;
             }
           }
           
