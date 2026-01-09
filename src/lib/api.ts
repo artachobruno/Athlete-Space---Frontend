@@ -632,11 +632,9 @@ export const uploadActivityFile = async (file: File): Promise<ActivityUploadResp
   formData.append('file', file);
   
   try {
-    const response = await api.post("/activities/upload", formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    });
+    // Note: Do not set Content-Type header manually for FormData
+    // Axios automatically sets it with the correct boundary parameter
+    const response = await api.post("/activities/upload", formData);
     
     return response as unknown as ActivityUploadResponse;
   } catch (error) {
