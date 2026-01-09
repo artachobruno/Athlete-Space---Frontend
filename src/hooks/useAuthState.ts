@@ -31,15 +31,22 @@ export interface AuthState {
  * ```
  */
 export function useAuthState(): AuthState {
-  const { status, user, loading } = useAuth();
-      const token = auth.getToken();
+  const { status, user, authReady } = useAuth();
   
-  // isLoaded = auth check is complete (not loading)
-  // isAuthenticated = user exists and status is authenticated
+  // SINGLE SOURCE OF TRUTH: Read token directly from localStorage
+  // This ensures consistency with interceptor
+  const TOKEN_KEY = 'auth_token';
+  const token = typeof window !== 'undefined' ? localStorage.getItem(TOKEN_KEY) : null;
+  
+  // isLoaded = auth check is complete (authReady from context)
+  // isAuthenticated = user exists, status is authenticated, AND token exists
+  // CRITICAL: All three must be true - prevents divergence
+  const isAuthenticated = authReady && status === "authenticated" && !!user && !!token;
+  
   return {
-    isLoaded: !loading && status !== "loading",
-    isAuthenticated: status === "authenticated" && !!user,
-    token: status === "authenticated" ? token : null,
+    isLoaded: authReady,
+    isAuthenticated,
+    token: isAuthenticated ? token : null,
   };
 }
 

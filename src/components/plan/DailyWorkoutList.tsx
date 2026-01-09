@@ -4,7 +4,7 @@ import { fetchCalendarWeek, fetchActivities, fetchTrainingLoad } from '@/lib/api
 import { mapSessionToWorkout } from '@/lib/session-utils';
 import { getTodayIntelligence } from '@/lib/intelligence';
 import { DailyWorkoutCard } from './DailyWorkoutCard';
-import { useQuery } from '@tanstack/react-query';
+import { useAuthenticatedQuery } from '@/hooks/useAuthenticatedQuery';
 import { Loader2 } from 'lucide-react';
 import type { PlannedWorkout, CompletedActivity } from '@/types';
 import { enrichActivitiesWithTss } from '@/lib/tss-utils';
@@ -14,14 +14,14 @@ export function DailyWorkoutList() {
   const weekStart = startOfWeek(today, { weekStartsOn: 1 });
   const weekStartStr = format(weekStart, 'yyyy-MM-dd');
 
-  const { data: weekData, isLoading: weekLoading } = useQuery({
+  const { data: weekData, isLoading: weekLoading } = useAuthenticatedQuery({
     queryKey: ['calendarWeek', weekStartStr],
     queryFn: () => fetchCalendarWeek(weekStartStr),
     retry: 1,
   });
 
   // Use consistent query key to share cache with other components
-  const { data: activities, isLoading: activitiesLoading } = useQuery({
+  const { data: activities, isLoading: activitiesLoading } = useAuthenticatedQuery({
     queryKey: ['activities', 'limit', 100],
     queryFn: () => fetchActivities({ limit: 100 }),
     retry: 1,
@@ -29,7 +29,7 @@ export function DailyWorkoutList() {
     gcTime: 30 * 60 * 1000, // 30 minutes
   });
 
-  const { data: trainingLoadData } = useQuery({
+  const { data: trainingLoadData } = useAuthenticatedQuery({
     queryKey: ['trainingLoad', 14],
     queryFn: () => {
       console.log('[DailyWorkoutList] Fetching training load for 14 days');
@@ -53,7 +53,7 @@ export function DailyWorkoutList() {
     gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes after unmount
   });
 
-  const { data: todayIntelligence } = useQuery({
+  const { data: todayIntelligence } = useAuthenticatedQuery({
     queryKey: ['intelligence', 'today', 'current'],
     queryFn: () => getTodayIntelligence(),
     retry: 1,

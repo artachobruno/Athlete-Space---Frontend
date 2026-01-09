@@ -16,7 +16,7 @@ import {
   HelpCircle,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { auth } from '@/lib/auth';
+import { useAuth } from '@/context/AuthContext';
 import { Logo } from '@/components/Logo';
 
 interface AppLayoutProps {
@@ -37,10 +37,17 @@ export function AppLayout({ children }: AppLayoutProps) {
   const location = useLocation();
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const { logout } = useAuth();
 
-  const handleLogout = () => {
-    auth.logout();
-    navigate('/login');
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate('/login', { replace: true });
+    } catch (error) {
+      console.error('[AppLayout] Logout error:', error);
+      // Still navigate to login even if logout API call fails
+      navigate('/login', { replace: true });
+    }
   };
 
   return (

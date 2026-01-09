@@ -8,6 +8,7 @@ interface AuthContextValue {
   user: AuthUser | null;
   loading: boolean;
   status: AuthStatus;
+  authReady: boolean; // True when auth check is complete (loading === false)
   refreshUser: () => Promise<void>;
   logout: () => Promise<void>;
 }
@@ -16,6 +17,7 @@ const AuthContext = createContext<AuthContextValue>({
   user: null,
   loading: true,
   status: "loading",
+  authReady: false,
   refreshUser: async () => {},
   logout: async () => {},
 });
@@ -43,14 +45,32 @@ export function AuthProvider({ children }: AuthProviderProps) {
     setStatus("loading");
     
     try {
+      // CRITICAL: Enforce token → /me ordering
+      // Step 1: Check if token exists (synchronous check)
+      const token = localStorage.getItem('auth_token');
+      if (!token || token === 'null' || token.trim() === '') {
+        // No token = unauthenticated (don't call /me)
+        console.log("[AuthContext] No token found, setting unauthenticated");
+        setUser(null);
+        setStatus("unauthenticated");
+        setLoading(false);
+        setIsRefreshing(false);
+        return;
+      }
+      
+      // Step 2: Call /me to validate token and get user
+      // This is the ONLY way to set status to "authenticated"
       const currentUser = await fetchCurrentUser();
       
-      // Null means no token or unauthenticated - this is expected, not an error
+      // CRITICAL: Only set "authenticated" if /me succeeded
+      // If /me returns null, it means token is invalid or expired
       if (!currentUser) {
+        // /me failed = unauthenticated (token was invalid/expired)
+        console.log("[AuthContext] /me returned null, setting unauthenticated");
         setUser(null);
         setStatus("unauthenticated");
       } else {
-        // User is authenticated
+        // /me succeeded = authenticated
         // CRITICAL: If backend says onboarding_complete is false but localStorage flag says it was completed,
         // use the localStorage flag as a safeguard against backend bugs
         const localStorageSaysComplete = wasOnboardingCompleted();
@@ -69,6 +89,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       }
     } catch (error) {
       console.error("[AuthContext] Unexpected error:", error);
+      // Any error = unauthenticated (don't assume authenticated)
       setUser(null);
       setStatus("unauthenticated");
     } finally {
@@ -89,13 +110,33 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   };
 
+  // Listen for logout events from API interceptor (401 responses)
+  useEffect(() => {
+    const handleLogoutEvent = () => {
+      console.log("[AuthContext] Received logout event from API interceptor");
+      // CRITICAL: 401 = unauthenticated, NOT onboarding
+      // Clear user and set status to unauthenticated
+      setUser(null);
+      setStatus("unauthenticated");
+      setLoading(false);
+    };
+
+    window.addEventListener('auth-logout', handleLogoutEvent);
+    return () => {
+      window.removeEventListener('auth-logout', handleLogoutEvent);
+    };
+  }, []);
+
   // On app boot, check if user is authenticated
   useEffect(() => {
     refreshUser();
   }, []);
 
+  // authReady = auth check is complete (not loading)
+  const authReady = !loading && status !== "loading";
+
   return (
-    <AuthContext.Provider value={{ user, loading, status, refreshUser, logout }}>
+    <AuthContext.Provider value={{ user, loading, status, authReady, refreshUser, logout }}>
       {children}
     </AuthContext.Provider>
   );

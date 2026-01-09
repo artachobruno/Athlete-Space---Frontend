@@ -17,9 +17,16 @@ function FullPageSkeleton() {
 
 /**
  * Root route handler ("/").
+ * - Loading → show loading (block routing until auth resolves)
  * - Unauthenticated → /login
  * - Authenticated but onboarding incomplete → /onboarding
  * - Authenticated + onboarding complete → /dashboard
+ * 
+ * CRITICAL RULES:
+ * 1. Never show onboarding when status !== "authenticated"
+ * 2. Never show onboarding when user === null
+ * 3. Onboarding is ONLY shown when: status === "authenticated" && user.onboarding_complete === false
+ * 4. Block all routing until auth resolves (status !== "loading")
  * 
  * CRITICAL: If OAuth token is in URL, wait for OAuthTokenHandler to process it
  * before redirecting. This prevents race conditions where we redirect before
@@ -48,31 +55,54 @@ export function AuthLanding() {
     }
   }, [location.search]);
 
+  // CRITICAL: Block routing until auth resolves
   // If OAuth token is being processed, show loading (OAuthTokenHandler will redirect)
   if (hasOAuthToken) {
     return <FullPageSkeleton />;
   }
 
-  if (status === "loading" || loading) return <FullPageSkeleton />;
-  if (status === "unauthenticated" || !user) return <Navigate to="/login" replace />;
+  // CRITICAL: Hard gate - block all routing until auth status is resolved
+  if (status === "loading" || loading) {
+    return <FullPageSkeleton />;
+  }
 
-  return user.onboarding_complete
-    ? <Navigate to="/dashboard" replace />
-    : <Navigate to="/onboarding" replace />;
+  // CRITICAL: Unauthenticated → login (NOT onboarding)
+  // 401, no token, or /me failed = unauthenticated → login
+  if (status === "unauthenticated" || !user) {
+    return <Navigate to="/login" replace />;
+  }
+
+  // CRITICAL: Only show onboarding when authenticated AND onboarding incomplete
+  // Onboarding is a post-auth state, not an auth fallback
+  if (status === "authenticated" && user && !user.onboarding_complete) {
+    return <Navigate to="/onboarding" replace />;
+  }
+
+  // Authenticated + onboarding complete → dashboard
+  return <Navigate to="/dashboard" replace />;
 }
 
 /**
  * Wrapper for public-only pages like /login and /signup.
  * Prevents showing auth forms to already-authenticated users.
+ * 
+ * CRITICAL: Only redirect to onboarding when authenticated AND onboarding incomplete
  */
 export function PublicOnly({ children }: { children: ReactNode }) {
   const { user, loading, status } = useAuth();
 
-  if (status === "loading" || loading) return <FullPageSkeleton />;
+  // CRITICAL: Block routing until auth resolves
+  if (status === "loading" || loading) {
+    return <FullPageSkeleton />;
+  }
+
+  // CRITICAL: Only redirect to onboarding when authenticated AND onboarding incomplete
+  // Onboarding is a post-auth state, not an auth fallback
   if (status === "authenticated" && user) {
-    return user.onboarding_complete
-      ? <Navigate to="/dashboard" replace />
-      : <Navigate to="/onboarding" replace />;
+    if (!user.onboarding_complete) {
+      return <Navigate to="/onboarding" replace />;
+    }
+    return <Navigate to="/dashboard" replace />;
   }
 
   return <>{children}</>;

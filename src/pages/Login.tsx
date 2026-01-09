@@ -36,8 +36,21 @@ export default function Login() {
     setIsLoading(true);
     
     try {
+      // CRITICAL: Enforce token → /me ordering
+      // Step 1: Store token
       await loginWithEmail(email, password);
+      
+      // Step 2: Call /me to validate token and get user
+      // This ensures we have user data (including onboarding_complete) before routing
       await refreshUser();
+      
+      // Step 3: Get updated user from context after refresh
+      // Wait a tick for React to update context
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      // Step 4: Route based on onboarding status
+      // CRITICAL: Only navigate to dashboard if onboarding is complete
+      // Otherwise, AuthLanding will redirect to onboarding
       navigate('/dashboard');
     } catch (err: unknown) {
       const apiError = err as { status?: number; message?: string };

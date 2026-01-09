@@ -229,22 +229,31 @@ export const disconnectStrava = async (): Promise<void> => {
 
 /**
  * Initiates Google OAuth connection.
- * Fetches OAuth URL from backend and redirects to Google.
+ * Redirects directly to backend OAuth endpoint which handles the OAuth flow.
+ * 
+ * Note: This function redirects to /auth/google/login?platform=web which
+ * returns a 302 redirect to Google's consent screen.
  */
 export const initiateGoogleConnect = async (): Promise<void> => {
   console.log("[API] Initiating Google connect");
   
   try {
-    const response = await api.get("/auth/google") as unknown as { redirect_url?: string; oauth_url?: string; url?: string };
+    // Get API base URL (same logic as auth.ts)
+    const getBaseURL = () => {
+      if (import.meta.env.PROD) {
+        const apiUrl = import.meta.env.VITE_API_URL || window.location.origin;
+        return apiUrl;
+      }
+      return "http://localhost:8000";
+    };
     
-    const oauthUrl = response.redirect_url || response.oauth_url || response.url;
+    const API = getBaseURL();
+    // Use the correct endpoint: /auth/google/login?platform=web
+    // This endpoint returns a 302 redirect to Google's consent screen
+    const url = `${API}/auth/google/login?platform=web`;
     
-    if (!oauthUrl) {
-      throw new Error("Backend did not return OAuth URL");
-    }
-
-    console.log("[API] Redirecting to Google OAuth URL");
-    window.location.href = oauthUrl;
+    console.log("[API] Redirecting to Google OAuth URL:", url);
+    window.location.href = url;
   } catch (error) {
     console.error("[API] Failed to initiate Google connect:", error);
     throw error;
@@ -2165,6 +2174,8 @@ const normalizeError = (error: unknown): ApiError => {
 };
 
 // Request interceptor: Adds Authorization header for authenticated requests
+// CRITICAL: This interceptor is SYNCHRONOUS - no async operations allowed
+// Token source of truth: localStorage.getItem('auth_token')
 api.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
     // Ensure headers object exists (axios may not initialize it)
@@ -2172,73 +2183,38 @@ api.interceptors.request.use(
       config.headers = new AxiosHeaders();
     }
     
-    const token = auth.getToken();
+    // SINGLE SOURCE OF TRUTH: Read token directly from localStorage (synchronous)
+    const TOKEN_KEY = 'auth_token';
+    const token = localStorage.getItem(TOKEN_KEY);
     
-    // STEP 5: Verify interceptor is reading from localStorage
-    if (config.url === '/me' || config.url?.endsWith('/me')) {
-      console.log("[API] Interceptor token check for /me:", token ? token.slice(0, 10) + "..." : "NONE");
-    }
-    
-    // Check if token is expired before adding it
-    if (token) {
-      // Check expiration without clearing (isTokenExpired doesn't clear)
-      const isExpired = auth.isTokenExpired();
-      if (isExpired) {
-        // Token is expired - clear it and don't add to request
-        // The response interceptor will handle the 401 and redirect
-        console.log('[API] Token expired, clearing and will redirect on 401');
-        auth.clear();
-      } else {
-        // Token is valid - add Authorization header with correct format
-        // Format: "Bearer <token>" (note the space after "Bearer")
-        // CRITICAL: Use exact header name "Authorization" (capital A)
-        const authHeader = `Bearer ${token}`;
-        
-        // Set header - axios accepts both object property and set() method
-        // Use multiple methods to ensure it's set correctly
-        if (typeof (config.headers as { set?: (name: string, value: string) => void }).set === 'function') {
-          // AxiosHeaders instance - use set method
-          (config.headers as { set: (name: string, value: string) => void }).set('Authorization', authHeader);
-        } else {
-          // Plain object - set directly
-          (config.headers as Record<string, string>)['Authorization'] = authHeader;
-          (config.headers as Record<string, string>).Authorization = authHeader;
+    // If token exists and is not "null" string, add Authorization header
+    if (token && token !== 'null' && token.trim() !== '') {
+      // Check if token is expired (synchronous check)
+      try {
+        const parts = token.split('.');
+        if (parts.length === 3) {
+          const payload = JSON.parse(atob(parts[1]));
+          const exp = payload.exp;
+          if (exp && exp * 1000 < Date.now()) {
+            // Token is expired - clear it
+            localStorage.removeItem(TOKEN_KEY);
+            // Don't add header - request will go unauthenticated
+            // Response interceptor will handle 401
+          } else {
+            // Token is valid - add Authorization header
+            const authHeader = `Bearer ${token}`;
+            
+            // Set header
+            if (typeof (config.headers as { set?: (name: string, value: string) => void }).set === 'function') {
+              (config.headers as { set: (name: string, value: string) => void }).set('Authorization', authHeader);
+            } else {
+              (config.headers as Record<string, string>)['Authorization'] = authHeader;
+            }
+          }
         }
-        
-        // STEP 6: Confirm /me is called with Authorization header
-        // Debug logging (always log to help diagnose)
-        const isMeEndpoint = config.url === '/me' || config.url?.endsWith('/me');
-        if (isMeEndpoint) {
-          console.log('[API] Adding Authorization header for /me:', {
-            hasToken: !!token,
-            tokenLength: token.length,
-            headerValue: authHeader.substring(0, 30) + '...',
-            method: config.method?.toUpperCase(),
-          });
-        }
-        
-        console.log('[API] Adding Authorization header:', {
-          hasToken: !!token,
-          tokenLength: token.length,
-          headerValue: authHeader.substring(0, 30) + '...',
-          url: config.url,
-          method: config.method?.toUpperCase(),
-          headersType: typeof config.headers,
-        });
-      }
-    } else {
-      // No token available - this is expected if:
-      // 1. User hasn't authenticated yet (onboarding page)
-      // 2. Token was cleared/expired
-      // 3. Query was called before auth was ready (shouldn't happen with useAuthenticatedQuery)
-      // Only log once per session to avoid spam
-      if (!(window as { _tokenWarningLogged?: boolean })._tokenWarningLogged) {
-        console.warn('[API] No app auth token available. Waiting for authentication.');
-        console.warn('[API] Check localStorage:', {
-          hasToken: !!localStorage.getItem('auth_token'),
-          tokenValue: localStorage.getItem('auth_token')?.substring(0, 30) || 'null',
-        });
-        (window as { _tokenWarningLogged?: boolean })._tokenWarningLogged = true;
+      } catch {
+        // Invalid token format - clear it
+        localStorage.removeItem(TOKEN_KEY);
       }
     }
     
@@ -2264,6 +2240,13 @@ let corsErrorLogged = false;
 const createNavigationEvent = (path: string) => {
   if (typeof window !== 'undefined') {
     window.dispatchEvent(new CustomEvent('auth-redirect', { detail: { path } }));
+  }
+};
+
+// Custom event to trigger logout from AuthContext
+const triggerLogoutEvent = () => {
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('auth-logout', { detail: {} }));
   }
 };
 
@@ -2315,31 +2298,28 @@ api.interceptors.response.use(
       normalizedError.message = "Authentication required. Please log in.";
     }
     
-    // Handle 401 by clearing auth and triggering navigation event
+    // Handle 401: ALWAYS clear token and trigger logout
+    // This ensures auth state and token never diverge
     if (normalizedError.status === 401) {
-      const currentPath = typeof window !== 'undefined' ? window.location.pathname : '';
-      const isOnOnboarding = currentPath === "/onboarding" || currentPath.startsWith("/onboarding/");
+      // CRITICAL: Clear token immediately (single source of truth)
+      const TOKEN_KEY = 'auth_token';
+      localStorage.removeItem(TOKEN_KEY);
       
-      // Pages that allow unauthenticated access (don't redirect on 401)
-      const unauthenticatedAllowedPaths = ["/dashboard", "/onboarding"];
-      const allowsUnauthenticated = unauthenticatedAllowedPaths.some(path => 
+      // Trigger logout event for AuthContext to handle
+      // This ensures React state is updated to match token state
+      triggerLogoutEvent();
+      
+      // Trigger navigation to login (unless on public pages)
+      const currentPath = typeof window !== 'undefined' ? window.location.pathname : '';
+      const publicPaths = ["/login", "/signup", "/onboarding"];
+      const isPublicPath = publicPaths.some(path => 
         currentPath === path || currentPath.startsWith(`${path}/`)
       );
       
-      // Always clear auth token on 401 (it's invalid anyway)
-      auth.clear();
-      
-      // If we're on a page that allows unauthenticated access, don't redirect
-      // 401 errors are expected here - user can still use the page
-      if (isOnOnboarding || allowsUnauthenticated) {
-        // Silently reject - don't log 401 errors on pages that allow unauthenticated access
-        return Promise.reject(normalizedError);
+      if (!isPublicPath) {
+        createNavigationEvent("/login");
       }
       
-      // Only redirect if we're on a page that requires authentication
-      // Trigger navigation event for React Router to handle
-      // This avoids hard redirects that bypass React Router
-      createNavigationEvent("/onboarding");
       return Promise.reject(normalizedError);
     }
     

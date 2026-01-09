@@ -5,19 +5,34 @@ import { useAuth } from '@/context/AuthContext';
 
 export default function Onboarding() {
   const navigate = useNavigate();
-  const { user, loading } = useAuth();
+  const { user, loading, status } = useAuth();
   const [isComplete, setIsComplete] = useState(false);
   const hasRedirectedRef = useRef(false);
 
-  // Redirect if user has completed onboarding (only once)
-  // Credentials are always required and checked by AuthContext
+  // CRITICAL: Onboarding is ONLY for authenticated users with incomplete onboarding
+  // If not authenticated, redirect to login (NOT a fallback for auth failures)
+  // If onboarding already complete, redirect to dashboard
   useEffect(() => {
-    // Guard: only redirect once, and only if not already completing
-    if (!loading && user?.onboarding_complete && !isComplete && !hasRedirectedRef.current) {
+    // Block routing until auth resolves
+    if (status === "loading" || loading) {
+      return;
+    }
+
+    // CRITICAL: If unauthenticated, go to login (NOT onboarding)
+    // Onboarding is a post-auth state, not an auth fallback
+    if (status === "unauthenticated" || !user) {
+      console.log("[Onboarding] User not authenticated, redirecting to login");
+      navigate('/login', { replace: true });
+      return;
+    }
+
+    // CRITICAL: Only show onboarding when authenticated AND onboarding incomplete
+    // If onboarding is already complete, redirect to dashboard
+    if (status === "authenticated" && user && user.onboarding_complete && !isComplete && !hasRedirectedRef.current) {
       hasRedirectedRef.current = true;
       navigate('/dashboard', { replace: true });
     }
-  }, [user, loading, navigate, isComplete]);
+  }, [user, loading, status, navigate, isComplete]);
 
   const handleComplete = () => {
     setIsComplete(true);

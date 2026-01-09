@@ -17,12 +17,16 @@ import { Badge } from '@/components/ui/badge';
 import { useQuery, useQueries } from '@tanstack/react-query';
 import { Loader2, Flag, Target, RefreshCw } from 'lucide-react';
 import type { CompletedActivity } from '@/types';
+import { useAuth } from '@/context/AuthContext';
 
 interface SeasonViewProps {
   currentDate: Date;
 }
 
 export function SeasonView({ currentDate }: SeasonViewProps) {
+  // Get auth state to gate queries
+  const { status: authStatus } = useAuth();
+  
   // Get 12 weeks centered around current date
   const weeks = useMemo(() => {
     const quarterStart = new Date(currentDate);
@@ -39,10 +43,15 @@ export function SeasonView({ currentDate }: SeasonViewProps) {
     );
   }, [currentDate]);
 
+  // Get auth state to gate queries
+  const { status: authStatus } = useAuth();
+  
   const { data: seasonData, isLoading: seasonLoading } = useQuery({
     queryKey: ['calendarSeason'],
     queryFn: () => fetchCalendarSeason(),
     retry: 1,
+    // CRITICAL: Only execute when authenticated
+    enabled: authStatus === "authenticated",
   });
 
   // Calculate how many months back we need to fetch activities for
@@ -80,6 +89,8 @@ export function SeasonView({ currentDate }: SeasonViewProps) {
       retry: 1,
       staleTime: 5 * 60 * 1000, // 5 minutes
       gcTime: 30 * 60 * 1000, // 30 minutes
+      // CRITICAL: Only execute when authenticated
+      enabled: authStatus === "authenticated",
     })),
   });
 
@@ -120,6 +131,8 @@ export function SeasonView({ currentDate }: SeasonViewProps) {
     refetchOnMount: true, // Force fresh data on page load
     refetchOnWindowFocus: true, // Refetch when window regains focus
     gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes after unmount
+    // CRITICAL: Only execute when authenticated
+    enabled: authStatus === "authenticated",
   });
 
   const { data: seasonIntelligence } = useQuery({
@@ -128,6 +141,8 @@ export function SeasonView({ currentDate }: SeasonViewProps) {
     retry: 1,
     staleTime: 30 * 60 * 1000, // 30 minutes - intelligence is expensive LLM call
     gcTime: 60 * 60 * 1000, // Keep in cache for 1 hour
+    // CRITICAL: Only execute when authenticated
+    enabled: authStatus === "authenticated",
   });
 
   const isLoading = seasonLoading || activitiesLoading || overviewLoading;

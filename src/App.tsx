@@ -208,7 +208,21 @@ const SafeThirdPartyInit = () => {
 
 // Component to handle sync on app mount and auth redirects
 const AppContent = () => {
-  const { refreshUser } = useAuth();
+  const { refreshUser, status, loading } = useAuth();
+  
+  // CRITICAL: Hard gate - block all routing until auth resolves
+  // This prevents race conditions where routes render before auth state is determined
+  if (status === "loading" || loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="space-y-4 w-full max-w-md p-8">
+          <div className="h-12 w-full bg-muted animate-pulse rounded" />
+          <div className="h-32 w-full bg-muted animate-pulse rounded" />
+          <div className="h-8 w-3/4 bg-muted animate-pulse rounded" />
+        </div>
+      </div>
+    );
+  }
   
   // Handle deep links for mobile OAuth callbacks
   useAuthDeepLink((token) => {
