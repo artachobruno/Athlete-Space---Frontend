@@ -25,7 +25,9 @@ export function useAuthDeepLink(onToken: (t: string) => void) {
     });
 
     return () => {
-      sub.then((h) => h.remove());
+      sub.then((h) => h.remove()).catch(() => {
+        // Ignore errors during cleanup (stub implementation)
+      });
     };
   }, [onToken]);
 }

@@ -262,10 +262,16 @@ export async function loginWithGoogle(): Promise<void> {
 
   if (isNative) {
     // Mobile: Open in-app browser
-    await Browser.open({
-      url,
-      presentationStyle: "fullscreen",
-    });
+    try {
+      await Browser.open({
+        url,
+        presentationStyle: "fullscreen",
+      });
+    } catch (error) {
+      // Fallback to window.location if Capacitor is not available
+      console.warn("[Auth] Capacitor Browser not available, falling back to redirect:", error);
+      window.location.href = url;
+    }
   } else {
     // Web: Standard redirect
     window.location.href = url;

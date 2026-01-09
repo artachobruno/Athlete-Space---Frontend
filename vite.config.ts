@@ -13,6 +13,10 @@ export default defineConfig(({ mode }) => ({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
+      // Stub Capacitor modules for web builds where they're not installed
+      "@capacitor/core": path.resolve(__dirname, "./src/lib/capacitor-stubs/core.ts"),
+      "@capacitor/browser": path.resolve(__dirname, "./src/lib/capacitor-stubs/browser.ts"),
+      "@capacitor/app": path.resolve(__dirname, "./src/lib/capacitor-stubs/app.ts"),
     },
   },
 }));
