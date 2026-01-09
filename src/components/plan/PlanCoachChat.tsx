@@ -7,10 +7,17 @@ import { sendCoachChat, type PlanItem } from '@/lib/api';
 import { CoachProgressPanel } from '@/components/coach/CoachProgressPanel';
 import { PlanList } from '@/components/coach/PlanList';
 
+interface Message {
+  role: 'coach' | 'athlete';
+  content: string;
+  show_plan?: boolean;
+  plan_items?: PlanItem[];
+}
+
 export function PlanCoachChat() {
   const [isOpen, setIsOpen] = useState(false);
   const [input, setInput] = useState('');
-  const [messages, setMessages] = useState<Array<{ role: 'coach' | 'athlete'; content: string }>>([
+  const [messages, setMessages] = useState<Message[]>([
     {
       role: 'coach',
       content: "Questions about this week's plan? I'm here to explain any workout or adjustment.",
@@ -18,8 +25,6 @@ export function PlanCoachChat() {
   ]);
   const [isTyping, setIsTyping] = useState(false);
   const [conversationId, setConversationId] = useState<string | null>(null);
-  const [planItems, setPlanItems] = useState<PlanItem[]>([]);
-  const [showPlan, setShowPlan] = useState<boolean>(false);
 
   const sendMessage = async () => {
     if (!input.trim()) return;
@@ -38,18 +43,11 @@ export function PlanCoachChat() {
         setConversationId(response.conversation_id);
       }
       
-      // Update plan list visibility and items based on backend response
-      if (response.show_plan === true && response.plan_items && response.plan_items.length > 0) {
-        setShowPlan(true);
-        setPlanItems(response.plan_items);
-      } else {
-        setShowPlan(false);
-        setPlanItems([]);
-      }
-      
       setMessages(prev => [...prev, {
         role: 'coach' as const,
         content: response.reply || 'I understand. Let me think about that.',
+        show_plan: response.show_plan === true,
+        plan_items: response.show_plan === true && response.plan_items && response.plan_items.length > 0 ? response.plan_items : undefined,
       }]);
     } catch (error) {
       const apiError = error as { message?: string; status?: number };
@@ -95,26 +93,33 @@ export function PlanCoachChat() {
           <div className="h-64 overflow-y-auto p-3 space-y-3">
             {/* Coach Progress Panel - shown above messages when conversation is active */}
             {conversationId && <CoachProgressPanel conversationId={conversationId} />}
-            {/* Plan List - only rendered when backend explicitly requests it */}
-            {showPlan && planItems.length > 0 && <PlanList planItems={planItems} />}
             {messages.map((msg, idx) => (
-              <div
-                key={idx}
-                className={cn(
-                  'flex',
-                  msg.role === 'athlete' && 'justify-end'
-                )}
-              >
+              <div key={idx} className="space-y-2">
                 <div
                   className={cn(
-                    'max-w-[85%] rounded-lg px-3 py-2 text-sm',
-                    msg.role === 'coach'
-                      ? 'bg-[#2F4F4F]/10 text-foreground'
-                      : 'bg-accent text-accent-foreground'
+                    'flex',
+                    msg.role === 'athlete' && 'justify-end'
                   )}
                 >
-                  {msg.content}
+                  <div
+                    className={cn(
+                      'max-w-[85%] rounded-lg px-3 py-2 text-sm',
+                      msg.role === 'coach'
+                        ? 'bg-[#2F4F4F]/10 text-foreground'
+                        : 'bg-accent text-accent-foreground'
+                    )}
+                  >
+                    {msg.content}
+                  </div>
                 </div>
+                {/* Plan List - rendered inline with coach message that produced it */}
+                {msg.role === 'coach' && msg.show_plan && msg.plan_items && msg.plan_items.length > 0 && (
+                  <div className={cn('flex', msg.role === 'athlete' && 'justify-end')}>
+                    <div className="max-w-[85%]">
+                      <PlanList planItems={msg.plan_items} />
+                    </div>
+                  </div>
+                )}
               </div>
             ))}
             {isTyping && (

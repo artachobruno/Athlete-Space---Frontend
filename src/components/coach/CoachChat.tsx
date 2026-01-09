@@ -13,6 +13,8 @@ interface Message {
   role: 'coach' | 'athlete';
   content: string;
   timestamp: Date;
+  show_plan?: boolean;
+  plan_items?: PlanItem[];
 }
 
 export function CoachChat() {
@@ -20,8 +22,6 @@ export function CoachChat() {
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [conversationId, setConversationId] = useState<string | null>(null);
-  const [planItems, setPlanItems] = useState<PlanItem[]>([]);
-  const [showPlan, setShowPlan] = useState<boolean>(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -68,20 +68,13 @@ export function CoachChat() {
         setConversationId(response.conversation_id);
       }
       
-      // Update plan list visibility and items based on backend response
-      if (response.show_plan === true && response.plan_items && response.plan_items.length > 0) {
-        setShowPlan(true);
-        setPlanItems(response.plan_items);
-      } else {
-        setShowPlan(false);
-        setPlanItems([]);
-      }
-      
       const coachMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: 'coach',
         content: response.reply || 'I understand. Let me think about that.',
         timestamp: new Date(),
+        show_plan: response.show_plan === true,
+        plan_items: response.show_plan === true && response.plan_items && response.plan_items.length > 0 ? response.plan_items : undefined,
       };
       setMessages(prev => [...prev, coachMessage]);
     } catch (error) {
@@ -113,40 +106,48 @@ export function CoachChat() {
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {/* Coach Progress Panel - shown above messages when conversation is active */}
         {conversationId && <CoachProgressPanel conversationId={conversationId} />}
-        {/* Plan List - only rendered when backend explicitly requests it */}
-        {showPlan && planItems.length > 0 && <PlanList planItems={planItems} />}
         {messages.map((message) => (
-          <div
-            key={message.id}
-            className={cn(
-              'flex gap-3 animate-fade-up',
-              message.role === 'athlete' && 'flex-row-reverse'
+          <div key={message.id} className="space-y-2">
+            <div
+              className={cn(
+                'flex gap-3 animate-fade-up',
+                message.role === 'athlete' && 'flex-row-reverse'
+              )}
+            >
+              <div
+                className={cn(
+                  'w-8 h-8 rounded-full flex items-center justify-center shrink-0',
+                  message.role === 'coach'
+                    ? 'bg-coach text-coach-foreground'
+                    : 'bg-muted text-muted-foreground'
+                )}
+              >
+                {message.role === 'coach' ? (
+                  <Brain className="h-4 w-4" />
+                ) : (
+                  <User className="h-4 w-4" />
+                )}
+              </div>
+              <div
+                className={cn(
+                  'max-w-[75%] rounded-lg px-4 py-2.5',
+                  message.role === 'coach'
+                    ? 'bg-[#2F4F4F]/10 text-foreground'
+                    : 'bg-accent text-accent-foreground'
+                )}
+              >
+                <p className="text-sm leading-relaxed">{message.content}</p>
+              </div>
+            </div>
+            {/* Plan List - rendered inline with coach message that produced it */}
+            {message.role === 'coach' && message.show_plan && message.plan_items && message.plan_items.length > 0 && (
+              <div className={cn('flex gap-3', message.role === 'athlete' && 'flex-row-reverse')}>
+                <div className="w-8 shrink-0" />
+                <div className="max-w-[75%]">
+                  <PlanList planItems={message.plan_items} />
+                </div>
+              </div>
             )}
-          >
-            <div
-              className={cn(
-                'w-8 h-8 rounded-full flex items-center justify-center shrink-0',
-                message.role === 'coach'
-                  ? 'bg-coach text-coach-foreground'
-                  : 'bg-muted text-muted-foreground'
-              )}
-            >
-              {message.role === 'coach' ? (
-                <Brain className="h-4 w-4" />
-              ) : (
-                <User className="h-4 w-4" />
-              )}
-            </div>
-            <div
-              className={cn(
-                'max-w-[75%] rounded-lg px-4 py-2.5',
-                message.role === 'coach'
-                  ? 'bg-[#2F4F4F]/10 text-foreground'
-                  : 'bg-accent text-accent-foreground'
-              )}
-            >
-              <p className="text-sm leading-relaxed">{message.content}</p>
-            </div>
           </div>
         ))}
 
