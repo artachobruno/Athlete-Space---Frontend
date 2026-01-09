@@ -1,6 +1,8 @@
 import { api } from "./api";
 import type { UserOut } from "./apiValidation";
 import type { AthleteProfile } from "@/types";
+import { Browser } from "@capacitor/browser";
+import { isNative } from "./platform";
 
 // Minimal user type for auth context (matches what /me returns)
 // This is a subset of the full profile - just enough for authentication
@@ -238,6 +240,35 @@ export async function signupWithEmail(email: string, password: string): Promise<
       message: apiError.message || "Signup failed",
       details: apiError.details,
     };
+  }
+}
+
+/**
+ * Login with Google OAuth.
+ * Handles both web (redirect) and mobile (in-app browser) platforms.
+ */
+export async function loginWithGoogle(): Promise<void> {
+  // Get API base URL (same logic as api.ts)
+  const getBaseURL = () => {
+    if (import.meta.env.PROD) {
+      const apiUrl = import.meta.env.VITE_API_URL || window.location.origin;
+      return apiUrl;
+    }
+    return "http://localhost:8000";
+  };
+  
+  const API = getBaseURL();
+  const url = `${API}/auth/google/login?platform=${isNative ? "mobile" : "web"}`;
+
+  if (isNative) {
+    // Mobile: Open in-app browser
+    await Browser.open({
+      url,
+      presentationStyle: "fullscreen",
+    });
+  } else {
+    // Web: Standard redirect
+    window.location.href = url;
   }
 }
 

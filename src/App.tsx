@@ -2,7 +2,8 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route, useNavigate, useLocation } from "react-router-dom";
+import { BrowserRouter, HashRouter, Routes, Route, useNavigate, useLocation } from "react-router-dom";
+import { isNative } from "@/lib/platform";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { RequireAuth } from "@/components/auth/RequireAuth";
 import { AuthLanding, PublicOnly } from "@/components/auth/AuthRedirects";
@@ -11,6 +12,7 @@ import { useSyncActivities } from "@/hooks/useSyncActivities";
 import { useValidateAuth } from "@/hooks/useValidateAuth";
 import { auth } from "@/lib/auth";
 import { useEffect } from "react";
+import { useAuthDeepLink } from "@/hooks/useAuthDeepLink";
 import { ThemeProvider } from "@/hooks/useTheme";
 import { safeDetectStore, safeInitAnalytics } from "@/lib/safe-analytics";
 import Dashboard from "./pages/Dashboard";
@@ -206,12 +208,26 @@ const SafeThirdPartyInit = () => {
 
 // Component to handle sync on app mount and auth redirects
 const AppContent = () => {
+  const { refreshUser } = useAuth();
+  
+  // Handle deep links for mobile OAuth callbacks
+  useAuthDeepLink((token) => {
+    console.log("Logged in with token:", token);
+    // Refresh user state after token is received
+    refreshUser().catch((err) => {
+      console.error("[App] Failed to refresh user after deep link:", err);
+    });
+  });
+  
   // Only sync activities when auth is ready and user is authenticated
   // This prevents race conditions
   useSyncActivities();
   
+  // Capacitor requires HashRouter on native platforms
+  const Router = isNative ? HashRouter : BrowserRouter;
+  
   return (
-    <BrowserRouter>
+    <Router>
       <OAuthTokenHandler />
       <AuthValidator />
       <AuthRedirectHandler />
@@ -299,7 +315,7 @@ const AppContent = () => {
         />
         <Route path="*" element={<NotFound />} />
       </Routes>
-    </BrowserRouter>
+    </Router>
   );
 };
 

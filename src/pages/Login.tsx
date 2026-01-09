@@ -6,9 +6,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Activity, Mail, Lock, HelpCircle, Shield, ArrowLeft, AlertCircle, Info, FileText, Eye, EyeOff } from 'lucide-react';
-import { loginWithEmail } from '@/lib/auth';
+import { loginWithEmail, loginWithGoogle } from '@/lib/auth';
 import { useAuth } from '@/context/AuthContext';
-import { initiateStravaConnect, initiateGoogleConnect } from '@/lib/api';
+import { initiateStravaConnect } from '@/lib/api';
 import { toast } from '@/hooks/use-toast';
 import { Logo } from '@/components/Logo';
 import { Alert, AlertDescription } from '@/components/ui/alert';
@@ -66,7 +66,7 @@ export default function Login() {
 
   const handleGoogleLogin = async () => {
     try {
-      await initiateGoogleConnect();
+      await loginWithGoogle();
       // User will be redirected to Google, then back with token
     } catch (err) {
       setError('Failed to connect with Google. Please try again.');
