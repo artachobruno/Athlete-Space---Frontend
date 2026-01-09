@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils';
 import { Link } from 'react-router-dom';
 import { sendCoachChat } from '@/lib/api';
 import { generateCoachGreeting } from '@/lib/coachGreeting';
+import { CoachProgressPanel } from '@/components/coach/CoachProgressPanel';
 
 interface Message {
   id: string;
@@ -18,6 +19,7 @@ export function CoachChatWidget() {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
+  const [conversationId, setConversationId] = useState<string | null>(null);
 
   const sendMessage = async () => {
     if (!input.trim()) return;
@@ -35,6 +37,12 @@ export function CoachChatWidget() {
 
     try {
       const response = await sendCoachChat(messageText);
+      
+      // Track conversation ID from response if provided
+      if (response.conversation_id) {
+        setConversationId(response.conversation_id);
+      }
+      
       const coachMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: 'coach',
@@ -91,6 +99,8 @@ export function CoachChatWidget() {
       <CardContent className="flex-1 flex flex-col overflow-hidden p-3 pt-0">
         {/* Messages */}
         <div className="flex-1 overflow-y-auto space-y-2 mb-3">
+          {/* Coach Progress Panel - shown above messages when conversation is active */}
+          {conversationId && <CoachProgressPanel conversationId={conversationId} />}
           {messages.slice(-4).map((message) => (
             <div
               key={message.id}

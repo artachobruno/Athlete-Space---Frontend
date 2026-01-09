@@ -4,6 +4,7 @@ import { Input } from '@/components/ui/input';
 import { MessageCircle, X, Send, Brain } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { sendCoachChat } from '@/lib/api';
+import { CoachProgressPanel } from '@/components/coach/CoachProgressPanel';
 
 export function PlanCoachChat() {
   const [isOpen, setIsOpen] = useState(false);
@@ -15,6 +16,7 @@ export function PlanCoachChat() {
     },
   ]);
   const [isTyping, setIsTyping] = useState(false);
+  const [conversationId, setConversationId] = useState<string | null>(null);
 
   const sendMessage = async () => {
     if (!input.trim()) return;
@@ -27,6 +29,12 @@ export function PlanCoachChat() {
 
     try {
       const response = await sendCoachChat(messageText);
+      
+      // Track conversation ID from response if provided
+      if (response.conversation_id) {
+        setConversationId(response.conversation_id);
+      }
+      
       setMessages(prev => [...prev, {
         role: 'coach' as const,
         content: response.reply || 'I understand. Let me think about that.',
@@ -73,6 +81,8 @@ export function PlanCoachChat() {
 
           {/* Messages */}
           <div className="h-64 overflow-y-auto p-3 space-y-3">
+            {/* Coach Progress Panel - shown above messages when conversation is active */}
+            {conversationId && <CoachProgressPanel conversationId={conversationId} />}
             {messages.map((msg, idx) => (
               <div
                 key={idx}
