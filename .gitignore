@@ -29,3 +29,6 @@ docs/
 !README.md
 .env*
 node_modules
+
+# Vite build artifacts
+vite.config.ts.timestamp-*.mjs

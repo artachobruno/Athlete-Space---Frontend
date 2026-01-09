@@ -43,9 +43,6 @@ export function SeasonView({ currentDate }: SeasonViewProps) {
     );
   }, [currentDate]);
 
-  // Get auth state to gate queries
-  const { status: authStatus } = useAuth();
-  
   const { data: seasonData, isLoading: seasonLoading } = useQuery({
     queryKey: ['calendarSeason'],
     queryFn: () => fetchCalendarSeason(),
