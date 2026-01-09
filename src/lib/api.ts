@@ -1415,13 +1415,13 @@ export const sendCoachChat = async (
 };
 
 /**
- * Fetches calendar week data for the current week.
- * Note: The API endpoint doesn't accept a date parameter - it returns the current week.
+ * Fetches calendar week data for a specific week.
+ * @param date - Optional date string (YYYY-MM-DD) for the week start. If not provided, returns current week.
  */
 export const fetchCalendarWeek = async (date?: string): Promise<WeekResponse> => {
-  console.log("[API] Fetching calendar week", date ? `(requested date: ${date} - API returns current week)` : "");
+  console.log("[API] Fetching calendar week", date ? `(requested date: ${date})` : "(current week)");
   try {
-    const response = await api.get("/calendar/week");
+    const response = await api.get("/calendar/week", date ? { params: { date } } : {});
     console.log("[API] Calendar week response:", response);
     
     // Handle different response formats
