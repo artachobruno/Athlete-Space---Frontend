@@ -8,6 +8,8 @@ import { generateCoachGreeting } from '@/lib/coachGreeting';
 import { CoachProgressPanel } from './CoachProgressPanel';
 import { PlanList } from './PlanList';
 
+type CoachMode = 'idle' | 'awaiting_intent' | 'planning' | 'executing' | 'done';
+
 interface Message {
   id: string;
   role: 'coach' | 'athlete';
@@ -18,7 +20,24 @@ interface Message {
   response_type?: 'plan' | 'weekly_plan' | 'season_plan' | 'session_plan' | 'recommendation' | 'summary' | 'greeting' | 'question' | 'explanation' | 'smalltalk';
 }
 
+/**
+ * Detects if the last user message has plan intent
+ */
+const hasPlanIntent = (message: string): boolean => {
+  const lowerMessage = message.toLowerCase();
+  return (
+    lowerMessage.includes('plan') ||
+    lowerMessage.includes('week') ||
+    lowerMessage.includes('training') ||
+    lowerMessage.includes('schedule') ||
+    lowerMessage.includes('workout') ||
+    lowerMessage.includes('generate') ||
+    lowerMessage.includes('create')
+  );
+};
+
 export function CoachChat() {
+  const [mode, setMode] = useState<CoachMode>('idle');
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
@@ -33,18 +52,21 @@ export function CoachChat() {
     scrollToBottom();
   }, [messages]);
 
-  // Set initial greeting on mount (no API call needed - endpoint is deprecated)
+  // Set initial greeting on mount - only once when idle and no messages
   useEffect(() => {
-    const greeting = generateCoachGreeting(null);
-    setMessages([
-      {
-        id: '1',
-        role: 'coach',
-        content: greeting,
-        timestamp: new Date(),
-      },
-    ]);
-  }, []);
+    if (messages.length === 0) {
+      const greeting = generateCoachGreeting(null);
+      setMessages([
+        {
+          id: '1',
+          role: 'coach',
+          content: greeting,
+          timestamp: new Date(),
+        },
+      ]);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Only run on mount
 
   const sendMessage = async () => {
     if (!input.trim()) return;
@@ -58,6 +80,22 @@ export function CoachChat() {
 
     setMessages(prev => [...prev, userMessage]);
     const messageText = input.trim();
+    
+    // Detect plan intent from last user message
+    // Only allow transitions: idle -> planning, or done -> idle (new conversation)
+    if (hasPlanIntent(messageText)) {
+      if (mode === 'idle' || mode === 'done') {
+        // Transition to planning mode - do NOT generate plan yet
+        setMode('planning');
+      }
+      // If already in planning/executing, stay in current state
+    } else {
+      // Non-plan message - reset to idle only if we're not actively executing
+      if (mode !== 'executing') {
+        setMode('idle');
+      }
+    }
+    
     setInput('');
     setIsTyping(true);
 
@@ -79,6 +117,12 @@ export function CoachChat() {
         response_type: response.response_type,
       };
       setMessages(prev => [...prev, coachMessage]);
+      
+      // Only transition to done if we're already executing and plan is shown
+      // Never auto-transition from planning to executing - user must confirm
+      if (mode === 'executing' && response.show_plan && response.plan_items && response.plan_items.length > 0) {
+        setMode('done');
+      }
     } catch (error) {
       const apiError = error as { message?: string; status?: number };
       const errorContent = apiError.message || 'Sorry, I encountered an error. Please try again.';
@@ -90,6 +134,69 @@ export function CoachChat() {
         timestamp: new Date(),
       };
       setMessages(prev => [...prev, errorMessage]);
+      // Reset to idle on error
+      setMode('idle');
+    } finally {
+      setIsTyping(false);
+    }
+  };
+
+  const handleConfirmPlan = async () => {
+    // Only allow transition from planning to executing
+    if (mode !== 'planning') {
+      return;
+    }
+
+    // Add confirm message first
+    const confirmMessage: Message = {
+      id: Date.now().toString(),
+      role: 'athlete',
+      content: 'Yes, generate the weekly plan',
+      timestamp: new Date(),
+    };
+    setMessages(prev => [...prev, confirmMessage]);
+
+    // Send confirmation message to backend to trigger plan generation
+    setMode('executing');
+    setIsTyping(true);
+
+    try {
+      // Send a message that explicitly requests plan generation
+      const response = await sendCoachChat('Yes, generate the weekly plan');
+      
+      if (response.conversation_id) {
+        setConversationId(response.conversation_id);
+      }
+      
+      const coachResponse: Message = {
+        id: (Date.now() + 1).toString(),
+        role: 'coach',
+        content: response.reply || 'Generating your plan...',
+        timestamp: new Date(),
+        show_plan: response.show_plan === true,
+        plan_items: response.show_plan === true && response.plan_items && response.plan_items.length > 0 ? response.plan_items : undefined,
+        response_type: response.response_type,
+      };
+      
+      setMessages(prev => [...prev, coachResponse]);
+      
+      // If plan is shown, transition to done
+      if (response.show_plan && response.plan_items && response.plan_items.length > 0) {
+        setMode('done');
+      }
+    } catch (error) {
+      const apiError = error as { message?: string; status?: number };
+      const errorContent = apiError.message || 'Sorry, I encountered an error generating the plan. Please try again.';
+      
+      const errorMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        role: 'coach',
+        content: errorContent,
+        timestamp: new Date(),
+      };
+      setMessages(prev => [...prev, errorMessage]);
+      // Reset to planning on error so user can try again
+      setMode('planning');
     } finally {
       setIsTyping(false);
     }
@@ -106,8 +213,14 @@ export function CoachChat() {
     <div className="flex-1 flex flex-col bg-card rounded-lg border border-border overflow-hidden">
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {/* Coach Progress Panel - shown above messages when conversation is active */}
-        {conversationId && <CoachProgressPanel conversationId={conversationId} />}
+        {/* Coach Progress Panel - shown when conversation is active (executing) OR when in planning mode (preview) */}
+        {(conversationId && mode === 'executing') || mode === 'planning' ? (
+          <CoachProgressPanel 
+            conversationId={conversationId || null} 
+            mode={mode}
+            onConfirm={mode === 'planning' ? handleConfirmPlan : undefined}
+          />
+        ) : null}
         {messages.map((message) => (
           <div key={message.id} className="space-y-2">
             <div

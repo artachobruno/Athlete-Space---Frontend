@@ -4,18 +4,38 @@ import { cn } from '@/lib/utils';
 import { fetchCoachProgress } from '@/lib/api/coach';
 import { resolveStepStatus } from '@/utils/resolveStepStatus';
 import type { CoachProgressResponse, StepStatus } from '@/types/coachProgress';
+import { Button } from '@/components/ui/button';
+
+type CoachMode = 'idle' | 'awaiting_intent' | 'planning' | 'executing' | 'done';
 
 interface CoachProgressPanelProps {
-  conversationId: string;
+  conversationId: string | null;
+  mode: CoachMode;
+  onConfirm?: () => void;
 }
 
-export function CoachProgressPanel({ conversationId }: CoachProgressPanelProps) {
+// Preview checklist steps (read-only, what will happen)
+const PREVIEW_CHECKLIST_STEPS = [
+  { id: 'review', label: 'Review CTL / ATL / TSB' },
+  { id: 'focus', label: 'Determine weekly focus' },
+  { id: 'workouts', label: 'Plan key workouts' },
+  { id: 'recovery', label: 'Insert recovery' },
+];
+
+export function CoachProgressPanel({ conversationId, mode, onConfirm }: CoachProgressPanelProps) {
   const [progress, setProgress] = useState<CoachProgressResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
+  // Only fetch progress when executing (active conversation)
   useEffect(() => {
-    if (!conversationId) return;
+    if (!conversationId || mode !== 'executing') {
+      setIsLoading(false);
+      setProgress(null);
+      return;
+    }
+    
+    setIsLoading(true);
 
     const fetchProgress = async () => {
       try {
@@ -53,9 +73,47 @@ export function CoachProgressPanel({ conversationId }: CoachProgressPanelProps) 
         intervalRef.current = null;
       }
     };
-  }, [conversationId]);
+  }, [conversationId, mode]);
 
-  if (isLoading || !progress || progress.steps.length === 0) {
+  // Show preview checklist when in planning mode
+  if (mode === 'planning') {
+    return (
+      <div className="mb-4 p-4 bg-accent/5 border border-accent/20 rounded-lg">
+        <div className="mb-3">
+          <h3 className="text-sm font-semibold text-foreground mb-1">
+            Proposed Weekly Planning Steps
+          </h3>
+          <p className="text-xs text-muted-foreground">
+            Review and confirm before generating your plan.
+          </p>
+        </div>
+        <ul className="space-y-2 mb-4" role="list">
+          {PREVIEW_CHECKLIST_STEPS.map((step) => (
+            <li
+              key={step.id}
+              className="flex items-center gap-3 text-sm text-muted-foreground"
+            >
+              <span className="flex items-center justify-center shrink-0" aria-hidden="true">
+                <Square className="h-4 w-4 text-muted-foreground/50" />
+              </span>
+              <span>{step.label}</span>
+            </li>
+          ))}
+        </ul>
+        {onConfirm && (
+          <Button
+            onClick={onConfirm}
+            className="w-full bg-coach hover:bg-coach/90 text-coach-foreground"
+          >
+            Generate Weekly Plan
+          </Button>
+        )}
+      </div>
+    );
+  }
+
+  // Show actual progress when executing
+  if (mode !== 'executing' || isLoading || !progress || progress.steps.length === 0) {
     return null;
   }
 
