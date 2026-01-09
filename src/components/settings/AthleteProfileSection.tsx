@@ -11,6 +11,7 @@ import { cn } from '@/lib/utils';
 import { fetchUserProfile, updateUserProfile } from '@/lib/api';
 import { toast } from '@/hooks/use-toast';
 import { useQueryClient } from '@tanstack/react-query';
+import { useAuth } from '@/context/AuthContext';
 
 interface ProfileState {
   name: string;
@@ -20,20 +21,28 @@ interface ProfileState {
   unitSystem: 'imperial' | 'metric';
   location: string;
   dateOfBirth?: string;
-  height?: string;
+  heightFeet?: string;
+  heightInches?: string;
 }
+
+// Format number to 1 decimal place max
+const format1Decimal = (value: number): number => {
+  return Number(value.toFixed(1));
+};
 
 export function AthleteProfileSection() {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   const [profile, setProfile] = useState<ProfileState>({
     name: '',
-    email: '',
+    email: user?.email || '',
     gender: '',
     weight: '',
     unitSystem: 'imperial',
     location: '',
     dateOfBirth: '',
-    height: '',
+    heightFeet: '',
+    heightInches: '',
   });
 
   const [isLoading, setIsLoading] = useState(true);
@@ -44,6 +53,13 @@ export function AthleteProfileSection() {
   useEffect(() => {
     loadProfile();
   }, []);
+
+  // Update email when user changes (from auth context)
+  useEffect(() => {
+    if (user?.email) {
+      setProfile((prev) => ({ ...prev, email: user.email }));
+    }
+  }, [user?.email]);
 
   useEffect(() => {
     if (initialProfile) {
@@ -56,7 +72,8 @@ export function AthleteProfileSection() {
         unitSystem: obj.unitSystem || 'imperial',
         location: obj.location || '',
         dateOfBirth: obj.dateOfBirth || '',
-        height: obj.height || '',
+        heightFeet: obj.heightFeet || '',
+        heightInches: obj.heightInches || '',
       });
       const normalizedProfile = normalize(profile);
       const normalizedInitial = normalize(initialProfile);
@@ -73,19 +90,23 @@ export function AthleteProfileSection() {
     try {
       const userProfile = await fetchUserProfile();
       
+      // Email comes from auth context (useAuth), not from profile
+      const emailFromAuth = user?.email || '';
+      
       // Handle null response (profile is optional)
       if (!userProfile) {
         console.log('Profile not available - user may need to complete onboarding');
-        // Set default empty profile
+        // Set default empty profile with email from auth
         const defaultProfile: ProfileState = {
           name: '',
-          email: '',
+          email: emailFromAuth,
           gender: '',
           weight: '',
           unitSystem: 'imperial',
           location: '',
           dateOfBirth: '',
-          height: '',
+          heightFeet: '',
+          heightInches: '',
         };
         setProfile(defaultProfile);
         setInitialProfile(defaultProfile);
@@ -93,14 +114,49 @@ export function AthleteProfileSection() {
         return;
       }
       
-      // Backend returns weight_kg, height_cm, date_of_birth, unit_system
-      const unitSystem = (userProfile as { unit_system?: 'imperial' | 'metric' }).unit_system || (userProfile as { unitSystem?: 'imperial' | 'metric' }).unitSystem || 'imperial';
-      const weightKg = (userProfile as { weight_kg?: number }).weight_kg || (userProfile as { weight?: number }).weight;
-      const heightCm = (userProfile as { height_cm?: number }).height_cm || (userProfile as { height?: number }).height;
+      // FE-A3: Default to Imperial unless user explicitly changes
+      // Backend returns weight_kg/weight_lbs, height_cm/height_in, date_of_birth, unit_system
+      const backendUnitSystem = (userProfile as { unit_system?: 'imperial' | 'metric' }).unit_system || (userProfile as { unitSystem?: 'imperial' | 'metric' }).unitSystem;
+      // If unit_system is missing → default to "imperial"
+      const unitSystem = backendUnitSystem || 'imperial';
       
-      // Convert from backend units (kg/cm) to display units based on unit system
-      const displayWeight = weightKg ? (unitSystem === 'metric' ? weightKg.toString() : (weightKg / 0.453592).toString()) : '';
-      const displayHeight = heightCm ? (unitSystem === 'metric' ? heightCm.toString() : (heightCm / 2.54).toString()) : '';
+      // Get weight - backend may return weight_kg (metric) or weight_lbs (imperial)
+      const weightKg = (userProfile as { weight_kg?: number }).weight_kg;
+      const weightLbs = (userProfile as { weight_lbs?: number }).weight_lbs;
+      let displayWeight = '';
+      if (weightLbs !== undefined && weightLbs !== null) {
+        // Backend already provided weight in lbs
+        displayWeight = format1Decimal(weightLbs).toString();
+      } else if (weightKg !== undefined && weightKg !== null) {
+        // Convert from kg to lbs for imperial, or use kg for metric
+        const weightValue = unitSystem === 'metric' ? weightKg : format1Decimal(weightKg / 0.453592);
+        displayWeight = weightValue.toString();
+      }
+      
+      // Get height - backend may return height_cm (metric) or height_in (imperial)
+      const heightCm = (userProfile as { height_cm?: number }).height_cm;
+      const heightIn = (userProfile as { height_in?: number }).height_in;
+      let heightFeet = '';
+      let heightInches = '';
+      if (heightIn !== undefined && heightIn !== null) {
+        // Backend already provided height in inches - convert to feet/inches
+        const totalInches = format1Decimal(heightIn);
+        heightFeet = Math.floor(totalInches / 12).toString();
+        heightInches = (totalInches % 12).toFixed(0);
+      } else if (heightCm !== undefined && heightCm !== null) {
+        // Convert from cm to inches for imperial, or use cm for metric
+        if (unitSystem === 'imperial') {
+          const totalInches = format1Decimal(heightCm / 2.54);
+          heightFeet = Math.floor(totalInches / 12).toString();
+          heightInches = (totalInches % 12).toFixed(0);
+        } else {
+          // Metric: display in cm (but we still need to handle this if needed)
+          // For now, metric height is not supported in this component per requirements
+          const totalInches = format1Decimal(heightCm / 2.54);
+          heightFeet = Math.floor(totalInches / 12).toString();
+          heightInches = (totalInches % 12).toFixed(0);
+        }
+      }
       
       // Map backend gender format (M/F) to frontend format
       const backendGender = (userProfile as { gender?: string }).gender || '';
@@ -108,13 +164,14 @@ export function AthleteProfileSection() {
       
       const profileData: ProfileState = {
         name: (userProfile as { name?: string }).name || '',
-        email: (userProfile as { email?: string }).email || '',
+        email: emailFromAuth, // Always use email from auth context
         gender: displayGender,
         weight: displayWeight,
         unitSystem,
         location: (userProfile as { location?: string }).location || '',
         dateOfBirth: (userProfile as { date_of_birth?: string }).date_of_birth || (userProfile as { dateOfBirth?: string }).dateOfBirth || '',
-        height: displayHeight,
+        heightFeet,
+        heightInches,
       };
       setProfile(profileData);
       setInitialProfile(profileData);
@@ -151,7 +208,7 @@ export function AthleteProfileSection() {
 
       const updateData: Partial<import('@/types').AthleteProfile> = {
         name: profile.name,
-        // Email is changed through /auth/change-email endpoint, not through profile update
+        // Email is NOT included in save payload - it comes from /me (auth context) only
         gender: profile.gender === 'not-specified' ? '' : profile.gender,
         location: profile.location,
         unitSystem: profile.unitSystem,
@@ -167,28 +224,101 @@ export function AthleteProfileSection() {
         }
       }
 
+      // Handle weight - send weight_lbs for imperial, weight_kg for metric (1 decimal max)
       if (profile.weight) {
-        // Convert to kg if needed (backend expects weight_kg as integer)
-        const weightInKg = profile.unitSystem === 'metric'
-          ? parseFloat(profile.weight)
-          : parseFloat(profile.weight) * 0.453592;
-        updateData.weight = Math.round(weightInKg);
+        const weightValue = parseFloat(profile.weight);
+        if (!isNaN(weightValue)) {
+          const formattedWeight = format1Decimal(weightValue);
+          if (profile.unitSystem === 'imperial') {
+            // Send weight_lbs for imperial (1 decimal max)
+            (updateData as { weight_lbs?: number }).weight_lbs = formattedWeight;
+          } else {
+            // Send weight_kg for metric (1 decimal max)
+            (updateData as { weight_kg?: number }).weight_kg = formattedWeight;
+          }
+        }
       }
 
       if (profile.dateOfBirth) {
         updateData.dateOfBirth = profile.dateOfBirth;
       }
 
-      if (profile.height) {
-        // Convert to cm if needed (backend expects height_cm as integer)
-        const heightInCm = profile.unitSystem === 'metric'
-          ? parseFloat(profile.height)
-          : parseFloat(profile.height) * 2.54;
-        updateData.height = Math.round(heightInCm);
+      // Handle height - convert feet+inches to total inches for imperial, or cm for metric (1 decimal max)
+      if (profile.heightFeet || profile.heightInches) {
+        const feet = parseFloat(profile.heightFeet || '0');
+        const inches = parseFloat(profile.heightInches || '0');
+        if (!isNaN(feet) && !isNaN(inches)) {
+          if (profile.unitSystem === 'imperial') {
+            // Convert feet + inches to total inches (1 decimal max)
+            const totalInches = feet * 12 + inches;
+            (updateData as { height_in?: number }).height_in = format1Decimal(totalInches);
+          } else {
+            // For metric, convert to cm (feet and inches inputs are used, but convert to cm for backend)
+            const totalInches = feet * 12 + inches;
+            const heightCm = format1Decimal(totalInches * 2.54);
+            (updateData as { height_cm?: number }).height_cm = heightCm;
+          }
+        }
       }
 
-      await updateUserProfile(updateData);
-      setInitialProfile({ ...profile });
+      // Save to backend and get updated response
+      const updatedProfile = await updateUserProfile(updateData);
+      
+      // Update local state from backend response
+      if (updatedProfile) {
+        const unitSystem = (updatedProfile as { unit_system?: 'imperial' | 'metric' }).unit_system || 
+                          (updatedProfile as { unitSystem?: 'imperial' | 'metric' }).unitSystem || 
+                          'imperial';
+        
+        // Get weight from response
+        const weightLbs = (updatedProfile as { weight_lbs?: number }).weight_lbs;
+        const weightKg = (updatedProfile as { weight_kg?: number }).weight_kg;
+        let displayWeight = '';
+        if (weightLbs !== undefined && weightLbs !== null) {
+          displayWeight = format1Decimal(weightLbs).toString();
+        } else if (weightKg !== undefined && weightKg !== null) {
+          const weightValue = unitSystem === 'metric' ? weightKg : format1Decimal(weightKg / 0.453592);
+          displayWeight = weightValue.toString();
+        }
+        
+        // Get height from response
+        const heightIn = (updatedProfile as { height_in?: number }).height_in;
+        const heightCm = (updatedProfile as { height_cm?: number }).height_cm;
+        let heightFeet = '';
+        let heightInches = '';
+        if (heightIn !== undefined && heightIn !== null) {
+          const totalInches = format1Decimal(heightIn);
+          heightFeet = Math.floor(totalInches / 12).toString();
+          heightInches = (totalInches % 12).toFixed(0);
+        } else if (heightCm !== undefined && heightCm !== null) {
+          const totalInches = format1Decimal(heightCm / 2.54);
+          heightFeet = Math.floor(totalInches / 12).toString();
+          heightInches = (totalInches % 12).toFixed(0);
+        }
+        
+        const backendGender = (updatedProfile as { gender?: string }).gender || '';
+        const displayGender = backendGender === 'M' || backendGender === 'F' ? backendGender : '';
+        
+        const updatedState: ProfileState = {
+          name: (updatedProfile as { name?: string }).name || '',
+          email: user?.email || '', // Always use email from auth context
+          gender: displayGender,
+          weight: displayWeight,
+          unitSystem,
+          location: (updatedProfile as { location?: string }).location || '',
+          dateOfBirth: (updatedProfile as { date_of_birth?: string }).date_of_birth || 
+                      (updatedProfile as { dateOfBirth?: string }).dateOfBirth || '',
+          heightFeet,
+          heightInches,
+        };
+        
+        setProfile(updatedState);
+        setInitialProfile(updatedState);
+      } else {
+        // If no response, just update initial profile to current state
+        setInitialProfile({ ...profile });
+      }
+      
       setHasChanges(false);
       // Invalidate queries to update unit system across the app
       await queryClient.invalidateQueries({ queryKey: ['userProfile'] });
@@ -260,7 +390,7 @@ export function AthleteProfileSection() {
             <Input
               id="email"
               type="email"
-              value={profile.email}
+              value={user?.email || ''}
               disabled
               className="bg-muted"
             />
@@ -306,10 +436,20 @@ export function AthleteProfileSection() {
               <Input
                 id="weight"
                 type="number"
+                step="0.1"
                 value={profile.weight}
                 onChange={(e) => setProfile({ ...profile, weight: e.target.value })}
+                onBlur={(e) => {
+                  const value = e.target.value;
+                  if (value && value !== '-') {
+                    const numValue = parseFloat(value);
+                    if (!isNaN(numValue)) {
+                      setProfile({ ...profile, weight: format1Decimal(numValue).toString() });
+                    }
+                  }
+                }}
                 className="flex-1"
-                placeholder="0"
+                placeholder="0.0"
               />
               <span className="flex items-center px-3 text-sm text-muted-foreground bg-muted rounded-md">
                 {weightUnit}
@@ -319,17 +459,53 @@ export function AthleteProfileSection() {
           <div className="space-y-2">
             <Label htmlFor="height">Height</Label>
             <div className="flex gap-2">
-              <Input
-                id="height"
-                type="number"
-                value={profile.height || ''}
-                onChange={(e) => setProfile({ ...profile, height: e.target.value })}
-                className="flex-1"
-                placeholder="0"
-              />
-              <span className="flex items-center px-3 text-sm text-muted-foreground bg-muted rounded-md">
-                {profile.unitSystem === 'metric' ? 'cm' : 'in'}
-              </span>
+              <div className="flex gap-1 flex-1">
+                <Input
+                  id="heightFeet"
+                  type="number"
+                  min="0"
+                  value={profile.heightFeet || ''}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    if (value === '' || value === '-') {
+                      setProfile({ ...profile, heightFeet: value });
+                    } else {
+                      const numValue = parseInt(value, 10);
+                      if (!isNaN(numValue) && numValue >= 0) {
+                        setProfile({ ...profile, heightFeet: numValue.toString() });
+                      } else if (value === '') {
+                        setProfile({ ...profile, heightFeet: '' });
+                      }
+                    }
+                  }}
+                  className="flex-1"
+                  placeholder="0"
+                />
+                <span className="flex items-center px-2 text-sm text-muted-foreground">ft</span>
+                <Input
+                  id="heightInches"
+                  type="number"
+                  min="0"
+                  max="11"
+                  value={profile.heightInches || ''}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    if (value === '' || value === '-') {
+                      setProfile({ ...profile, heightInches: value });
+                    } else {
+                      const numValue = parseInt(value, 10);
+                      if (!isNaN(numValue) && numValue >= 0 && numValue <= 11) {
+                        setProfile({ ...profile, heightInches: numValue.toString() });
+                      } else if (value === '') {
+                        setProfile({ ...profile, heightInches: '' });
+                      }
+                    }
+                  }}
+                  className="flex-1"
+                  placeholder="0"
+                />
+                <span className="flex items-center px-2 text-sm text-muted-foreground">in</span>
+              </div>
             </div>
           </div>
           <div className="space-y-2">

@@ -45,6 +45,11 @@ export function PrivacySecuritySection() {
   });
   const [isSavingPrivacy, setIsSavingPrivacy] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [deleteAccountData, setDeleteAccountData] = useState({
+    password: '',
+    confirmation: '',
+  });
+  const [isDeletingAccount, setIsDeletingAccount] = useState(false);
 
   // Load privacy settings on mount
   useEffect(() => {
@@ -211,8 +216,29 @@ export function PrivacySecuritySection() {
   };
 
   const handleDeleteAccount = async () => {
+    // FE-PS4: Require password and typed confirmation
+    if (!deleteAccountData.password) {
+      toast({
+        title: 'Password required',
+        description: 'Please enter your password to confirm account deletion',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (deleteAccountData.confirmation !== 'DELETE') {
+      toast({
+        title: 'Confirmation required',
+        description: 'Please type "DELETE" to confirm account deletion',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    setIsDeletingAccount(true);
     try {
-      // In a real app, this would call an API endpoint
+      // In a real app, this would call an API endpoint with password
+      // For now, simulate API call
       await new Promise(resolve => setTimeout(resolve, 1000));
       auth.clear();
       toast({
@@ -227,6 +253,7 @@ export function PrivacySecuritySection() {
         description: error instanceof Error ? error.message : 'Could not delete your account',
         variant: 'destructive',
       });
+      setIsDeletingAccount(false);
     }
   };
 
@@ -518,6 +545,7 @@ export function PrivacySecuritySection() {
         <Separator />
 
         {/* Delete Account */}
+        {/* FE-PS4: Explicit confirmation UX with password and typed confirmation */}
         <div className="space-y-4">
           <div>
             <h3 className="text-sm font-medium text-destructive mb-1">Danger Zone</h3>
@@ -527,25 +555,65 @@ export function PrivacySecuritySection() {
           </div>
           <AlertDialog>
             <AlertDialogTrigger asChild>
-              <Button variant="destructive">
-                <Trash2 className="h-4 w-4 mr-2" />
-                Delete Account
+              <Button variant="destructive" disabled={isDeletingAccount}>
+                {isDeletingAccount ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Deleting...
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Delete Account
+                  </>
+                )}
               </Button>
             </AlertDialogTrigger>
-            <AlertDialogContent>
+            <AlertDialogContent className="max-w-md">
               <AlertDialogHeader>
                 <AlertDialogTitle>Are you absolutely sure?</AlertDialogTitle>
-                <AlertDialogDescription>
-                  This action cannot be undone. This will permanently delete your account
-                  and remove all your data from our servers. All your activities, training plans,
-                  and progress will be lost forever.
+                <AlertDialogDescription className="space-y-4">
+                  <p>
+                    This action cannot be undone. This will permanently delete your account
+                    and remove all your data from our servers. All your activities, training plans,
+                    and progress will be lost forever.
+                  </p>
+                  <div className="space-y-3 pt-2">
+                    <div className="space-y-2">
+                      <Label htmlFor="delete-password">Enter your password</Label>
+                      <div className="relative">
+                        <Input
+                          id="delete-password"
+                          type="password"
+                          placeholder="Enter your password"
+                          value={deleteAccountData.password}
+                          onChange={(e) => setDeleteAccountData({ ...deleteAccountData, password: e.target.value })}
+                          disabled={isDeletingAccount}
+                        />
+                      </div>
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="delete-confirmation">Type "DELETE" to confirm</Label>
+                      <Input
+                        id="delete-confirmation"
+                        type="text"
+                        placeholder="Type DELETE"
+                        value={deleteAccountData.confirmation}
+                        onChange={(e) => setDeleteAccountData({ ...deleteAccountData, confirmation: e.target.value })}
+                        disabled={isDeletingAccount}
+                      />
+                    </div>
+                  </div>
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
-                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogCancel onClick={() => setDeleteAccountData({ password: '', confirmation: '' })}>
+                  Cancel
+                </AlertDialogCancel>
                 <AlertDialogAction
                   onClick={handleDeleteAccount}
-                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  disabled={!deleteAccountData.password || deleteAccountData.confirmation !== 'DELETE' || isDeletingAccount}
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Delete Account
                 </AlertDialogAction>

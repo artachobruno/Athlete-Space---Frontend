@@ -446,30 +446,46 @@ export function OnboardingChat({ onComplete, isComplete }: OnboardingChatProps) 
       // Map goal to training focus
       const trainingFocus = data.goal.toLowerCase().includes('race') ? 'race_focused' : 'general_fitness';
 
+        // FE-5: Use same persistence logic as settings
         // Prepare profile data for backend (map to backend format - snake_case)
         // Note: primary_sports goes in training_preferences, not profile
         const profileData: Record<string, unknown> = {};
+        
+        // FE-2: Store goal as free text verbatim (no parsing/normalization)
         if (data.goal) {
           profileData.goals = [data.goal];
         }
-        if (targetEvent) {
-          profileData.target_event = targetEvent;
+        
+        // FE-4: Send race info as raw user input with source marker
+        if (targetEvent || data.raceDetails) {
+          if (targetEvent) {
+            profileData.target_event = targetEvent;
+          }
+          
+          // FE-4: Send race_input with source marker for backend LLM processing
+          profileData.race_input = {
+            event_name: targetEvent?.name || '',
+            event_date: targetEvent?.date || '',
+            details: data.raceDetails || '',
+            source: 'user' as const,
+          };
         }
         // strava_connected is set automatically by backend based on connection status
 
+        // FE-1: Send ALL fields on save (not deltas)
         // Complete onboarding using the dedicated endpoint
         const result = await completeOnboarding({
           profile: profileData as Partial<AthleteProfile>,
           training_preferences: {
-        years_of_training: 1, // Default, can be updated later
-        primary_sports: data.sports,
-        available_days: availableDays,
-        weekly_hours: data.hoursPerWeek,
-        training_focus: trainingFocus,
-        injury_history: data.hasInjury,
+            years_of_training: 1, // Default, can be updated later
+            primary_sports: data.sports,
+            available_days: availableDays,
+            weekly_hours: data.hoursPerWeek,
+            training_focus: trainingFocus,
+            injury_history: data.hasInjury,
             injury_notes: data.hasInjury && data.injuryDetails ? data.injuryDetails : null,
             consistency: data.consistency || null,
-            goal: data.goal || null,
+            goal: data.goal || null, // FE-2: Free text, stored verbatim
           },
           generate_initial_plan: data.stravaConnected, // Only generate plan if Strava is connected
         });

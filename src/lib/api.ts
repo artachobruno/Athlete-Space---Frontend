@@ -362,30 +362,60 @@ export const updateUserProfile = async (
       || (profileData as { date_of_birth?: string; dateOfBirth?: string }).dateOfBirth;
     if (dateOfBirth !== undefined) backendData.date_of_birth = dateOfBirth;
     
-    // Handle weight_kg (snake_case) or weight (camelCase)
-    // Backend expects integer, so round any fractional values
-    const weight = (profileData as { weight_kg?: number; weight?: number | string }).weight_kg 
-      || (profileData as { weight_kg?: number; weight?: number | string }).weight;
-    if (weight !== undefined) {
-      const weightValue = typeof weight === 'number' ? weight : parseFloat(String(weight));
-      backendData.weight_kg = Math.round(weightValue);
-    }
-    
-    // Handle height_cm (snake_case) or height (camelCase)
-    // Backend expects integer, so round any fractional values
-    const height = (profileData as { height_cm?: number; height?: number | string }).height_cm 
-      || (profileData as { height_cm?: number; height?: number | string }).height;
-    if (height !== undefined) {
-      const heightValue = typeof height === 'number' ? height : parseFloat(String(height));
-      backendData.height_cm = Math.round(heightValue);
-    }
-    
-    if (profileData.location !== undefined) backendData.location = profileData.location;
-    
-    // Handle unit_system (snake_case) or unitSystem (camelCase)
+    // Handle unit_system (snake_case) or unitSystem (camelCase) - need to check this first for weight/height handling
     const unitSystem = (profileData as { unit_system?: 'imperial' | 'metric'; unitSystem?: 'imperial' | 'metric' }).unit_system 
       || (profileData as { unit_system?: 'imperial' | 'metric'; unitSystem?: 'imperial' | 'metric' }).unitSystem;
     if (unitSystem !== undefined) backendData.unit_system = unitSystem;
+    
+    // Handle weight - support weight_lbs (imperial) and weight_kg (metric) with 1 decimal precision
+    const weightLbs = (profileData as { weight_lbs?: number }).weight_lbs;
+    const weightKg = (profileData as { weight_kg?: number }).weight_kg;
+    if (weightLbs !== undefined && weightLbs !== null) {
+      // Send weight_lbs for imperial (1 decimal max)
+      backendData.weight_lbs = Number(weightLbs.toFixed(1));
+    } else if (weightKg !== undefined && weightKg !== null) {
+      // Send weight_kg for metric (1 decimal max)
+      backendData.weight_kg = Number(weightKg.toFixed(1));
+    } else {
+      // Fallback: try to get weight and convert based on unit system
+      const weight = (profileData as { weight?: number | string }).weight;
+      if (weight !== undefined && weight !== null) {
+        const weightValue = typeof weight === 'number' ? weight : parseFloat(String(weight));
+        if (!isNaN(weightValue)) {
+          if (unitSystem === 'imperial') {
+            backendData.weight_lbs = Number(weightValue.toFixed(1));
+          } else {
+            backendData.weight_kg = Number(weightValue.toFixed(1));
+          }
+        }
+      }
+    }
+    
+    // Handle height - support height_in (imperial) and height_cm (metric) with 1 decimal precision
+    const heightIn = (profileData as { height_in?: number }).height_in;
+    const heightCm = (profileData as { height_cm?: number }).height_cm;
+    if (heightIn !== undefined && heightIn !== null) {
+      // Send height_in for imperial (1 decimal max)
+      backendData.height_in = Number(heightIn.toFixed(1));
+    } else if (heightCm !== undefined && heightCm !== null) {
+      // Send height_cm for metric (1 decimal max)
+      backendData.height_cm = Number(heightCm.toFixed(1));
+    } else {
+      // Fallback: try to get height and convert based on unit system
+      const height = (profileData as { height?: number | string }).height;
+      if (height !== undefined && height !== null) {
+        const heightValue = typeof height === 'number' ? height : parseFloat(String(height));
+        if (!isNaN(heightValue)) {
+          if (unitSystem === 'imperial') {
+            backendData.height_in = Number(heightValue.toFixed(1));
+          } else {
+            backendData.height_cm = Number(heightValue.toFixed(1));
+          }
+        }
+      }
+    }
+    
+    if (profileData.location !== undefined) backendData.location = profileData.location;
     
     // Backend now supports target_event and goals
     const targetEvent = (profileData as { target_event?: unknown; targetEvent?: unknown }).target_event 
@@ -395,6 +425,12 @@ export const updateUserProfile = async (
     }
     if (profileData.goals !== undefined) {
       backendData.goals = profileData.goals;
+    }
+    
+    // FE-4: Support race_input with source marker for backend LLM processing
+    const raceInput = (profileData as { race_input?: unknown }).race_input;
+    if (raceInput !== undefined) {
+      backendData.race_input = raceInput;
     }
 
     const response = await api.put("/me/profile", backendData);
@@ -542,8 +578,12 @@ export const updateTrainingPreferences = async (
 }> => {
   console.log("[API] Updating training preferences");
   try {
-    // Backend now supports all fields including injury_notes, consistency, and goal
+    // FE-1: Send ALL fields from component state (not deltas)
+    // Do not infer defaults silently - send exactly what's in the component state
+    // The component ensures all fields are always present in state
     const backendPayload: Record<string, unknown> = {};
+    
+    // Send all fields that are provided (component always provides all fields)
     if (preferences.years_of_training !== undefined) backendPayload.years_of_training = preferences.years_of_training;
     if (preferences.primary_sports !== undefined) backendPayload.primary_sports = preferences.primary_sports;
     if (preferences.available_days !== undefined) backendPayload.available_days = preferences.available_days;
@@ -552,7 +592,7 @@ export const updateTrainingPreferences = async (
     if (preferences.injury_history !== undefined) backendPayload.injury_history = preferences.injury_history;
     if (preferences.injury_notes !== undefined) backendPayload.injury_notes = preferences.injury_notes;
     if (preferences.consistency !== undefined) backendPayload.consistency = preferences.consistency;
-    if (preferences.goal !== undefined) backendPayload.goal = preferences.goal;
+    if (preferences.goal !== undefined) backendPayload.goal = preferences.goal; // FE-2: Free text, stored verbatim
 
     const response = await api.put("/me/training-preferences", backendPayload);
     return response as unknown as {

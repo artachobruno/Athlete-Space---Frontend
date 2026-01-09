@@ -23,12 +23,14 @@ export interface AthleteProfile {
   date_of_birth?: string;
   dateOfBirth?: string;
   
-  // Weight - both cases
+  // Weight - both cases and unit systems
   weight_kg?: number;
+  weight_lbs?: number;
   weight?: number;
   
-  // Height - both cases  
+  // Height - both cases and unit systems
   height_cm?: number;
+  height_in?: number;
   height?: number;
   
   location?: string;

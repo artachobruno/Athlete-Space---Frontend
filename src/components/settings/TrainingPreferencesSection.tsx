@@ -130,12 +130,18 @@ export function TrainingPreferencesSection() {
         ? 'race'
         : 'general';
 
-      // Extract goal - prefer backend, then profile, then additional data
+      // FE-1: Load ALL fields from backend
+      // FE-2: Goal is free text, load verbatim
       const goal = backendPrefs?.goal || effectiveProfile?.goals?.[0] || '';
 
       // Extract target event - prefer backend profile, then local profile
+      // FE-3: Load race data even if training_focus is general_fitness (keep data intact)
       const targetEventName = effectiveProfile?.targetEvent?.name || '';
       const targetEventDate = effectiveProfile?.targetEvent?.date || '';
+      
+      // Extract race details from additional data or race_input if available
+      const raceInput = (effectiveProfile as { race_input?: { details?: string } })?.race_input;
+      const raceDetails = raceInput?.details || additionalData?.raceDetails || '';
       
       const prefsData: PreferencesState = {
         primarySports: (backendPrefs?.primary_sports as Sport[]) || effectiveProfile?.sports || [],
@@ -146,10 +152,10 @@ export function TrainingPreferencesSection() {
         injuryNotes: backendPrefs?.injury_notes || additionalData?.injuryDetails || '',
         trainingAge: backendPrefs?.years_of_training || effectiveProfile?.trainingAge || 0,
         consistency: backendPrefs?.consistency || additionalData?.consistency || '',
-        goal,
-        raceDetails: additionalData?.raceDetails || '',
-        targetEventName,
-        targetEventDate,
+        goal, // FE-2: Free text, loaded verbatim
+        raceDetails, // FE-3: Keep race data even when hidden
+        targetEventName, // FE-3: Keep race data even when hidden
+        targetEventDate, // FE-3: Keep race data even when hidden
       };
       setPreferences(prefsData);
       setInitialPreferences(prefsData);
@@ -186,49 +192,74 @@ export function TrainingPreferencesSection() {
     try {
       // Save to backend if authenticated
       if (auth.isLoggedIn()) {
-    try {
-      // Convert trainingDays boolean array to available_days string array
-      const availableDays = weekDays.filter((_, index) => preferences.trainingDays[index]);
-      
-      // Map trainingFocus: "race" -> "race_focused", "general" -> "general_fitness"
-      const trainingFocus: 'race_focused' | 'general_fitness' = preferences.trainingFocus === 'race' ? 'race_focused' : 'general_fitness';
+        try {
+          // Convert trainingDays boolean array to available_days string array
+          const availableDays = weekDays.filter((_, index) => preferences.trainingDays[index]);
+          
+          // Map trainingFocus: "race" -> "race_focused", "general" -> "general_fitness"
+          const trainingFocus: 'race_focused' | 'general_fitness' = preferences.trainingFocus === 'race' ? 'race_focused' : 'general_fitness';
 
-          // Save training preferences
-      await updateTrainingPreferences({
-        years_of_training: preferences.trainingAge,
-        primary_sports: preferences.primarySports,
-        available_days: availableDays,
-        weekly_hours: preferences.hoursPerWeek,
-        training_focus: trainingFocus,
-        injury_history: preferences.hasInjuryHistory,
+          // FE-1: Send ALL fields on save (not deltas)
+          // FE-2: Store goal as free text verbatim (no parsing/normalization)
+          await updateTrainingPreferences({
+            years_of_training: preferences.trainingAge ?? 0,
+            primary_sports: preferences.primarySports,
+            available_days: availableDays,
+            weekly_hours: preferences.hoursPerWeek,
+            training_focus: trainingFocus,
+            injury_history: preferences.hasInjuryHistory,
             injury_notes: preferences.injuryNotes || null,
             consistency: preferences.consistency || null,
-            goal: preferences.goal || null,
+            goal: preferences.goal || null, // FE-2: Free text, stored verbatim
           });
 
-          // Save target_event and goals to profile (backend now supports these)
+          // FE-4: Send race info as raw user input with source marker
           const profileUpdate: Partial<import('@/types').AthleteProfile> = {};
           
-          // Update target_event if provided
-          if (preferences.targetEventName || preferences.targetEventDate) {
-            profileUpdate.targetEvent = {
-              name: preferences.targetEventName,
-              date: preferences.targetEventDate,
+          // Always send race_input if race fields have any data (even when hidden)
+          // FE-3: Keep race data intact when switching focus (only control visibility)
+          if (preferences.targetEventName || preferences.targetEventDate || preferences.raceDetails) {
+            // FE-4: Send raw user input with source marker
+            const raceInput = {
+              event_name: preferences.targetEventName || '',
+              event_date: preferences.targetEventDate || '',
+              details: preferences.raceDetails || '',
+              source: 'user' as const,
             };
+            
+            // Store in profile for backward compatibility (target_event)
+            profileUpdate.targetEvent = preferences.targetEventName || preferences.targetEventDate
+              ? {
+                  name: preferences.targetEventName,
+                  date: preferences.targetEventDate,
+                }
+              : null;
+            
+            // Also store race_input in profile for backend processing
+            (profileUpdate as { race_input?: unknown }).race_input = raceInput;
           } else if (preferences.trainingFocus !== 'race') {
-            // Clear target_event if not race-focused
-            profileUpdate.targetEvent = null;
+            // Only clear if explicitly switching away AND no race data exists
+            // FE-3: Don't delete race info when toggling focus
+            // Keep existing race data if it exists
+            const currentProfile = await fetchUserProfile();
+            if (currentProfile?.targetEvent) {
+              // Preserve existing race data
+              profileUpdate.targetEvent = currentProfile.targetEvent;
+            } else {
+              profileUpdate.targetEvent = null;
+            }
           }
           
-          // Update goals array
+          // Update goals array (FE-2: free text, stored verbatim)
           if (preferences.goal) {
             profileUpdate.goals = [preferences.goal];
+          } else {
+            // Clear goals if empty
+            profileUpdate.goals = [];
           }
 
-          // Only update profile if we have changes
-          if (Object.keys(profileUpdate).length > 0) {
-            await updateUserProfile(profileUpdate);
-          }
+          // Always update profile to ensure consistency
+          await updateUserProfile(profileUpdate);
         } catch (error) {
           console.error('Failed to save to backend:', error);
           // Continue to save locally even if backend fails
@@ -439,14 +470,18 @@ export function TrainingPreferencesSection() {
         </div>
 
         {/* Training Goal */}
+        {/* FE-2: Free text goal - stored verbatim, no frontend parsing */}
         <div className="space-y-3">
           <Label htmlFor="goal">Primary Training Goal</Label>
           <Input
             id="goal"
             value={preferences.goal}
             onChange={(e) => setPreferences({ ...preferences, goal: e.target.value })}
-            placeholder="e.g., Complete a marathon, Improve fitness, Return to training"
+            placeholder="e.g., Complete a sub-2:25 marathon, Improve fitness, Return to training"
           />
+          <p className="text-xs text-muted-foreground">
+            Enter your goal exactly as you want it stored. No parsing or normalization will be applied.
+          </p>
         </div>
 
         {/* Training Focus */}
@@ -491,6 +526,8 @@ export function TrainingPreferencesSection() {
         </div>
 
         {/* Target Event / Race Details */}
+        {/* FE-3: Show race fields only when training_focus = race_focused */}
+        {/* FE-3: Data is preserved when hidden (stored in state, not deleted) */}
         {preferences.trainingFocus === 'race' && (
           <div className="space-y-3">
             <Label>Target Event / Race</Label>
