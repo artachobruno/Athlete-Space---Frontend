@@ -2,6 +2,7 @@ import axios, { AxiosError, AxiosHeaders } from "axios";
 import type { InternalAxiosRequestConfig } from "axios";
 import { auth } from "./auth";
 import type { AthleteProfileOut } from "./apiValidation";
+import { getConversationId } from "./utils";
 
 const getBaseURL = () => {
   if (import.meta.env.PROD) {
@@ -2297,6 +2298,19 @@ api.interceptors.request.use(
       } else {
         (config.headers as Record<string, string>)['Content-Type'] = contentType;
       }
+    }
+    
+    // Add conversation ID header to every request
+    const conversationId = getConversationId();
+    if (typeof (config.headers as { set?: (name: string, value: string) => void }).set === 'function') {
+      (config.headers as { set?: (name: string, value: string) => void }).set('X-Conversation-Id', conversationId);
+    } else {
+      (config.headers as Record<string, string>)['X-Conversation-Id'] = conversationId;
+    }
+    
+    // Dev-only logging for verification
+    if (import.meta.env.DEV) {
+      console.log('[API Request] X-Conversation-Id:', conversationId, 'URL:', config.url);
     }
     
     return config;
