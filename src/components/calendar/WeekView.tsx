@@ -9,7 +9,7 @@ import {
 } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { fetchCalendarWeek, fetchActivities, fetchOverview } from '@/lib/api';
-import { mapSessionToWorkout } from '@/lib/session-utils';
+import { mapSessionToWorkout, normalizeSportType } from '@/lib/session-utils';
 import { Footprints, Bike, Waves, Clock, Route, CheckCircle2, MessageCircle, Loader2, Sparkles, Share2, Copy, Download } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -42,7 +42,16 @@ const sportIcons = {
   cycling: Bike,
   swimming: Waves,
   triathlon: Footprints,
-};
+} as const;
+
+/**
+ * Gets the icon component for a sport type, with fallback to default icon.
+ */
+function getSportIcon(sport: string | null | undefined): typeof Footprints {
+  const normalized = normalizeSportType(sport);
+  const Icon = sportIcons[normalized];
+  return Icon || Footprints; // Fallback to Footprints if somehow undefined
+}
 
 const intentColors = {
   aerobic: 'bg-training-aerobic/15 text-training-aerobic border-training-aerobic/30',
@@ -473,17 +482,23 @@ export function WeekView({ currentDate, onActivityClick }: WeekViewProps) {
               )}
 
               {planned.map((workout) => {
-                const Icon = sportIcons[workout.sport];
+                // Guard against undefined sport
+                if (!workout.sport) {
+                  console.warn('[WeekView] Workout missing sport:', workout);
+                  return null;
+                }
+
+                const Icon = getSportIcon(workout.sport);
                 const matchingActivity = completed.find(c =>
                   isSameDay(new Date(c.date), new Date(workout.date)) &&
-                  c.sport === workout.sport
+                  normalizeSportType(c.sport) === normalizeSportType(workout.sport)
                 );
                 const isCompleted = !!matchingActivity;
                 const session = plannedSessions.find(s => s.id === workout.id);
 
                 return (
                   <div
-                    key={workout.id}
+                    key={workout.id || `planned-${workout.date}-${workout.title}`}
                     className={cn(
                       'p-2 rounded-lg border cursor-pointer transition-all hover:ring-1 hover:ring-accent/50',
                       isCompleted
@@ -531,12 +546,24 @@ export function WeekView({ currentDate, onActivityClick }: WeekViewProps) {
 
               {/* Completed without plan */}
               {completed
-                .filter(c => !planned.some(p => p.sport === c.sport))
+                .filter(c => {
+                  // Guard against invalid activities
+                  if (!c || !c.sport) {
+                    console.warn('[WeekView] Invalid completed activity:', c);
+                    return false;
+                  }
+                  return !planned.some(p => normalizeSportType(p.sport) === normalizeSportType(c.sport));
+                })
                 .map((activity) => {
-                  const Icon = sportIcons[activity.sport];
+                  // Double-check sport exists (should be filtered above, but extra safety)
+                  if (!activity.sport) {
+                    return null;
+                  }
+
+                  const Icon = getSportIcon(activity.sport);
                   return (
                     <div
-                      key={activity.id}
+                      key={activity.id || `completed-${activity.date}-${activity.title}`}
                       className="p-2 rounded-lg border bg-accent/10 border-accent/30 cursor-pointer hover:ring-1 hover:ring-accent/50"
                       onClick={() => onActivityClick?.(null, activity)}
                     >

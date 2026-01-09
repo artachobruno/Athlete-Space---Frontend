@@ -12,7 +12,7 @@ import {
 } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { fetchCalendarWeek, type CalendarSession } from '@/lib/api';
-import { mapSessionToWorkout } from '@/lib/session-utils';
+import { mapSessionToWorkout, normalizeSportType } from '@/lib/session-utils';
 import { Footprints, Bike, Waves, CheckCircle2, MessageCircle, Loader2 } from 'lucide-react';
 import { useQueries } from '@tanstack/react-query';
 import type { PlannedWorkout, CompletedActivity } from '@/types';
@@ -27,7 +27,16 @@ const sportIcons = {
   cycling: Bike,
   swimming: Waves,
   triathlon: Footprints,
-};
+} as const;
+
+/**
+ * Gets the icon component for a sport type, with fallback to default icon.
+ */
+function getSportIcon(sport: string | null | undefined): typeof Footprints {
+  const normalized = normalizeSportType(sport);
+  const Icon = sportIcons[normalized];
+  return Icon || Footprints; // Fallback to Footprints if somehow undefined
+}
 
 export function MonthView({ currentDate, onActivityClick }: MonthViewProps) {
   const monthStart = startOfMonth(currentDate);
@@ -80,12 +89,20 @@ export function MonthView({ currentDate, onActivityClick }: MonthViewProps) {
    * Converts a completed CalendarSession to CompletedActivity format
    * for compatibility with existing UI components
    */
-  const mapCompletedSessionToActivity = (session: CalendarSession): CompletedActivity => {
+  const mapCompletedSessionToActivity = (session: CalendarSession): CompletedActivity | null => {
+    // Validate session has required fields
+    if (!session || !session.id || !session.date || !session.type) {
+      console.warn('[MonthView] Invalid session data:', session);
+      return null;
+    }
+
+    const normalizedSport = normalizeSportType(session.type);
+    
     return {
       id: session.id,
       date: session.date,
-      sport: session.type as CompletedActivity['sport'],
-      title: session.title,
+      sport: normalizedSport as CompletedActivity['sport'],
+      title: session.title || 'Untitled Activity',
       duration: session.duration_minutes || 0,
       distance: session.distance_km || 0,
       trainingLoad: 0, // TSS not available in CalendarSession
@@ -112,9 +129,14 @@ export function MonthView({ currentDate, onActivityClick }: MonthViewProps) {
     const plannedSessions = daySessions.filter(s => s.status === 'planned');
     const completedSessions = daySessions.filter(s => s.status === 'completed');
     
-    // Map to workout/activity formats
-    const planned = plannedSessions.map(mapSessionToWorkout).filter((w): w is PlannedWorkout => w !== null);
-    const completed = completedSessions.map(mapCompletedSessionToActivity);
+    // Map to workout/activity formats with validation
+    const planned = plannedSessions
+      .map(mapSessionToWorkout)
+      .filter((w): w is PlannedWorkout => w !== null && w.sport !== undefined);
+    
+    const completed = completedSessions
+      .map(mapCompletedSessionToActivity)
+      .filter((a): a is CompletedActivity => a !== null && a.sport !== undefined);
     
     return { planned, completed, plannedSessions, completedSessions };
   };
@@ -176,11 +198,19 @@ export function MonthView({ currentDate, onActivityClick }: MonthViewProps) {
               {/* Workouts */}
               <div className="space-y-1">
                 {planned.map((workout) => {
-                  const Icon = sportIcons[workout.sport];
+                  // Guard against undefined sport
+                  if (!workout.sport) {
+                    console.warn('[MonthView] Workout missing sport:', workout);
+                    return null;
+                  }
+
+                  const Icon = getSportIcon(workout.sport);
+                  
                   // Find matching completed session by sport (same day, same sport)
-                  const matchingCompletedSession = completedSessions.find(s => 
-                    s.type.toLowerCase() === workout.sport.toLowerCase()
-                  );
+                  const matchingCompletedSession = completedSessions.find(s => {
+                    if (!s || !s.type) return false;
+                    return normalizeSportType(s.type) === normalizeSportType(workout.sport);
+                  });
                   const matchingActivity = matchingCompletedSession 
                     ? completed.find(c => c.id === matchingCompletedSession.id)
                     : null;
@@ -190,7 +220,7 @@ export function MonthView({ currentDate, onActivityClick }: MonthViewProps) {
 
                   return (
                     <div
-                      key={workout.id}
+                      key={workout.id || `planned-${workout.date}-${workout.title}`}
                       className={cn(
                         'flex items-center gap-1 px-1.5 py-0.5 rounded text-xs group cursor-pointer hover:ring-1 hover:ring-accent/50',
                         isCompleted
@@ -200,7 +230,7 @@ export function MonthView({ currentDate, onActivityClick }: MonthViewProps) {
                       onClick={() => onActivityClick?.(workout, matchingActivity || null, completedSession || session || null)}
                     >
                       <Icon className="h-3 w-3 shrink-0" />
-                      <span className="truncate">{workout.title}</span>
+                      <span className="truncate">{workout.title || 'Untitled Workout'}</span>
                       {isCompleted ? (
                         <CheckCircle2 className="h-3 w-3 shrink-0 ml-auto" />
                       ) : (
@@ -212,18 +242,31 @@ export function MonthView({ currentDate, onActivityClick }: MonthViewProps) {
 
                 {/* Completed activities without a plan */}
                 {completed
-                  .filter(c => !planned.some(p => p.sport === c.sport))
+                  .filter(c => {
+                    // Guard against invalid activities
+                    if (!c || !c.sport) {
+                      console.warn('[MonthView] Invalid completed activity:', c);
+                      return false;
+                    }
+                    return !planned.some(p => normalizeSportType(p.sport) === normalizeSportType(c.sport));
+                  })
                   .map((activity) => {
-                    const Icon = sportIcons[activity.sport];
+                    // Double-check sport exists (should be filtered above, but extra safety)
+                    if (!activity.sport) {
+                      return null;
+                    }
+
+                    const Icon = getSportIcon(activity.sport);
                     const completedSession = completedSessions.find(s => s.id === activity.id) || null;
+                    
                     return (
                       <div
-                        key={activity.id}
+                        key={activity.id || `completed-${activity.date}-${activity.title}`}
                         className="flex items-center gap-1 px-1.5 py-0.5 rounded text-xs bg-accent/20 text-accent cursor-pointer hover:ring-1 hover:ring-accent/50"
                         onClick={() => onActivityClick?.(null, activity, completedSession)}
                       >
                         <Icon className="h-3 w-3 shrink-0" />
-                        <span className="truncate">{activity.title}</span>
+                        <span className="truncate">{activity.title || 'Untitled Activity'}</span>
                       </div>
                     );
                   })}

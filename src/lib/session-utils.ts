@@ -1,5 +1,48 @@
-import type { WorkoutIntent } from '@/types';
+import type { WorkoutIntent, Sport } from '@/types';
 import type { CalendarSession } from './api';
+
+/**
+ * Normalizes sport type from backend format to frontend format.
+ * Handles variations like "Run" -> "running", "Bike" -> "cycling", etc.
+ */
+export function normalizeSportType(sport: string | null | undefined): Sport {
+  if (!sport || typeof sport !== 'string') {
+    return 'running'; // Default fallback
+  }
+
+  const lower = sport.toLowerCase().trim();
+
+  // Direct matches
+  if (lower === 'running' || lower === 'run') {
+    return 'running';
+  }
+  if (lower === 'cycling' || lower === 'cycle' || lower === 'bike' || lower === 'biking') {
+    return 'cycling';
+  }
+  if (lower === 'swimming' || lower === 'swim') {
+    return 'swimming';
+  }
+  if (lower === 'triathlon' || lower === 'tri') {
+    return 'triathlon';
+  }
+
+  // Partial matches
+  if (lower.includes('run')) {
+    return 'running';
+  }
+  if (lower.includes('bike') || lower.includes('cycle')) {
+    return 'cycling';
+  }
+  if (lower.includes('swim')) {
+    return 'swimming';
+  }
+  if (lower.includes('tri')) {
+    return 'triathlon';
+  }
+
+  // Default fallback
+  return 'running';
+}
 
 /**
  * Maps session intensity string to WorkoutIntent type.
@@ -55,13 +98,19 @@ export function mapIntensityToIntent(intensity: string | null | undefined): Work
  */
 export function mapSessionToWorkout(session: CalendarSession): import('@/types').PlannedWorkout | null {
   if (session.status === 'completed') return null;
+  
+  // Validate required fields
+  if (!session.id || !session.date || !session.type) {
+    console.warn('[mapSessionToWorkout] Invalid session data:', session);
+    return null;
+  }
 
   return {
     id: session.id,
     date: session.date,
-    sport: session.type as import('@/types').Sport,
+    sport: normalizeSportType(session.type),
     intent: mapIntensityToIntent(session.intensity),
-    title: session.title,
+    title: session.title || 'Untitled Workout',
     description: session.notes || '',
     duration: session.duration_minutes || 0,
     distance: session.distance_km || undefined,
