@@ -3,9 +3,10 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Send, Brain, User } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { sendCoachChat } from '@/lib/api';
+import { sendCoachChat, type PlanItem } from '@/lib/api';
 import { generateCoachGreeting } from '@/lib/coachGreeting';
 import { CoachProgressPanel } from './CoachProgressPanel';
+import { PlanList } from './PlanList';
 
 interface Message {
   id: string;
@@ -19,6 +20,8 @@ export function CoachChat() {
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [conversationId, setConversationId] = useState<string | null>(null);
+  const [planItems, setPlanItems] = useState<PlanItem[]>([]);
+  const [showPlan, setShowPlan] = useState<boolean>(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -65,6 +68,15 @@ export function CoachChat() {
         setConversationId(response.conversation_id);
       }
       
+      // Update plan list visibility and items based on backend response
+      if (response.show_plan === true && response.plan_items && response.plan_items.length > 0) {
+        setShowPlan(true);
+        setPlanItems(response.plan_items);
+      } else {
+        setShowPlan(false);
+        setPlanItems([]);
+      }
+      
       const coachMessage: Message = {
         id: (Date.now() + 1).toString(),
         role: 'coach',
@@ -101,6 +113,8 @@ export function CoachChat() {
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {/* Coach Progress Panel - shown above messages when conversation is active */}
         {conversationId && <CoachProgressPanel conversationId={conversationId} />}
+        {/* Plan List - only rendered when backend explicitly requests it */}
+        {showPlan && planItems.length > 0 && <PlanList planItems={planItems} />}
         {messages.map((message) => (
           <div
             key={message.id}

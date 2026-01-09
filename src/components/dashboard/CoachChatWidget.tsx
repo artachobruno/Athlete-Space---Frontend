@@ -5,9 +5,10 @@ import { Input } from '@/components/ui/input';
 import { Send, Brain, User, Maximize2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Link } from 'react-router-dom';
-import { sendCoachChat } from '@/lib/api';
+import { sendCoachChat, type PlanItem } from '@/lib/api';
 import { generateCoachGreeting } from '@/lib/coachGreeting';
 import { CoachProgressPanel } from '@/components/coach/CoachProgressPanel';
+import { PlanList } from '@/components/coach/PlanList';
 
 interface Message {
   id: string;
@@ -20,6 +21,8 @@ export function CoachChatWidget() {
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [conversationId, setConversationId] = useState<string | null>(null);
+  const [planItems, setPlanItems] = useState<PlanItem[]>([]);
+  const [showPlan, setShowPlan] = useState<boolean>(false);
 
   const sendMessage = async () => {
     if (!input.trim()) return;
@@ -41,6 +44,15 @@ export function CoachChatWidget() {
       // Track conversation ID from response if provided
       if (response.conversation_id) {
         setConversationId(response.conversation_id);
+      }
+      
+      // Update plan list visibility and items based on backend response
+      if (response.show_plan === true && response.plan_items && response.plan_items.length > 0) {
+        setShowPlan(true);
+        setPlanItems(response.plan_items);
+      } else {
+        setShowPlan(false);
+        setPlanItems([]);
       }
       
       const coachMessage: Message = {
@@ -101,6 +113,8 @@ export function CoachChatWidget() {
         <div className="flex-1 overflow-y-auto space-y-2 mb-3">
           {/* Coach Progress Panel - shown above messages when conversation is active */}
           {conversationId && <CoachProgressPanel conversationId={conversationId} />}
+          {/* Plan List - only rendered when backend explicitly requests it */}
+          {showPlan && planItems.length > 0 && <PlanList planItems={planItems} />}
           {messages.slice(-4).map((message) => (
             <div
               key={message.id}

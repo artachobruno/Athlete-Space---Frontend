@@ -3,8 +3,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { MessageCircle, X, Send, Brain } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { sendCoachChat } from '@/lib/api';
+import { sendCoachChat, type PlanItem } from '@/lib/api';
 import { CoachProgressPanel } from '@/components/coach/CoachProgressPanel';
+import { PlanList } from '@/components/coach/PlanList';
 
 export function PlanCoachChat() {
   const [isOpen, setIsOpen] = useState(false);
@@ -17,6 +18,8 @@ export function PlanCoachChat() {
   ]);
   const [isTyping, setIsTyping] = useState(false);
   const [conversationId, setConversationId] = useState<string | null>(null);
+  const [planItems, setPlanItems] = useState<PlanItem[]>([]);
+  const [showPlan, setShowPlan] = useState<boolean>(false);
 
   const sendMessage = async () => {
     if (!input.trim()) return;
@@ -33,6 +36,15 @@ export function PlanCoachChat() {
       // Track conversation ID from response if provided
       if (response.conversation_id) {
         setConversationId(response.conversation_id);
+      }
+      
+      // Update plan list visibility and items based on backend response
+      if (response.show_plan === true && response.plan_items && response.plan_items.length > 0) {
+        setShowPlan(true);
+        setPlanItems(response.plan_items);
+      } else {
+        setShowPlan(false);
+        setPlanItems([]);
       }
       
       setMessages(prev => [...prev, {
@@ -83,6 +95,8 @@ export function PlanCoachChat() {
           <div className="h-64 overflow-y-auto p-3 space-y-3">
             {/* Coach Progress Panel - shown above messages when conversation is active */}
             {conversationId && <CoachProgressPanel conversationId={conversationId} />}
+            {/* Plan List - only rendered when backend explicitly requests it */}
+            {showPlan && planItems.length > 0 && <PlanList planItems={planItems} />}
             {messages.map((msg, idx) => (
               <div
                 key={idx}
