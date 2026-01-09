@@ -20,6 +20,7 @@ import { toast } from '@/hooks/use-toast';
 import { fetchActivities, fetchUserProfile } from '@/lib/api';
 import { clearAllData } from '@/lib/storage';
 import { auth } from '@/lib/auth';
+import { ActivityUploadSection } from './ActivityUploadSection';
 
 export function DataManagementSection() {
   const [isExporting, setIsExporting] = useState(false);
@@ -142,19 +143,24 @@ export function DataManagementSection() {
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-accent/10 rounded-lg">
-            <Database className="h-5 w-5 text-accent" />
+    <div className="space-y-6">
+      {/* Activity Upload */}
+      <ActivityUploadSection />
+      
+      {/* Data Export & Delete */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-accent/10 rounded-lg">
+              <Database className="h-5 w-5 text-accent" />
+            </div>
+            <div>
+              <CardTitle className="text-lg">Data Management</CardTitle>
+              <CardDescription>Export or delete your training data</CardDescription>
+            </div>
           </div>
-          <div>
-            <CardTitle className="text-lg">Data Management</CardTitle>
-            <CardDescription>Export or delete your training data</CardDescription>
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-6">
+        </CardHeader>
+        <CardContent className="space-y-6">
         {/* Export Data */}
         <div className="space-y-4">
           <div>
@@ -271,6 +277,7 @@ export function DataManagementSection() {
         </div>
       </CardContent>
     </Card>
+    </div>
   );
 }
 

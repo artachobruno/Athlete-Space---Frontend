@@ -612,6 +612,39 @@ export const updateTrainingPreferences = async (
   }
 };
 
+// ============ Activity Upload ============
+
+export interface ActivityUploadResponse {
+  status: 'ok';
+  activity_id: string;
+  deduplicated: boolean;
+}
+
+/**
+ * Uploads an activity file (FIT, GPX, TCX).
+ * @param file - The file to upload
+ * @returns Upload response with activity_id and deduplicated flag
+ */
+export const uploadActivityFile = async (file: File): Promise<ActivityUploadResponse> => {
+  console.log("[API] Uploading activity file:", file.name);
+  
+  const formData = new FormData();
+  formData.append('file', file);
+  
+  try {
+    const response = await api.post("/activities/upload", formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    
+    return response as unknown as ActivityUploadResponse;
+  } catch (error) {
+    console.error("[API] Failed to upload activity:", error);
+    throw error;
+  }
+}
+
 /**
  * Fetches privacy settings from the backend.
  */

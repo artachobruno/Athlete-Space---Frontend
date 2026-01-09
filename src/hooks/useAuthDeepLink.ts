@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { App } from "@capacitor/app";
+import { App } from "@/lib/capacitor-stubs/app";
 import { isNative } from "@/lib/platform";
 import { auth } from "@/lib/auth";
 
