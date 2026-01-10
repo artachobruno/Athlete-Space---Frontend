@@ -12,6 +12,7 @@ export type AuthUser = {
   email: string; // Required - all users must have email
   onboarding_complete: boolean;
   strava_connected: boolean;
+  role?: 'athlete' | 'coach'; // User role for dashboard routing
 };
 
 const TOKEN_KEY = "auth_token";
@@ -364,6 +365,7 @@ export async function fetchCurrentUser(): Promise<AuthUser | null> {
         email: backendResponse.email,
         onboarding_complete: backendResponse.onboarding_complete ?? false,
         strava_connected: backendResponse.strava_connected ?? false,
+        role: (backendResponse as { role?: 'athlete' | 'coach' }).role,
       };
       
       console.log("[Auth] Created user profile:", userProfile);
