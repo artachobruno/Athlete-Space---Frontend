@@ -114,6 +114,13 @@ const OAuthTokenHandler = () => {
   const { refreshUser, user } = useAuth();
   
   useEffect(() => {
+    // Skip OAuth processing in preview mode (OAuth doesn't work in Lovable preview)
+    // This prevents the "access_token missing" error in preview
+    if (window.location.hostname.includes("lovable") || import.meta.env.VITE_PREVIEW_MODE === "true") {
+      console.log("[OAuthTokenHandler] Preview mode detected, skipping OAuth token processing");
+      return;
+    }
+    
     // Check for token in URL params (from Strava OAuth callback)
     // This can happen on any route, not just /onboarding
     const searchParams = new URLSearchParams(location.search);

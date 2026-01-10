@@ -2,6 +2,7 @@ import { ReactNode, useEffect, useState } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { Skeleton } from "@/components/ui/skeleton";
+import { isPreviewMode } from "@/lib/preview";
 
 function FullPageSkeleton() {
   return (
@@ -36,6 +37,12 @@ export function AuthLanding() {
   const { user, loading, status } = useAuth();
   const location = useLocation();
   const [hasOAuthToken, setHasOAuthToken] = useState(false);
+
+  // Preview mode bypass - redirect directly to dashboard (no auth needed)
+  if (isPreviewMode()) {
+    console.log("[AuthLanding] Preview mode detected, redirecting to dashboard");
+    return <Navigate to="/dashboard" replace />;
+  }
 
   // Check if there's an OAuth token in the URL
   useEffect(() => {

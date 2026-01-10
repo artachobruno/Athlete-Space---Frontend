@@ -8,6 +8,8 @@ import { Mail, Lock, HelpCircle, Shield, AlertCircle, Eye, EyeOff, Activity } fr
 import { signupWithEmail } from '@/lib/auth';
 import { initiateStravaConnect, initiateGoogleConnect } from '@/lib/api';
 import { useAuth } from '@/context/AuthContext';
+import { isPreviewMode } from '@/lib/preview';
+import { toast } from '@/hooks/use-toast';
 import { Logo } from '@/components/Logo';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
@@ -23,6 +25,16 @@ export default function Signup() {
   const [error, setError] = useState<string | null>(null);
 
   const handleStravaSignup = async () => {
+    // Disable OAuth in preview mode (doesn't work in Lovable preview)
+    if (isPreviewMode()) {
+      toast({
+        title: 'OAuth disabled in preview',
+        description: 'OAuth authentication is not available in preview mode.',
+        variant: 'default',
+      });
+      return;
+    }
+    
     try {
       await initiateStravaConnect();
     } catch (err) {
@@ -32,6 +44,16 @@ export default function Signup() {
   };
 
   const handleGoogleSignup = async () => {
+    // Disable OAuth in preview mode (doesn't work in Lovable preview)
+    if (isPreviewMode()) {
+      toast({
+        title: 'OAuth disabled in preview',
+        description: 'OAuth authentication is not available in preview mode.',
+        variant: 'default',
+      });
+      return;
+    }
+    
     try {
       await initiateGoogleConnect();
     } catch (err) {
@@ -39,6 +61,8 @@ export default function Signup() {
       console.error('[Signup] Google connection error:', err);
     }
   };
+  
+  const isPreview = isPreviewMode();
 
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -125,7 +149,8 @@ export default function Signup() {
                 className="w-full"
                 size="lg"
                 onClick={handleStravaSignup}
-                disabled={isLoading}
+                disabled={isLoading || isPreview}
+                title={isPreview ? "OAuth disabled in preview mode" : undefined}
               >
                 <Activity className="h-4 w-4 mr-2 text-[#FC4C02]" />
                 Continue with Strava (recommended)
@@ -137,7 +162,8 @@ export default function Signup() {
                 variant="outline"
                 size="lg"
                 onClick={handleGoogleSignup}
-                disabled={isLoading}
+                disabled={isLoading || isPreview}
+                title={isPreview ? "OAuth disabled in preview mode" : undefined}
               >
                 <svg className="h-4 w-4 mr-2" viewBox="0 0 24 24">
                   <path
