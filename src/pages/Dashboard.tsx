@@ -12,14 +12,15 @@ import { CoachChatWidget } from '@/components/dashboard/CoachChatWidget';
 import { useSyncTodayWorkout } from '@/hooks/useSyncTodayWorkout';
 
 // Coach Dashboard Components
-import { useCoachDashboardData, IS_PREVIEW } from '@/hooks/useCoachDashboardData';
+import { useCoachDashboardData, useAthleteSelection, IS_PREVIEW } from '@/hooks/useCoachDashboardData';
 import { CoachKpiCard } from '@/components/coach/CoachKpiCard';
 import { AdherenceChart } from '@/components/coach/AdherenceChart';
 import { WeeklyLoadChart } from '@/components/coach/WeeklyLoadChart';
 import { RiskList } from '@/components/coach/RiskList';
 import { PreviewBanner } from '@/components/preview/PreviewBanner';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { TrendingUp, TrendingDown, Minus } from 'lucide-react';
+import { TrendingUp, TrendingDown, Minus, Loader2 } from 'lucide-react';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 
 /**
  * Athlete Dashboard - Default view for athlete users
@@ -73,7 +74,8 @@ function AthleteDashboard() {
  * Shows athlete adherence, training trends, and risk flags
  */
 function CoachDashboard() {
-  const data = useCoachDashboardData();
+  const { athletes, selectedAthlete, selectedAthleteId, setSelectedAthleteId, isLoading: athletesLoading } = useAthleteSelection();
+  const data = useCoachDashboardData(selectedAthleteId ?? undefined);
 
   // Determine adherence color variant
   const getAdherenceVariant = (pct: number): 'success' | 'warning' | 'danger' => {
@@ -123,15 +125,50 @@ function CoachDashboard() {
             </p>
           </div>
           
-          {/* Athlete selector (disabled - for visual purposes only) */}
-          <Select disabled defaultValue="john">
-            <SelectTrigger className="w-[180px] opacity-60">
-              <SelectValue placeholder="Select athlete" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="john">John D.</SelectItem>
-            </SelectContent>
-          </Select>
+          {/* Athlete selector */}
+          <div className="flex items-center gap-2">
+            {athletesLoading ? (
+              <div className="flex items-center gap-2 text-muted-foreground">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                <span className="text-sm">Loading athletes...</span>
+              </div>
+            ) : (
+              <Select 
+                value={selectedAthleteId ?? undefined} 
+                onValueChange={setSelectedAthleteId}
+                disabled={athletes.length === 0}
+              >
+                <SelectTrigger className="w-[200px]">
+                  <SelectValue placeholder="Select athlete">
+                    {selectedAthlete && (
+                      <div className="flex items-center gap-2">
+                        <Avatar className="h-5 w-5">
+                          <AvatarFallback className="text-xs bg-primary/10 text-primary">
+                            {selectedAthlete.name.split(' ').map(n => n[0]).join('')}
+                          </AvatarFallback>
+                        </Avatar>
+                        <span>{selectedAthlete.name}</span>
+                      </div>
+                    )}
+                  </SelectValue>
+                </SelectTrigger>
+                <SelectContent className="bg-popover border border-border shadow-lg z-50">
+                  {athletes.map((athlete) => (
+                    <SelectItem key={athlete.id} value={athlete.id}>
+                      <div className="flex items-center gap-2">
+                        <Avatar className="h-5 w-5">
+                          <AvatarFallback className="text-xs bg-primary/10 text-primary">
+                            {athlete.name.split(' ').map(n => n[0]).join('')}
+                          </AvatarFallback>
+                        </Avatar>
+                        <span>{athlete.name}</span>
+                      </div>
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            )}
+          </div>
         </div>
 
         {/* KPI Cards */}
