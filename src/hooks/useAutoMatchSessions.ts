@@ -3,6 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { fetchActivities, fetchCalendarWeek, updateSessionStatus, type CalendarSession } from '@/lib/api';
 import { matchActivityToSession } from '@/lib/session-utils';
 import { toast } from '@/hooks/use-toast';
+import { checkForProposalResponse } from '@/lib/confirmation-handler';
 import type { CompletedActivity } from '@/types';
 
 /**
@@ -51,24 +52,52 @@ export function useAutoMatchSessions(enabled: boolean = true) {
         }
 
         // Update matched sessions
+        const successfulMatches: Array<{ activity: CompletedActivity; sessionId: string }> = [];
+        const needsConfirmation: Array<{ activity: CompletedActivity; sessionId: string }> = [];
+        
         for (const { activity, sessionId } of matches) {
           try {
-            await updateSessionStatus(sessionId, 'completed', activity.id);
-            console.log(`[AutoMatch] Matched activity ${activity.id} to session ${sessionId}`);
+            const response = await updateSessionStatus(sessionId, 'completed', activity.id);
+            
+            // Check if response requires confirmation (PROPOSAL_ONLY)
+            const proposal = checkForProposalResponse(response);
+            
+            if (proposal) {
+              // F-CONF-3: No UI-side auto-confirm for auto-matching
+              // Skip auto-confirmation and log for manual handling
+              console.warn(`[AutoMatch] Session ${sessionId} requires confirmation (PROPOSAL_ONLY). Skipping auto-match.`);
+              needsConfirmation.push({ activity, sessionId });
+            } else {
+              // Success - no confirmation needed
+              successfulMatches.push({ activity, sessionId });
+              console.log(`[AutoMatch] Matched activity ${activity.id} to session ${sessionId}`);
+            }
           } catch (error) {
             console.error(`[AutoMatch] Failed to update session ${sessionId}:`, error);
           }
         }
 
         // Invalidate calendar queries to refresh
-        if (matches.length > 0) {
+        if (successfulMatches.length > 0) {
           await queryClient.invalidateQueries({ queryKey: ['calendarWeek'] });
           await queryClient.invalidateQueries({ queryKey: ['calendarSeason'] });
           await queryClient.invalidateQueries({ queryKey: ['calendarToday'] });
           
+          let description = `Matched ${successfulMatches.length} activity${successfulMatches.length > 1 ? 'ies' : ''} to planned sessions`;
+          if (needsConfirmation.length > 0) {
+            description += `. ${needsConfirmation.length} session${needsConfirmation.length > 1 ? 's' : ''} require${needsConfirmation.length > 1 ? '' : 's'} manual confirmation.`;
+          }
+          
           toast({
             title: 'Sessions updated',
-            description: `Matched ${matches.length} activity${matches.length > 1 ? 'ies' : ''} to planned sessions`,
+            description,
+          });
+        } else if (needsConfirmation.length > 0) {
+          // All matches need confirmation
+          toast({
+            title: 'Confirmation required',
+            description: `${needsConfirmation.length} session${needsConfirmation.length > 1 ? 's' : ''} require${needsConfirmation.length > 1 ? '' : 's'} your confirmation. Please update them manually.`,
+            variant: 'default',
           });
         }
       } catch (error) {

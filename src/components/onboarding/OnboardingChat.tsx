@@ -8,12 +8,29 @@ import { StravaConnectCard } from './StravaConnectCard';
 import { CoachSummaryCard } from './CoachSummaryCard';
 import { completeOnboarding } from '@/lib/api';
 import { auth } from '@/lib/auth';
-import { saveProfile, saveOnboardingAdditionalData, saveOnboardingPlans, saveSeasonPlan, markOnboardingCompleted } from '@/lib/storage';
+import { saveProfile, saveOnboardingAdditionalData, saveOnboardingPlans, saveSeasonPlan } from '@/lib/storage';
 import { toast } from '@/hooks/use-toast';
 import type { AthleteProfile, Sport } from '@/types';
 
+export interface AthleteOnboardingProfile {
+  sports: Sport[];
+  consistency: string;
+  goal: string;
+  raceDetails: string;
+  raceGoalTime: string;
+  availableDays: number;
+  hoursPerWeek: number;
+  hasInjury: boolean;
+  injuryDetails: string;
+  stravaConnected: boolean;
+  targetEvent?: {
+    name: string;
+    date: string;
+  };
+}
+
 interface OnboardingChatProps {
-  onComplete: () => void;
+  onComplete: (profile: AthleteOnboardingProfile) => Promise<void>;
   isComplete: boolean;
 }
 
@@ -395,8 +412,21 @@ export function OnboardingChat({ onComplete, isComplete }: OnboardingChatProps) 
   const handleComplete = async () => {
     addAthleteMessage('Ready to start');
 
-    // Check if user is authenticated before trying to save preferences
+    // Check if user is authenticated - backend submission requires authentication
     const isAuthenticated = auth.isLoggedIn();
+
+    if (!isAuthenticated) {
+      // User must be authenticated to complete onboarding
+      addCoachMessage(
+        "You need to be logged in to complete onboarding. Please log in first."
+      );
+      toast({
+        title: 'Authentication Required',
+        description: 'Please log in to complete onboarding.',
+        variant: 'destructive',
+      });
+      return;
+    }
 
     // Parse race details if provided
     let targetEvent: AthleteProfile['targetEvent'] | undefined;
@@ -411,7 +441,7 @@ export function OnboardingChat({ onComplete, isComplete }: OnboardingChatProps) 
       };
     }
 
-    // Save all onboarding data locally first (always save locally)
+    // Save all onboarding data locally (for UI purposes only)
     const profile: AthleteProfile = {
       id: 'local',
       name: '',
@@ -424,7 +454,7 @@ export function OnboardingChat({ onComplete, isComplete }: OnboardingChatProps) 
       goals: data.goal ? [data.goal] : [],
       targetEvent,
       stravaConnected: data.stravaConnected,
-      onboardingComplete: true,
+      onboardingComplete: false, // CRITICAL: Don't mark as complete until backend confirms
     };
     saveProfile(profile);
 
@@ -437,159 +467,188 @@ export function OnboardingChat({ onComplete, isComplete }: OnboardingChatProps) 
     };
     saveOnboardingAdditionalData(onboardingData);
 
-    if (isAuthenticated) {
-      try {
-        // Use the onboarding endpoint to save all data and optionally generate plans
-        const weekDays = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+    try {
+      // Use the onboarding endpoint to save all data and optionally generate plans
+      const weekDays = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
       const availableDays = weekDays.slice(0, data.availableDays);
       
       // Map goal to training focus
       const trainingFocus = data.goal.toLowerCase().includes('race') ? 'race_focused' : 'general_fitness';
 
-        // FE-5: Use same persistence logic as settings
-        // Prepare profile data for backend (map to backend format - snake_case)
-        // Note: primary_sports goes in training_preferences, not profile
-        const profileData: Record<string, unknown> = {};
-        
-        // FE-2: Store goal as free text verbatim (no parsing/normalization)
-        if (data.goal) {
-          profileData.goals = [data.goal];
+      // Prepare profile data for backend (map to backend format - snake_case)
+      // Note: primary_sports goes in training_preferences, not profile
+      const profileData: Record<string, unknown> = {};
+      
+      // Store goal as free text verbatim (no parsing/normalization)
+      if (data.goal) {
+        profileData.goals = [data.goal];
+      }
+      
+      // Send race info as raw user input with source marker
+      if (targetEvent || data.raceDetails) {
+        if (targetEvent) {
+          profileData.target_event = targetEvent;
         }
         
-        // FE-4: Send race info as raw user input with source marker
-        if (targetEvent || data.raceDetails) {
-          if (targetEvent) {
-            profileData.target_event = targetEvent;
-          }
-          
-          // FE-4: Send race_input with source marker for backend LLM processing
-          profileData.race_input = {
-            event_name: targetEvent?.name || '',
-            event_date: targetEvent?.date || '',
-            details: data.raceDetails || '',
-            source: 'user' as const,
-          };
-        }
-        // strava_connected is set automatically by backend based on connection status
+        // Send race_input with source marker for backend LLM processing
+        profileData.race_input = {
+          event_name: targetEvent?.name || '',
+          event_date: targetEvent?.date || '',
+          details: data.raceDetails || '',
+          source: 'user' as const,
+        };
+      }
+      // strava_connected is set automatically by backend based on connection status
 
-        // FE-1: Send ALL fields on save (not deltas)
-        // Complete onboarding using the dedicated endpoint
-        const result = await completeOnboarding({
-          profile: profileData as Partial<AthleteProfile>,
-          training_preferences: {
-            years_of_training: 1, // Default, can be updated later
-            primary_sports: data.sports,
-            available_days: availableDays,
-            weekly_hours: data.hoursPerWeek,
-            training_focus: trainingFocus,
-            injury_history: data.hasInjury,
-            injury_notes: data.hasInjury && data.injuryDetails ? data.injuryDetails : null,
-            consistency: data.consistency || null,
-            goal: data.goal || null, // FE-2: Free text, stored verbatim
-          },
-          generate_initial_plan: data.stravaConnected, // Only generate plan if Strava is connected
+      // Send ALL fields on save (not deltas)
+      // Complete onboarding using the dedicated endpoint
+      const result = await completeOnboarding({
+        profile: profileData as Partial<AthleteProfile>,
+        training_preferences: {
+          years_of_training: 1, // Default, can be updated later
+          primary_sports: data.sports,
+          available_days: availableDays,
+          weekly_hours: data.hoursPerWeek,
+          training_focus: trainingFocus,
+          injury_history: data.hasInjury,
+          injury_notes: data.hasInjury && data.injuryDetails ? data.injuryDetails : null,
+          consistency: data.consistency || null,
+          goal: data.goal || null, // Free text, stored verbatim
+        },
+        generate_initial_plan: data.stravaConnected, // Only generate plan if Strava is connected
+      });
+
+      // Handle onboarding response - only proceed if backend confirms success
+      if (result.status === 'ok') {
+        // Store plans in local storage
+        saveOnboardingPlans({
+          weekly_intent: result.weekly_intent,
+          season_plan: result.season_plan,
+          provisional: result.provisional,
+          warning: result.warning,
+          savedAt: new Date().toISOString(),
         });
 
-        // Handle onboarding response
-        if (result.status === 'ok') {
-          // CRITICAL: Mark onboarding as completed in localStorage
-          // This is a safeguard against backend bugs that reset onboarding_complete
-          markOnboardingCompleted();
-          
-          // Store plans in local storage
-          saveOnboardingPlans({
-            weekly_intent: result.weekly_intent,
-            season_plan: result.season_plan,
-            provisional: result.provisional,
-            warning: result.warning,
-            savedAt: new Date().toISOString(),
-          });
+        // Store season plan separately for easy access
+        if (result.season_plan) {
+          saveSeasonPlan(result.season_plan);
+        }
 
-          // Store season plan separately for easy access
-          if (result.season_plan) {
-            saveSeasonPlan(result.season_plan);
-          }
-
-          // Plans were generated
-          if (result.weekly_intent || result.season_plan) {
-            if (result.provisional) {
-              addCoachMessage(
-                "That's everything I need. I've created your initial training plan. Note: This plan is provisional and will improve as I learn more from your training data."
-              );
-              // Show toast notification for provisional plan
-              toast({
-                title: 'Provisional Plan Created',
-                description: 'Your plan is provisional. More training data will improve recommendations.',
-                variant: 'default',
-              });
-            } else {
-              addCoachMessage(
-                "That's everything I need. I've created your initial training plan. Let's get to work!"
-              );
-              toast({
-                title: 'Training Plan Created',
-                description: 'Your personalized training plan is ready!',
-              });
-            }
-          } else {
-            // No plans generated (likely not enough data or Strava not connected)
-            if (data.stravaConnected) {
-              addCoachMessage(
-                "That's everything I need. I'll put together your first week once I have more training data. Let's get started!"
-              );
-            } else {
-      addCoachMessage(
-                "That's everything I need. Connect Strava to get personalized training plans. For now, let's get started!"
-              );
-            }
-          }
-
-          // Show warning if present
-          if (result.warning) {
-            console.warn('Onboarding warning:', result.warning);
+        // Plans were generated
+        if (result.weekly_intent || result.season_plan) {
+          if (result.provisional) {
+            addCoachMessage(
+              "That's everything I need. I've created your initial training plan. Note: This plan is provisional and will improve as I learn more from your training data."
+            );
+            // Show toast notification for provisional plan
             toast({
-              title: 'Onboarding Warning',
-              description: result.warning === 'plan_generation_failed' 
-                ? 'Onboarding completed, but plan generation failed. Plans will be available once you have more training data.'
-                : result.warning,
+              title: 'Provisional Plan Created',
+              description: 'Your plan is provisional. More training data will improve recommendations.',
               variant: 'default',
             });
+          } else {
+            addCoachMessage(
+              "That's everything I need. I've created your initial training plan. Let's get to work!"
+            );
+            toast({
+              title: 'Training Plan Created',
+              description: 'Your personalized training plan is ready!',
+            });
+          }
+        } else {
+          // No plans generated (likely not enough data or Strava not connected)
+          if (data.stravaConnected) {
+            addCoachMessage(
+              "That's everything I need. I'll put together your first week once I have more training data. Let's get started!"
+            );
+          } else {
+            addCoachMessage(
+              "That's everything I need. Connect Strava to get personalized training plans. For now, let's get started!"
+            );
           }
         }
 
-      setStep('complete');
-      setTimeout(onComplete, 1000);
+        // Show warning if present
+        if (result.warning) {
+          console.warn('Onboarding warning:', result.warning);
+          toast({
+            title: 'Onboarding Warning',
+            description: result.warning === 'plan_generation_failed' 
+              ? 'Onboarding completed, but plan generation failed. Plans will be available once you have more training data.'
+              : result.warning,
+            variant: 'default',
+          });
+        }
+
+        // CRITICAL: Only call onComplete on successful backend confirmation
+        // Build profile object to pass to parent
+        const onboardingProfile: AthleteOnboardingProfile = {
+          sports: data.sports,
+          consistency: data.consistency,
+          goal: data.goal,
+          raceDetails: data.raceDetails,
+          raceGoalTime: data.raceGoalTime,
+          availableDays: data.availableDays,
+          hoursPerWeek: data.hoursPerWeek,
+          hasInjury: data.hasInjury,
+          injuryDetails: data.injuryDetails,
+          stravaConnected: data.stravaConnected,
+          targetEvent,
+        };
+
+        setStep('complete');
+        // Wait a moment for UI to update, then call onComplete with profile data
+        setTimeout(async () => {
+          try {
+            await onComplete(onboardingProfile);
+          } catch (error) {
+            console.error('[OnboardingChat] Error in onComplete callback:', error);
+            // If parent's onComplete fails, show error but don't revert step
+            toast({
+              title: 'Error',
+              description: 'Failed to complete onboarding. Please try refreshing the page.',
+              variant: 'destructive',
+            });
+          }
+        }, 1000);
+      } else {
+        // Backend returned non-ok status
+        throw new Error('Backend returned non-ok status');
+      }
     } catch (error) {
       console.error('Failed to save onboarding data:', error);
-        // Check if it's an auth error - if so, user needs to authenticate first
-        const isAuthError = error && typeof error === 'object' && 'status' in error && (error as { status?: number }).status === 401;
-        
-        // Mark onboarding as completed even if API call failed (data saved locally)
-        markOnboardingCompleted();
-        
-        if (isAuthError) {
-          addCoachMessage(
-            "I've saved your preferences. You'll need to connect Strava or log in to sync with the backend. For now, let's get started!"
-          );
-        } else {
-          addCoachMessage(
-            "That's everything I need. I'll put together your first week now. Let's get to work."
-          );
-        }
-        setStep('complete');
-        setTimeout(onComplete, 1000);
-      }
-    } else {
-      // User is not authenticated - data already saved locally above
-      // Preferences can be saved later when user authenticates
-      // Mark onboarding as completed (data saved locally)
-      markOnboardingCompleted();
       
+      // Extract error message for user feedback
+      let errorMessage = 'Failed to complete onboarding. Please try again.';
+      if (error && typeof error === 'object') {
+        const apiError = error as { message?: string; status?: number; response?: { data?: { detail?: string } } };
+        if (apiError.response?.data?.detail) {
+          errorMessage = apiError.response.data.detail;
+        } else if (apiError.message) {
+          errorMessage = apiError.message;
+        } else if (apiError.status === 400) {
+          errorMessage = 'Invalid onboarding data. Please check your inputs.';
+        } else if (apiError.status === 401) {
+          errorMessage = 'Authentication required. Please log in again.';
+        } else if (apiError.status === 422) {
+          errorMessage = 'Validation error. Please check your inputs.';
+        } else if (apiError.status === 500) {
+          errorMessage = 'Server error. Please try again later.';
+        }
+      }
+
+      // Show validation error to user
       addCoachMessage(
-        "That's everything I need. Connect Strava or log in to sync your preferences with the backend. For now, let's get started!"
+        `I encountered an error while saving your data: ${errorMessage}. Please check your inputs and try again.`
       );
-      setStep('complete');
-      setTimeout(onComplete, 1000);
+      toast({
+        title: 'Onboarding Error',
+        description: errorMessage,
+        variant: 'destructive',
+      });
+      
+      // CRITICAL: Don't redirect on error - stay on onboarding page
+      // Don't call onComplete on error - backend hasn't confirmed completion
     }
   };
 

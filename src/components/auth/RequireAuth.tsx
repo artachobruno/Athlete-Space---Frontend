@@ -2,6 +2,8 @@ import { ReactNode } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { Skeleton } from '@/components/ui/skeleton';
+import { isPreviewMode } from '@/lib/preview';
+import { PreviewShell } from '@/components/preview/PreviewShell';
 
 interface RequireAuthProps {
   children: ReactNode;
@@ -13,12 +15,25 @@ interface RequireAuthProps {
  * 
  * - Shows loading skeleton while checking auth state
  * - Redirects to /login if user is not authenticated
- * - Renders children if user is authenticated
+ * - Redirects to /onboarding if onboarding is not complete
+ * - Renders children if user is authenticated and onboarding is complete
+ * 
+ * PREVIEW MODE BYPASS:
+ * - In Lovable preview mode, bypasses auth to allow visual previews
+ * - This does NOT affect production security
+ * - Only works when hostname includes "lovable" or VITE_PREVIEW_MODE=true
  */
 export function RequireAuth({ children }: RequireAuthProps) {
   const { user, loading, status } = useAuth();
 
-  console.log("[RequireAuth] Auth state:", { user, loading, status, hasUser: !!user });
+  // Preview mode bypass - ONLY works in Lovable preview
+  // This does NOT affect production or real auth
+  if (isPreviewMode()) {
+    console.log("[RequireAuth] Preview mode detected, bypassing auth for visual preview");
+    return <PreviewShell>{children}</PreviewShell>;
+  }
+
+  console.log("[RequireAuth] Auth state:", { user, loading, status, hasUser: !!user, onboardingComplete: user?.onboarding_complete });
 
   // Show loading state while auth is being determined
   if (status === "loading" || loading) {
@@ -40,7 +55,14 @@ export function RequireAuth({ children }: RequireAuthProps) {
     return <Navigate to="/login" replace />;
   }
 
-  // User is authenticated
-  console.log("[RequireAuth] User authenticated, rendering children");
+  // CRITICAL: Backend is source of truth for onboarding completion
+  // If onboarding is not complete, redirect to onboarding
+  if (status === "authenticated" && user && !user.onboarding_complete) {
+    console.log("[RequireAuth] User authenticated but onboarding not complete, redirecting to onboarding");
+    return <Navigate to="/onboarding" replace />;
+  }
+
+  // User is authenticated and onboarding is complete
+  console.log("[RequireAuth] User authenticated and onboarding complete, rendering children");
   return <>{children}</>;
 }

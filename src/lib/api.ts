@@ -23,6 +23,31 @@ export interface ApiError {
   details?: unknown;
 }
 
+// Confirmation types for PROPOSAL_ONLY responses
+export interface ProposalOnlyResponse {
+  status: "PROPOSAL_ONLY";
+  action: "create" | "modify" | "delete";
+  resource_type: "session" | "week" | "season";
+  summary: string;
+  diff?: {
+    before?: unknown;
+    after?: unknown;
+    changes?: Array<{
+      field: string;
+      before: unknown;
+      after: unknown;
+    }>;
+  };
+  proposal_id?: string;
+  message?: string;
+}
+
+export interface WriteResponse<T = unknown> {
+  status: "ok" | "PROPOSAL_ONLY";
+  data?: T;
+  proposal?: ProposalOnlyResponse;
+}
+
 // Calendar types
 export interface CalendarSession {
   id: string;
@@ -1587,22 +1612,37 @@ export const fetchCalendarSessions = async (params?: { limit?: number; offset?: 
  * @param sessionId - The ID of the session to update
  * @param status - The new status: "completed", "skipped", "cancelled", or "planned"
  * @param completedActivityId - Optional ID of the completed activity to link to the session
+ * @param confirmed - Optional flag to confirm the operation (for PROPOSAL_ONLY retries)
  */
 export const updateSessionStatus = async (
   sessionId: string,
   status: "completed" | "skipped" | "cancelled" | "planned",
-  completedActivityId?: string
-): Promise<CalendarSession> => {
-  console.log("[API] Updating session status:", { sessionId, status, completedActivityId });
+  completedActivityId?: string,
+  confirmed?: boolean
+): Promise<CalendarSession | WriteResponse<CalendarSession>> => {
+  console.log("[API] Updating session status:", { sessionId, status, completedActivityId, confirmed });
   try {
-    const response = await api.patch(`/calendar/sessions/${sessionId}/status`, {
+    const payload: Record<string, unknown> = {
       status,
-      completed_activity_id: completedActivityId,
-    });
-    console.log("[API] Session status updated:", response);
-    // Axios responses have a .data property
+    };
+    
+    if (completedActivityId) {
+      payload.completed_activity_id = completedActivityId;
+    }
+    
+    // Add confirmed flag if provided (for retry after PROPOSAL_ONLY)
+    if (confirmed === true) {
+      payload.confirmed = true;
+    }
+
+    const response = await api.patch(`/calendar/sessions/${sessionId}/status`, payload);
+    console.log("[API] Session status response:", response);
+    
+    // Check if response is PROPOSAL_ONLY or contains proposal
     const responseData = response.data || response;
-    return responseData as CalendarSession;
+    
+    // Return response as-is (may be PROPOSAL_ONLY or CalendarSession)
+    return responseData as CalendarSession | WriteResponse<CalendarSession>;
   } catch (error) {
     console.error("[API] Failed to update session status:", error);
     throw error;

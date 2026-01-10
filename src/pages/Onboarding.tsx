@@ -1,17 +1,18 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { OnboardingChat } from '@/components/onboarding/OnboardingChat';
+import { OnboardingChat, type AthleteOnboardingProfile } from '@/components/onboarding/OnboardingChat';
 import { useAuth } from '@/context/AuthContext';
+import { toast } from '@/hooks/use-toast';
 
 export default function Onboarding() {
   const navigate = useNavigate();
-  const { user, loading, status } = useAuth();
-  const [isComplete, setIsComplete] = useState(false);
+  const { user, loading, status, refreshUser } = useAuth();
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const hasRedirectedRef = useRef(false);
 
   // CRITICAL: Onboarding is ONLY for authenticated users with incomplete onboarding
   // If not authenticated, redirect to login (NOT a fallback for auth failures)
-  // If onboarding already complete, redirect to dashboard
+  // If onboarding already complete (backend is source of truth), redirect to dashboard
   useEffect(() => {
     // Block routing until auth resolves
     if (status === "loading" || loading) {
@@ -26,20 +27,48 @@ export default function Onboarding() {
       return;
     }
 
-    // CRITICAL: Only show onboarding when authenticated AND onboarding incomplete
-    // If onboarding is already complete, redirect to dashboard
-    if (status === "authenticated" && user && user.onboarding_complete && !isComplete && !hasRedirectedRef.current) {
+    // CRITICAL: Backend is source of truth for onboarding completion
+    // If backend says onboarding is complete, redirect to dashboard
+    if (status === "authenticated" && user && user.onboarding_complete && !hasRedirectedRef.current) {
+      console.log("[Onboarding] Backend confirms onboarding complete, redirecting to dashboard");
       hasRedirectedRef.current = true;
       navigate('/dashboard', { replace: true });
     }
-  }, [user, loading, status, navigate, isComplete]);
+  }, [user, loading, status, navigate]);
 
-  const handleComplete = () => {
-    setIsComplete(true);
-    hasRedirectedRef.current = true; // Prevent useEffect from also redirecting
-    setTimeout(() => {
-      navigate('/dashboard', { replace: true });
-    }, 1500);
+  const handleComplete = async (profile: AthleteOnboardingProfile): Promise<void> => {
+    // CRITICAL: Frontend never decides onboarding completion
+    // This callback is only called after backend confirms success via completeOnboarding()
+    // Refresh user state from backend to get updated onboarding_complete value
+    setIsSubmitting(true);
+    
+    try {
+      console.log("[Onboarding] Onboarding completed, refreshing user state from backend", { profile });
+      await refreshUser();
+      
+      // Reset redirect ref to allow useEffect to handle redirect
+      hasRedirectedRef.current = false;
+      
+      // Small delay to allow React state to update after refreshUser
+      // The useEffect will check user.onboarding_complete and redirect if true
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
+      // Note: After refreshUser completes, the user state should be updated
+      // The useEffect hook depends on `user`, so when user updates, it will check
+      // user.onboarding_complete and redirect if true
+      console.log("[Onboarding] User state refreshed, waiting for useEffect to redirect based on backend state");
+    } catch (error) {
+      console.error("[Onboarding] Failed to refresh user state:", error);
+      toast({
+        title: 'Error',
+        description: 'Failed to refresh user state. Please refresh the page to verify onboarding completion.',
+        variant: 'destructive',
+      });
+      // Don't redirect on error - let user manually refresh or try again
+      // Backend should have confirmed completion, but we couldn't verify it
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -51,7 +80,7 @@ export default function Onboarding() {
 
       {/* Chat area */}
       <main className="flex-1 flex flex-col max-w-2xl mx-auto w-full">
-        <OnboardingChat onComplete={handleComplete} isComplete={isComplete} />
+        <OnboardingChat onComplete={handleComplete} isComplete={isSubmitting} />
       </main>
     </div>
   );
