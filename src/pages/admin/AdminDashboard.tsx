@@ -3,6 +3,7 @@ import { AdminStatCard } from '@/components/admin/AdminStatCard';
 import { LatencyChart } from '@/components/admin/LatencyChart';
 import { SlaBar } from '@/components/admin/SlaBar';
 import { ServiceHealthList } from '@/components/admin/ServiceHealthList';
+import { TrafficChart } from '@/components/admin/TrafficChart';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { CheckCircle2, AlertTriangle, Info } from 'lucide-react';
@@ -21,7 +22,6 @@ const mockOpsData = {
     p95: 420,
     p99: 780,
   },
-  // Mock time-series data for the chart (last 24h, hourly)
   latencyHistory: [
     { time: '00:00', p50: 165, p95: 380, p99: 720 },
     { time: '02:00', p50: 155, p95: 360, p99: 690 },
@@ -48,6 +48,28 @@ const mockOpsData = {
     { type: 'info' as const, message: 'Elevated latency during peak hours' },
     { type: 'warning' as const, message: 'One retry spike detected' },
   ],
+  traffic: {
+    activeUsers15m: 12,
+    activeUsers24h: 87,
+    concurrentSessions: 9,
+    requestsPerMinute: 46,
+    executorRunsPerMinute: 6.2,
+    planBuildsPerHour: 14,
+    toolCallsPerMinute: 28,
+    requestVolumeHistory: [
+      { time: '10:00', rpm: 32 },
+      { time: '10:10', rpm: 41 },
+      { time: '10:20', rpm: 38 },
+      { time: '10:30', rpm: 45 },
+      { time: '10:40', rpm: 49 },
+      { time: '10:50', rpm: 46 },
+    ],
+    activitySignals: [
+      { type: 'success' as const, message: 'Normal planning volume' },
+      { type: 'info' as const, message: 'Peak activity detected 09:00–10:00' },
+      { type: 'warning' as const, message: 'Plan failures elevated for 6 minutes' },
+    ],
+  },
 };
 
 /**
@@ -56,10 +78,8 @@ const mockOpsData = {
  * Preview-safe: renders with mock data, no auth required
  */
 export default function AdminDashboard() {
-  // In preview mode (or production without real API), use mock data
-  // This pattern allows easy swap to real API later
   const isPreview = typeof window !== 'undefined' && window.location.hostname.includes('lovable');
-  const data = isPreview ? mockOpsData : mockOpsData; // Real data integration later
+  const data = isPreview ? mockOpsData : mockOpsData;
 
   return (
     <AppLayout>
@@ -79,17 +99,8 @@ export default function AdminDashboard() {
 
         {/* System Status Cards */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <AdminStatCard
-            label="API"
-            value="Healthy"
-            status="healthy"
-          />
-          <AdminStatCard
-            label="MCP"
-            value="Online"
-            subtext="DB / FS"
-            status="healthy"
-          />
+          <AdminStatCard label="API" value="Healthy" status="healthy" />
+          <AdminStatCard label="MCP" value="Online" subtext="DB / FS" status="healthy" />
           <AdminStatCard
             label="Error Rate"
             value={`${data.errorRate}%`}
@@ -104,26 +115,98 @@ export default function AdminDashboard() {
           />
         </div>
 
+        {/* Traffic Overview */}
+        <div className="space-y-4">
+          <h2 className="text-lg font-medium text-foreground">Traffic Overview</h2>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <AdminStatCard
+              label="Active Users (15m)"
+              value={String(data.traffic.activeUsers15m)}
+              subtext="Last 15 minutes"
+              status="healthy"
+            />
+            <AdminStatCard
+              label="Active Users (24h)"
+              value={String(data.traffic.activeUsers24h)}
+              subtext="Last 24 hours"
+              status="healthy"
+            />
+            <AdminStatCard
+              label="Concurrent Sessions"
+              value={String(data.traffic.concurrentSessions)}
+              subtext="Right now"
+              status="healthy"
+            />
+            <AdminStatCard
+              label="Requests / Minute"
+              value={String(data.traffic.requestsPerMinute)}
+              subtext="Avg last 5 min"
+              status="healthy"
+            />
+          </div>
+        </div>
+
+        {/* Request Volume Chart */}
+        <TrafficChart data={data.traffic.requestVolumeHistory} />
+
+        {/* Execution Activity */}
+        <div className="space-y-4">
+          <h2 className="text-lg font-medium text-foreground">Execution Activity</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <AdminStatCard
+              label="Executor Runs / Min"
+              value={String(data.traffic.executorRunsPerMinute)}
+              subtext="Avg last 10 min"
+              status="healthy"
+            />
+            <AdminStatCard
+              label="Plan Builds / Hour"
+              value={String(data.traffic.planBuildsPerHour)}
+              subtext="Last hour"
+              status="healthy"
+            />
+            <AdminStatCard
+              label="Tool Calls / Min"
+              value={String(data.traffic.toolCallsPerMinute)}
+              subtext="All MCP tools"
+              status="healthy"
+            />
+          </div>
+        </div>
+
+        {/* Activity Signals */}
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base font-medium">Activity Signals</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2">
+            {data.traffic.activitySignals.map((signal, index) => (
+              <div
+                key={index}
+                className="flex items-center gap-3 py-2 px-3 rounded-md bg-muted/30"
+              >
+                {signal.type === 'success' && (
+                  <CheckCircle2 className="h-4 w-4 text-green-600 shrink-0" />
+                )}
+                {signal.type === 'warning' && (
+                  <AlertTriangle className="h-4 w-4 text-amber-500 shrink-0" />
+                )}
+                {signal.type === 'info' && (
+                  <Info className="h-4 w-4 text-blue-500 shrink-0" />
+                )}
+                <span className="text-sm text-foreground">{signal.message}</span>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+
         {/* Latency & SLA Section */}
         <div className="space-y-4">
           <h2 className="text-lg font-medium text-foreground">Latency & Reliability</h2>
-          
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {/* Latency Chart */}
-            <LatencyChart 
-              data={data.latencyHistory}
-              currentMetrics={data.latency}
-            />
-
-            {/* SLA & Service Health */}
+            <LatencyChart data={data.latencyHistory} currentMetrics={data.latency} />
             <div className="space-y-4">
-              {/* SLA Compliance */}
-              <SlaBar 
-                value={data.sla} 
-                threshold={data.slaThreshold} 
-              />
-
-              {/* Service Breakdown */}
+              <SlaBar value={data.sla} threshold={data.slaThreshold} />
               <ServiceHealthList services={data.services} />
             </div>
           </div>
@@ -136,7 +219,7 @@ export default function AdminDashboard() {
           </CardHeader>
           <CardContent className="space-y-2">
             {data.reliabilitySignals.map((signal, index) => (
-              <div 
+              <div
                 key={index}
                 className="flex items-center gap-3 py-2 px-3 rounded-md bg-muted/30"
               >
