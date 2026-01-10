@@ -43,6 +43,7 @@ export function CoachChat() {
   const [isTyping, setIsTyping] = useState(false);
   const [conversationId, setConversationId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const isSendingRef = useRef<boolean>(false);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -69,17 +70,34 @@ export function CoachChat() {
   }, []); // Only run on mount
 
   const sendMessage = async () => {
+    // F02: Prevent duplicate sends with send lock
+    if (isSendingRef.current) return;
     if (!input.trim()) return;
 
+    const messageText = input.trim();
+    const messageId = crypto.randomUUID();
+
+    // F06: Clear input immediately after send starts
+    setInput('');
+    
+    // F02: Set send lock immediately
+    isSendingRef.current = true;
+    setIsTyping(true);
+
+    // F08: Log once per chat turn
+    console.info("Sending coach message", {
+      length: messageText.length,
+      messageId
+    });
+
     const userMessage: Message = {
-      id: Date.now().toString(),
+      id: messageId,
       role: 'athlete',
-      content: input.trim(),
+      content: messageText,
       timestamp: new Date(),
     };
 
     setMessages(prev => [...prev, userMessage]);
-    const messageText = input.trim();
     
     // Detect plan intent from last user message
     // Only allow transitions: idle -> planning, or done -> idle (new conversation)
@@ -95,12 +113,12 @@ export function CoachChat() {
         setMode('idle');
       }
     }
-    
-    setInput('');
-    setIsTyping(true);
 
     try {
-      const response = await sendCoachChat(messageText);
+      const response = await sendCoachChat(messageText, { message_id: messageId });
+      
+      // F05: Only process successful responses (200 OK)
+      // No retry/resend logic should trigger on success
       
       // Track conversation ID from response if provided
       if (response.conversation_id) {
@@ -138,20 +156,31 @@ export function CoachChat() {
       setMode('idle');
     } finally {
       setIsTyping(false);
+      // F02: Release send lock
+      isSendingRef.current = false;
     }
   };
 
   const handleConfirmPlan = async () => {
+    // F02: Prevent duplicate sends with send lock
+    if (isSendingRef.current) return;
+    
     // Only allow transition from planning to executing
     if (mode !== 'planning') {
       return;
     }
 
+    const messageText = 'Yes, generate the weekly plan';
+    const messageId = crypto.randomUUID();
+
+    // F02: Set send lock immediately
+    isSendingRef.current = true;
+    
     // Add confirm message first
     const confirmMessage: Message = {
-      id: Date.now().toString(),
+      id: messageId,
       role: 'athlete',
-      content: 'Yes, generate the weekly plan',
+      content: messageText,
       timestamp: new Date(),
     };
     setMessages(prev => [...prev, confirmMessage]);
@@ -160,9 +189,19 @@ export function CoachChat() {
     setMode('executing');
     setIsTyping(true);
 
+    // F08: Log once per chat turn
+    console.info("Sending coach message", {
+      length: messageText.length,
+      messageId
+    });
+
     try {
-      // Send a message that explicitly requests plan generation
-      const response = await sendCoachChat('Yes, generate the weekly plan');
+      // F04: Send raw message only - backend extracts slots
+      // F07: Include message_id for idempotency
+      const response = await sendCoachChat(messageText, { message_id: messageId });
+      
+      // F05: Only process successful responses (200 OK)
+      // No retry/resend logic should trigger on success
       
       if (response.conversation_id) {
         setConversationId(response.conversation_id);
@@ -199,14 +238,23 @@ export function CoachChat() {
       setMode('planning');
     } finally {
       setIsTyping(false);
+      // F02: Release send lock
+      isSendingRef.current = false;
     }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
+    // F03: Prevent double submit - only handle Enter key, let form handle onSubmit if needed
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       sendMessage();
     }
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    // F03: Prevent default form submission and use our handler
+    e.preventDefault();
+    sendMessage();
   };
 
   return (
@@ -291,7 +339,7 @@ export function CoachChat() {
 
       {/* Input */}
       <div className="border-t border-border p-4">
-        <div className="flex gap-2">
+        <form onSubmit={handleSubmit} className="flex gap-2">
           <Textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}
@@ -301,14 +349,14 @@ export function CoachChat() {
             rows={1}
           />
           <Button
-            onClick={sendMessage}
-            disabled={!input.trim() || isTyping}
+            type="submit"
+            disabled={!input.trim() || isTyping || isSendingRef.current}
             size="icon"
             className="shrink-0 bg-coach hover:bg-coach/90 text-coach-foreground"
           >
             <Send className="h-4 w-4" />
           </Button>
-        </div>
+        </form>
         <p className="text-xs text-muted-foreground mt-2">
           Press Enter to send, Shift+Enter for new line
         </p>

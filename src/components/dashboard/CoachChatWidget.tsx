@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -24,23 +24,42 @@ export function CoachChatWidget() {
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [conversationId, setConversationId] = useState<string | null>(null);
+  const isSendingRef = useRef<boolean>(false);
 
   const sendMessage = async () => {
+    // F02: Prevent duplicate sends with send lock
+    if (isSendingRef.current) return;
     if (!input.trim()) return;
 
+    const messageText = input.trim();
+    const messageId = crypto.randomUUID();
+
+    // F06: Clear input immediately after send starts
+    setInput('');
+    
+    // F02: Set send lock immediately
+    isSendingRef.current = true;
+    setIsTyping(true);
+
+    // F08: Log once per chat turn
+    console.info("Sending coach message", {
+      length: messageText.length,
+      messageId
+    });
+
     const userMessage: Message = {
-      id: Date.now().toString(),
+      id: messageId,
       role: 'athlete',
-      content: input.trim(),
+      content: messageText,
     };
 
     setMessages(prev => [...prev, userMessage]);
-    const messageText = input.trim();
-    setInput('');
-    setIsTyping(true);
 
     try {
-      const response = await sendCoachChat(messageText);
+      const response = await sendCoachChat(messageText, { message_id: messageId });
+      
+      // F05: Only process successful responses (200 OK)
+      // No retry/resend logic should trigger on success
       
       // Track conversation ID from response if provided
       if (response.conversation_id) {
@@ -68,14 +87,23 @@ export function CoachChatWidget() {
       setMessages(prev => [...prev, errorMessage]);
     } finally {
       setIsTyping(false);
+      // F02: Release send lock
+      isSendingRef.current = false;
     }
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
+    // F03: Prevent double submit - only handle Enter key, let form handle onSubmit if needed
+    if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       sendMessage();
     }
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    // F03: Prevent default form submission and use our handler
+    e.preventDefault();
+    sendMessage();
   };
 
   // Set initial greeting on mount (no API call needed - endpoint is deprecated)
@@ -175,7 +203,7 @@ export function CoachChatWidget() {
         </div>
 
         {/* Input */}
-        <div className="flex gap-2">
+        <form onSubmit={handleSubmit} className="flex gap-2">
           <Input
             value={input}
             onChange={(e) => setInput(e.target.value)}
@@ -184,14 +212,14 @@ export function CoachChatWidget() {
             className="text-sm h-9"
           />
           <Button
-            onClick={sendMessage}
-            disabled={!input.trim() || isTyping}
+            type="submit"
+            disabled={!input.trim() || isTyping || isSendingRef.current}
             size="icon"
             className="h-9 w-9 shrink-0 bg-coach hover:bg-coach/90 text-coach-foreground"
           >
             <Send className="h-3.5 w-3.5" />
           </Button>
-        </div>
+        </form>
       </CardContent>
     </Card>
   );

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { MessageCircle, X, Send, Brain } from 'lucide-react';
@@ -26,18 +26,37 @@ export function PlanCoachChat() {
   ]);
   const [isTyping, setIsTyping] = useState(false);
   const [conversationId, setConversationId] = useState<string | null>(null);
+  const isSendingRef = useRef<boolean>(false);
 
   const sendMessage = async () => {
+    // F02: Prevent duplicate sends with send lock
+    if (isSendingRef.current) return;
     if (!input.trim()) return;
 
-    const userMessage = { role: 'athlete' as const, content: input };
-    setMessages(prev => [...prev, userMessage]);
     const messageText = input.trim();
+    const messageId = crypto.randomUUID();
+
+    // F06: Clear input immediately after send starts
     setInput('');
+    
+    // F02: Set send lock immediately
+    isSendingRef.current = true;
     setIsTyping(true);
 
+    // F08: Log once per chat turn
+    console.info("Sending coach message", {
+      length: messageText.length,
+      messageId
+    });
+
+    const userMessage = { role: 'athlete' as const, content: messageText };
+    setMessages(prev => [...prev, userMessage]);
+
     try {
-      const response = await sendCoachChat(messageText);
+      const response = await sendCoachChat(messageText, { message_id: messageId });
+      
+      // F05: Only process successful responses (200 OK)
+      // No retry/resend logic should trigger on success
       
       // Track conversation ID from response if provided
       if (response.conversation_id) {
@@ -62,7 +81,23 @@ export function PlanCoachChat() {
       }]);
     } finally {
       setIsTyping(false);
+      // F02: Release send lock
+      isSendingRef.current = false;
     }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    // F03: Prevent double submit - only handle Enter key
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+    }
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    // F03: Prevent default form submission and use our handler
+    e.preventDefault();
+    sendMessage();
   };
 
   return (
@@ -144,23 +179,23 @@ export function PlanCoachChat() {
 
           {/* Input */}
           <div className="p-3 border-t border-border">
-            <div className="flex gap-2">
+            <form onSubmit={handleSubmit} className="flex gap-2">
               <Input
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
-                onKeyDown={(e) => e.key === 'Enter' && sendMessage()}
+                onKeyDown={handleKeyDown}
                 placeholder="Ask about your plan..."
                 className="text-sm h-9"
               />
               <Button
-                onClick={sendMessage}
-                disabled={!input.trim() || isTyping}
+                type="submit"
+                disabled={!input.trim() || isTyping || isSendingRef.current}
                 size="icon"
                 className="h-9 w-9 shrink-0 bg-coach hover:bg-coach/90 text-coach-foreground"
               >
                 <Send className="h-4 w-4" />
               </Button>
-            </div>
+            </form>
           </div>
         </div>
       )}

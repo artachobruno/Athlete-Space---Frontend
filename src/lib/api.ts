@@ -1389,25 +1389,22 @@ export interface CoachChatResponse {
 
 export const sendCoachChat = async (
   message: string,
-  options?: { days?: number; days_to_race?: number | null }
+  options?: { message_id?: string }
 ): Promise<CoachChatResponse> => {
-  console.log("[API] Sending coach chat message");
+  // F04: Send raw message only - backend is single source of truth for slot extraction
+  // F07: Support message_id for idempotency guard (optional)
+  const payload: { message: string; message_id?: string } = { message };
+  if (options?.message_id) {
+    payload.message_id = options.message_id;
+  }
+  
   try {
-    const payload: { message: string; days?: number; days_to_race?: number | null } = { message };
-    if (options?.days !== undefined) {
-      payload.days = options.days;
-    }
-    if (options?.days_to_race !== undefined) {
-      payload.days_to_race = options.days_to_race;
-    }
-    
-    console.log("[API] Coach chat payload:", { 
-      messageLength: message.length,
-      hasDays: options?.days !== undefined,
-      hasDaysToRace: options?.days_to_race !== undefined 
-    });
-    
     const response = await api.post("/coach/chat", payload);
+    
+    // F05: Only process successful responses (200 OK)
+    // No retry/resend logic should trigger on success
+    // Axios doesn't retry by default, so this is just for clarity
+    
     return response as unknown as CoachChatResponse;
   } catch (error) {
     const apiError = error as ApiError;
