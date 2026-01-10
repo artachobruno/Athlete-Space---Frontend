@@ -30,6 +30,7 @@ const navItems = [
   { path: '/activities', label: 'Activities', icon: Activity },
   { path: '/analytics', label: 'Analytics', icon: BarChart3 },
   { path: '/coach', label: 'Coach', icon: Brain },
+  { path: '/admin', label: 'Admin', icon: Shield },
   { path: '/settings', label: 'Settings', icon: Settings },
 ];
 

@@ -32,7 +32,7 @@ import About from "./pages/About";
 import Terms from "./pages/Terms";
 import ConnectSuccess from "./pages/ConnectSuccess";
 import NotFound from "./pages/NotFound";
-
+import AdminDashboard from "./pages/admin/AdminDashboard";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -332,6 +332,14 @@ const AppContent = () => {
           element={
             <RequireAuth>
               <Settings />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/admin"
+          element={
+            <RequireAuth>
+              <AdminDashboard />
             </RequireAuth>
           }
         />
