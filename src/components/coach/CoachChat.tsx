@@ -309,7 +309,7 @@ export function CoachChat() {
               message.plan_items.length > 0 &&
               (!message.response_type ||
                 ['plan', 'weekly_plan', 'season_plan', 'session_plan', 'recommendation', 'summary'].includes(message.response_type)) && (
-                <div className={cn('flex gap-3', message.role === 'athlete' && 'flex-row-reverse')}>
+                <div className={cn('flex gap-3')}>
                   <div className="w-8 shrink-0" />
                   <div className="max-w-[75%]">
                     <PlanList planItems={message.plan_items} />

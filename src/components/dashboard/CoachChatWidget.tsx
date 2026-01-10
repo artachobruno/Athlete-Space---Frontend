@@ -135,7 +135,7 @@ export function CoachChatWidget() {
         {/* Messages */}
         <div className="flex-1 overflow-y-auto space-y-2 mb-3">
           {/* Coach Progress Panel - shown above messages when conversation is active */}
-          {conversationId && <CoachProgressPanel conversationId={conversationId} />}
+          {conversationId && <CoachProgressPanel conversationId={conversationId} mode="executing" />}
           {messages.slice(-4).map((message) => (
             <div key={message.id} className="space-y-1.5">
               <div
@@ -176,7 +176,7 @@ export function CoachChatWidget() {
                 message.plan_items.length > 0 &&
                 (!message.response_type ||
                   ['plan', 'weekly_plan', 'season_plan', 'session_plan', 'recommendation', 'summary'].includes(message.response_type)) && (
-                  <div className={cn('flex gap-2', message.role === 'athlete' && 'flex-row-reverse')}>
+                  <div className={cn('flex gap-2')}>
                     <div className="w-6 shrink-0" />
                     <div className="max-w-[80%]">
                       <PlanList planItems={message.plan_items} />

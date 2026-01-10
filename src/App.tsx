@@ -32,6 +32,7 @@ import About from "./pages/About";
 import Terms from "./pages/Terms";
 import ConnectSuccess from "./pages/ConnectSuccess";
 import NotFound from "./pages/NotFound";
+import CoachDashboard from "./pages/coach/Dashboard";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -331,6 +332,14 @@ const AppContent = () => {
           element={
             <RequireAuth>
               <Settings />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/coach/dashboard"
+          element={
+            <RequireAuth>
+              <CoachDashboard />
             </RequireAuth>
           }
         />

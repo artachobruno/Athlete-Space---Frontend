@@ -129,7 +129,7 @@ export function PlanCoachChat() {
           {/* Messages */}
           <div className="h-64 overflow-y-auto p-3 space-y-3">
             {/* Coach Progress Panel - shown above messages when conversation is active */}
-            {conversationId && <CoachProgressPanel conversationId={conversationId} />}
+            {conversationId && <CoachProgressPanel conversationId={conversationId} mode="executing" />}
             {messages.map((msg, idx) => (
               <div key={idx} className="space-y-2">
                 <div
@@ -156,7 +156,7 @@ export function PlanCoachChat() {
                   msg.plan_items.length > 0 &&
                   (!msg.response_type ||
                     ['plan', 'weekly_plan', 'season_plan', 'session_plan', 'recommendation', 'summary'].includes(msg.response_type)) && (
-                    <div className={cn('flex', msg.role === 'athlete' && 'justify-end')}>
+                    <div className={cn('flex')}>
                       <div className="max-w-[85%]">
                         <PlanList planItems={msg.plan_items} />
                       </div>
