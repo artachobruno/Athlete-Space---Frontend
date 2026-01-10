@@ -33,6 +33,7 @@ import Terms from "./pages/Terms";
 import ConnectSuccess from "./pages/ConnectSuccess";
 import NotFound from "./pages/NotFound";
 import AdminDashboard from "./pages/admin/AdminDashboard";
+import AiDashboard from "./pages/admin/AiDashboard";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -340,6 +341,14 @@ const AppContent = () => {
           element={
             <RequireAuth>
               <AdminDashboard />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/admin/ai"
+          element={
+            <RequireAuth>
+              <AiDashboard />
             </RequireAuth>
           }
         />
