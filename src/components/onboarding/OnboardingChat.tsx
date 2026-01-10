@@ -24,8 +24,8 @@ export interface AthleteOnboardingProfile {
   injuryDetails: string;
   stravaConnected: boolean;
   targetEvent?: {
-    name: string;
-    date: string;
+    name?: string;
+    date?: string;
   };
 }
 

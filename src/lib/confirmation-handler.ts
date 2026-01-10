@@ -26,8 +26,8 @@ export function extractProposal(response: unknown): ProposalOnlyResponse | null 
     }
 
     // Check if response has status in a nested structure
-    if (resp.status === "PROPOSAL_ONLY" || (resp as WriteResponse).status === "PROPOSAL_ONLY") {
-      return resp as ProposalOnlyResponse;
+    if (resp.status === "PROPOSAL_ONLY") {
+      return resp as unknown as ProposalOnlyResponse;
     }
   }
 

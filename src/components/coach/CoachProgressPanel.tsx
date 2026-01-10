@@ -10,7 +10,7 @@ type CoachMode = 'idle' | 'awaiting_intent' | 'planning' | 'executing' | 'done';
 
 interface CoachProgressPanelProps {
   conversationId: string | null;
-  mode: CoachMode;
+  mode?: CoachMode;
   onConfirm?: () => void;
 }
 
@@ -22,7 +22,7 @@ const PREVIEW_CHECKLIST_STEPS = [
   { id: 'recovery', label: 'Insert recovery' },
 ];
 
-export function CoachProgressPanel({ conversationId, mode, onConfirm }: CoachProgressPanelProps) {
+export function CoachProgressPanel({ conversationId, mode = 'executing', onConfirm }: CoachProgressPanelProps) {
   const [progress, setProgress] = useState<CoachProgressResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
