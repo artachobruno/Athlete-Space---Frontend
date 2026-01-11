@@ -97,13 +97,8 @@ export function WeeklyLoadCard() {
     let actualLoad = 0;
     let plannedLoad = 0;
 
-    // Calculate actual load from completed sessions or TSS data
-    if (trainingLoadData?.daily_tss && Array.isArray(trainingLoadData.daily_tss)) {
-      // Sum up TSS for the week (using absolute values)
-      actualLoad = trainingLoadData.daily_tss
-        .slice(-7)
-        .reduce((sum, tss) => sum + Math.max(0, Math.abs(tss || 0)), 0);
-    }
+    // Calculate actual load from weekChartData which is already aligned to the current week
+    actualLoad = weekChartData.reduce((sum, day) => sum + day.load, 0);
 
     // Estimate planned load from calendar sessions
     const sessions = Array.isArray(weekData?.sessions) ? weekData.sessions : [];
@@ -121,7 +116,7 @@ export function WeeklyLoadCard() {
 
     const progress = plannedLoad > 0 ? (actualLoad / plannedLoad) * 100 : 0;
     return { actualLoad: Math.round(actualLoad), plannedLoad: Math.round(plannedLoad), progress };
-  }, [trainingLoadData, weekData]);
+  }, [weekChartData, weekData]);
 
   if (isLoading) {
     return (
