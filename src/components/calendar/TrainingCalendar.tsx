@@ -1,13 +1,15 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ChevronLeft, ChevronRight, MessageCircle, Download } from 'lucide-react';
+import { ChevronLeft, ChevronRight, MessageCircle, Download, Plus } from 'lucide-react';
 import { format, addMonths, subMonths, addWeeks, subWeeks } from 'date-fns';
 import { MonthView } from './MonthView';
 import { WeekView } from './WeekView';
 import { SeasonView } from './SeasonView';
 import { CoachDrawer } from './CoachDrawer';
 import { ActivityPopup } from './ActivityPopup';
+import { AddSessionModal } from './AddSessionModal';
+import { AddWeekModal } from './AddWeekModal';
 import { fetchCalendarSeason, type CalendarSession } from '@/lib/api';
 import { downloadIcsFile } from '@/lib/ics-export';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
@@ -24,6 +26,8 @@ export function TrainingCalendar() {
   const [selectedPlannedWorkout, setSelectedPlannedWorkout] = useState<PlannedWorkout | null>(null);
   const [selectedCompletedActivity, setSelectedCompletedActivity] = useState<CompletedActivity | null>(null);
   const [selectedSession, setSelectedSession] = useState<CalendarSession | null>(null);
+  const [addSessionOpen, setAddSessionOpen] = useState(false);
+  const [addWeekOpen, setAddWeekOpen] = useState(false);
   const queryClient = useQueryClient();
 
   const navigatePrevious = () => {
@@ -80,6 +84,10 @@ export function TrainingCalendar() {
     queryClient.invalidateQueries({ queryKey: ['calendarToday'] });
   };
 
+  const handleSessionAdded = () => {
+    handleStatusChange();
+  };
+
   const { data: seasonData } = useQuery({
     queryKey: ['calendarSeason'],
     queryFn: () => fetchCalendarSeason(),
@@ -112,8 +120,26 @@ export function TrainingCalendar() {
           </span>
         </div>
 
-        {/* Right side: Ask Coach + Export + View Toggle */}
+        {/* Right side: Add Session + Add Week + Ask Coach + Export + View Toggle */}
         <div className="flex items-center gap-3">
+          <Button
+            variant="default"
+            size="sm"
+            onClick={() => setAddSessionOpen(true)}
+            className="bg-primary hover:bg-primary/90"
+          >
+            <Plus className="h-4 w-4 mr-1.5" />
+            Add Session
+          </Button>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setAddWeekOpen(true)}
+          >
+            <Plus className="h-4 w-4 mr-1.5" />
+            Add Week
+          </Button>
+          
           <Button
             variant="ghost"
             size="sm"
@@ -166,6 +192,22 @@ export function TrainingCalendar() {
         open={coachOpen}
         onOpenChange={setCoachOpen}
         context={selectedWorkout || undefined}
+      />
+
+      {/* Add Session Modal */}
+      <AddSessionModal
+        open={addSessionOpen}
+        onOpenChange={setAddSessionOpen}
+        initialDate={currentDate}
+        onSuccess={handleSessionAdded}
+      />
+
+      {/* Add Week Modal */}
+      <AddWeekModal
+        open={addWeekOpen}
+        onOpenChange={setAddWeekOpen}
+        initialDate={currentDate}
+        onSuccess={handleSessionAdded}
       />
     </div>
   );

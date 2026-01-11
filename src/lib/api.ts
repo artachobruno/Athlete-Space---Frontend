@@ -1608,6 +1608,90 @@ export const fetchCalendarSessions = async (params?: { limit?: number; offset?: 
 };
 
 /**
+ * Creates a manual training session.
+ * @param session - Session data (date, type, distance or duration, optional notes)
+ * @returns Created session
+ */
+export const createManualSession = async (session: {
+  date: string;
+  type: 'easy' | 'workout' | 'long' | 'rest';
+  distance_km?: number | null;
+  duration_minutes?: number | null;
+  notes?: string | null;
+}): Promise<CalendarSession> => {
+  console.log("[API] Creating manual session:", session);
+  try {
+    const response = await api.post("/training/sessions/manual", session);
+    return response as unknown as CalendarSession;
+  } catch (error) {
+    console.error("[API] Failed to create manual session:", error);
+    throw error;
+  }
+};
+
+/**
+ * Creates manual training sessions for a week.
+ * @param weekStart - Week start date (YYYY-MM-DD)
+ * @param sessions - Array of session data for the week
+ * @returns Created sessions
+ */
+export const createManualWeek = async (weekStart: string, sessions: Array<{
+  date: string;
+  type: 'easy' | 'workout' | 'long' | 'rest';
+  distance_km?: number | null;
+  duration_minutes?: number | null;
+  notes?: string | null;
+}>): Promise<CalendarSession[]> => {
+  console.log("[API] Creating manual week:", { weekStart, sessionCount: sessions.length });
+  try {
+    const response = await api.post("/training/weeks/manual", {
+      week_start: weekStart,
+      sessions,
+    });
+    const responseData = response.data || response;
+    if (Array.isArray(responseData)) {
+      return responseData as CalendarSession[];
+    }
+    if (responseData && typeof responseData === 'object' && 'sessions' in responseData && Array.isArray(responseData.sessions)) {
+      return responseData.sessions as CalendarSession[];
+    }
+    return [];
+  } catch (error) {
+    console.error("[API] Failed to create manual week:", error);
+    throw error;
+  }
+};
+
+/**
+ * Creates manual training sessions for a season.
+ * @param sessions - Array of session data for the season
+ * @returns Created sessions
+ */
+export const createManualSeason = async (sessions: Array<{
+  date: string;
+  type: 'easy' | 'workout' | 'long' | 'rest';
+  distance_km?: number | null;
+  duration_minutes?: number | null;
+  notes?: string | null;
+}>): Promise<CalendarSession[]> => {
+  console.log("[API] Creating manual season:", { sessionCount: sessions.length });
+  try {
+    const response = await api.post("/training/seasons/manual", { sessions });
+    const responseData = response.data || response;
+    if (Array.isArray(responseData)) {
+      return responseData as CalendarSession[];
+    }
+    if (responseData && typeof responseData === 'object' && 'sessions' in responseData && Array.isArray(responseData.sessions)) {
+      return responseData.sessions as CalendarSession[];
+    }
+    return [];
+  } catch (error) {
+    console.error("[API] Failed to create manual season:", error);
+    throw error;
+  }
+};
+
+/**
  * Updates the status of a calendar session.
  * @param sessionId - The ID of the session to update
  * @param status - The new status: "completed", "skipped", "cancelled", or "planned"

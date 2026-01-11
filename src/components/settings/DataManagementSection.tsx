@@ -15,17 +15,19 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
-import { Database, Download, Trash2, Loader2, FileJson, FileSpreadsheet } from 'lucide-react';
+import { Database, Download, Trash2, Loader2, FileJson, FileSpreadsheet, Upload } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { fetchActivities, fetchUserProfile } from '@/lib/api';
 import { clearAllData } from '@/lib/storage';
 import { auth } from '@/lib/auth';
 import { ActivityUploadSection } from './ActivityUploadSection';
+import { ImportSeasonModal } from '@/components/calendar/ImportSeasonModal';
 
 export function DataManagementSection() {
   const [isExporting, setIsExporting] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [exportFormat, setExportFormat] = useState<'json' | 'csv'>('json');
+  const [importSeasonOpen, setImportSeasonOpen] = useState(false);
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
@@ -142,10 +144,45 @@ export function DataManagementSection() {
     }
   };
 
+  const handleSeasonImported = () => {
+    queryClient.invalidateQueries({ queryKey: ['calendarWeek'] });
+    queryClient.invalidateQueries({ queryKey: ['calendarSeason'] });
+    queryClient.invalidateQueries({ queryKey: ['calendarToday'] });
+  };
+
   return (
     <div className="space-y-6">
       {/* Activity Upload */}
       <ActivityUploadSection />
+      
+      {/* Import Season */}
+      <Card>
+        <CardHeader>
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-accent/10 rounded-lg">
+              <Upload className="h-5 w-5 text-accent" />
+            </div>
+            <div>
+              <CardTitle className="text-lg">Import Season</CardTitle>
+              <CardDescription>Import multiple training sessions from JSON</CardDescription>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          <div className="space-y-4">
+            <div>
+              <h3 className="text-sm font-medium text-foreground mb-1">Import Training Sessions</h3>
+              <p className="text-xs text-muted-foreground mb-4">
+                Import a full season of training sessions from a JSON file. This will create many sessions in your calendar.
+              </p>
+            </div>
+            <Button onClick={() => setImportSeasonOpen(true)} variant="outline">
+              <Upload className="h-4 w-4 mr-2" />
+              Import Season
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
       
       {/* Data Export & Delete */}
       <Card>
@@ -277,6 +314,13 @@ export function DataManagementSection() {
         </div>
       </CardContent>
     </Card>
+
+      {/* Import Season Modal */}
+      <ImportSeasonModal
+        open={importSeasonOpen}
+        onOpenChange={setImportSeasonOpen}
+        onSuccess={handleSeasonImported}
+      />
     </div>
   );
 }
