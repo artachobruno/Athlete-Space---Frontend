@@ -103,6 +103,7 @@ export function AddSessionModal({ open, onOpenChange, initialDate, onSuccess }: 
       const apiError = err as { 
         message?: string; 
         response?: { 
+          status?: number;
           data?: { 
             message?: string; 
             detail?: string | unknown;
@@ -115,19 +116,40 @@ export function AddSessionModal({ open, onOpenChange, initialDate, onSuccess }: 
       let errorMessage = 'Failed to create session';
       if (apiError.response?.data) {
         const data = apiError.response.data;
-        if (data.message) {
+        
+        // Log full details for debugging
+        console.error('API error details:', data);
+        
+        // Handle Pydantic/FastAPI validation errors (422 status)
+        if (apiError.response.status === 422 && data.detail) {
+          if (Array.isArray(data.detail)) {
+            // FastAPI validation errors format: [{"loc": ["field"], "msg": "...", "type": "..."}]
+            const validationErrors = data.detail as Array<{ loc?: unknown[]; msg?: string; type?: string }>;
+            const fieldErrors = validationErrors.map(err => {
+              const field = Array.isArray(err.loc) ? err.loc[err.loc.length - 1] : 'unknown';
+              return `${field}: ${err.msg || err.type || 'validation error'}`;
+            });
+            errorMessage = fieldErrors.length > 0 ? fieldErrors.join(', ') : 'Validation error';
+          } else if (typeof data.detail === 'object') {
+            // Handle object format validation errors
+            const detailObj = data.detail as Record<string, unknown>;
+            const fieldErrors: string[] = [];
+            for (const [field, errors] of Object.entries(detailObj)) {
+              if (Array.isArray(errors) && errors.length > 0) {
+                const errorMsg = errors[0] && typeof errors[0] === 'object' && 'msg' in errors[0]
+                  ? String(errors[0].msg)
+                  : String(errors[0]);
+                fieldErrors.push(`${field}: ${errorMsg}`);
+              }
+            }
+            errorMessage = fieldErrors.length > 0 ? fieldErrors.join(', ') : 'Validation error';
+          } else if (typeof data.detail === 'string') {
+            errorMessage = data.detail;
+          }
+        } else if (data.message) {
           errorMessage = data.message;
-        } else if (typeof data.detail === 'string') {
-          errorMessage = data.detail;
         } else if (Array.isArray(data.errors) && data.errors.length > 0) {
           errorMessage = data.errors.map(e => `${e.field}: ${e.message}`).join(', ');
-        } else if (data.detail && typeof data.detail === 'object') {
-          // Handle Pydantic validation errors
-          const detailObj = data.detail as Record<string, unknown>;
-          const firstError = Object.values(detailObj)[0];
-          if (Array.isArray(firstError) && firstError.length > 0) {
-            errorMessage = String(firstError[0]);
-          }
         }
       } else if (apiError.message) {
         errorMessage = apiError.message;
