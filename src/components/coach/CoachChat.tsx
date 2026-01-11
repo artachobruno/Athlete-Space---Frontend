@@ -7,6 +7,8 @@ import { sendCoachChat, type PlanItem } from '@/lib/api';
 import { generateCoachGreeting } from '@/lib/coachGreeting';
 import { CoachProgressPanel } from './CoachProgressPanel';
 import { PlanList } from './PlanList';
+import { usePlanningProgressStore } from '@/store/planningProgressStore';
+import { PlanningProgressPanel } from '@/components/planning/PlanningProgressPanel';
 
 type CoachMode = 'idle' | 'awaiting_intent' | 'planning' | 'executing' | 'done';
 
@@ -44,6 +46,7 @@ export function CoachChat() {
   const [conversationId, setConversationId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const isSendingRef = useRef<boolean>(false);
+  const resetProgress = usePlanningProgressStore((state) => state.reset);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -104,6 +107,8 @@ export function CoachChat() {
     if (hasPlanIntent(messageText)) {
       if (mode === 'idle' || mode === 'done') {
         // Transition to planning mode - do NOT generate plan yet
+        // Reset planning progress for new planning intent
+        resetProgress();
         setMode('planning');
       }
       // If already in planning/executing, stay in current state
@@ -269,6 +274,8 @@ export function CoachChat() {
             onConfirm={mode === 'planning' ? handleConfirmPlan : undefined}
           />
         ) : null}
+        {/* Planning Progress Panel - shows real-time planning phase progress */}
+        <PlanningProgressPanel />
         {messages.map((message) => (
           <div key={message.id} className="space-y-2">
             <div
