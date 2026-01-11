@@ -6,6 +6,7 @@ import {
   format,
   isToday,
   isSameDay,
+  subDays,
 } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { fetchCalendarWeek, fetchActivities, fetchOverview } from '@/lib/api';
@@ -138,12 +139,28 @@ export function WeekView({ currentDate, onActivityClick }: WeekViewProps) {
     }
     
     // Sort by date descending (most recent first)
+    // Dates are already normalized YYYY-MM-DD strings, so we can compare directly
     return allActivities.sort((a, b) => {
-      const dateA = new Date(a.date).getTime();
-      const dateB = new Date(b.date).getTime();
-      return dateB - dateA;
+      if (!a.date || !b.date) return 0;
+      // Compare YYYY-MM-DD strings directly (lexicographic comparison works for ISO dates)
+      return b.date.localeCompare(a.date);
     });
   }, [activityQueryResults]);
+
+  // Temporary debug log (REMOVE AFTER FIX)
+  if (activities.length > 0) {
+    const todayKey = format(new Date(), 'yyyy-MM-dd');
+    const yesterdayKey = format(subDays(new Date(), 1), 'yyyy-MM-dd');
+    console.log('[Calendar Debug]', {
+      today: todayKey,
+      yesterday: yesterdayKey,
+      sample: activities.slice(0, 3).map(a => ({
+        raw: a.date,
+        key: a.date, // Already normalized YYYY-MM-DD string
+      })),
+      totalActivities: activities.length,
+    });
+  }
 
   const activitiesLoading = activityQueryResults.some(q => q.isLoading);
 
@@ -257,11 +274,12 @@ export function WeekView({ currentDate, onActivityClick }: WeekViewProps) {
     }).filter(item => item.date !== '').slice(-14);
     
     const activitiesArray = Array.isArray(activities) ? activities : [];
+    const weekStartStr = format(weekStart, 'yyyy-MM-dd');
+    const weekEndStr = format(weekEnd, 'yyyy-MM-dd');
     const totalLoad = activitiesArray.reduce((sum, a) => {
-      if (!a || typeof a !== 'object') return sum;
-      const activityDate = a.date?.split('T')[0] || a.date;
-      const weekStartStr = format(weekStart, 'yyyy-MM-dd');
-      const weekEndStr = format(weekEnd, 'yyyy-MM-dd');
+      if (!a || typeof a !== 'object' || !a.date) return sum;
+      // Date is already normalized to YYYY-MM-DD format from API
+      const activityDate = a.date;
       if (activityDate >= weekStartStr && activityDate <= weekEndStr) {
         return sum + (a.trainingLoad || 0);
       }
@@ -348,15 +366,17 @@ export function WeekView({ currentDate, onActivityClick }: WeekViewProps) {
     const plannedSessions = sessionsArray.filter(s => {
       if (!s || typeof s !== 'object') return false;
       // Normalize date strings for comparison (handle timezone issues)
-      const sessionDate = s.date?.split('T')[0] || s.date;
+      // Session dates from calendar API may have time components, so format consistently
+      const sessionDate = s.date ? format(new Date(s.date), 'yyyy-MM-dd') : '';
       return sessionDate === dateStr && s.status === 'planned';
     });
     
     const planned = plannedSessions.map(mapSessionToWorkout).filter((w): w is PlannedWorkout => w !== null);
     const activitiesArray = Array.isArray(activities) ? activities : [];
     const completed = activitiesArray.filter((a: CompletedActivity) => {
-      if (!a || typeof a !== 'object') return false;
-      const activityDate = a.date?.split('T')[0] || a.date;
+      if (!a || typeof a !== 'object' || !a.date) return false;
+      // Date is already normalized to YYYY-MM-DD format from API
+      const activityDate = a.date;
       return activityDate === dateStr;
     });
     return { planned, completed, plannedSessions };

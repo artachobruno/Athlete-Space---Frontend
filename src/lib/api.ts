@@ -848,6 +848,39 @@ export const getStravaStatus = async (): Promise<{ connected: boolean; activity_
 };
 
 /**
+ * Normalizes activity timestamps from API response to ensure proper UTC handling.
+ * This function should be applied immediately when activities are received from the API.
+ */
+function normalizeActivityDate(dateField: unknown): string {
+  if (!dateField) {
+    return '';
+  }
+  
+  let date: Date;
+  if (typeof dateField === 'string') {
+    // If string doesn't end with Z, assume UTC and append Z
+    const normalizedStr = dateField.endsWith('Z') ? dateField : dateField + 'Z';
+    date = new Date(normalizedStr);
+  } else if (dateField instanceof Date) {
+    date = dateField;
+  } else {
+    // Try to parse as string
+    const str = String(dateField);
+    const normalizedStr = str.endsWith('Z') ? str : str + 'Z';
+    date = new Date(normalizedStr);
+  }
+  
+  // Check if date is valid
+  if (isNaN(date.getTime())) {
+    console.warn('[API] Invalid date field:', dateField);
+    return typeof dateField === 'string' ? dateField.split('T')[0] : '';
+  }
+  
+  // Return normalized date string in YYYY-MM-DD format (UTC)
+  return date.toISOString().split('T')[0];
+}
+
+/**
  * Fetches activities from the backend.
  * Note: Backend has a maximum limit of 100. Larger limits will be capped at 100.
  */
@@ -953,15 +986,8 @@ export const fetchActivities = async (params?: { limit?: number; offset?: number
         const sportField = act.type || act.sport || act.activity_type || act.sport_type || '';
         const titleField = act.title || act.name || act.activity_name || `${sportField} Activity`;
         
-        // Normalize date
-        let dateStr = '';
-        if (typeof dateField === 'string') {
-          dateStr = dateField.split('T')[0];
-        } else if (dateField instanceof Date) {
-          dateStr = dateField.toISOString().split('T')[0];
-        } else {
-          dateStr = String(dateField);
-        }
+        // Normalize date using the normalization function (ensures UTC handling)
+        const dateStr = normalizeActivityDate(dateField);
         
         // Normalize sport to match frontend types
         const normalizedSport = typeof sportField === 'string' ? sportField.toLowerCase() : String(sportField).toLowerCase();

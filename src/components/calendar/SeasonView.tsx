@@ -108,10 +108,11 @@ export function SeasonView({ currentDate }: SeasonViewProps) {
     }
     
     // Sort by date descending (most recent first)
+    // Dates are already normalized YYYY-MM-DD strings, so we can compare directly
     return allActivities.sort((a, b) => {
-      const dateA = new Date(a.date).getTime();
-      const dateB = new Date(b.date).getTime();
-      return dateB - dateA;
+      if (!a.date || !b.date) return 0;
+      // Compare YYYY-MM-DD strings directly (lexicographic comparison works for ISO dates)
+      return b.date.localeCompare(a.date);
     });
   }, [activityQueryResults]);
 
@@ -161,20 +162,23 @@ export function SeasonView({ currentDate }: SeasonViewProps) {
     const sessionsArray = Array.isArray(seasonData?.sessions) ? seasonData.sessions : [];
     const plannedSessions = sessionsArray.filter(s => {
       if (!s || typeof s !== 'object') return false;
-      const sessionDate = s.date?.split('T')[0] || s.date;
+      // Session dates from calendar API may have time components, so format consistently
+      const sessionDate = s.date ? format(new Date(s.date), 'yyyy-MM-dd') : '';
       return sessionDate >= weekStartStr && sessionDate <= weekEndStr && s.status === 'planned';
     });
 
     const completedSessions = sessionsArray.filter(s => {
       if (!s || typeof s !== 'object') return false;
-      const sessionDate = s.date?.split('T')[0] || s.date;
+      // Session dates from calendar API may have time components, so format consistently
+      const sessionDate = s.date ? format(new Date(s.date), 'yyyy-MM-dd') : '';
       return sessionDate >= weekStartStr && sessionDate <= weekEndStr && s.status === 'completed';
     });
 
     const activitiesArray = Array.isArray(activities) ? activities : [];
     const completedActivities = activitiesArray.filter(a => {
-      if (!a || typeof a !== 'object') return false;
-      const activityDate = a.date?.split('T')[0] || a.date;
+      if (!a || typeof a !== 'object' || !a.date) return false;
+      // Date is already normalized to YYYY-MM-DD format from API
+      const activityDate = a.date;
       return activityDate >= weekStartStr && activityDate <= weekEndStr;
     });
 
