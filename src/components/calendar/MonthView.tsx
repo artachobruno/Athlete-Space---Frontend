@@ -38,11 +38,29 @@ function getSportIcon(sport: string | null | undefined): typeof Footprints {
   return Icon || Footprints; // Fallback to Footprints if somehow undefined
 }
 
+/**
+ * MonthView Component
+ * 
+ * IMPORTANT DATA MODEL DEPENDENCY:
+ * This component ONLY displays CalendarSession objects fetched via fetchCalendarWeek().
+ * It does NOT fetch or display activities from the /activities endpoint.
+ * 
+ * This means:
+ * - Only sessions that exist in the calendar_sessions table are visible
+ * - Completed activities in the activities table are NOT automatically visible
+ * - Every completed activity MUST have a corresponding CalendarSession row
+ * 
+ * Backend invariant required: Every completed activity must have a CalendarSession
+ * with status='completed' and activity_id set to the activity's id.
+ * 
+ * This is NOT a frontend pagination issue - MonthView never calls /activities.
+ */
 export function MonthView({ currentDate, onActivityClick }: MonthViewProps) {
   const monthStart = startOfMonth(currentDate);
   const monthEnd = endOfMonth(currentDate);
   
   // Fetch data for all weeks in the month
+  // NOTE: Only fetches CalendarSession objects, never activities directly
   const weeks = useMemo(() => {
     return eachWeekOfInterval({ start: monthStart, end: monthEnd }, { weekStartsOn: 1 });
   }, [monthStart, monthEnd]);
