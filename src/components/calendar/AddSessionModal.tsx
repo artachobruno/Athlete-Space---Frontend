@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -8,6 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Loader2 } from 'lucide-react';
 import { createManualSession } from '@/lib/api';
 import { toast } from '@/hooks/use-toast';
+import { useUnitSystem } from '@/hooks/useUnitSystem';
 import { format } from 'date-fns';
 
 interface AddSessionModalProps {
@@ -18,13 +19,17 @@ interface AddSessionModalProps {
 }
 
 export function AddSessionModal({ open, onOpenChange, initialDate, onSuccess }: AddSessionModalProps) {
+  const { unitSystem } = useUnitSystem();
   const [date, setDate] = useState(initialDate ? format(initialDate, 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd'));
   const [type, setType] = useState<'easy' | 'workout' | 'long' | 'rest' | ''>('');
-  const [distanceKm, setDistanceKm] = useState<string>('');
+  const [distanceInput, setDistanceInput] = useState<string>('');
   const [durationMinutes, setDurationMinutes] = useState<string>('');
   const [notes, setNotes] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Get distance unit label based on user's unit system
+  const distanceUnit = unitSystem === 'imperial' ? 'mi' : 'km';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -37,13 +42,13 @@ export function AddSessionModal({ open, onOpenChange, initialDate, onSuccess }: 
     }
 
     // Validation: either distance or duration must be provided (except for rest)
-    if (type !== 'rest' && !distanceKm && !durationMinutes) {
+    if (type !== 'rest' && !distanceInput && !durationMinutes) {
       setError('Either distance or duration is required');
       return;
     }
 
     // Validation: if distance provided, must be a valid number
-    if (distanceKm && (isNaN(parseFloat(distanceKm)) || parseFloat(distanceKm) <= 0)) {
+    if (distanceInput && (isNaN(parseFloat(distanceInput)) || parseFloat(distanceInput) <= 0)) {
       setError('Distance must be a positive number');
       return;
     }
@@ -57,10 +62,23 @@ export function AddSessionModal({ open, onOpenChange, initialDate, onSuccess }: 
     setIsSubmitting(true);
 
     try {
+      // Convert distance from user units to km for the API
+      let distanceKm: number | null = null;
+      if (distanceInput) {
+        const distanceValue = parseFloat(distanceInput);
+        if (unitSystem === 'imperial') {
+          // Convert miles to km
+          distanceKm = distanceValue / 0.621371;
+        } else {
+          // Already in km
+          distanceKm = distanceValue;
+        }
+      }
+
       await createManualSession({
         date,
         type,
-        distance_km: distanceKm ? parseFloat(distanceKm) : null,
+        distance_km: distanceKm,
         duration_minutes: durationMinutes ? parseInt(durationMinutes, 10) : null,
         notes: notes.trim() || null,
       });
@@ -72,7 +90,7 @@ export function AddSessionModal({ open, onOpenChange, initialDate, onSuccess }: 
 
       // Reset form
       setType('');
-      setDistanceKm('');
+      setDistanceInput('');
       setDurationMinutes('');
       setNotes('');
       setError(null);
@@ -82,8 +100,39 @@ export function AddSessionModal({ open, onOpenChange, initialDate, onSuccess }: 
       onSuccess?.();
     } catch (err) {
       console.error('Failed to create session:', err);
-      const apiError = err as { message?: string; response?: { data?: { message?: string; detail?: string } } };
-      const errorMessage = apiError.response?.data?.message || apiError.response?.data?.detail || apiError.message || 'Failed to create session';
+      const apiError = err as { 
+        message?: string; 
+        response?: { 
+          data?: { 
+            message?: string; 
+            detail?: string | unknown;
+            errors?: Array<{ field: string; message: string }>;
+          } 
+        } 
+      };
+      
+      // Try to extract a meaningful error message
+      let errorMessage = 'Failed to create session';
+      if (apiError.response?.data) {
+        const data = apiError.response.data;
+        if (data.message) {
+          errorMessage = data.message;
+        } else if (typeof data.detail === 'string') {
+          errorMessage = data.detail;
+        } else if (Array.isArray(data.errors) && data.errors.length > 0) {
+          errorMessage = data.errors.map(e => `${e.field}: ${e.message}`).join(', ');
+        } else if (data.detail && typeof data.detail === 'object') {
+          // Handle Pydantic validation errors
+          const detailObj = data.detail as Record<string, unknown>;
+          const firstError = Object.values(detailObj)[0];
+          if (Array.isArray(firstError) && firstError.length > 0) {
+            errorMessage = String(firstError[0]);
+          }
+        }
+      } else if (apiError.message) {
+        errorMessage = apiError.message;
+      }
+      
       setError(errorMessage);
     } finally {
       setIsSubmitting(false);
@@ -102,6 +151,9 @@ export function AddSessionModal({ open, onOpenChange, initialDate, onSuccess }: 
       <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>Add Session</DialogTitle>
+          <DialogDescription>
+            Create a new training session for your calendar.
+          </DialogDescription>
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
@@ -134,14 +186,14 @@ export function AddSessionModal({ open, onOpenChange, initialDate, onSuccess }: 
 
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="distance">Distance (km)</Label>
+              <Label htmlFor="distance">Distance ({distanceUnit})</Label>
               <Input
                 id="distance"
                 type="number"
                 step="0.1"
                 min="0"
-                value={distanceKm}
-                onChange={(e) => setDistanceKm(e.target.value)}
+                value={distanceInput}
+                onChange={(e) => setDistanceInput(e.target.value)}
                 disabled={isSubmitting || type === 'rest'}
                 placeholder="Optional"
               />
