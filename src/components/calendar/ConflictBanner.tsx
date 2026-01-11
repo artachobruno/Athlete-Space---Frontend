@@ -1,3 +1,9 @@
+/**
+ * ConflictBanner component (A86.6 - UI surfacing)
+ * 
+ * Displays conflicts returned by backend API.
+ * No conflict detection logic - just display + action buttons.
+ */
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { AlertTriangle, X } from 'lucide-react';
@@ -10,6 +16,8 @@ interface ConflictBannerProps {
   onAutoResolve?: () => void;
   onManualReview?: () => void;
   showActions?: boolean;
+  existingSessionTitles?: Record<string, string>;
+  candidateSessionTitles?: Record<string, string>;
 }
 
 export function ConflictBanner({
@@ -18,6 +26,8 @@ export function ConflictBanner({
   onAutoResolve,
   onManualReview,
   showActions = true,
+  existingSessionTitles = {},
+  candidateSessionTitles = {},
 }: ConflictBannerProps) {
   if (conflicts.length === 0) {
     return null;
@@ -55,10 +65,8 @@ export function ConflictBanner({
                 {format(new Date(conflict.date), 'MMM d, yyyy')}: {getReasonText(conflict.reason)}
               </div>
               <div className="text-xs text-amber-700 dark:text-amber-300 mt-1">
-                <div>Existing: {conflict.existing_session_title}</div>
-                {conflict.candidate_session_title && (
-                  <div>New: {conflict.candidate_session_title}</div>
-                )}
+                <div>Existing session: {existingSessionTitles[conflict.existing_session_id] || conflict.existing_session_id}</div>
+                <div>New session: {candidateSessionTitles[conflict.candidate_session_id] || conflict.candidate_session_id}</div>
               </div>
             </div>
           ))}
