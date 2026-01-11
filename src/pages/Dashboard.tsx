@@ -75,7 +75,26 @@ function AthleteDashboard() {
  */
 function CoachDashboard() {
   const { athletes, selectedAthlete, selectedAthleteId, setSelectedAthleteId, isLoading: athletesLoading } = useAthleteSelection();
-  const data = useCoachDashboardData(selectedAthleteId ?? undefined);
+  const dashboardResult = useCoachDashboardData(selectedAthleteId ?? undefined);
+  const data = dashboardResult as { 
+    adherence_pct: number; 
+    load_trend: 'stable' | 'increasing' | 'decreasing'; 
+    risk_level: 'low' | 'medium' | 'high';
+    adherence_trend: number[];
+    weekly_loads: Array<{ week: string; level: string; value: number }>;
+    risks: Array<{ type: string; message: string }>;
+    isLoading?: boolean;
+    error?: unknown;
+  };
+
+  // Get avatar initials - use backend-provided or generate from name
+  const getAvatarInitials = (athlete: { name: string; avatar_initials?: string } | null): string => {
+    if (!athlete) return '';
+    if (athlete.avatar_initials) {
+      return athlete.avatar_initials;
+    }
+    return athlete.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+  };
 
   // Determine adherence color variant
   const getAdherenceVariant = (pct: number): 'success' | 'warning' | 'danger' => {
@@ -109,6 +128,8 @@ function CoachDashboard() {
   };
 
   const loadTrend = getLoadTrendDisplay(data.load_trend);
+  const isLoadingDashboard = data.isLoading ?? false;
+  const hasError = !!data.error;
 
   return (
     <AppLayout>
@@ -144,7 +165,7 @@ function CoachDashboard() {
                       <div className="flex items-center gap-2">
                         <Avatar className="h-5 w-5">
                           <AvatarFallback className="text-xs bg-primary/10 text-primary">
-                            {selectedAthlete.name.split(' ').map(n => n[0]).join('')}
+                            {getAvatarInitials(selectedAthlete)}
                           </AvatarFallback>
                         </Avatar>
                         <span>{selectedAthlete.name}</span>
@@ -158,7 +179,7 @@ function CoachDashboard() {
                       <div className="flex items-center gap-2">
                         <Avatar className="h-5 w-5">
                           <AvatarFallback className="text-xs bg-primary/10 text-primary">
-                            {athlete.name.split(' ').map(n => n[0]).join('')}
+                            {getAvatarInitials(athlete)}
                           </AvatarFallback>
                         </Avatar>
                         <span>{athlete.name}</span>
@@ -171,36 +192,58 @@ function CoachDashboard() {
           </div>
         </div>
 
-        {/* KPI Cards */}
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <CoachKpiCard
-            label="Adherence"
-            value={`${data.adherence_pct}%`}
-            subtext="Last 14 days"
-            variant={getAdherenceVariant(data.adherence_pct)}
-          />
-          <CoachKpiCard
-            label="Training Load"
-            value={loadTrend.value}
-            subtext="CTL trend (14 days)"
-            variant="default"
-          />
-          <CoachKpiCard
-            label="Risk"
-            value={data.risk_level.charAt(0).toUpperCase() + data.risk_level.slice(1)}
-            subtext="No active alerts"
-            variant={getRiskVariant(data.risk_level)}
-          />
-        </div>
+        {/* Loading or Error State */}
+        {isLoadingDashboard && (
+          <div className="flex items-center justify-center py-12">
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <Loader2 className="h-5 w-5 animate-spin" />
+              <span>Loading dashboard data...</span>
+            </div>
+          </div>
+        )}
 
-        {/* Charts Row */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          <AdherenceChart data={data.adherence_trend} />
-          <WeeklyLoadChart data={data.weekly_loads} />
-        </div>
+        {hasError && !isLoadingDashboard && (
+          <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-4 text-destructive">
+            <p className="font-medium">Failed to load dashboard data</p>
+            <p className="text-sm mt-1">Please try refreshing the page.</p>
+          </div>
+        )}
 
-        {/* Risk Signals */}
-        <RiskList risks={data.risks} />
+        {/* Dashboard Content */}
+        {!isLoadingDashboard && !hasError && (
+          <>
+            {/* KPI Cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <CoachKpiCard
+                label="Adherence"
+                value={`${data.adherence_pct}%`}
+                subtext="Last 14 days"
+                variant={getAdherenceVariant(data.adherence_pct)}
+              />
+              <CoachKpiCard
+                label="Training Load"
+                value={loadTrend.value}
+                subtext="CTL trend (14 days)"
+                variant="default"
+              />
+              <CoachKpiCard
+                label="Risk"
+                value={data.risk_level.charAt(0).toUpperCase() + data.risk_level.slice(1)}
+                subtext="No active alerts"
+                variant={getRiskVariant(data.risk_level)}
+              />
+            </div>
+
+            {/* Charts Row */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+              <AdherenceChart data={data.adherence_trend} />
+              <WeeklyLoadChart data={data.weekly_loads} />
+            </div>
+
+            {/* Risk Signals */}
+            <RiskList risks={data.risks} />
+          </>
+        )}
       </div>
     </AppLayout>
   );

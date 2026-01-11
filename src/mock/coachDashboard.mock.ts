@@ -5,11 +5,13 @@
  */
 
 // Athlete type for coach's assigned athletes
+// Matches backend response from GET /api/coach/athletes
 export interface CoachAthlete {
   id: string;
   name: string;
   email?: string;
   avatar_url?: string;
+  avatar_initials?: string; // Optional initials from backend (e.g., "JD" for "John Doe")
   last_activity_date?: string;
 }
 
