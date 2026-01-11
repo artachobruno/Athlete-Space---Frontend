@@ -80,3 +80,31 @@ export function safeInitAnalytics(
   });
 }
 
+/**
+ * Safely tracks an analytics event.
+ * No business logic attached - just emits the event.
+ * 
+ * @param eventName - Name of the event
+ * @param properties - Optional event properties
+ */
+export function trackEvent(
+  eventName: string,
+  properties?: Record<string, unknown>
+): void {
+  if (import.meta.env.DEV) {
+    console.log('[Analytics]', eventName, properties);
+  }
+
+  // Try to call window.analytics.track if available
+  const analytics = (window as { analytics?: { track?: (name: string, props?: Record<string, unknown>) => void } }).analytics;
+  if (analytics?.track && typeof analytics.track === 'function') {
+    try {
+      analytics.track(eventName, properties);
+    } catch (error) {
+      if (import.meta.env.DEV) {
+        console.warn('[Analytics] Failed to track event:', error);
+      }
+    }
+  }
+}
+
