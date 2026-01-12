@@ -56,7 +56,9 @@ export function AppLayout({ children }: AppLayoutProps) {
   return (
     <div className="min-h-screen bg-background">
       {/* Mobile header */}
-      <header className="lg:hidden fixed top-0 left-0 right-0 h-14 bg-card border-b border-border z-50 flex items-center px-4">
+      <header 
+        className="lg:hidden fixed top-0 left-0 right-0 h-14 bg-card border-b border-border z-50 flex items-center px-4 safe-area-top"
+      >
         <Button
           variant="ghost"
           size="icon"
@@ -159,7 +161,7 @@ export function AppLayout({ children }: AppLayoutProps) {
 
       {/* Main content */}
       <main className={cn(
-        'min-h-screen pt-14 lg:pt-0 lg:pl-64 transition-all duration-200'
+        'min-h-screen pt-safe-area lg:pt-0 lg:pl-64 transition-all duration-200'
       )}>
         <div className="p-4 lg:p-8">
           {children}

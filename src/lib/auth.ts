@@ -251,6 +251,37 @@ export async function signupWithEmail(email: string, password: string): Promise<
 export async function loginWithGoogle(): Promise<void> {
   // Get API base URL (same logic as api.ts)
   const getBaseURL = () => {
+    // Check if we're in Capacitor (native app)
+    const isCapacitor = typeof window !== 'undefined' && (
+      window.location.protocol === 'capacitor:' ||
+      window.location.origin === 'capacitor://localhost' ||
+      window.location.href.startsWith('capacitor://')
+    );
+    
+    if (isCapacitor) {
+      // In Capacitor, we MUST use VITE_API_URL - capacitor://localhost is not a valid backend URL
+      const apiUrl = import.meta.env.VITE_API_URL;
+      if (!apiUrl) {
+        console.error("[Auth] VITE_API_URL is required in Capacitor/native builds but is not set!");
+        console.error("[Auth] VITE_API_URL must be set when running 'npm run build' before syncing to iOS.");
+        console.error("[Auth] Example: VITE_API_URL=https://your-backend.com npm run build");
+        throw new Error("Backend API URL is not configured. Please set VITE_API_URL environment variable when building.");
+      }
+      return apiUrl;
+    }
+    
+    // Safety check: if origin is capacitor://localhost, we're definitely in Capacitor
+    if (import.meta.env.PROD && typeof window !== 'undefined') {
+      if (window.location.origin === 'capacitor://localhost' || window.location.href.startsWith('capacitor://')) {
+        const apiUrl = import.meta.env.VITE_API_URL;
+        if (!apiUrl) {
+          console.error("[Auth] CRITICAL: Running in Capacitor but VITE_API_URL was not set at build time!");
+          throw new Error("Backend API URL is not configured. Please set VITE_API_URL when building.");
+        }
+        return apiUrl;
+      }
+    }
+    
     if (import.meta.env.PROD) {
       const apiUrl = import.meta.env.VITE_API_URL || window.location.origin;
       return apiUrl;

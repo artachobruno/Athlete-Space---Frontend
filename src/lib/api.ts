@@ -5,10 +5,69 @@ import type { AthleteProfileOut } from "./apiValidation";
 import { getConversationId } from "./utils";
 
 const getBaseURL = () => {
+  // Check if we're in Capacitor (native app)
+  // Capacitor uses capacitor:// protocol, and origin is typically capacitor://localhost
+  const isCapacitor = typeof window !== 'undefined' && (
+    window.location.protocol === 'capacitor:' ||
+    window.location.origin === 'capacitor://localhost' ||
+    window.location.href.startsWith('capacitor://')
+  );
+  
+  // Debug logging to help diagnose issues
+  if (typeof window !== 'undefined') {
+    console.log("[API] Environment check:", {
+      isCapacitor,
+      protocol: window.location.protocol,
+      origin: window.location.origin,
+      href: window.location.href.substring(0, 50),
+      hasViteApiUrl: !!import.meta.env.VITE_API_URL,
+      isProd: import.meta.env.PROD,
+      isDev: import.meta.env.DEV
+    });
+  }
+  
+  if (isCapacitor) {
+    // In Capacitor, we MUST use VITE_API_URL - capacitor://localhost is not a valid backend URL
+    const apiUrl = import.meta.env.VITE_API_URL;
+    if (!apiUrl) {
+      const errorMsg = "[API] VITE_API_URL is required in Capacitor/native builds but is not set! " +
+                      "Please configure VITE_API_URL in your build environment.";
+      console.error(errorMsg);
+      console.error("[API] Current window.location:", {
+        origin: window.location.origin,
+        protocol: window.location.protocol,
+        href: window.location.href
+      });
+      // Don't throw - instead use a fallback that will show the error clearly
+      console.warn("[API] Falling back to http://localhost:8000 - this may not work in production!");
+      return "http://localhost:8000";
+    }
+    console.log("[API] Using base URL (Capacitor):", apiUrl);
+    return apiUrl;
+  }
+  
+  // For production web builds, use VITE_API_URL if set, otherwise use origin
   if (import.meta.env.PROD) {
+    // Safety check: if origin is capacitor://localhost, we're definitely in Capacitor
+    // even if the detection above failed
+    if (window.location.origin === 'capacitor://localhost' || window.location.href.startsWith('capacitor://')) {
+      const apiUrl = import.meta.env.VITE_API_URL;
+      if (!apiUrl) {
+        console.error("[API] CRITICAL: Running in Capacitor but VITE_API_URL was not set at build time!");
+        console.error("[API] VITE_API_URL must be set when running 'npm run build' before syncing to iOS.");
+        console.error("[API] Example: VITE_API_URL=https://your-backend.com npm run build");
+        console.error("[API] Falling back to http://localhost:8000 - API calls will likely fail!");
+        return "http://localhost:8000";
+      }
+      console.log("[API] Using base URL (Capacitor, detected in PROD path):", apiUrl);
+      return apiUrl;
+    }
+    
     const apiUrl = import.meta.env.VITE_API_URL || window.location.origin;
-    // Debug: Log the API URL being used (only in dev or if URL seems wrong)
-    if (import.meta.env.DEV || !import.meta.env.VITE_API_URL) {
+    // Only log if we're using window.location.origin (which might be wrong)
+    if (!import.meta.env.VITE_API_URL) {
+      console.warn("[API] VITE_API_URL not set in production, using window.location.origin:", apiUrl);
+    } else {
       console.log("[API] Using base URL:", apiUrl);
     }
     return apiUrl;
@@ -264,15 +323,7 @@ export const initiateGoogleConnect = async (): Promise<void> => {
   console.log("[API] Initiating Google connect");
   
   try {
-    // Get API base URL (same logic as auth.ts)
-    const getBaseURL = () => {
-      if (import.meta.env.PROD) {
-        const apiUrl = import.meta.env.VITE_API_URL || window.location.origin;
-        return apiUrl;
-      }
-      return "http://localhost:8000";
-    };
-    
+    // Use the same getBaseURL logic as the main API instance
     const API = getBaseURL();
     // Use the correct endpoint: /auth/google/login?platform=web
     // This endpoint returns a 302 redirect to Google's consent screen

@@ -136,33 +136,39 @@ export default function Login() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/3 flex flex-col">
       {/* Header */}
-      <header className="p-4 flex items-center justify-between">
+      <header 
+        className="px-4 pb-4 pt-4 flex items-center justify-between"
+        style={{
+          paddingTop: 'calc(1rem + env(safe-area-inset-top, 20px))',
+          minHeight: 'calc(3.5rem + env(safe-area-inset-top, 20px))',
+        }}
+      >
         <div className="flex items-center">
           <Logo className="h-8 w-auto" />
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1 sm:gap-2">
           <Link to="/about">
-            <Button variant="ghost" size="sm">
-              <Info className="h-4 w-4 mr-1" />
-              About
+            <Button variant="ghost" size="sm" className="text-xs sm:text-sm">
+              <Info className="h-4 w-4 sm:mr-1" />
+              <span className="hidden sm:inline">About</span>
             </Button>
           </Link>
           <Link to="/faq">
-            <Button variant="ghost" size="sm">
-              <HelpCircle className="h-4 w-4 mr-1" />
-              FAQ
+            <Button variant="ghost" size="sm" className="text-xs sm:text-sm">
+              <HelpCircle className="h-4 w-4 sm:mr-1" />
+              <span className="hidden sm:inline">FAQ</span>
             </Button>
           </Link>
           <Link to="/privacy">
-            <Button variant="ghost" size="sm">
-              <Shield className="h-4 w-4 mr-1" />
-              Privacy
+            <Button variant="ghost" size="sm" className="text-xs sm:text-sm">
+              <Shield className="h-4 w-4 sm:mr-1" />
+              <span className="hidden sm:inline">Privacy</span>
             </Button>
           </Link>
           <Link to="/terms">
-            <Button variant="ghost" size="sm">
-              <FileText className="h-4 w-4 mr-1" />
-              Terms
+            <Button variant="ghost" size="sm" className="text-xs sm:text-sm">
+              <FileText className="h-4 w-4 sm:mr-1" />
+              <span className="hidden sm:inline">Terms</span>
             </Button>
           </Link>
         </div>

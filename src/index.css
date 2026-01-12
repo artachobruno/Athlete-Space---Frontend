@@ -178,4 +178,19 @@
   .text-balance {
     text-wrap: balance;
   }
+  
+  /* Safe area support for iOS */
+  .safe-area-top {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+  
+  .pt-safe-area {
+    padding-top: calc(3.5rem + env(safe-area-inset-top, 0px));
+  }
+  
+  @media (min-width: 1024px) {
+    .pt-safe-area {
+      padding-top: 0;
+    }
+  }
 }
