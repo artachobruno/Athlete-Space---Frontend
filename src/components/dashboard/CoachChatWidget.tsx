@@ -71,7 +71,8 @@ export function CoachChatWidget() {
         role: 'coach',
         content: response.reply || 'I understand.',
         show_plan: response.show_plan === true,
-        plan_items: response.show_plan === true && response.plan_items && response.plan_items.length > 0 ? response.plan_items : undefined,
+        // FE-1: plan_items will be populated from planned_weeks mapping in sendCoachChat
+        plan_items: response.plan_items,
         response_type: response.response_type,
       };
       setMessages(prev => [...prev, coachMessage]);
@@ -170,10 +171,10 @@ export function CoachChatWidget() {
                 </div>
               </div>
               {/* Plan List - rendered inline with coach message that produced it */}
+              {/* FE-2: Use show_plan flag instead of plan_items?.length */}
               {message.role === 'coach' &&
-                message.show_plan &&
+                message.show_plan === true &&
                 message.plan_items &&
-                message.plan_items.length > 0 &&
                 (!message.response_type ||
                   ['plan', 'weekly_plan', 'season_plan', 'session_plan', 'recommendation', 'summary'].includes(message.response_type)) && (
                   <div className={cn('flex gap-2')}>

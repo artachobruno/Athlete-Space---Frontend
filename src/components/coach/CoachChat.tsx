@@ -72,6 +72,70 @@ export function CoachChat() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Only run on mount
 
+  // FE-3: Poll for plan updates when show_plan is true but plan_items is missing
+  useEffect(() => {
+    if (!conversationId) return;
+    
+    // Check if we have a message with show_plan=true but no plan_items
+    const needsPolling = messages.some(
+      msg => msg.role === 'coach' && 
+             msg.show_plan === true && 
+             (!msg.plan_items || msg.plan_items.length === 0)
+    );
+    
+    if (!needsPolling || (mode !== 'executing' && mode !== 'done')) return;
+    
+    let pollCount = 0;
+    const maxPolls = 15; // Poll for max 30 seconds (15 * 2s)
+    
+    // Poll every 2 seconds to check for plan updates
+    const intervalId = setInterval(async () => {
+      pollCount++;
+      
+      if (pollCount > maxPolls) {
+        clearInterval(intervalId);
+        return;
+      }
+      
+      try {
+        // Send a minimal status check - backend should return plan if ready
+        const response = await sendCoachChat("show plan", { message_id: crypto.randomUUID() });
+        
+        if (response.show_plan === true && response.plan_items && response.plan_items.length > 0) {
+          // Update the most recent message with show_plan=true but no plan_items
+          setMessages(prev => {
+            const updated = [...prev];
+            // Find the last coach message with show_plan=true but no plan_items
+            for (let i = updated.length - 1; i >= 0; i--) {
+              const msg = updated[i];
+              if (msg.role === 'coach' && msg.show_plan === true && (!msg.plan_items || msg.plan_items.length === 0)) {
+                updated[i] = {
+                  ...msg,
+                  plan_items: response.plan_items,
+                };
+                break;
+              }
+            }
+            return updated;
+          });
+          
+          // Stop polling once we have the plan
+          clearInterval(intervalId);
+        }
+      } catch (error) {
+        console.error('[CoachChat] Failed to poll for plan updates:', error);
+        // Continue polling on error, but stop after max attempts
+        if (pollCount >= maxPolls) {
+          clearInterval(intervalId);
+        }
+      }
+    }, 2000);
+    
+    return () => {
+      clearInterval(intervalId);
+    };
+  }, [conversationId, messages, mode]);
+
   const sendMessage = async () => {
     // F02: Prevent duplicate sends with send lock
     if (isSendingRef.current) return;
@@ -141,9 +205,9 @@ export function CoachChat() {
       };
       setMessages(prev => [...prev, coachMessage]);
       
-      // Only transition to done if we're already executing and plan is shown
+      // FE-2: Only transition to done if we're already executing and plan is shown (use show_plan flag)
       // Never auto-transition from planning to executing - user must confirm
-      if (mode === 'executing' && response.show_plan && response.plan_items && response.plan_items.length > 0) {
+      if (mode === 'executing' && response.show_plan === true) {
         setMode('done');
       }
     } catch (error) {
@@ -224,8 +288,8 @@ export function CoachChat() {
       
       setMessages(prev => [...prev, coachResponse]);
       
-      // If plan is shown, transition to done
-      if (response.show_plan && response.plan_items && response.plan_items.length > 0) {
+      // FE-2: If plan is shown, transition to done (use show_plan flag)
+      if (response.show_plan === true) {
         setMode('done');
       }
     } catch (error) {
@@ -310,10 +374,10 @@ export function CoachChat() {
               </div>
             </div>
             {/* Plan List - rendered inline with coach message that produced it */}
+            {/* FE-2: Use show_plan flag instead of plan_items?.length */}
             {message.role === 'coach' &&
-              message.show_plan &&
+              message.show_plan === true &&
               message.plan_items &&
-              message.plan_items.length > 0 &&
               (!message.response_type ||
                 ['plan', 'weekly_plan', 'season_plan', 'session_plan', 'recommendation', 'summary'].includes(message.response_type)) && (
                 <div className={cn('flex gap-3')}>

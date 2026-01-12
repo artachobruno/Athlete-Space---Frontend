@@ -1492,7 +1492,64 @@ export interface CoachChatResponse {
   conversation_id?: string;
   show_plan?: boolean;
   plan_items?: PlanItem[];
+  planned_weeks?: Array<{
+    week: number;
+    weekStart: string;
+    weekEnd: string;
+    sessions: Array<{
+      session_id: string;
+      date: string;
+      type: string;
+      duration: number;
+      distance?: number;
+      template_name: string;
+      notes?: string;
+    }>;
+    coachNotes?: string;
+  }>;
   response_type?: 'plan' | 'weekly_plan' | 'season_plan' | 'session_plan' | 'recommendation' | 'summary' | 'greeting' | 'question' | 'explanation' | 'smalltalk';
+}
+
+/**
+ * Maps planned_weeks from backend to plan_items format for frontend display
+ * FE-1: Converts backend planned_weeks structure to frontend plan_items format
+ */
+function mapPlannedWeeksToPlanItems(
+  plannedWeeks?: CoachChatResponse['planned_weeks']
+): PlanItem[] | undefined {
+  if (!plannedWeeks || plannedWeeks.length === 0) {
+    return undefined;
+  }
+
+  const planItems: PlanItem[] = [];
+  
+  for (const week of plannedWeeks) {
+    for (const session of week.sessions) {
+      // Map session type to sport (case-insensitive)
+      const sessionType = session.type?.toLowerCase() || '';
+      let sport: 'running' | 'cycling' | 'swimming' | 'triathlon' = 'running';
+      
+      if (sessionType.includes('swim')) {
+        sport = 'swimming';
+      } else if (sessionType.includes('bike') || sessionType.includes('cycle')) {
+        sport = 'cycling';
+      } else if (sessionType.includes('tri')) {
+        sport = 'triathlon';
+      } else {
+        sport = 'running'; // Default
+      }
+      
+      planItems.push({
+        id: session.session_id,
+        title: session.template_name,
+        description: session.notes || `${session.type} session`,
+        date: session.date,
+        sport,
+      });
+    }
+  }
+  
+  return planItems.length > 0 ? planItems : undefined;
 }
 
 export const sendCoachChat = async (
@@ -1507,13 +1564,18 @@ export const sendCoachChat = async (
   }
   
   try {
-    const response = await api.post("/coach/chat", payload);
+    const response = await api.post("/coach/chat", payload) as unknown as CoachChatResponse;
     
     // F05: Only process successful responses (200 OK)
     // No retry/resend logic should trigger on success
     // Axios doesn't retry by default, so this is just for clarity
     
-    return response as unknown as CoachChatResponse;
+    // FE-1: Map planned_weeks to plan_items if present
+    if (response.planned_weeks && (!response.plan_items || response.plan_items.length === 0)) {
+      response.plan_items = mapPlannedWeeksToPlanItems(response.planned_weeks);
+    }
+    
+    return response;
   } catch (error) {
     const apiError = error as ApiError;
     console.error("[API] Failed to send coach chat:", {

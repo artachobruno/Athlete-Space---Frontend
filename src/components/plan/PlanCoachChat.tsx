@@ -67,7 +67,8 @@ export function PlanCoachChat() {
         role: 'coach' as const,
         content: response.reply || 'I understand. Let me think about that.',
         show_plan: response.show_plan === true,
-        plan_items: response.show_plan === true && response.plan_items && response.plan_items.length > 0 ? response.plan_items : undefined,
+        // FE-1: plan_items will be populated from planned_weeks mapping in sendCoachChat
+        plan_items: response.plan_items,
         response_type: response.response_type,
       }]);
     } catch (error) {
@@ -150,10 +151,10 @@ export function PlanCoachChat() {
                   </div>
                 </div>
                 {/* Plan List - rendered inline with coach message that produced it */}
+                {/* FE-2: Use show_plan flag instead of plan_items?.length */}
                 {msg.role === 'coach' &&
-                  msg.show_plan &&
+                  msg.show_plan === true &&
                   msg.plan_items &&
-                  msg.plan_items.length > 0 &&
                   (!msg.response_type ||
                     ['plan', 'weekly_plan', 'season_plan', 'session_plan', 'recommendation', 'summary'].includes(msg.response_type)) && (
                     <div className={cn('flex')}>
