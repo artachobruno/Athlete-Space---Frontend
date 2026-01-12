@@ -19,6 +19,58 @@ interface ActivityChartsProps {
   activity: CompletedActivity;
 }
 
+// Format time in seconds to MM:SS string
+function formatTime(seconds: number): string {
+  const mins = Math.floor(seconds / 60);
+  const secs = Math.floor(seconds % 60);
+  return `${mins}:${String(secs).padStart(2, '0')}`;
+}
+
+// Calculate reasonable tick interval in seconds based on total duration
+function getTickIntervalSeconds(totalSeconds: number): number {
+  if (totalSeconds <= 300) return 30; // 30 seconds for < 5 min
+  if (totalSeconds <= 900) return 60; // 1 minute for < 15 min
+  if (totalSeconds <= 1800) return 120; // 2 minutes for < 30 min
+  if (totalSeconds <= 3600) return 300; // 5 minutes for < 1 hour
+  if (totalSeconds <= 7200) return 600; // 10 minutes for < 2 hours
+  return 900; // 15 minutes for longer activities
+}
+
+// Create a custom tick formatter that shows only rounded time intervals
+function createTimeTickFormatter(data: Array<{ time: number; timeLabel: string }>) {
+  if (data.length === 0) return () => '';
+  
+  const totalSeconds = data[data.length - 1]?.time || 0;
+  const intervalSeconds = getTickIntervalSeconds(totalSeconds);
+  
+  // Pre-calculate which time points should show labels
+  const labelTimes = new Set<number>();
+  for (let t = 0; t <= totalSeconds; t += intervalSeconds) {
+    labelTimes.add(t);
+  }
+  // Always include the last point
+  if (totalSeconds > 0) {
+    labelTimes.add(totalSeconds);
+  }
+  
+  return (value: string) => {
+    // Find the corresponding time value for this label
+    const dataPoint = data.find((d) => d.timeLabel === value);
+    if (!dataPoint) return '';
+    
+    const timeSeconds = dataPoint.time;
+    // Round to nearest interval
+    const roundedTime = Math.round(timeSeconds / intervalSeconds) * intervalSeconds;
+    
+    // Only show label if it's close to a rounded interval (within 10% of interval)
+    const tolerance = intervalSeconds * 0.1;
+    if (Math.abs(timeSeconds - roundedTime) <= tolerance || labelTimes.has(timeSeconds)) {
+      return formatTime(roundedTime);
+    }
+    return '';
+  };
+}
+
 // Process real stream data from backend API only
 function processStreamData(
   streamsData: { time?: unknown; route_points?: unknown; elevation?: unknown; pace?: unknown; heartrate?: unknown; power?: unknown; cadence?: unknown } | undefined
@@ -211,6 +263,8 @@ export function ActivityCharts({ activity }: ActivityChartsProps) {
                   tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
                   axisLine={{ stroke: 'hsl(var(--border))' }}
                   tickLine={false}
+                  tickFormatter={createTimeTickFormatter(data)}
+                  interval="preserveStartEnd"
                 />
                 <YAxis
                   domain={['dataMin - 10', 'dataMax + 10']}
@@ -260,6 +314,8 @@ export function ActivityCharts({ activity }: ActivityChartsProps) {
                   tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
                   axisLine={{ stroke: 'hsl(var(--border))' }}
                   tickLine={false}
+                  tickFormatter={createTimeTickFormatter(paceData)}
+                  interval="preserveStartEnd"
                 />
                 <YAxis
                   domain={['dataMin - 0.5', 'dataMax + 0.5']}
@@ -314,6 +370,8 @@ export function ActivityCharts({ activity }: ActivityChartsProps) {
                   tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
                   axisLine={{ stroke: 'hsl(var(--border))' }}
                   tickLine={false}
+                  tickFormatter={createTimeTickFormatter(data)}
+                  interval="preserveStartEnd"
                 />
                 <YAxis
                   domain={['dataMin - 20', 'dataMax + 20']}
@@ -363,6 +421,8 @@ export function ActivityCharts({ activity }: ActivityChartsProps) {
                   tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
                   axisLine={{ stroke: 'hsl(var(--border))' }}
                   tickLine={false}
+                  tickFormatter={createTimeTickFormatter(data)}
+                  interval="preserveStartEnd"
                 />
                 <YAxis
                   domain={['dataMin - 5', 'dataMax + 5']}
@@ -412,6 +472,8 @@ export function ActivityCharts({ activity }: ActivityChartsProps) {
                   tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
                   axisLine={{ stroke: 'hsl(var(--border))' }}
                   tickLine={false}
+                  tickFormatter={createTimeTickFormatter(elevationDataDisplay)}
+                  interval="preserveStartEnd"
                 />
                 <YAxis
                   domain={['dataMin - 10', 'dataMax + 10']}

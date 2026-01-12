@@ -93,12 +93,14 @@ export function WeekView({ currentDate, onActivityClick }: WeekViewProps) {
   }, [currentDate]);
 
   // Fetch activities with pagination to cover the date range being viewed
+  // Use the same query key structure as MonthView to share cache with Calendar.tsx
   const activityQueryConfigs = useMemo(() => {
     const configs = [];
     // Always fetch the first page (most recent 100 activities)
+    // Use the same query key as Calendar.tsx to share cache
     configs.push({
-      queryKey: ['activities', 'limit', 100, 'offset', 0],
-      queryFn: () => fetchActivities({ limit: 100, offset: 0 }),
+      queryKey: ['activities', 'limit', 100],
+      queryFn: () => fetchActivities({ limit: 100 }),
     });
     
     // If we need to go back further, fetch additional pages

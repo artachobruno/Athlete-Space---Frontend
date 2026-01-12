@@ -173,17 +173,17 @@ function AdvancedPMC({ data }: { data: Array<TrainingLoad & { dateLabel: string 
     }
   }, [visible]);
 
+  const [range, setRange] = useState<DateRange>('all');
+  const [brushStartIndex, setBrushStartIndex] = useState<number | undefined>(undefined);
+  const [brushEndIndex, setBrushEndIndex] = useState<number | undefined>(undefined);
+  const [brushKey, setBrushKey] = useState(0);
+
   // Reset brush when range changes
   useEffect(() => {
     setBrushStartIndex(undefined);
     setBrushEndIndex(undefined);
     setBrushKey((k) => k + 1);
   }, [range]);
-
-  const [range, setRange] = useState<DateRange>('all');
-  const [brushStartIndex, setBrushStartIndex] = useState<number | undefined>(undefined);
-  const [brushEndIndex, setBrushEndIndex] = useState<number | undefined>(undefined);
-  const [brushKey, setBrushKey] = useState(0);
 
   // Slice data by date range
   const rangeFilteredData = useMemo(() => {

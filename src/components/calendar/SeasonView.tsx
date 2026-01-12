@@ -188,6 +188,7 @@ export function SeasonView({ currentDate }: SeasonViewProps) {
     const completedSessionKeys = new Set(
       completedSessions.map(s => {
         if (!s || !s.date || !s.type) return null;
+        // Normalize session date to YYYY-MM-DD format for consistent comparison
         const sessionDate = s.date ? format(new Date(s.date), 'yyyy-MM-dd') : '';
         const normalizedSport = normalizeSportType(s.type);
         return `${sessionDate}-${normalizedSport}`;
@@ -195,15 +196,29 @@ export function SeasonView({ currentDate }: SeasonViewProps) {
     );
 
     // Filter out activities that already have a corresponding completed session
-    // Match by date and normalized sport type
+    // Match by date and normalized sport type - this ensures we don't double-count
+    // activities that are already represented as completed sessions
     const uniqueCompletedActivities = weekActivities.filter(a => {
       if (!a || !a.date || !a.sport) return false;
+      // Activity date is already in YYYY-MM-DD format from API
       const activityDate = a.date;
       const normalizedActivitySport = normalizeSportType(a.sport);
       const activityKey = `${activityDate}-${normalizedActivitySport}`;
       
-      // Check if there's a matching completed session with the same date and sport
+      // Exclude activities that have a matching completed session (same date + sport)
+      // This prevents double-counting: if a session is marked as completed, we count
+      // the session, not the activity (unless the activity doesn't have a matching session)
       return !completedSessionKeys.has(activityKey);
+    });
+    
+    // Additional safety: ensure we're not counting duplicate activities
+    // (activities with the same ID should only be counted once)
+    const seenActivityIds = new Set<string>();
+    const deduplicatedUniqueActivities = uniqueCompletedActivities.filter(a => {
+      if (!a || !a.id) return false;
+      if (seenActivityIds.has(a.id)) return false;
+      seenActivityIds.add(a.id);
+      return true;
     });
 
     // Calculate CTL from overview metrics
@@ -218,10 +233,12 @@ export function SeasonView({ currentDate }: SeasonViewProps) {
       : 0;
 
     // Estimate load from all week activities (not just unique ones, for accurate TSS)
+    // Use all activities for load calculation to get accurate total TSS
     const totalLoad = weekActivities.reduce((sum, a) => sum + (a.trainingLoad || 0), 0);
 
     // Count completed: completed sessions + unique activities (those without a corresponding session)
-    const totalCompleted = completedSessions.length + uniqueCompletedActivities.length;
+    // Use deduplicated activities to ensure we don't count the same activity multiple times
+    const totalCompleted = completedSessions.length + deduplicatedUniqueActivities.length;
 
     return {
       planned: plannedSessions.length,
