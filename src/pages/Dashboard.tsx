@@ -252,14 +252,14 @@ function CoachDashboard() {
 /**
  * Role-aware Dashboard
  * Renders CoachDashboard for coaches, AthleteDashboard for athletes
- * In preview mode, defaults to coach role
+ * In preview mode, defaults to athlete role
  */
 export default function Dashboard() {
   const { user } = useAuth();
   
-  // In preview mode, default to coach role
+  // In preview mode, default to athlete role
   // Otherwise use user's actual role, defaulting to athlete
-  const role = isPreviewMode() ? 'coach' : (user?.role ?? 'athlete');
+  const role = isPreviewMode() ? 'athlete' : (user?.role ?? 'athlete');
 
   if (role === 'coach') {
     return <CoachDashboard />;
