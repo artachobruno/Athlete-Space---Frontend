@@ -8,6 +8,7 @@ import { generateCoachGreeting } from '@/lib/coachGreeting';
 import { CoachProgressPanel } from './CoachProgressPanel';
 import { PlanList } from './PlanList';
 import { CoachProgressList } from './CoachProgressList';
+import { RunnerProcessingIndicator } from './RunnerProcessingIndicator';
 import { usePlanningProgressStore } from '@/store/planningProgressStore';
 import { PlanningProgressPanel } from '@/components/planning/PlanningProgressPanel';
 
@@ -634,6 +635,13 @@ export function CoachChat() {
             </>
           );
         })()}
+
+        {/* Runner Processing Indicator - shown when executing, above progress panel */}
+        {mode === 'executing' && !isTyping && (
+          <RunnerProcessingIndicator 
+            speedMultiplier={progressStages.length > 2 ? 1.5 : 1}
+          />
+        )}
 
         {/* Coach Progress Panel - shown below last message when conversation is active (executing) */}
         {conversationId && mode === 'executing' ? (
