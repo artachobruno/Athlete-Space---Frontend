@@ -51,6 +51,7 @@ export function CoachChat() {
   const [conversationId, setConversationId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const isSendingRef = useRef<boolean>(false);
+  const finalPlanRef = useRef<Message | null>(null);
   const resetProgress = usePlanningProgressStore((state) => state.reset);
   const [progressStages, setProgressStages] = useState<Array<{
     id: string;
@@ -151,6 +152,12 @@ export function CoachChat() {
     // F02: Prevent duplicate sends with send lock
     if (isSendingRef.current) return;
     if (!input.trim()) return;
+
+    // TODO 6: Reset state when starting new conversation from done mode
+    if (mode === 'done') {
+      setConversationId(null);
+      finalPlanRef.current = null;
+    }
 
     const messageText = input.trim();
     const messageId = crypto.randomUUID();
@@ -376,21 +383,24 @@ export function CoachChat() {
           });
         }
       } else if (response.message_type === 'final') {
+        // TODO 2: Store final plan in ref and persist in messages WITHOUT ending execution
+        const finalMessage: Message = {
+          id: (Date.now() + 1).toString(),
+          type: 'final',
+          role: 'coach',
+          content: response.reply || "Here's your plan",
+          timestamp: new Date(),
+          show_plan: response.show_plan === true,
+          plan_items: response.show_plan === true && response.plan_items && response.plan_items.length > 0 ? response.plan_items : undefined,
+          response_type: response.response_type,
+        };
+
+        // Store in ref for later use in handleProgressComplete
+        finalPlanRef.current = finalMessage;
+
         // FE3: Collapse progress on final message - remove all transient progress messages
         setMessages(prev => {
           const filtered = prev.filter(msg => !(msg.type === 'progress' && msg.transient));
-          const finalMessage: Message = {
-            id: (Date.now() + 1).toString(),
-            type: 'final',
-            role: 'coach',
-            content: response.reply || 'Here\'s your plan',
-            timestamp: new Date(),
-            show_plan: response.show_plan === true,
-            plan_items: response.show_plan === true && response.plan_items && response.plan_items.length > 0 ? response.plan_items : undefined,
-            response_type: response.response_type,
-          };
-          // Clear progress stages when final message arrives
-          setProgressStages([]);
           return [...filtered, finalMessage];
         });
         // FE-2: Don't transition to done here - wait for progress completion callback
@@ -434,36 +444,34 @@ export function CoachChat() {
   };
 
   const handleProgressComplete = () => {
-    // Only process if we're still in executing mode
-    if (mode !== 'executing') {
-      return;
+    // TODO 3: Conclude ONLY in handleProgressComplete - single source of truth for completion
+    if (mode !== 'executing') return;
+
+    // Ensure final plan exists in the UI
+    if (finalPlanRef.current) {
+      const alreadyRendered = messages.some(
+        m => m.id === finalPlanRef.current!.id
+      );
+
+      if (!alreadyRendered) {
+        setMessages(prev => [...prev, finalPlanRef.current!]);
+      }
     }
 
-    // Only add completion message if we haven't already added one
-    const hasCompletionMessage = messages.some(
-      msg => msg.type === 'assistant' && 
-             msg.content.toLowerCase().includes('ready') && 
-             (msg.content.toLowerCase().includes('training plan') || msg.content.toLowerCase().includes('plan'))
-    );
-
-    // Also check if we already have a final message with a plan
-    const hasFinalMessageWithPlan = messages.some(
-      msg => msg.type === 'final' && msg.show_plan === true
-    );
-
-    // Add completion message if we don't have one yet
-    if (!hasCompletionMessage) {
-      const completionMessage: Message = {
-        id: `completion-${Date.now()}`,
+    // Add explicit conclusion message
+    setMessages(prev => [
+      ...prev,
+      {
+        id: `concluded-${Date.now()}`,
         type: 'assistant',
         role: 'coach',
-        content: '✅ Your training plan is ready and has been added to your calendar. You can review or adjust it anytime.',
+        content:
+          '✅ Your training plan is complete and saved to your calendar. You can adjust it anytime or ask me to regenerate.',
         timestamp: new Date(),
-      };
-      setMessages(prev => [...prev, completionMessage]);
-    }
+      },
+    ]);
 
-    // Always transition to done when progress completes
+    // 🔥 END EXECUTION
     setMode('done');
   };
 
@@ -637,7 +645,8 @@ export function CoachChat() {
         })()}
 
         {/* Runner Processing Indicator - shown when executing, above progress panel */}
-        {mode === 'executing' && !isTyping && (
+        {/* TODO 4: Runner strictly execution-bound - no isTyping check */}
+        {mode === 'executing' && (
           <RunnerProcessingIndicator 
             speedMultiplier={progressStages.length > 2 ? 1.5 : 1}
           />
