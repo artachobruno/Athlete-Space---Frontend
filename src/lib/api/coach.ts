@@ -9,7 +9,7 @@ export async function fetchCoachProgress(
   conversationId: string
 ): Promise<CoachProgressResponse> {
   const response = await api.get<CoachProgressResponse>(
-    `/coach/conversations/${conversationId}/progress`
+    `/conversations/${conversationId}/progress`
   );
   return response as unknown as CoachProgressResponse;
 }

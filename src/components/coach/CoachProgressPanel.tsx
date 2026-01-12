@@ -33,6 +33,11 @@ export function CoachProgressPanel({ conversationId, mode = 'executing', onConfi
   // Only fetch progress when executing (active conversation)
   useEffect(() => {
     if (!conversationId || mode !== 'executing') {
+      if (!conversationId) {
+        console.info('[CoachProgress] Skipping polling: conversationId is', conversationId);
+      } else if (mode !== 'executing') {
+        console.info('[CoachProgress] Skipping polling: mode is', mode, '(expected "executing")');
+      }
       // Clear any existing interval when not executing
       if (intervalRef.current) {
         clearInterval(intervalRef.current);
@@ -45,10 +50,13 @@ export function CoachProgressPanel({ conversationId, mode = 'executing', onConfi
       return;
     }
     
+    console.info('[CoachProgress] Starting polling for conversation:', conversationId);
+    console.info('[CoachProgress] Polling endpoint: /conversations/' + conversationId + '/progress');
     setIsLoading(true);
 
     const fetchProgress = async () => {
       try {
+        console.info('[CoachProgress] Polling /conversations/' + conversationId + '/progress');
         const data = await fetchCoachProgress(conversationId);
         setProgress(data);
         setIsLoading(false);
