@@ -456,14 +456,6 @@ export function CoachChat() {
     <div className="flex-1 flex flex-col bg-card rounded-lg border border-border overflow-hidden">
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
-        {/* Coach Progress Panel - shown when conversation is active (executing) OR when in planning mode (preview) */}
-        {(conversationId && mode === 'executing') || mode === 'planning' ? (
-          <CoachProgressPanel 
-            conversationId={conversationId || null} 
-            mode={mode}
-            onConfirm={mode === 'planning' ? handleConfirmPlan : undefined}
-          />
-        ) : null}
         {/* Planning Progress Panel - shows real-time planning phase progress */}
         <PlanningProgressPanel />
         
@@ -614,6 +606,14 @@ export function CoachChat() {
             </>
           );
         })()}
+
+        {/* Coach Progress Panel - shown below last message when conversation is active (executing) */}
+        {conversationId && mode === 'executing' && !messages.some(msg => msg.type === 'final') ? (
+          <CoachProgressPanel 
+            conversationId={conversationId} 
+            mode={mode}
+          />
+        ) : null}
 
         {isTyping && (
           <div className="flex gap-3 animate-fade-up">
