@@ -12,6 +12,7 @@ interface CoachProgressPanelProps {
   conversationId: string | null;
   mode?: CoachMode;
   onConfirm?: () => void;
+  onComplete?: () => void;
 }
 
 // Preview checklist steps (read-only, what will happen)
@@ -22,10 +23,12 @@ const PREVIEW_CHECKLIST_STEPS = [
   { id: 'recovery', label: 'Insert recovery' },
 ];
 
-export function CoachProgressPanel({ conversationId, mode = 'executing', onConfirm }: CoachProgressPanelProps) {
+export function CoachProgressPanel({ conversationId, mode = 'executing', onConfirm, onComplete }: CoachProgressPanelProps) {
   const [progress, setProgress] = useState<CoachProgressResponse | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [hasCompleted, setHasCompleted] = useState(false);
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
+  const completionNotifiedRef = useRef(false);
 
   // Only fetch progress when executing (active conversation)
   useEffect(() => {
@@ -37,6 +40,8 @@ export function CoachProgressPanel({ conversationId, mode = 'executing', onConfi
       }
       setIsLoading(false);
       setProgress(null);
+      setHasCompleted(false);
+      completionNotifiedRef.current = false;
       return;
     }
     
@@ -49,14 +54,25 @@ export function CoachProgressPanel({ conversationId, mode = 'executing', onConfi
         setIsLoading(false);
 
         // Check if all steps are completed and stop polling
-        const allCompleted = data.steps.every((step) => {
+        const allCompleted = data.steps.length > 0 && data.steps.every((step) => {
           const status = resolveStepStatus(step.id, data.events);
           return status === 'completed' || status === 'failed' || status === 'skipped';
         });
 
-        if (allCompleted && intervalRef.current) {
-          clearInterval(intervalRef.current);
-          intervalRef.current = null;
+        if (allCompleted) {
+          setHasCompleted(true);
+          
+          // Stop polling
+          if (intervalRef.current) {
+            clearInterval(intervalRef.current);
+            intervalRef.current = null;
+          }
+          
+          // Notify parent of completion (only once)
+          if (!completionNotifiedRef.current && onComplete) {
+            completionNotifiedRef.current = true;
+            onComplete();
+          }
         }
       } catch (error) {
         console.error('[CoachProgressPanel] Failed to fetch progress:', error);
@@ -78,7 +94,7 @@ export function CoachProgressPanel({ conversationId, mode = 'executing', onConfi
         intervalRef.current = null;
       }
     };
-  }, [conversationId, mode]);
+  }, [conversationId, mode, onComplete]);
 
   // Show preview checklist when in planning mode
   if (mode === 'planning') {
@@ -117,9 +133,37 @@ export function CoachProgressPanel({ conversationId, mode = 'executing', onConfi
     );
   }
 
-  // Show actual progress when executing
-  if (mode !== 'executing' || isLoading || !progress || progress.steps.length === 0) {
+  // Hide when not executing or when completed
+  if (mode !== 'executing' || hasCompleted) {
     return null;
+  }
+
+  // Show loading state while fetching initial progress
+  if (isLoading && !progress) {
+    return (
+      <div className="mb-4 p-4 bg-accent/5 border border-accent/20 rounded-lg">
+        <div className="space-y-2">
+          <div className="flex items-center gap-3 text-sm text-muted-foreground">
+            <Clock className="h-4 w-4 animate-pulse" />
+            <span>Initializing training plan...</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Show empty/initializing state if no steps yet
+  if (!progress || progress.steps.length === 0) {
+    return (
+      <div className="mb-4 p-4 bg-accent/5 border border-accent/20 rounded-lg">
+        <div className="space-y-2">
+          <div className="flex items-center gap-3 text-sm text-muted-foreground">
+            <Clock className="h-4 w-4 animate-pulse" />
+            <span>Preparing your training plan...</span>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   const getStatusIcon = (status: StepStatus) => {

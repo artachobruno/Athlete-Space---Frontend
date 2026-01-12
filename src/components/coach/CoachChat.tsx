@@ -271,11 +271,9 @@ export function CoachChat() {
         setMessages(prev => [...prev, coachMessage]);
       }
       
-      // FE-2: Only transition to done if we're already executing and plan is shown (use show_plan flag)
-      // Never auto-transition from planning to executing - user must confirm
-      if (mode === 'executing' && response.show_plan === true) {
-        setMode('done');
-      }
+      // FE-2: Don't transition to done here - wait for progress completion callback
+      // The progress panel will call handleProgressComplete when all steps are done
+      // This ensures users see the full progress before the chat concludes
     } catch (error) {
       const apiError = error as { message?: string; status?: number };
       const errorContent = apiError.message || 'Sorry, I encountered an error. Please try again.';
@@ -394,10 +392,8 @@ export function CoachChat() {
           setProgressStages([]);
           return [...filtered, finalMessage];
         });
-        // FE-2: If plan is shown, transition to done (use show_plan flag)
-        if (response.show_plan === true) {
-          setMode('done');
-        }
+        // FE-2: Don't transition to done here - wait for progress completion callback
+        // The progress panel will call handleProgressComplete when all steps are done
       } else {
         // Regular assistant message
         const coachResponse: Message = {
@@ -412,10 +408,8 @@ export function CoachChat() {
         };
         setMessages(prev => [...prev, coachResponse]);
         
-        // FE-2: If plan is shown, transition to done (use show_plan flag)
-        if (response.show_plan === true) {
-          setMode('done');
-        }
+        // FE-2: Don't transition to done here - wait for progress completion callback
+        // The progress panel will call handleProgressComplete when all steps are done
       }
     } catch (error) {
       const apiError = error as { message?: string; status?: number };
@@ -436,6 +430,40 @@ export function CoachChat() {
       // F02: Release send lock
       isSendingRef.current = false;
     }
+  };
+
+  const handleProgressComplete = () => {
+    // Only process if we're still in executing mode
+    if (mode !== 'executing') {
+      return;
+    }
+
+    // Only add completion message if we haven't already added one
+    const hasCompletionMessage = messages.some(
+      msg => msg.type === 'assistant' && 
+             msg.content.toLowerCase().includes('ready') && 
+             (msg.content.toLowerCase().includes('training plan') || msg.content.toLowerCase().includes('plan'))
+    );
+
+    // Also check if we already have a final message with a plan
+    const hasFinalMessageWithPlan = messages.some(
+      msg => msg.type === 'final' && msg.show_plan === true
+    );
+
+    // Add completion message if we don't have one yet
+    if (!hasCompletionMessage) {
+      const completionMessage: Message = {
+        id: `completion-${Date.now()}`,
+        type: 'assistant',
+        role: 'coach',
+        content: '✅ Your training plan is ready and has been added to your calendar. You can review or adjust it anytime.',
+        timestamp: new Date(),
+      };
+      setMessages(prev => [...prev, completionMessage]);
+    }
+
+    // Always transition to done when progress completes
+    setMode('done');
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
@@ -608,10 +636,11 @@ export function CoachChat() {
         })()}
 
         {/* Coach Progress Panel - shown below last message when conversation is active (executing) */}
-        {conversationId && mode === 'executing' && !messages.some(msg => msg.type === 'final') ? (
+        {conversationId && mode === 'executing' ? (
           <CoachProgressPanel 
             conversationId={conversationId} 
             mode={mode}
+            onComplete={handleProgressComplete}
           />
         ) : null}
 
