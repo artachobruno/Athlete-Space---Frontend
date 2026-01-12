@@ -30,6 +30,11 @@ export function CoachProgressPanel({ conversationId, mode = 'executing', onConfi
   // Only fetch progress when executing (active conversation)
   useEffect(() => {
     if (!conversationId || mode !== 'executing') {
+      // Clear any existing interval when not executing
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
       setIsLoading(false);
       setProgress(null);
       return;
