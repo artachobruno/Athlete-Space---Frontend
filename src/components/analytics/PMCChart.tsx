@@ -275,7 +275,7 @@ function AdvancedPMC({ data }: { data: Array<TrainingLoad & { dateLabel: string 
       </CardHeader>
       <CardContent>
         {/* Date Range Presets */}
-        <div className="flex items-center gap-2 mb-4 pb-4 border-b border-border">
+        <div className="flex flex-wrap items-center gap-2 mb-4 pb-4 border-b border-border">
           <span className="text-xs text-muted-foreground mr-2">Range:</span>
           {(['30d', '90d', '180d', '365d', 'all'] as DateRange[]).map((r) => (
             <Button
@@ -286,7 +286,9 @@ function AdvancedPMC({ data }: { data: Array<TrainingLoad & { dateLabel: string 
                 setRange(r);
                 handleResetZoom();
               }}
-              className="h-7 text-xs"
+              className={`h-8 text-xs px-4 transition-all duration-200 ${
+                range === r ? 'shadow-md' : 'hover:shadow-sm'
+              }`}
             >
               {r === 'all' ? 'All' : r}
             </Button>
@@ -294,40 +296,64 @@ function AdvancedPMC({ data }: { data: Array<TrainingLoad & { dateLabel: string 
         </div>
 
         {/* Interactive Legend with Checkboxes */}
-        <div className="flex items-center gap-6 mb-4 pb-4 border-b border-border">
-          <div className="flex items-center gap-2 cursor-pointer" onClick={() => toggleVisibility('ctl')}>
+        <div className="flex flex-wrap items-center gap-3 sm:gap-6 mb-4 pb-4 border-b border-border">
+          <button
+            type="button"
+            onClick={() => toggleVisibility('ctl')}
+            className={`flex items-center gap-2 px-3 py-2 rounded-md transition-all duration-200 border ${
+              visible.ctl 
+                ? 'bg-chart-1/10 border-chart-1/30 shadow-sm' 
+                : 'bg-muted/30 border-transparent hover:bg-muted/50'
+            }`}
+          >
             <Checkbox
               checked={visible.ctl}
               onCheckedChange={() => toggleVisibility('ctl')}
-              className="h-4 w-4"
+              className="h-4 w-4 pointer-events-none"
             />
             <div className="flex items-center gap-2">
               <div className="w-3 h-0.5 bg-chart-1 rounded" />
-              <span className="text-xs font-medium text-foreground">Fitness (CTL)</span>
+              <span className="text-xs font-medium text-foreground whitespace-nowrap">Fitness (CTL)</span>
             </div>
-          </div>
-          <div className="flex items-center gap-2 cursor-pointer" onClick={() => toggleVisibility('atl')}>
+          </button>
+          <button
+            type="button"
+            onClick={() => toggleVisibility('atl')}
+            className={`flex items-center gap-2 px-3 py-2 rounded-md transition-all duration-200 border ${
+              visible.atl 
+                ? 'bg-chart-4/10 border-chart-4/30 shadow-sm' 
+                : 'bg-muted/30 border-transparent hover:bg-muted/50'
+            }`}
+          >
             <Checkbox
               checked={visible.atl}
               onCheckedChange={() => toggleVisibility('atl')}
-              className="h-4 w-4"
+              className="h-4 w-4 pointer-events-none"
             />
             <div className="flex items-center gap-2">
               <div className="w-3 h-0.5 bg-chart-4 rounded" />
-              <span className="text-xs font-medium text-foreground">Fatigue (ATL)</span>
+              <span className="text-xs font-medium text-foreground whitespace-nowrap">Fatigue (ATL)</span>
             </div>
-          </div>
-          <div className="flex items-center gap-2 cursor-pointer" onClick={() => toggleVisibility('tsb')}>
+          </button>
+          <button
+            type="button"
+            onClick={() => toggleVisibility('tsb')}
+            className={`flex items-center gap-2 px-3 py-2 rounded-md transition-all duration-200 border ${
+              visible.tsb 
+                ? 'bg-chart-2/10 border-chart-2/30 shadow-sm' 
+                : 'bg-muted/30 border-transparent hover:bg-muted/50'
+            }`}
+          >
             <Checkbox
               checked={visible.tsb}
               onCheckedChange={() => toggleVisibility('tsb')}
-              className="h-4 w-4"
+              className="h-4 w-4 pointer-events-none"
             />
             <div className="flex items-center gap-2">
               <div className="w-3 h-0.5 bg-chart-2 rounded" />
-              <span className="text-xs font-medium text-foreground">Form (TSB)</span>
+              <span className="text-xs font-medium text-foreground whitespace-nowrap">Form (TSB)</span>
             </div>
-          </div>
+          </button>
         </div>
 
         <div className="h-80">
@@ -349,7 +375,8 @@ function AdvancedPMC({ data }: { data: Array<TrainingLoad & { dateLabel: string 
                 axisLine={false}
                 tickLine={false}
                 tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
-                interval="preserveStartEnd"
+                interval={displayData.length > 60 ? Math.floor(displayData.length / 8) : displayData.length > 30 ? 'preserveStartEnd' : 0}
+                minTickGap={40}
               />
               {hasLeftAxisSeries && (
                 <YAxis
