@@ -9,9 +9,14 @@ import { Loader2 } from 'lucide-react';
 import type { PlannedWorkout, CompletedActivity } from '@/types';
 import { enrichActivitiesWithTss } from '@/lib/tss-utils';
 
-export function DailyWorkoutList() {
+interface DailyWorkoutListProps {
+  currentDate?: Date;
+}
+
+export function DailyWorkoutList({ currentDate }: DailyWorkoutListProps) {
   const today = new Date();
-  const weekStart = startOfWeek(today, { weekStartsOn: 1 });
+  const viewDate = currentDate || today;
+  const weekStart = startOfWeek(viewDate, { weekStartsOn: 1 });
   const weekStartStr = format(weekStart, 'yyyy-MM-dd');
 
   const { data: weekData, isLoading: weekLoading } = useAuthenticatedQuery({
@@ -97,8 +102,8 @@ export function DailyWorkoutList() {
         status = completed ? 'completed' : (workout ? 'missed' : 'upcoming');
       }
 
-      // Get daily decision for today
-      const dailyDecision = isToday(date) && todayIntelligence ? {
+      // Get daily decision for today (only show for actual today, not the viewed week)
+      const dailyDecision = isToday(date) && isToday(viewDate) && todayIntelligence ? {
         decision: 'proceed' as const,
         reason: todayIntelligence.explanation || todayIntelligence.recommendation,
       } : null;
@@ -112,7 +117,7 @@ export function DailyWorkoutList() {
         dailyDecision,
       };
     });
-  }, [weekData, enrichedActivities, weekStart, today, todayIntelligence]);
+  }, [weekData, enrichedActivities, weekStart, today, todayIntelligence, viewDate]);
 
   // Show loading only if both are loading, but allow activities to show even if weekData is loading
   if (weekLoading && activitiesLoading) {

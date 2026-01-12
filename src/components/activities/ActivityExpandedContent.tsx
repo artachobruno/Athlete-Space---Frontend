@@ -9,25 +9,70 @@ import { ActivityCharts } from './ActivityCharts';
 import { ActivityMap } from './ActivityMap';
 import { useUnitSystem } from '@/hooks/useUnitSystem';
 import { useQuery } from '@tanstack/react-query';
-import { fetchActivityStreams } from '@/lib/api';
+import { fetchActivityStreams, fetchCalendarWeek } from '@/lib/api';
 import { useMemo } from 'react';
 import { normalizeRoutePointsFromStreams } from '@/lib/route-utils';
+import { matchActivityToSession } from '@/lib/session-utils';
+import { startOfWeek, format } from 'date-fns';
+import { useAuthenticatedQuery } from '@/hooks/useAuthenticatedQuery';
 
 interface ActivityExpandedContentProps {
   activity: CompletedActivity;
 }
 
-// Mock planned data for comparison
-const mockPlannedData = {
-  duration: 50,
-  distance: 9,
-  avgHeartRate: 145,
-  avgPower: 240,
-  intent: 'aerobic' as const,
-};
-
 export function ActivityExpandedContent({ activity }: ActivityExpandedContentProps) {
   const { convertDistance, convertElevation } = useUnitSystem();
+  
+  // Get the week start date for the activity's date
+  const activityDate = useMemo(() => {
+    return activity.date ? new Date(activity.date) : new Date();
+  }, [activity.date]);
+  
+  const weekStart = useMemo(() => {
+    return startOfWeek(activityDate, { weekStartsOn: 1 });
+  }, [activityDate]);
+  
+  const weekStartStr = useMemo(() => {
+    return format(weekStart, 'yyyy-MM-dd');
+  }, [weekStart]);
+  
+  // Fetch calendar week data to find planned sessions
+  const { data: weekData } = useAuthenticatedQuery({
+    queryKey: ['calendarWeek', weekStartStr],
+    queryFn: () => fetchCalendarWeek(weekStartStr),
+    retry: 1,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+  
+  // Find the matching planned session for this activity
+  const plannedSession = useMemo(() => {
+    if (!weekData?.sessions || !Array.isArray(weekData.sessions)) {
+      return null;
+    }
+    
+    const sessionId = matchActivityToSession(activity, weekData.sessions, 0);
+    if (!sessionId) {
+      return null;
+    }
+    
+    return weekData.sessions.find(s => s.id === sessionId) || null;
+  }, [activity, weekData]);
+  
+  // Extract planned data from the matched session
+  const plannedData = useMemo(() => {
+    if (!plannedSession) {
+      return null;
+    }
+    
+    return {
+      duration: plannedSession.duration_minutes || 0,
+      distance: plannedSession.distance_km || undefined,
+      // Note: Heart rate and power are not typically in planned sessions
+      // These would need to come from workout structure or be estimated
+      avgHeartRate: undefined,
+      avgPower: undefined,
+    };
+  }, [plannedSession]);
   
   // Fetch activity streams for route data
   // Note: retry is set to false to avoid retrying on CORS errors
@@ -67,22 +112,40 @@ export function ActivityExpandedContent({ activity }: ActivityExpandedContentPro
     return coords;
   }, [streamsData, streamsError]);
   
-  // Calculate comparison (using km for calculations, convert for display)
-  const durationDiff = ((activity.duration - mockPlannedData.duration) / mockPlannedData.duration) * 100;
-  const distanceDiff = ((activity.distance - mockPlannedData.distance) / mockPlannedData.distance) * 100;
-  const hrDiff = activity.avgHeartRate
-    ? ((activity.avgHeartRate - mockPlannedData.avgHeartRate) / mockPlannedData.avgHeartRate) * 100
-    : 0;
+  // Calculate comparison only if we have planned data
+  const durationDiff = plannedData && plannedData.duration > 0
+    ? ((activity.duration - plannedData.duration) / plannedData.duration) * 100
+    : undefined;
+  
+  const distanceDiff = plannedData && plannedData.distance && plannedData.distance > 0
+    ? ((activity.distance - plannedData.distance) / plannedData.distance) * 100
+    : undefined;
+  
+  // Note: Heart rate and power comparisons are not available from planned sessions
+  // These would need to come from workout structure or intensity targets
+  const hrDiff = undefined;
   
   const distanceDisplay = convertDistance(activity.distance);
-  const plannedDistanceDisplay = convertDistance(mockPlannedData.distance);
+  const plannedDistanceDisplay = plannedData?.distance
+    ? convertDistance(plannedData.distance)
+    : null;
   const elevationDisplay = activity.elevation ? convertElevation(activity.elevation) : null;
 
   const getComplianceStatus = () => {
-    const avgDiff = Math.abs(durationDiff) + Math.abs(distanceDiff) + Math.abs(hrDiff);
+    // Only calculate compliance if we have planned data
+    if (!plannedData) {
+      return { label: 'No plan available', color: 'text-muted-foreground', icon: Minus };
+    }
+    
+    const diffs = [durationDiff, distanceDiff].filter((d): d is number => d !== undefined);
+    if (diffs.length === 0) {
+      return { label: 'Close to target', color: 'text-muted-foreground', icon: Minus };
+    }
+    
+    const avgDiff = diffs.reduce((sum, d) => sum + Math.abs(d), 0) / diffs.length;
     if (avgDiff < 15) return { label: 'On Target', color: 'text-load-fresh', icon: CheckCircle2 };
-    if (hrDiff > 5) return { label: 'Harder than intended', color: 'text-load-overreaching', icon: TrendingUp };
-    if (hrDiff < -5) return { label: 'Easier than intended', color: 'text-load-optimal', icon: TrendingDown };
+    if (durationDiff && durationDiff > 10) return { label: 'Longer than planned', color: 'text-load-overreaching', icon: TrendingUp };
+    if (durationDiff && durationDiff < -10) return { label: 'Shorter than planned', color: 'text-load-optimal', icon: TrendingDown };
     return { label: 'Close to target', color: 'text-muted-foreground', icon: Minus };
   };
 
@@ -117,22 +180,20 @@ export function ActivityExpandedContent({ activity }: ActivityExpandedContentPro
           label="Duration"
           value={`${activity.duration} min`}
           diff={durationDiff}
-          planned={`${mockPlannedData.duration} min`}
+          planned={plannedData?.duration ? `${plannedData.duration} min` : undefined}
         />
         <MetricCard
           icon={Route}
           label="Distance"
           value={`${distanceDisplay.value.toFixed(1)} ${distanceDisplay.unit}`}
           diff={distanceDiff}
-          planned={`${plannedDistanceDisplay.value.toFixed(1)} ${plannedDistanceDisplay.unit}`}
+          planned={plannedDistanceDisplay ? `${plannedDistanceDisplay.value.toFixed(1)} ${plannedDistanceDisplay.unit}` : undefined}
         />
         {activity.avgHeartRate && (
           <MetricCard
             icon={Heart}
             label="Avg HR"
             value={`${activity.avgHeartRate} bpm`}
-            diff={hrDiff}
-            planned={`${mockPlannedData.avgHeartRate} bpm`}
           />
         )}
         {activity.avgPower && (
@@ -140,7 +201,6 @@ export function ActivityExpandedContent({ activity }: ActivityExpandedContentPro
             icon={Zap}
             label="Avg Power"
             value={`${activity.avgPower} W`}
-            planned={`${mockPlannedData.avgPower} W`}
           />
         )}
         {elevationDisplay && (
@@ -164,10 +224,16 @@ export function ActivityExpandedContent({ activity }: ActivityExpandedContentPro
             type="positive"
             text="Negative split"
           />
-          {hrDiff > 5 && (
+          {durationDiff && durationDiff > 10 && (
             <HighlightChip
               type="warning"
-              text="Higher effort than planned"
+              text="Longer than planned"
+            />
+          )}
+          {distanceDiff && distanceDiff > 10 && (
+            <HighlightChip
+              type="warning"
+              text="Further than planned"
             />
           )}
         </div>

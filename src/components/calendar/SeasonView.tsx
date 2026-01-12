@@ -12,6 +12,7 @@ import {
 import { cn } from '@/lib/utils';
 import { fetchCalendarSeason, fetchActivities, fetchOverview } from '@/lib/api';
 import { getSeasonIntelligence } from '@/lib/intelligence';
+import { normalizeSportType } from '@/lib/session-utils';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useQuery, useQueries } from '@tanstack/react-query';
@@ -175,11 +176,34 @@ export function SeasonView({ currentDate }: SeasonViewProps) {
     });
 
     const activitiesArray = Array.isArray(activities) ? activities : [];
-    const completedActivities = activitiesArray.filter(a => {
+    const weekActivities = activitiesArray.filter(a => {
       if (!a || typeof a !== 'object' || !a.date) return false;
       // Date is already normalized to YYYY-MM-DD format from API
       const activityDate = a.date;
       return activityDate >= weekStartStr && activityDate <= weekEndStr;
+    });
+
+    // Create a set of completed session identifiers (date + normalized sport type) to avoid double-counting
+    // If an activity has a corresponding completed session, we should only count it once
+    const completedSessionKeys = new Set(
+      completedSessions.map(s => {
+        if (!s || !s.date || !s.type) return null;
+        const sessionDate = s.date ? format(new Date(s.date), 'yyyy-MM-dd') : '';
+        const normalizedSport = normalizeSportType(s.type);
+        return `${sessionDate}-${normalizedSport}`;
+      }).filter(Boolean) as string[]
+    );
+
+    // Filter out activities that already have a corresponding completed session
+    // Match by date and normalized sport type
+    const uniqueCompletedActivities = weekActivities.filter(a => {
+      if (!a || !a.date || !a.sport) return false;
+      const activityDate = a.date;
+      const normalizedActivitySport = normalizeSportType(a.sport);
+      const activityKey = `${activityDate}-${normalizedActivitySport}`;
+      
+      // Check if there's a matching completed session with the same date and sport
+      return !completedSessionKeys.has(activityKey);
     });
 
     // Calculate CTL from overview metrics
@@ -193,16 +217,19 @@ export function SeasonView({ currentDate }: SeasonViewProps) {
       ? weekCtlData.reduce((sum, [, ctl]) => sum + ctl, 0) / weekCtlData.length
       : 0;
 
-    // Estimate load from completed activities
-    const totalLoad = completedActivities.reduce((sum, a) => sum + (a.trainingLoad || 0), 0);
+    // Estimate load from all week activities (not just unique ones, for accurate TSS)
+    const totalLoad = weekActivities.reduce((sum, a) => sum + (a.trainingLoad || 0), 0);
+
+    // Count completed: completed sessions + unique activities (those without a corresponding session)
+    const totalCompleted = completedSessions.length + uniqueCompletedActivities.length;
 
     return {
       planned: plannedSessions.length,
-      completed: completedSessions.length + completedActivities.length,
+      completed: totalCompleted,
       totalLoad: Math.round(totalLoad),
       avgCtl: Math.round(avgCtl),
       completionRate: plannedSessions.length > 0
-        ? Math.round(((completedSessions.length + completedActivities.length) / plannedSessions.length) * 100)
+        ? Math.round((totalCompleted / plannedSessions.length) * 100)
         : 0,
     };
   };

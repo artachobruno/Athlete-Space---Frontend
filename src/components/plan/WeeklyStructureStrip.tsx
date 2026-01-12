@@ -23,12 +23,14 @@ const intentColors = {
 };
 
 interface WeeklyStructureStripProps {
+  currentDate?: Date;
   onDayClick?: (dateStr: string) => void;
 }
 
-export function WeeklyStructureStrip({ onDayClick }: WeeklyStructureStripProps) {
+export function WeeklyStructureStrip({ currentDate, onDayClick }: WeeklyStructureStripProps) {
   const today = new Date();
-  const weekStart = startOfWeek(today, { weekStartsOn: 1 });
+  const viewDate = currentDate || today;
+  const weekStart = startOfWeek(viewDate, { weekStartsOn: 1 });
   const weekStartStr = format(weekStart, 'yyyy-MM-dd');
 
   const { data: weekData } = useQuery({

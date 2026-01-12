@@ -4,9 +4,14 @@ import { format, startOfWeek, endOfWeek } from 'date-fns';
 import { Target, TrendingUp, Loader2 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 
-export function WeeklyPlanOverview() {
+interface WeeklyPlanOverviewProps {
+  currentDate?: Date;
+}
+
+export function WeeklyPlanOverview({ currentDate }: WeeklyPlanOverviewProps) {
   const today = new Date();
-  const weekStart = startOfWeek(today, { weekStartsOn: 1 });
+  const viewDate = currentDate || today;
+  const weekStart = startOfWeek(viewDate, { weekStartsOn: 1 });
   const weekStartStr = format(weekStart, 'yyyy-MM-dd');
 
   const { data: weekData, isLoading } = useQuery({

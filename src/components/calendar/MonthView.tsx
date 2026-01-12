@@ -11,7 +11,7 @@ import {
   eachWeekOfInterval,
 } from 'date-fns';
 import { cn } from '@/lib/utils';
-import { fetchCalendarWeek, type CalendarSession } from '@/lib/api';
+import { fetchCalendarWeek, fetchActivities, type CalendarSession } from '@/lib/api';
 import { mapSessionToWorkout, normalizeSportType } from '@/lib/session-utils';
 import { Footprints, Bike, Waves, CheckCircle2, MessageCircle, Loader2 } from 'lucide-react';
 import { useQueries } from '@tanstack/react-query';
@@ -41,26 +41,15 @@ function getSportIcon(sport: string | null | undefined): typeof Footprints {
 /**
  * MonthView Component
  * 
- * IMPORTANT DATA MODEL DEPENDENCY:
- * This component ONLY displays CalendarSession objects fetched via fetchCalendarWeek().
- * It does NOT fetch or display activities from the /activities endpoint.
- * 
- * This means:
- * - Only sessions that exist in the calendar_sessions table are visible
- * - Completed activities in the activities table are NOT automatically visible
- * - Every completed activity MUST have a corresponding CalendarSession row
- * 
- * Backend invariant required: Every completed activity must have a CalendarSession
- * with status='completed' and activity_id set to the activity's id.
- * 
- * This is NOT a frontend pagination issue - MonthView never calls /activities.
+ * Displays both CalendarSession objects (planned and completed sessions) and
+ * activities from the /activities endpoint. Activities are fetched and displayed
+ * alongside sessions to provide a complete view of training activities.
  */
 export function MonthView({ currentDate, onActivityClick }: MonthViewProps) {
   const monthStart = startOfMonth(currentDate);
   const monthEnd = endOfMonth(currentDate);
   
   // Fetch data for all weeks in the month
-  // NOTE: Only fetches CalendarSession objects, never activities directly
   const weeks = useMemo(() => {
     return eachWeekOfInterval({ start: monthStart, end: monthEnd }, { weekStartsOn: 1 });
   }, [monthStart, monthEnd]);
@@ -76,7 +65,72 @@ export function MonthView({ currentDate, onActivityClick }: MonthViewProps) {
     }),
   });
 
+  // Calculate how many months back we need to fetch activities for
+  // We'll fetch activities for the current month plus buffer months to ensure we have historical data
+  const monthsToFetch = useMemo(() => {
+    const now = new Date();
+    const monthsDiff = (currentDate.getFullYear() - now.getFullYear()) * 12 + (currentDate.getMonth() - now.getMonth());
+    return Math.max(0, monthsDiff + 3);
+  }, [currentDate]);
+
+  // Fetch activities with pagination to cover the date range being viewed
+  const activityQueryConfigs = useMemo(() => {
+    const configs = [];
+    // Always fetch the first page (most recent 100 activities)
+    // Use the same query key as Calendar.tsx to share cache
+    configs.push({
+      queryKey: ['activities', 'limit', 100],
+      queryFn: () => fetchActivities({ limit: 100 }),
+    });
+    
+    // If we need to go back further, fetch additional pages
+    const pagesNeeded = Math.ceil(monthsToFetch / 3); // ~3 months per 100 activities
+    for (let page = 1; page <= pagesNeeded && page <= 10; page++) { // Limit to 10 pages (1000 activities max)
+      configs.push({
+        queryKey: ['activities', 'limit', 100, 'offset', page * 100],
+        queryFn: () => fetchActivities({ limit: 100, offset: page * 100 }),
+      });
+    }
+    return configs;
+  }, [monthsToFetch]);
+
+  // Execute all activity queries using useQueries
+  const activityQueryResults = useQueries({
+    queries: activityQueryConfigs.map(config => ({
+      ...config,
+      retry: 1,
+      staleTime: 5 * 60 * 1000, // 5 minutes
+      gcTime: 30 * 60 * 1000, // 30 minutes
+    })),
+  });
+
+  // Combine all activity results
+  const activities = useMemo(() => {
+    const allActivities: CompletedActivity[] = [];
+    const seenIds = new Set<string>();
+    
+    for (const result of activityQueryResults) {
+      if (result.data && Array.isArray(result.data)) {
+        for (const activity of result.data) {
+          if (activity && activity.id && !seenIds.has(activity.id)) {
+            seenIds.add(activity.id);
+            allActivities.push(activity);
+          }
+        }
+      }
+    }
+    
+    // Sort by date descending (most recent first)
+    // Dates are already normalized YYYY-MM-DD strings, so we can compare directly
+    return allActivities.sort((a, b) => {
+      if (!a.date || !b.date) return 0;
+      // Compare YYYY-MM-DD strings directly (lexicographic comparison works for ISO dates)
+      return b.date.localeCompare(a.date);
+    });
+  }, [activityQueryResults]);
+
   const isLoading = weekQueries.some(q => q.isLoading);
+  const activitiesLoading = activityQueryResults.some(q => q.isLoading);
   const allWeekData = weekQueries.map(q => q.data).filter(Boolean);
   
   // Collect all sessions from all weeks
@@ -95,6 +149,10 @@ export function MonthView({ currentDate, onActivityClick }: MonthViewProps) {
     console.log('[MonthView] Total sessions across all weeks:', totalSessions);
     console.log('[MonthView] Planned sessions:', plannedCount, 'Completed sessions:', completedCount);
     console.log('[MonthView] Sessions for month:', format(currentDate, 'MMMM yyyy'));
+  }
+  
+  if (activities.length > 0) {
+    console.log('[MonthView] Loaded activities:', activities.length);
   }
 
   const days = useMemo(() => {
@@ -152,14 +210,29 @@ export function MonthView({ currentDate, onActivityClick }: MonthViewProps) {
       .map(mapSessionToWorkout)
       .filter((w): w is PlannedWorkout => w !== null && w.sport !== undefined);
     
-    const completed = completedSessions
+    // Get completed activities from both CalendarSession objects and activities API
+    const completedFromSessions = completedSessions
       .map(mapCompletedSessionToActivity)
       .filter((a): a is CompletedActivity => a !== null && a.sport !== undefined);
+    
+    // Get completed activities from activities API for this day
+    const activitiesArray = Array.isArray(activities) ? activities : [];
+    const completedFromActivities = activitiesArray.filter((a: CompletedActivity) => {
+      if (!a || typeof a !== 'object' || !a.date) return false;
+      // Date is already normalized to YYYY-MM-DD format from API
+      const activityDate = a.date;
+      return activityDate === dateStr;
+    });
+    
+    // Merge completed activities from both sources, avoiding duplicates
+    const seenActivityIds = new Set(completedFromSessions.map(a => a.id));
+    const uniqueActivitiesFromAPI = completedFromActivities.filter(a => !seenActivityIds.has(a.id));
+    const completed = [...completedFromSessions, ...uniqueActivitiesFromAPI];
     
     return { planned, completed, plannedSessions, completedSessions };
   };
 
-  if (isLoading) {
+  if (isLoading || activitiesLoading) {
     return (
       <div className="flex items-center justify-center py-12">
         <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
@@ -229,9 +302,20 @@ export function MonthView({ currentDate, onActivityClick }: MonthViewProps) {
                     if (!s || !s.type) return false;
                     return normalizeSportType(s.type) === normalizeSportType(workout.sport);
                   });
-                  const matchingActivity = matchingCompletedSession 
-                    ? completed.find(c => c.id === matchingCompletedSession.id)
-                    : null;
+                  
+                  // Find matching activity - first check if there's a session, then check all completed activities
+                  let matchingActivity: CompletedActivity | null = null;
+                  if (matchingCompletedSession) {
+                    matchingActivity = completed.find(c => c.id === matchingCompletedSession.id) || null;
+                  }
+                  
+                  // If no matching session, check if there's a matching activity from API by sport
+                  if (!matchingActivity) {
+                    matchingActivity = completed.find(c => 
+                      normalizeSportType(c.sport) === normalizeSportType(workout.sport)
+                    ) || null;
+                  }
+                  
                   const isCompleted = !!matchingActivity;
                   const session = plannedSessions.find(s => s.id === workout.id);
                   const completedSession = matchingCompletedSession || null;
