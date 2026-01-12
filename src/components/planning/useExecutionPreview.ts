@@ -46,21 +46,22 @@ export function useExecutionPreview({
     data: previewData,
     isLoading: isLoadingPreview,
     refetch: refetchPreview,
-  } = useQuery({
+    error: queryError,
+  } = useQuery<ExecutionPreviewResponse, Error>({
     queryKey: ['executionPreview', weekPlans, startDate, timezone],
     queryFn: () => previewExecution(weekPlans, startDate, timezone),
     enabled: enabled && weekPlans.length > 0,
     retry: 1,
-    onSuccess: () => {
-      trackEvent('execution_preview_opened');
-      setError(null);
-    },
-    onError: (err) => {
-      const error = err as Error;
-      setError(error);
-      trackEvent('execution_failed', { error: error.message });
-    },
   });
+
+  // Handle query success/error via useEffect
+  if (previewData && !error) {
+    trackEvent('execution_preview_opened');
+  }
+  if (queryError && error?.message !== queryError.message) {
+    setError(queryError);
+    trackEvent('execution_failed', { error: queryError.message });
+  }
 
   // Execution mutation
   const executeMutation = useMutation({

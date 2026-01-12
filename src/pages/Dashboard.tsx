@@ -1,4 +1,16 @@
 import { useAuth } from '@/context/AuthContext';
+
+// Types for Coach Dashboard
+interface WeeklyLoad {
+  week: string;
+  level: 'low' | 'medium' | 'high';
+  value: number;
+}
+
+interface Risk {
+  type: 'success' | 'warning' | 'info';
+  message: string;
+}
 import { isPreviewMode } from '@/lib/preview';
 
 // Athlete Dashboard Components
@@ -81,8 +93,8 @@ function CoachDashboard() {
     load_trend: 'stable' | 'increasing' | 'decreasing'; 
     risk_level: 'low' | 'medium' | 'high';
     adherence_trend: number[];
-    weekly_loads: Array<{ week: string; level: string; value: number }>;
-    risks: Array<{ type: string; message: string }>;
+    weekly_loads: WeeklyLoad[];
+    risks: Risk[];
     isLoading?: boolean;
     error?: unknown;
   };
