@@ -1,35 +1,30 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { fetchOverview, fetchCalendarWeek, fetchTrainingLoad } from '@/lib/api';
+import { fetchActivities, fetchTrainingLoad, fetchCalendarWeek } from '@/lib/api';
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell } from 'recharts';
 import { subDays, format, startOfWeek } from 'date-fns';
 import { useAuthenticatedQuery } from '@/hooks/useAuthenticatedQuery';
 import { Loader2 } from 'lucide-react';
 import { useMemo } from 'react';
+import { enrichActivitiesWithTss } from '@/lib/tss-utils';
+import type { CompletedActivity } from '@/types';
 
 export function WeeklyLoadCard() {
   const today = new Date();
   const weekStart = startOfWeek(today, { weekStartsOn: 1 });
   const weekStartStr = format(weekStart, 'yyyy-MM-dd');
 
-  const { data: overview, isLoading: overviewLoading } = useAuthenticatedQuery({
-    queryKey: ['overview', 7],
-    queryFn: () => {
-      console.log('[WeeklyLoadCard] Fetching overview for 7 days');
-      return fetchOverview(7);
-    },
+  // Fetch activities the same way as Calendar and Activities pages
+  const { data: activities, isLoading: activitiesLoading } = useAuthenticatedQuery({
+    queryKey: ['activities', 'limit', 100],
+    queryFn: () => fetchActivities({ limit: 100 }),
     retry: 1,
-    staleTime: 0, // Always refetch - training load changes frequently
-    refetchOnMount: true, // Force fresh data on page load
-    refetchOnWindowFocus: true, // Refetch when window regains focus
-    gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes after unmount
+    staleTime: 5 * 60 * 1000, // 5 minutes - activities don't change that frequently
+    gcTime: 30 * 60 * 1000, // Keep in cache for 30 minutes
+    refetchOnWindowFocus: true,
+    refetchInterval: false,
   });
 
-  const { data: weekData, isLoading: weekLoading } = useAuthenticatedQuery({
-    queryKey: ['calendarWeek', weekStartStr],
-    queryFn: () => fetchCalendarWeek(weekStartStr),
-    retry: 1,
-  });
-
+  // Fetch training load for TSS enrichment
   const { data: trainingLoadData, isLoading: trainingLoadLoading } = useAuthenticatedQuery({
     queryKey: ['trainingLoad', 7],
     queryFn: () => {
@@ -54,9 +49,22 @@ export function WeeklyLoadCard() {
     gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes after unmount
   });
 
-  const isLoading = overviewLoading || weekLoading || trainingLoadLoading;
+  // Fetch calendar week for planned load calculation
+  const { data: weekData, isLoading: weekLoading } = useAuthenticatedQuery({
+    queryKey: ['calendarWeek', weekStartStr],
+    queryFn: () => fetchCalendarWeek(weekStartStr),
+    retry: 1,
+  });
 
-  // Build chart data from training load data
+  const isLoading = activitiesLoading || trainingLoadLoading || weekLoading;
+
+  // Enrich activities with TSS data
+  const enrichedActivities = useMemo(() => {
+    if (!activities) return [];
+    return enrichActivitiesWithTss(activities, trainingLoadData);
+  }, [activities, trainingLoadData]);
+
+  // Build chart data for past 7 days from activities (same as Calendar and Activities)
   const weekChartData = useMemo(() => {
     const chartData = Array.from({ length: 7 }, (_, i) => {
       const date = subDays(today, 6 - i);
@@ -69,38 +77,37 @@ export function WeeklyLoadCard() {
       };
     });
 
-    // Map actual daily TSS data from training load
-    if (trainingLoadData?.dates && trainingLoadData?.daily_tss) {
-      console.debug('[WeeklyLoadCard] Training load data received:', {
-        datesCount: trainingLoadData.dates.length,
-        tssCount: trainingLoadData.daily_tss.length,
-        sampleDates: trainingLoadData.dates.slice(0, 3),
-        sampleTss: trainingLoadData.daily_tss.slice(0, 3),
+    // Calculate load from activities for each day
+    const activitiesArray = Array.isArray(enrichedActivities) ? enrichedActivities : [];
+    chartData.forEach((dayData) => {
+      // Find all activities for this day
+      const dayActivities = activitiesArray.filter((activity: CompletedActivity) => {
+        if (!activity || !activity.date) return false;
+        const activityDate = activity.date.split('T')[0];
+        return activityDate === dayData.date;
       });
-      
-      trainingLoadData.dates.forEach((dateStr, index) => {
-        const tss = trainingLoadData.daily_tss[index];
-        // Find matching day in chart data
-        const chartIndex = chartData.findIndex(d => d.date === dateStr);
-        if (chartIndex !== -1 && tss !== undefined && tss !== null) {
-          // TSS is normalized to -100 to 100, convert to positive for display
-          chartData[chartIndex].load = Math.max(0, Math.abs(tss));
-        }
-      });
-    }
+
+      // Sum TSS from all activities for this day
+      const dayLoad = dayActivities.reduce((sum, activity) => {
+        const tss = activity.trainingLoad || 0;
+        return sum + (typeof tss === 'number' ? tss : 0);
+      }, 0);
+
+      dayData.load = Math.round(dayLoad);
+    });
 
     return chartData;
-  }, [trainingLoadData, today]);
+  }, [enrichedActivities, today]);
 
-  // Calculate weekly totals from actual training load data
+  // Calculate weekly totals from actual activities data
   const weeklyStats = useMemo(() => {
     let actualLoad = 0;
     let plannedLoad = 0;
 
-    // Calculate actual load from weekChartData which is already aligned to the current week
+    // Calculate actual load from activities for the past 7 days
     actualLoad = weekChartData.reduce((sum, day) => sum + day.load, 0);
 
-    // Estimate planned load from calendar sessions
+    // Estimate planned load from calendar sessions for the week
     const sessions = Array.isArray(weekData?.sessions) ? weekData.sessions : [];
     const plannedSessions = sessions.filter(s => s?.status === 'planned' || s?.status === 'completed');
     // Estimate TSS based on session duration (rough estimate: 1 hour = ~50 TSS)
