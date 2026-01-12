@@ -12,19 +12,36 @@ import { useAiOpsSummary } from "@/hooks/useAiOpsSummary";
 import type { AiOpsSummary } from "@/lib/api/internalAiOps";
 import type { AiAdminData } from "@/mock/aiAdmin.mock";
 
-function mapBackendToComponent(backendData: AiOpsSummary): AiAdminData {
+// Helper to safely get a number from a Record
+function getRecordValue(record: Record<string, number> | null | undefined, key: string): number {
+  try {
+    if (!record || typeof record !== 'object' || record === null) return 0;
+    if (!(key in record)) return 0;
+    const value = record[key];
+    return typeof value === 'number' && !isNaN(value) ? value : 0;
+  } catch {
+    return 0;
+  }
+}
+
+function mapBackendToComponent(backendData: AiOpsSummary | null | undefined): AiAdminData {
+  // Guard against null/undefined
+  if (!backendData) {
+    return mockAiAdminData;
+  }
+
   // Map intentDistribution from Record to specific keys
-  const intentDist = backendData.decision.intentDistribution;
+  const intentDist = backendData.decision?.intentDistribution;
   const intentDistribution = {
-    plan: intentDist.plan ?? intentDist["plan"] ?? 0,
-    modify: intentDist.modify ?? intentDist["modify"] ?? 0,
-    explain: intentDist.explain ?? intentDist["explain"] ?? 0,
-    upload: intentDist.upload ?? intentDist["upload"] ?? 0,
+    plan: getRecordValue(intentDist, 'plan'),
+    modify: getRecordValue(intentDist, 'modify'),
+    explain: getRecordValue(intentDist, 'explain'),
+    upload: getRecordValue(intentDist, 'upload'),
   };
 
   // Convert confidenceAvg to distribution buckets
   // Since backend only provides average, we estimate distribution
-  const confidenceAvg = backendData.decision.confidenceAvg;
+  const confidenceAvg = backendData.decision?.confidenceAvg ?? 0;
   let confidence: { high: number; medium: number; low: number };
   if (confidenceAvg >= 0.7) {
     // High average: most decisions are high confidence
@@ -59,26 +76,32 @@ function mapBackendToComponent(backendData: AiOpsSummary): AiAdminData {
   }
 
   // Map outcomes from Record to specific keys
-  const outcomesDist = backendData.decision.outcomes;
+  const outcomesDist = backendData.decision?.outcomes;
   const outcomes = {
-    applied: outcomesDist.applied ?? outcomesDist["applied"] ?? 0,
-    blocked: outcomesDist.blocked ?? outcomesDist["blocked"] ?? 0,
-    escalated: outcomesDist.escalated ?? outcomesDist["escalated"] ?? 0,
+    applied: getRecordValue(outcomesDist, 'applied'),
+    blocked: getRecordValue(outcomesDist, 'blocked'),
+    escalated: getRecordValue(outcomesDist, 'escalated'),
   };
 
   // Map funnel from backend structure to component structure
   // Convert counts to percentages relative to requested (base = 100%)
-  const base = backendData.funnel.requested || 1; // Avoid division by zero
+  const funnelData = backendData.funnel;
+  const requested = funnelData?.requested ?? 0;
+  const validated = funnelData?.validated ?? 0;
+  const planned = funnelData?.planned ?? 0;
+  const executed = funnelData?.executed ?? 0;
+  const failed = funnelData?.failed ?? 0;
+  const base = requested || 1; // Avoid division by zero
   const funnel = {
     intent: 100, // Base is always 100%
-    generated: Math.round((backendData.funnel.validated / base) * 100),
-    confirmed: Math.round((backendData.funnel.planned / base) * 100),
-    persisted: Math.round((backendData.funnel.executed / base) * 100),
-    compliant: Math.round(((backendData.funnel.executed - backendData.funnel.failed) / base) * 100),
+    generated: Math.round((validated / base) * 100),
+    confirmed: Math.round((planned / base) * 100),
+    persisted: Math.round((executed / base) * 100),
+    compliant: Math.round(((executed - failed) / base) * 100),
   };
 
   // Calculate trend from trend7d array
-  const trend7d = backendData.compliance.trend7d;
+  const trend7d = backendData.compliance?.trend7d ?? [];
   let trend: "up" | "down" | "stable" = "stable";
   if (trend7d.length >= 2) {
     const first = trend7d[0] ?? 0;
@@ -88,20 +111,20 @@ function mapBackendToComponent(backendData: AiOpsSummary): AiAdminData {
   }
 
   // Map missedReasons from Record to specific keys
-  const missedReasonsDist = backendData.compliance.missedReasons;
+  const missedReasonsDist = backendData.compliance?.missedReasons;
   const missedReasons = {
-    fatigue: missedReasonsDist.fatigue ?? missedReasonsDist["fatigue"] ?? 0,
-    skipped: missedReasonsDist.skipped ?? missedReasonsDist["skipped"] ?? 0,
-    conflict: missedReasonsDist.conflict ?? missedReasonsDist["conflict"] ?? 0,
+    fatigue: getRecordValue(missedReasonsDist, 'fatigue'),
+    skipped: getRecordValue(missedReasonsDist, 'skipped'),
+    conflict: getRecordValue(missedReasonsDist, 'conflict'),
   };
 
   // Convert loadRiskPct to 'safe' | 'watch' | 'high'
-  const loadRiskPct = backendData.safety.loadRiskPct;
+  const loadRiskPct = backendData.safety?.loadRiskPct ?? 0;
   const loadRisk: "safe" | "watch" | "high" =
     loadRiskPct < 30 ? "safe" : loadRiskPct < 70 ? "watch" : "high";
 
   // Convert recoveryAlignedPct to boolean
-  const recoveryAligned = backendData.safety.recoveryAlignedPct >= 50;
+  const recoveryAligned = (backendData.safety?.recoveryAlignedPct ?? 0) >= 50;
 
   return {
     intentDistribution,
@@ -109,30 +132,30 @@ function mapBackendToComponent(backendData: AiOpsSummary): AiAdminData {
     outcomes,
     funnel,
     compliance: {
-      executedPct: backendData.compliance.executedPct,
+      executedPct: backendData.compliance?.executedPct ?? 0,
       missedReasons,
       trend,
     },
     safety: {
       loadRisk,
       recoveryAligned,
-      summary: backendData.safety.summary,
+      summary: backendData.safety?.summary ?? "",
     },
     rag: {
-      usagePct: backendData.rag.usagePct,
-      avgConfidence: backendData.rag.avgConfidence,
-      fallbackRate: backendData.rag.fallbackRate,
-      safetyBlocks: backendData.rag.safetyBlocks,
+      usagePct: backendData.rag?.usagePct ?? 0,
+      avgConfidence: backendData.rag?.avgConfidence ?? 0,
+      fallbackRate: backendData.rag?.fallbackRate ?? 0,
+      safetyBlocks: backendData.rag?.safetyBlocks ?? 0,
     },
     conversation: {
-      avgTurns: backendData.conversation.avgTurns,
-      summariesPerConv: backendData.conversation.summariesPerConversation,
-      compressionRatio: backendData.conversation.compressionRatio,
+      avgTurns: backendData.conversation?.avgTurns ?? 0,
+      summariesPerConv: backendData.conversation?.summariesPerConversation ?? 0,
+      compressionRatio: backendData.conversation?.compressionRatio ?? 0,
     },
     audit: {
-      tracedPct: backendData.audit.tracedPct,
-      confirmedWritesPct: backendData.audit.confirmedWritesPct,
-      auditedToolsPct: backendData.audit.auditedToolsPct,
+      tracedPct: backendData.audit?.tracedPct ?? 0,
+      confirmedWritesPct: backendData.audit?.confirmedWritesPct ?? 0,
+      auditedToolsPct: backendData.audit?.auditedToolsPct ?? 0,
     },
   };
 }
@@ -146,11 +169,18 @@ export default function AiDashboard() {
 
   const { data: backendData, isLoading, error } = useAiOpsSummary(!isPreview);
 
-  const data = isPreview
-    ? mockAiAdminData
-    : backendData
-      ? mapBackendToComponent(backendData)
-      : mockAiAdminData;
+  // Always ensure data is defined - use mock as fallback
+  let data: AiAdminData;
+  if (isPreview) {
+    data = mockAiAdminData;
+  } else {
+    try {
+      data = mapBackendToComponent(backendData ?? null);
+    } catch (err) {
+      console.error('[AiDashboard] Error mapping backend data:', err);
+      data = mockAiAdminData;
+    }
+  }
 
   return (
     <AppLayout>

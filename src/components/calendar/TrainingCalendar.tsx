@@ -129,7 +129,7 @@ export function TrainingCalendar() {
             className="bg-primary hover:bg-primary/90"
           >
             <Plus className="h-4 w-4 mr-1.5" />
-            Add Session
+            Add Planned Session
           </Button>
           <Button
             variant="outline"
@@ -137,7 +137,7 @@ export function TrainingCalendar() {
             onClick={() => setAddWeekOpen(true)}
           >
             <Plus className="h-4 w-4 mr-1.5" />
-            Add Week
+            Add Planned Week
           </Button>
           
           <Button
