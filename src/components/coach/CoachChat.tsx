@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Send, Brain, User } from 'lucide-react';
@@ -7,6 +7,7 @@ import { sendCoachChat, type PlanItem } from '@/lib/api';
 import { generateCoachGreeting } from '@/lib/coachGreeting';
 import { CoachProgressPanel } from './CoachProgressPanel';
 import { PlanList } from './PlanList';
+import { CoachProgressList } from './CoachProgressList';
 import { usePlanningProgressStore } from '@/store/planningProgressStore';
 import { PlanningProgressPanel } from '@/components/planning/PlanningProgressPanel';
 
@@ -14,12 +15,15 @@ type CoachMode = 'idle' | 'awaiting_intent' | 'planning' | 'executing' | 'done';
 
 interface Message {
   id: string;
+  type: 'user' | 'assistant' | 'progress' | 'final';
   role: 'coach' | 'athlete';
   content: string;
   timestamp: Date;
+  progress_stage?: string;
   show_plan?: boolean;
   plan_items?: PlanItem[];
   response_type?: 'plan' | 'weekly_plan' | 'season_plan' | 'session_plan' | 'recommendation' | 'summary' | 'greeting' | 'question' | 'explanation' | 'smalltalk';
+  transient?: boolean;
 }
 
 /**
@@ -47,6 +51,11 @@ export function CoachChat() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const isSendingRef = useRef<boolean>(false);
   const resetProgress = usePlanningProgressStore((state) => state.reset);
+  const [progressStages, setProgressStages] = useState<Array<{
+    id: string;
+    label: string;
+    status: 'completed' | 'in_progress' | 'pending';
+  }>>([]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -63,6 +72,7 @@ export function CoachChat() {
       setMessages([
         {
           id: '1',
+          type: 'assistant',
           role: 'coach',
           content: greeting,
           timestamp: new Date(),
@@ -159,6 +169,7 @@ export function CoachChat() {
 
     const userMessage: Message = {
       id: messageId,
+      type: 'user',
       role: 'athlete',
       content: messageText,
       timestamp: new Date(),
@@ -173,6 +184,7 @@ export function CoachChat() {
         // Transition to planning mode - do NOT generate plan yet
         // Reset planning progress for new planning intent
         resetProgress();
+        setProgressStages([]); // Clear progress stages for new planning session
         setMode('planning');
       }
       // If already in planning/executing, stay in current state
@@ -194,16 +206,70 @@ export function CoachChat() {
         setConversationId(response.conversation_id);
       }
       
-      const coachMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        role: 'coach',
-        content: response.reply || 'I understand. Let me think about that.',
-        timestamp: new Date(),
-        show_plan: response.show_plan === true,
-        plan_items: response.show_plan === true && response.plan_items && response.plan_items.length > 0 ? response.plan_items : undefined,
-        response_type: response.response_type,
-      };
-      setMessages(prev => [...prev, coachMessage]);
+      // Handle progress messages
+      if (response.message_type === 'progress') {
+        // If backend sends progress_stages array, use it
+        if (response.progress_stages && response.progress_stages.length > 0) {
+          setProgressStages(response.progress_stages);
+        } else if (response.progress_stage) {
+          // OPT1: Deduplication - update existing progress message with same stage
+          setMessages(prev => {
+            const updated = [...prev];
+            const existingIndex = updated.findIndex(
+              msg => msg.type === 'progress' && msg.progress_stage === response.progress_stage
+            );
+            
+            const progressMessage: Message = {
+              id: existingIndex >= 0 ? updated[existingIndex].id : (Date.now() + 1).toString(),
+              type: 'progress',
+              role: 'coach',
+              content: response.reply || response.progress_stage,
+              timestamp: new Date(),
+              progress_stage: response.progress_stage,
+              transient: true,
+            };
+            
+            if (existingIndex >= 0) {
+              updated[existingIndex] = progressMessage;
+            } else {
+              updated.push(progressMessage);
+            }
+            
+            return updated;
+          });
+        }
+      } else if (response.message_type === 'final') {
+        // FE3: Collapse progress on final message - remove all transient progress messages
+        setMessages(prev => {
+          const filtered = prev.filter(msg => !(msg.type === 'progress' && msg.transient));
+          const finalMessage: Message = {
+            id: (Date.now() + 1).toString(),
+            type: 'final',
+            role: 'coach',
+            content: response.reply || 'Here\'s your plan',
+            timestamp: new Date(),
+            show_plan: response.show_plan === true,
+            plan_items: response.show_plan === true && response.plan_items && response.plan_items.length > 0 ? response.plan_items : undefined,
+            response_type: response.response_type,
+          };
+          // Clear progress stages when final message arrives
+          setProgressStages([]);
+          return [...filtered, finalMessage];
+        });
+      } else {
+        // Regular assistant message
+        const coachMessage: Message = {
+          id: (Date.now() + 1).toString(),
+          type: 'assistant',
+          role: 'coach',
+          content: response.reply || 'I understand. Let me think about that.',
+          timestamp: new Date(),
+          show_plan: response.show_plan === true,
+          plan_items: response.show_plan === true && response.plan_items && response.plan_items.length > 0 ? response.plan_items : undefined,
+          response_type: response.response_type,
+        };
+        setMessages(prev => [...prev, coachMessage]);
+      }
       
       // FE-2: Only transition to done if we're already executing and plan is shown (use show_plan flag)
       // Never auto-transition from planning to executing - user must confirm
@@ -216,6 +282,7 @@ export function CoachChat() {
       
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
+        type: 'assistant',
         role: 'coach',
         content: errorContent,
         timestamp: new Date(),
@@ -248,6 +315,7 @@ export function CoachChat() {
     // Add confirm message first
     const confirmMessage: Message = {
       id: messageId,
+      type: 'user',
       role: 'athlete',
       content: messageText,
       timestamp: new Date(),
@@ -276,21 +344,78 @@ export function CoachChat() {
         setConversationId(response.conversation_id);
       }
       
-      const coachResponse: Message = {
-        id: (Date.now() + 1).toString(),
-        role: 'coach',
-        content: response.reply || 'Generating your plan...',
-        timestamp: new Date(),
-        show_plan: response.show_plan === true,
-        plan_items: response.show_plan === true && response.plan_items && response.plan_items.length > 0 ? response.plan_items : undefined,
-        response_type: response.response_type,
-      };
-      
-      setMessages(prev => [...prev, coachResponse]);
-      
-      // FE-2: If plan is shown, transition to done (use show_plan flag)
-      if (response.show_plan === true) {
-        setMode('done');
+      // Handle progress messages
+      if (response.message_type === 'progress') {
+        // If backend sends progress_stages array, use it
+        if (response.progress_stages && response.progress_stages.length > 0) {
+          setProgressStages(response.progress_stages);
+        } else if (response.progress_stage) {
+          // OPT1: Deduplication - update existing progress message with same stage
+          setMessages(prev => {
+            const updated = [...prev];
+            const existingIndex = updated.findIndex(
+              msg => msg.type === 'progress' && msg.progress_stage === response.progress_stage
+            );
+            
+            const progressMessage: Message = {
+              id: existingIndex >= 0 ? updated[existingIndex].id : (Date.now() + 1).toString(),
+              type: 'progress',
+              role: 'coach',
+              content: response.reply || response.progress_stage,
+              timestamp: new Date(),
+              progress_stage: response.progress_stage,
+              transient: true,
+            };
+            
+            if (existingIndex >= 0) {
+              updated[existingIndex] = progressMessage;
+            } else {
+              updated.push(progressMessage);
+            }
+            
+            return updated;
+          });
+        }
+      } else if (response.message_type === 'final') {
+        // FE3: Collapse progress on final message - remove all transient progress messages
+        setMessages(prev => {
+          const filtered = prev.filter(msg => !(msg.type === 'progress' && msg.transient));
+          const finalMessage: Message = {
+            id: (Date.now() + 1).toString(),
+            type: 'final',
+            role: 'coach',
+            content: response.reply || 'Here\'s your plan',
+            timestamp: new Date(),
+            show_plan: response.show_plan === true,
+            plan_items: response.show_plan === true && response.plan_items && response.plan_items.length > 0 ? response.plan_items : undefined,
+            response_type: response.response_type,
+          };
+          // Clear progress stages when final message arrives
+          setProgressStages([]);
+          return [...filtered, finalMessage];
+        });
+        // FE-2: If plan is shown, transition to done (use show_plan flag)
+        if (response.show_plan === true) {
+          setMode('done');
+        }
+      } else {
+        // Regular assistant message
+        const coachResponse: Message = {
+          id: (Date.now() + 1).toString(),
+          type: 'assistant',
+          role: 'coach',
+          content: response.reply || 'Generating your plan...',
+          timestamp: new Date(),
+          show_plan: response.show_plan === true,
+          plan_items: response.show_plan === true && response.plan_items && response.plan_items.length > 0 ? response.plan_items : undefined,
+          response_type: response.response_type,
+        };
+        setMessages(prev => [...prev, coachResponse]);
+        
+        // FE-2: If plan is shown, transition to done (use show_plan flag)
+        if (response.show_plan === true) {
+          setMode('done');
+        }
       }
     } catch (error) {
       const apiError = error as { message?: string; status?: number };
@@ -298,6 +423,7 @@ export function CoachChat() {
       
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
+        type: 'assistant',
         role: 'coach',
         content: errorContent,
         timestamp: new Date(),
@@ -340,55 +466,154 @@ export function CoachChat() {
         ) : null}
         {/* Planning Progress Panel - shows real-time planning phase progress */}
         <PlanningProgressPanel />
-        {messages.map((message) => (
-          <div key={message.id} className="space-y-2">
-            <div
-              className={cn(
-                'flex gap-3 animate-fade-up',
-                message.role === 'athlete' && 'flex-row-reverse'
-              )}
-            >
-              <div
-                className={cn(
-                  'w-8 h-8 rounded-full flex items-center justify-center shrink-0',
-                  message.role === 'coach'
-                    ? 'bg-coach text-coach-foreground'
-                    : 'bg-muted text-muted-foreground'
-                )}
-              >
-                {message.role === 'coach' ? (
-                  <Brain className="h-4 w-4" />
-                ) : (
-                  <User className="h-4 w-4" />
-                )}
-              </div>
-              <div
-                className={cn(
-                  'max-w-[75%] rounded-lg px-4 py-2.5',
-                  message.role === 'coach'
-                    ? 'bg-[#2F4F4F]/10 text-foreground'
-                    : 'bg-accent text-accent-foreground'
-                )}
-              >
-                <p className="text-sm leading-relaxed">{message.content}</p>
-              </div>
-            </div>
-            {/* Plan List - rendered inline with coach message that produced it */}
-            {/* FE-2: Use show_plan flag instead of plan_items?.length */}
-            {message.role === 'coach' &&
-              message.show_plan === true &&
-              message.plan_items &&
-              (!message.response_type ||
-                ['plan', 'weekly_plan', 'season_plan', 'session_plan', 'recommendation', 'summary'].includes(message.response_type)) && (
-                <div className={cn('flex gap-3')}>
-                  <div className="w-8 shrink-0" />
-                  <div className="max-w-[75%]">
-                    <PlanList planItems={message.plan_items} />
+        
+        {/* FE2: Render progress messages as checklist */}
+        {(() => {
+          const progressMessages = messages.filter(msg => msg.type === 'progress');
+          const hasFinalMessage = messages.some(msg => msg.type === 'final');
+          
+          // FE3: Hide progress when final message arrives
+          if (hasFinalMessage) {
+            // Progress is hidden, render regular messages only
+            return messages
+              .filter(msg => msg.type !== 'progress')
+              .map((message) => (
+                <div key={message.id} className="space-y-2">
+                  <div
+                    className={cn(
+                      'flex gap-3 animate-fade-up',
+                      message.role === 'athlete' && 'flex-row-reverse'
+                    )}
+                  >
+                    <div
+                      className={cn(
+                        'w-8 h-8 rounded-full flex items-center justify-center shrink-0',
+                        message.role === 'coach'
+                          ? 'bg-coach text-coach-foreground'
+                          : 'bg-muted text-muted-foreground'
+                      )}
+                    >
+                      {message.role === 'coach' ? (
+                        <Brain className="h-4 w-4" />
+                      ) : (
+                        <User className="h-4 w-4" />
+                      )}
+                    </div>
+                    <div
+                      className={cn(
+                        'max-w-[75%] rounded-lg px-4 py-2.5',
+                        message.role === 'coach'
+                          ? 'bg-[#2F4F4F]/10 text-foreground'
+                          : 'bg-accent text-accent-foreground'
+                      )}
+                    >
+                      <p className="text-sm leading-relaxed">{message.content}</p>
+                    </div>
                   </div>
+                  {/* Plan List - rendered inline with coach message that produced it */}
+                  {message.role === 'coach' &&
+                    message.show_plan === true &&
+                    message.plan_items &&
+                    (!message.response_type ||
+                      ['plan', 'weekly_plan', 'season_plan', 'session_plan', 'recommendation', 'summary'].includes(message.response_type)) && (
+                      <div className={cn('flex gap-3')}>
+                        <div className="w-8 shrink-0" />
+                        <div className="max-w-[75%]">
+                          <PlanList planItems={message.plan_items} />
+                        </div>
+                      </div>
+                    )}
                 </div>
-              )}
-          </div>
-        ))}
+              ));
+          }
+          
+          // Build stages from progress_stages state (if backend sent it) or from progress messages
+          let stages: Array<{ id: string; label: string; status: 'completed' | 'in_progress' | 'pending' }> = [];
+          
+          if (progressStages.length > 0) {
+            // Use stages from backend if available
+            stages = progressStages;
+          } else {
+            // Build stages from progress messages
+            // Collect unique stages in order, mark last as in_progress, previous as completed
+            const stageMap = new Map<string, { label: string; lastIndex: number }>();
+            progressMessages.forEach((msg, index) => {
+              const stageId = msg.progress_stage || `stage-${index}`;
+              const label = msg.content || msg.progress_stage || 'Processing...';
+              stageMap.set(stageId, { label, lastIndex: index });
+            });
+            
+            const sortedStages = Array.from(stageMap.entries()).sort((a, b) => a[1].lastIndex - b[1].lastIndex);
+            const lastStageIndex = progressMessages.length > 0 ? progressMessages.length - 1 : -1;
+            
+            sortedStages.forEach(([stageId, { label, lastIndex }]) => {
+              if (lastIndex < lastStageIndex) {
+                stages.push({ id: stageId, label, status: 'completed' });
+              } else if (lastIndex === lastStageIndex) {
+                stages.push({ id: stageId, label, status: 'in_progress' });
+              } else {
+                stages.push({ id: stageId, label, status: 'pending' });
+              }
+            });
+          }
+          
+          // Render progress checklist and regular messages
+          const regularMessages = messages.filter(msg => msg.type !== 'progress' && msg.type !== 'final');
+          
+          return (
+            <>
+              {stages.length > 0 && <CoachProgressList stages={stages} />}
+              {regularMessages.map((message) => (
+                <div key={message.id} className="space-y-2">
+                  <div
+                    className={cn(
+                      'flex gap-3 animate-fade-up',
+                      message.role === 'athlete' && 'flex-row-reverse'
+                    )}
+                  >
+                    <div
+                      className={cn(
+                        'w-8 h-8 rounded-full flex items-center justify-center shrink-0',
+                        message.role === 'coach'
+                          ? 'bg-coach text-coach-foreground'
+                          : 'bg-muted text-muted-foreground'
+                      )}
+                    >
+                      {message.role === 'coach' ? (
+                        <Brain className="h-4 w-4" />
+                      ) : (
+                        <User className="h-4 w-4" />
+                      )}
+                    </div>
+                    <div
+                      className={cn(
+                        'max-w-[75%] rounded-lg px-4 py-2.5',
+                        message.role === 'coach'
+                          ? 'bg-[#2F4F4F]/10 text-foreground'
+                          : 'bg-accent text-accent-foreground'
+                      )}
+                    >
+                      <p className="text-sm leading-relaxed">{message.content}</p>
+                    </div>
+                  </div>
+                  {/* Plan List - rendered inline with coach message that produced it */}
+                  {message.role === 'coach' &&
+                    message.show_plan === true &&
+                    message.plan_items &&
+                    (!message.response_type ||
+                      ['plan', 'weekly_plan', 'season_plan', 'session_plan', 'recommendation', 'summary'].includes(message.response_type)) && (
+                      <div className={cn('flex gap-3')}>
+                        <div className="w-8 shrink-0" />
+                        <div className="max-w-[75%]">
+                          <PlanList planItems={message.plan_items} />
+                        </div>
+                      </div>
+                    )}
+                </div>
+              ))}
+            </>
+          );
+        })()}
 
         {isTyping && (
           <div className="flex gap-3 animate-fade-up">

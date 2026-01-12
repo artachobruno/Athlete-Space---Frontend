@@ -1508,6 +1508,13 @@ export interface CoachChatResponse {
     coachNotes?: string;
   }>;
   response_type?: 'plan' | 'weekly_plan' | 'season_plan' | 'session_plan' | 'recommendation' | 'summary' | 'greeting' | 'question' | 'explanation' | 'smalltalk';
+  message_type?: 'assistant' | 'progress' | 'final';
+  progress_stage?: string;
+  progress_stages?: Array<{
+    id: string;
+    label: string;
+    status: 'completed' | 'in_progress' | 'pending';
+  }>;
 }
 
 /**
