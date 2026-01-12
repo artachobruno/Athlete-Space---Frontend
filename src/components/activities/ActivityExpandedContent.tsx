@@ -1,9 +1,10 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import type { CompletedActivity } from '@/types';
 import {
   Clock, Route, Heart, Zap, Mountain, Bot,
-  TrendingUp, TrendingDown, Minus, CheckCircle2
+  TrendingUp, TrendingDown, Minus, CheckCircle2, Info
 } from 'lucide-react';
 import { ActivityCharts } from './ActivityCharts';
 import { ActivityMap } from './ActivityMap';
@@ -173,15 +174,8 @@ export function ActivityExpandedContent({ activity }: ActivityExpandedContentPro
         </div>
       )}
 
-      {/* Core Metrics Grid */}
+      {/* Core Metrics Grid - Order: Distance, Duration, TSS, NP/Effort, IF */}
       <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-        <MetricCard
-          icon={Clock}
-          label="Duration"
-          value={`${activity.duration} min`}
-          diff={durationDiff}
-          planned={plannedData?.duration ? `${plannedData.duration} min` : undefined}
-        />
         <MetricCard
           icon={Route}
           label="Distance"
@@ -189,6 +183,57 @@ export function ActivityExpandedContent({ activity }: ActivityExpandedContentPro
           diff={distanceDiff}
           planned={plannedDistanceDisplay ? `${plannedDistanceDisplay.value.toFixed(1)} ${plannedDistanceDisplay.unit}` : undefined}
         />
+        <MetricCard
+          icon={Clock}
+          label="Duration"
+          value={`${activity.duration} min`}
+          diff={durationDiff}
+          planned={plannedData?.duration ? `${plannedData.duration} min` : undefined}
+        />
+        {activity.trainingLoad > 0 && (
+          <MetricCard
+            icon={Zap}
+            label="TSS"
+            value={`${Math.round(activity.trainingLoad)}`}
+          />
+        )}
+        {/* Normalized Power / Effort - only for bike and run */}
+        {activity.normalizedPower !== undefined && activity.normalizedPower !== null && 
+         (activity.sport === 'cycling' || activity.sport === 'running') && (
+          <MetricCardWithTooltip
+            icon={Zap}
+            label={activity.sport === 'cycling' ? 'Normalized Power' : 'Normalized Effort'}
+            value={activity.sport === 'cycling' 
+              ? `${Math.round(activity.normalizedPower)} W`
+              : activity.normalizedPower.toFixed(2)}
+            tooltip={activity.sport === 'cycling' 
+              ? 'Normalized Power (NP)\nAccounts for variability in effort.\nMore accurate than average power.'
+              : 'Normalized Effort\nAdjusts for pace variability to reflect true effort.'}
+            effortSource={activity.effortSource}
+          />
+        )}
+        {/* Intensity Factor - only for bike and run */}
+        {(activity.sport === 'cycling' || activity.sport === 'running') && (
+          activity.intensityFactor !== undefined && activity.intensityFactor !== null ? (
+            <MetricCardWithTooltip
+              icon={TrendingUp}
+              label="Intensity Factor"
+              value={activity.intensityFactor.toFixed(2)}
+              tooltip="Intensity Factor (IF)\nCompares session effort to your threshold.\nIF = 1.00 ≈ threshold effort\nIF < 0.75 = easy\nIF > 1.05 = hard"
+              intensityFactor={activity.intensityFactor}
+              effortSource={activity.effortSource}
+            />
+          ) : (
+            <MetricCardWithTooltip
+              icon={TrendingUp}
+              label="Intensity Factor"
+              value="—"
+              tooltip="Set your threshold to enable IF"
+              intensityFactor={undefined}
+              effortSource={activity.effortSource}
+            />
+          )
+        )}
         {activity.avgHeartRate && (
           <MetricCard
             icon={Heart}
@@ -211,6 +256,15 @@ export function ActivityExpandedContent({ activity }: ActivityExpandedContentPro
           />
         )}
       </div>
+      
+      {/* Effort Source Label */}
+      {activity.effortSource && (
+        <div className="text-xs text-muted-foreground">
+          Effort source: {activity.effortSource === 'power' ? 'Power' : 
+                          activity.effortSource === 'pace' ? 'Pace-derived' : 
+                          'Heart rate (fallback)'}
+        </div>
+      )}
 
       {/* Key Highlights */}
       <div className="space-y-2">
@@ -307,6 +361,54 @@ function MetricCard({
         </div>
       )}
     </div>
+  );
+}
+
+function MetricCardWithTooltip({
+  icon: Icon,
+  label,
+  value,
+  tooltip,
+  intensityFactor,
+  effortSource,
+}: {
+  icon: React.ElementType;
+  label: string;
+  value: string;
+  tooltip: string;
+  intensityFactor?: number;
+  effortSource?: 'power' | 'pace' | 'hr';
+}) {
+  const isGreyedOut = effortSource === 'hr' && intensityFactor !== undefined;
+  const isHighlighted = intensityFactor !== undefined && intensityFactor >= 1.0;
+  
+  return (
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <div className={cn(
+            "p-3 bg-muted/50 rounded-lg cursor-help",
+            isGreyedOut && "opacity-60",
+            isHighlighted && "ring-2 ring-load-overreaching/30"
+          )}>
+            <div className="flex items-center gap-2 text-muted-foreground mb-1">
+              <Icon className="h-4 w-4" />
+              <span className="text-xs">{label}</span>
+              <Info className="h-3 w-3 text-muted-foreground/60" />
+            </div>
+            <div className={cn(
+              "text-lg font-semibold",
+              isHighlighted ? "text-load-overreaching" : "text-foreground"
+            )}>
+              {value}
+            </div>
+          </div>
+        </TooltipTrigger>
+        <TooltipContent side="top" className="max-w-xs">
+          <div className="whitespace-pre-line text-sm">{tooltip}</div>
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   );
 }
 

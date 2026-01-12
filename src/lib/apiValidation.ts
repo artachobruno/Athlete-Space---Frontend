@@ -93,6 +93,9 @@ export const ActivityOutSchema = z.object({
   training_load: z.number().nullable(),
   coach_feedback: z.string().nullable(),
   strava_activity_id: z.string().nullable(),
+  normalized_power: z.number().nullable().optional(),
+  intensity_factor: z.number().nullable().optional(),
+  effort_source: z.enum(['power', 'pace', 'hr']).nullable().optional(),
 });
 
 export type ActivityOut = z.infer<typeof ActivityOutSchema>;

@@ -1113,6 +1113,12 @@ export const fetchActivities = async (params?: { limit?: number; offset?: number
           source: 'strava' as const,
           coachFeedback: typeof act.coach_feedback === 'string' ? act.coach_feedback :
                         typeof act.coachFeedback === 'string' ? act.coachFeedback : undefined,
+          normalizedPower: typeof act.normalized_power === 'number' ? act.normalized_power :
+                          typeof act.normalizedPower === 'number' ? act.normalizedPower : undefined,
+          intensityFactor: typeof act.intensity_factor === 'number' ? act.intensity_factor :
+                          typeof act.intensityFactor === 'number' ? act.intensityFactor : undefined,
+          effortSource: act.effort_source === 'power' || act.effort_source === 'pace' || act.effort_source === 'hr' ? act.effort_source :
+                      act.effortSource === 'power' || act.effortSource === 'pace' || act.effortSource === 'hr' ? act.effortSource : undefined,
         } as import("../types").CompletedActivity;
       });
     

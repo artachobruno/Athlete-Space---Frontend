@@ -106,6 +106,9 @@ export interface CompletedActivity {
   trainingLoad: number; // TSS equivalent
   source: 'strava' | 'manual';
   coachFeedback?: string;
+  normalizedPower?: number; // Normalized Power (cycling) or Normalized Effort (running)
+  intensityFactor?: number; // Intensity Factor (IF)
+  effortSource?: 'power' | 'pace' | 'hr'; // Source of effort calculation
 }
 
 export interface TrainingLoad {

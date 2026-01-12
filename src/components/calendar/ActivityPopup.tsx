@@ -1,7 +1,8 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Footprints, Bike, Waves, Clock, Route, Mountain, Heart, Zap, MessageCircle, CheckCircle2, ExternalLink, X, SkipForward } from 'lucide-react';
+import { Footprints, Bike, Waves, Clock, Route, Mountain, Heart, Zap, MessageCircle, CheckCircle2, ExternalLink, X, SkipForward, TrendingUp, Info } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import { useNavigate } from 'react-router-dom';
 import type { PlannedWorkout, CompletedActivity } from '@/types';
@@ -319,6 +320,80 @@ export function ActivityPopup({
                 <div className="p-3 rounded-lg bg-muted/50">
                   <div className="text-xs text-muted-foreground mb-1">TSS</div>
                   <div className="text-sm font-medium text-foreground">{Math.round(displayTss)}</div>
+                </div>
+              )}
+              {/* Normalized Power / Effort - only for bike and run */}
+              {activity.normalizedPower !== undefined && activity.normalizedPower !== null && 
+               (activity.sport === 'cycling' || activity.sport === 'running') && (
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className="p-3 rounded-lg bg-muted/50 cursor-help">
+                        <div className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
+                          <Zap className="h-3 w-3" />
+                          {activity.sport === 'cycling' ? 'Normalized Power' : 'Normalized Effort'}
+                          <Info className="h-3 w-3 text-muted-foreground/60" />
+                        </div>
+                        <div className="text-sm font-medium text-foreground">
+                          {activity.sport === 'cycling' 
+                            ? `${Math.round(activity.normalizedPower)} W`
+                            : activity.normalizedPower.toFixed(2)}
+                        </div>
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent side="top" className="max-w-xs">
+                      <div className="whitespace-pre-line text-sm">
+                        {activity.sport === 'cycling' 
+                          ? 'Normalized Power (NP)\nAccounts for variability in effort.\nMore accurate than average power.'
+                          : 'Normalized Effort\nAdjusts for pace variability to reflect true effort.'}
+                      </div>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              )}
+              {/* Intensity Factor - only for bike and run */}
+              {(activity.sport === 'cycling' || activity.sport === 'running') && (
+                <TooltipProvider>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div className={cn(
+                        "p-3 rounded-lg bg-muted/50 cursor-help",
+                        activity.effortSource === 'hr' && activity.intensityFactor !== undefined && "opacity-60",
+                        activity.intensityFactor !== undefined && activity.intensityFactor >= 1.0 && "ring-2 ring-load-overreaching/30"
+                      )}>
+                        <div className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
+                          <TrendingUp className="h-3 w-3" />
+                          Intensity Factor
+                          <Info className="h-3 w-3 text-muted-foreground/60" />
+                        </div>
+                        <div className={cn(
+                          "text-sm font-medium",
+                          activity.intensityFactor !== undefined && activity.intensityFactor >= 1.0 
+                            ? "text-load-overreaching" 
+                            : "text-foreground"
+                        )}>
+                          {activity.intensityFactor !== undefined && activity.intensityFactor !== null
+                            ? activity.intensityFactor.toFixed(2)
+                            : '—'}
+                        </div>
+                      </div>
+                    </TooltipTrigger>
+                    <TooltipContent side="top" className="max-w-xs">
+                      <div className="whitespace-pre-line text-sm">
+                        {activity.intensityFactor !== undefined && activity.intensityFactor !== null
+                          ? 'Intensity Factor (IF)\nCompares session effort to your threshold.\nIF = 1.00 ≈ threshold effort\nIF < 0.75 = easy\nIF > 1.05 = hard'
+                          : 'Set your threshold to enable IF'}
+                      </div>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              )}
+              {/* Effort Source Label */}
+              {activity.effortSource && (
+                <div className="col-span-2 text-xs text-muted-foreground">
+                  Effort source: {activity.effortSource === 'power' ? 'Power' : 
+                                  activity.effortSource === 'pace' ? 'Pace-derived' : 
+                                  'Heart rate (fallback)'}
                 </div>
               )}
             </div>
