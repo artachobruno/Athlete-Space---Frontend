@@ -11,6 +11,7 @@ import { CoachProgressList } from './CoachProgressList';
 import { RunnerProcessingIndicator } from './RunnerProcessingIndicator';
 import { usePlanningProgressStore } from '@/store/planningProgressStore';
 import { PlanningProgressPanel } from '@/components/planning/PlanningProgressPanel';
+import { useQueryClient } from '@tanstack/react-query';
 
 type CoachMode = 'idle' | 'awaiting_intent' | 'planning' | 'executing' | 'done';
 
@@ -53,6 +54,7 @@ export function CoachChat() {
   const isSendingRef = useRef<boolean>(false);
   const finalPlanRef = useRef<Message | null>(null);
   const resetProgress = usePlanningProgressStore((state) => state.reset);
+  const queryClient = useQueryClient();
   const [progressStages, setProgressStages] = useState<Array<{
     id: string;
     label: string;
@@ -469,6 +471,11 @@ export function CoachChat() {
         }
       }
     }
+
+    // F2: Force calendar refresh on completion
+    queryClient.invalidateQueries({ queryKey: ['calendarWeek'] });
+    queryClient.invalidateQueries({ queryKey: ['calendarToday'] });
+    queryClient.invalidateQueries({ queryKey: ['calendarSeason'] });
 
     // Add explicit conclusion message
     setMessages(prev => [
