@@ -193,7 +193,7 @@ export function AddSessionModal({ open, onOpenChange, initialDate, onSuccess }: 
 
           <div className="space-y-2">
             <Label htmlFor="type">Session Type *</Label>
-            <Select value={type} onValueChange={(value) => setType(value as 'easy' | 'workout' | 'long' | 'rest')} disabled={isSubmitting}>
+            <Select value={type} onValueChange={(value) => setType(value as 'easy' | 'workout' | 'long' | 'rest')} disabled={createSession.isPending}>
               <SelectTrigger id="type">
                 <SelectValue placeholder="Select session type" />
               </SelectTrigger>
@@ -216,7 +216,7 @@ export function AddSessionModal({ open, onOpenChange, initialDate, onSuccess }: 
                 min="0"
                 value={distanceInput}
                 onChange={(e) => setDistanceInput(e.target.value)}
-                disabled={isSubmitting || type === 'rest'}
+                disabled={createSession.isPending || type === 'rest'}
                 placeholder="Optional"
               />
             </div>
@@ -230,7 +230,7 @@ export function AddSessionModal({ open, onOpenChange, initialDate, onSuccess }: 
                 min="0"
                 value={durationMinutes}
                 onChange={(e) => setDurationMinutes(e.target.value)}
-                disabled={isSubmitting || type === 'rest'}
+                disabled={createSession.isPending || type === 'rest'}
                 placeholder="Optional"
               />
             </div>
@@ -255,7 +255,7 @@ export function AddSessionModal({ open, onOpenChange, initialDate, onSuccess }: 
           )}
 
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={handleClose} disabled={isSubmitting}>
+            <Button type="button" variant="outline" onClick={handleClose} disabled={createSession.isPending}>
               Cancel
             </Button>
             <Button type="submit" disabled={createSession.isPending}>

@@ -43,7 +43,7 @@ export default function ConnectSuccess() {
       console.log("[ConnectSuccess] User not authenticated, redirecting to /login");
       navigate("/login", { replace: true });
     }
-    // If status === "loading", stay on this page and show loader
+    // If status === "bootstrapping", stay on this page and show loader
   }, [status, navigate]);
 
   // Show loader while auth is resolving

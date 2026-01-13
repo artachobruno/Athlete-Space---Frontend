@@ -2,6 +2,7 @@ import axios, { AxiosError, AxiosHeaders } from "axios";
 import type { InternalAxiosRequestConfig } from "axios";
 import { format, startOfWeek, endOfWeek, subDays, addDays } from "date-fns";
 import { auth } from "./auth";
+import { getToken, clearToken } from "@/auth/token";
 import type { AthleteProfileOut } from "./apiValidation";
 import { getConversationId } from "./utils";
 import { isPreviewMode } from "./preview";
@@ -2782,7 +2783,7 @@ const normalizeError = (error: unknown): ApiError => {
 
 // Request interceptor: Adds Authorization header for authenticated requests
 // CRITICAL: This interceptor is SYNCHRONOUS - no async operations allowed
-// Token source of truth: localStorage.getItem('auth_token')
+// Token source of truth: getToken() from centralized utility
 api.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
     // Ensure headers object exists (axios may not initialize it)
@@ -2790,9 +2791,8 @@ api.interceptors.request.use(
       config.headers = new AxiosHeaders();
     }
     
-    // SINGLE SOURCE OF TRUTH: Read token directly from localStorage (synchronous)
-    const TOKEN_KEY = 'auth_token';
-    const token = localStorage.getItem(TOKEN_KEY);
+    // SINGLE SOURCE OF TRUTH: Read token using centralized utility (synchronous)
+    const token = getToken();
     
     // If token exists and is not "null" string, add Authorization header
     if (token && token !== 'null' && token.trim() !== '') {
@@ -2804,7 +2804,7 @@ api.interceptors.request.use(
           const exp = payload.exp;
           if (exp && exp * 1000 < Date.now()) {
             // Token is expired - clear it
-            localStorage.removeItem(TOKEN_KEY);
+            clearToken();
             // Don't add header - request will go unauthenticated
             // Response interceptor will handle 401
           } else {
@@ -2821,7 +2821,7 @@ api.interceptors.request.use(
         }
       } catch {
         // Invalid token format - clear it
-        localStorage.removeItem(TOKEN_KEY);
+        clearToken();
       }
     }
     
@@ -2922,8 +2922,7 @@ api.interceptors.response.use(
     // This ensures auth state and token never diverge
     if (normalizedError.status === 401) {
       // CRITICAL: Clear token immediately (single source of truth)
-      const TOKEN_KEY = 'auth_token';
-      localStorage.removeItem(TOKEN_KEY);
+      clearToken();
       
       // Trigger logout event for AuthContext to handle
       // This ensures React state is updated to match token state

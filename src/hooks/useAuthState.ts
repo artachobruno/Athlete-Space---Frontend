@@ -1,5 +1,5 @@
 import { useAuth } from '@/context/AuthContext';
-import { auth } from '@/lib/auth';
+import { getToken } from '@/auth/token';
 
 /**
  * Auth state that tracks if authentication is ready.
@@ -33,10 +33,9 @@ export interface AuthState {
 export function useAuthState(): AuthState {
   const { status, user, authReady } = useAuth();
   
-  // SINGLE SOURCE OF TRUTH: Read token directly from localStorage
+  // SINGLE SOURCE OF TRUTH: Read token using centralized utility
   // This ensures consistency with interceptor
-  const TOKEN_KEY = 'auth_token';
-  const token = typeof window !== 'undefined' ? localStorage.getItem(TOKEN_KEY) : null;
+  const token = getToken();
   
   // isLoaded = auth check is complete (authReady from context)
   // isAuthenticated = user exists, status is authenticated, AND token exists

@@ -1,7 +1,8 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { fetchCurrentUser, logout as logoutApi, type AuthUser } from "@/lib/auth";
+import { getToken, clearToken } from "@/auth/token";
 
-export type AuthStatus = "loading" | "unauthenticated" | "authenticated";
+export type AuthStatus = "bootstrapping" | "unauthenticated" | "authenticated";
 
 interface AuthContextValue {
   user: AuthUser | null;
@@ -15,7 +16,7 @@ interface AuthContextValue {
 const AuthContext = createContext<AuthContextValue>({
   user: null,
   loading: true,
-  status: "loading",
+  status: "bootstrapping",
   authReady: false,
   refreshUser: async () => {},
   logout: async () => {},
@@ -30,7 +31,7 @@ interface AuthProviderProps {
 export function AuthProvider({ children }: AuthProviderProps) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [loading, setLoading] = useState(true);
-  const [status, setStatus] = useState<AuthStatus>("loading");
+  const [status, setStatus] = useState<AuthStatus>("bootstrapping");
   const [isRefreshing, setIsRefreshing] = useState(false);
 
   const refreshUser = async () => {
@@ -41,12 +42,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
     
     setIsRefreshing(true);
     setLoading(true);
-    setStatus("loading");
+    // Don't set status to "loading" here - preserve bootstrapping if this is initial load
     
     try {
       // CRITICAL: Enforce token → /me ordering
       // Step 1: Check if token exists (synchronous check)
-      const token = localStorage.getItem('auth_token');
+      const token = getToken();
       if (!token || token === 'null' || token.trim() === '') {
         // No token = unauthenticated (don't call /me)
         console.log("[AuthContext] No token found, setting unauthenticated");
@@ -66,6 +67,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       if (!currentUser) {
         // /me failed = unauthenticated (token was invalid/expired)
         console.log("[AuthContext] /me returned null, setting unauthenticated");
+        clearToken();
         setUser(null);
         setStatus("unauthenticated");
       } else {
@@ -78,6 +80,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
     } catch (error) {
       console.error("[AuthContext] Unexpected error:", error);
       // Any error = unauthenticated (don't assume authenticated)
+      clearToken();
       setUser(null);
       setStatus("unauthenticated");
     } finally {
@@ -104,6 +107,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       console.log("[AuthContext] Received logout event from API interceptor");
       // CRITICAL: 401 = unauthenticated, NOT onboarding
       // Clear user and set status to unauthenticated
+      clearToken();
       setUser(null);
       setStatus("unauthenticated");
       setLoading(false);
@@ -115,13 +119,49 @@ export function AuthProvider({ children }: AuthProviderProps) {
     };
   }, []);
 
-  // On app boot, check if user is authenticated
+  // On app boot, hydrate auth BEFORE deciding status
+  // CRITICAL: This must run once and block rendering until complete
   useEffect(() => {
-    refreshUser();
+    const bootstrapAuth = async () => {
+      console.log("[AuthContext] Bootstrapping auth...");
+      
+      const token = getToken();
+      
+      if (!token || token === 'null' || token.trim() === '') {
+        console.log("[AuthContext] No token found, setting unauthenticated");
+        setStatus("unauthenticated");
+        setLoading(false);
+        return;
+      }
+      
+      console.log("[AuthContext] Token found, calling /me");
+      
+      try {
+        const currentUser = await fetchCurrentUser();
+        
+        if (!currentUser) {
+          console.log("[AuthContext] /me returned null, setting unauthenticated");
+          clearToken();
+          setStatus("unauthenticated");
+        } else {
+          console.log("[AuthContext] /me succeeded, setting authenticated");
+          setUser(currentUser);
+          setStatus("authenticated");
+        }
+      } catch (error) {
+        console.error("[AuthContext] Bootstrap error:", error);
+        clearToken();
+        setStatus("unauthenticated");
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    bootstrapAuth();
   }, []);
 
-  // authReady = auth check is complete (not loading)
-  const authReady = !loading && status !== "loading";
+  // authReady = auth check is complete (not bootstrapping)
+  const authReady = !loading && status !== "bootstrapping";
 
   return (
     <AuthContext.Provider value={{ user, loading, status, authReady, refreshUser, logout }}>

@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button"
 import { Download, Loader2, AlertCircle, CheckCircle2 } from "lucide-react"
 import { createWorkoutExport, getWorkoutExportStatus, type WorkoutExport } from "@/api/workouts"
 import { api } from "@/lib/api"
+import { getToken } from "@/auth/token"
 
 interface WorkoutActionsProps {
   workoutId: string
@@ -40,7 +41,7 @@ export function WorkoutActions({ workoutId }: WorkoutActionsProps) {
       }
       
       // Get auth token for Authorization header
-      const token = localStorage.getItem("auth_token")
+      const token = getToken()
       const headers: Record<string, string> = {}
       if (token && token !== "null" && token.trim() !== "") {
         headers.Authorization = `Bearer ${token}`

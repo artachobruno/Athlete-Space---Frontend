@@ -15,7 +15,7 @@ export default function Onboarding() {
   // If onboarding already complete (backend is source of truth), redirect to dashboard
   useEffect(() => {
     // Block routing until auth resolves
-    if (status === "loading" || loading) {
+    if (status === "bootstrapping" || loading) {
       return;
     }
 

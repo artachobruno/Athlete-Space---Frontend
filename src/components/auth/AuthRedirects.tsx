@@ -69,7 +69,7 @@ export function AuthLanding() {
   }
 
   // CRITICAL: Hard gate - block all routing until auth status is resolved
-  if (status === "loading" || loading) {
+  if (status === "bootstrapping" || loading) {
     return <FullPageSkeleton />;
   }
 
@@ -99,7 +99,7 @@ export function PublicOnly({ children }: { children: ReactNode }) {
   const { user, loading, status } = useAuth();
 
   // CRITICAL: Block routing until auth resolves
-  if (status === "loading" || loading) {
+  if (status === "bootstrapping" || loading) {
     return <FullPageSkeleton />;
   }
 

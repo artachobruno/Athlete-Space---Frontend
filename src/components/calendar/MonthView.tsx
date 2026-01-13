@@ -59,6 +59,7 @@ export function MonthView({ currentDate, onActivityClick }: MonthViewProps) {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [draggedSession, setDraggedSession] = useState<CalendarSession | null>(null);
   const monthStart = startOfMonth(currentDate);
+  const monthEnd = endOfMonth(currentDate);
   const monthKey = format(monthStart, 'yyyy-MM');
   
   // Fetch month data (includes planned sessions, completed activities, and workouts)

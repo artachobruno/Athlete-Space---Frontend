@@ -35,9 +35,10 @@ export function RequireAuth({ children }: RequireAuthProps) {
 
   console.log("[RequireAuth] Auth state:", { user, loading, status, hasUser: !!user, onboardingComplete: user?.onboarding_complete });
 
-  // Show loading state while auth is being determined
-  if (status === "loading" || loading) {
-    console.log("[RequireAuth] Still loading, showing skeleton");
+  // CRITICAL: Do NOT redirect while bootstrapping
+  // Show loading spinner until auth hydration completes
+  if (status === "bootstrapping" || loading) {
+    console.log("[RequireAuth] Bootstrapping, showing spinner");
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="space-y-4 w-full max-w-md p-8">
@@ -49,7 +50,7 @@ export function RequireAuth({ children }: RequireAuthProps) {
     );
   }
 
-  // Explicitly check for unauthenticated status
+  // Only redirect after bootstrapping completes
   if (status === "unauthenticated" || !user) {
     console.log("[RequireAuth] User not authenticated, redirecting to login");
     return <Navigate to="/login" replace />;

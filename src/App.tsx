@@ -12,6 +12,7 @@ import { useSyncActivities } from "@/hooks/useSyncActivities";
 import { useTimezoneSync } from "@/hooks/useTimezoneSync";
 import { useValidateAuth } from "@/hooks/useValidateAuth";
 import { auth } from "@/lib/auth";
+import { getToken, setToken } from "@/auth/token";
 import { useEffect } from "react";
 import { useAuthDeepLink } from "@/hooks/useAuthDeepLink";
 import { ThemeProvider } from "@/hooks/useTheme";
@@ -153,30 +154,29 @@ const OAuthTokenHandler = () => {
         tokenPreview: token.substring(0, 30) + '...',
       });
       
-      // Store the token
-      auth.setToken(token);
+      // Store the token using centralized utility
+      setToken(token);
       
       // Verify token was stored
-      const storedToken = auth.getToken();
+      const storedToken = getToken();
       if (storedToken) {
         console.log('[OAuth] ✅ Token stored successfully');
-        // Refresh user state from backend, then send to appropriate page
-        // CRITICAL: Wait for refreshUser to complete and check onboarding status
-        refreshUser()
-          .then(() => {
-            // After refresh, get the updated user from context
-            // We need to check onboarding_complete after refresh
-            // But refreshUser updates the context, so we need to wait a tick for React to update
-            // For now, navigate to connect-success which will check onboarding_complete
-            // and redirect appropriately
-            console.log('[OAuth] User refreshed, navigating to connect-success');
-            navigate('/connect-success', { replace: true });
-          })
-          .catch((err) => {
-            console.error('[OAuth] Failed to refresh user after token storage:', err);
-            // Still navigate to success page – it will handle missing user
-            navigate('/connect-success', { replace: true });
-          });
+        
+        // CRITICAL: DO NOT navigate yet
+        // Let AuthContext rehydrate naturally
+        // Remove token from URL to clean up
+        const newSearchParams = new URLSearchParams(searchParams);
+        newSearchParams.delete('token');
+        const newSearch = newSearchParams.toString();
+        const newUrl = `${location.pathname}${newSearch ? `?${newSearch}` : ''}`;
+        window.history.replaceState({}, '', newUrl);
+        
+        // Trigger refreshUser to rehydrate auth state
+        // AuthContext will see the token, call /me, authenticate
+        // Then RequireAuth will allow navigation naturally
+        refreshUser().catch((err) => {
+          console.error('[OAuth] Failed to refresh user after token storage:', err);
+        });
       } else {
         console.error('[OAuth] ❌ Failed to store token!');
       }
@@ -223,7 +223,7 @@ const AppContent = () => {
   
   // CRITICAL: Hard gate - block all routing until auth resolves
   // This prevents race conditions where routes render before auth state is determined
-  if (status === "loading" || loading) {
+  if (status === "bootstrapping" || loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="space-y-4 w-full max-w-md p-8">
