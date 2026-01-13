@@ -674,9 +674,7 @@ export function MonthView({ currentDate, onActivityClick }: MonthViewProps) {
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Activity?</AlertDialogTitle>
             <AlertDialogDescription>
-              {deleteActivityDialog.activity?.planned_session_id
-                ? "This activity is linked to a planned session.\nDeleting it will unpair the session."
-                : "Delete this activity?"}
+              Deleting this activity will remove execution data but keep the planned workout.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -701,7 +699,7 @@ export function MonthView({ currentDate, onActivityClick }: MonthViewProps) {
             <AlertDialogTitle>Delete Planned Session?</AlertDialogTitle>
             <AlertDialogDescription>
               {deleteSessionDialog.session?.completed_activity_id
-                ? "This session is linked to a completed activity.\nThe activity will remain but become unpaired."
+                ? "This session is linked to a completed activity. Deleting it will unpair the activity."
                 : "Delete this planned session?"}
             </AlertDialogDescription>
           </AlertDialogHeader>
