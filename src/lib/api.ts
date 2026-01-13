@@ -127,6 +127,8 @@ export interface CalendarSession {
   workout_id?: string | null;
   // Pairing: session is paired if this is non-null
   completed_activity_id?: string | null;
+  // CRITICAL: Only planned_sessions.id may be mutated. Calendar sessions, workouts, and activities are READ-ONLY views.
+  planned_session_id?: string | null;
 }
 
 export interface TodayResponse {

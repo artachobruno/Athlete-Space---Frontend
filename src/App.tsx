@@ -111,26 +111,42 @@ const AuthValidator = () => {
   return null;
 };
 
-// Component to handle OAuth token from URL (works on any route)
+// Component to handle OAuth errors from URL (legacy support)
+// NOTE: Backend should set HTTP-only cookies and redirect without tokens/errors in URL
+// This component only handles error cases for backward compatibility
 const OAuthTokenHandler = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { refreshUser, user } = useAuth();
+  const { user } = useAuth();
   
   useEffect(() => {
     // Skip OAuth processing in preview mode (OAuth doesn't work in Lovable preview)
-    // This prevents the "access_token missing" error in preview
     if (window.location.hostname.includes("lovable") || import.meta.env.VITE_PREVIEW_MODE === "true") {
-      console.log("[OAuthTokenHandler] Preview mode detected, skipping OAuth token processing");
       return;
     }
     
-    // Check for token in URL params (from Strava OAuth callback)
-    // This can happen on any route, not just /onboarding
+    // Only handle errors - tokens are NOT processed (backend should set cookies)
     const searchParams = new URLSearchParams(location.search);
     const token = searchParams.get('token');
     const error = searchParams.get('error');
     
+    // If token is in URL, remove it silently (backend should have set cookies)
+    if (token) {
+      console.warn('[OAuth] Token found in URL - removing. Backend should set HTTP-only cookies instead.');
+      // Remove token from URL to clean up
+      const newSearchParams = new URLSearchParams(searchParams);
+      newSearchParams.delete('token');
+      const newSearch = newSearchParams.toString();
+      const newUrl = `${location.pathname}${newSearch ? `?${newSearch}` : ''}`;
+      window.history.replaceState({}, '', newUrl);
+      
+      // AuthContext will automatically check authentication via /me endpoint
+      // If cookies are set by backend, user will be authenticated
+      // If cookies are not set, user will remain unauthenticated (correct behavior)
+      return;
+    }
+    
+    // Handle OAuth errors (if any)
     if (error) {
       console.error('[OAuth] Error in URL:', error);
       // Remove error from URL and redirect appropriately
@@ -144,39 +160,8 @@ const OAuthTokenHandler = () => {
       } else {
         navigate(`/onboarding${newSearch ? `?${newSearch}` : ''}`, { replace: true });
       }
-      return;
     }
-    
-    if (token) {
-      console.warn('[OAuth] Token found in URL - this is legacy behavior. Backend should set HTTP-only cookies instead.');
-      console.log('[OAuth] Token in URL on route:', location.pathname, {
-        tokenLength: token.length,
-        tokenPreview: token.substring(0, 30) + '...',
-      });
-      
-      // CRITICAL: Do NOT use token from URL for authentication
-      // /me endpoint is the ONLY source of truth for authentication
-      // Backend should have set HTTP-only cookies during OAuth callback
-      // If cookies are not set, /me will fail and user will be logged out (correct behavior)
-      
-      // Remove token from URL to clean up
-      // Backend should be setting HTTP-only cookies, not returning tokens in URL
-      const newSearchParams = new URLSearchParams(searchParams);
-      newSearchParams.delete('token');
-      const newSearch = newSearchParams.toString();
-      const newUrl = `${location.pathname}${newSearch ? `?${newSearch}` : ''}`;
-      window.history.replaceState({}, '', newUrl);
-      
-      // Trigger refreshUser to check authentication via /me endpoint
-      // /me will succeed if backend set cookies properly
-      // /me will fail (401/404) if cookies are not set, triggering logout (correct behavior)
-      // We do NOT use the URL token - cookies are the source of truth
-      refreshUser().catch((err) => {
-        console.error('[OAuth] Failed to refresh user after OAuth callback:', err);
-        console.warn('[OAuth] If cookies are not set by backend, /me will fail and user will be logged out');
-      });
-    }
-  }, [location, navigate, refreshUser, user]);
+  }, [location, navigate, user]);
   
   return null;
 };
@@ -230,18 +215,12 @@ const AppContent = () => {
     );
   }
   
-  // Handle deep links for mobile OAuth callbacks
-  // CRITICAL: Token in URL is NOT used for authentication
-  // /me endpoint is the ONLY source of truth - if backend set cookies, /me will succeed
-  useAuthDeepLink((token) => {
-    console.warn("[App] Token received in deep link - NOT using for auth. Backend should set HTTP-only cookies.");
-    // Refresh user state to check authentication via /me endpoint
-    // /me will succeed if backend set cookies properly
-    // /me will fail (401/404) if cookies are not set, triggering logout (correct behavior)
-    refreshUser().catch((err) => {
-      console.error("[App] Failed to refresh user after deep link:", err);
-      console.warn("[App] If cookies are not set by backend, /me will fail and user will be logged out");
-    });
+  // Handle deep links for mobile OAuth callbacks (native apps only)
+  // NOTE: Backend should set HTTP-only cookies during OAuth callback
+  // AuthContext will automatically check authentication via /me endpoint
+  useAuthDeepLink(() => {
+    // Deep link handler - AuthContext will check authentication via /me
+    // No token processing needed - cookies are the source of truth
   });
   
   // Only sync activities when auth is ready and user is authenticated

@@ -430,6 +430,20 @@ export function WeekView({ currentDate, onActivityClick }: WeekViewProps) {
       });
     }
 
+    // CRITICAL: Only planned_sessions.id may be mutated.
+    // Calendar sessions, workouts, and activities are READ-ONLY views.
+    const plannedSessionId = session.planned_session_id;
+    
+    if (!plannedSessionId) {
+      console.error('[WeekView] Cannot move session: missing planned_session_id', session);
+      toast({
+        title: 'Move failed',
+        description: 'Cannot move session: missing planned session ID.',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     // PHASE F5: Prefer workout endpoint if workout_id exists
     if (session.workout_id) {
       updateWorkout.mutate(
@@ -459,10 +473,10 @@ export function WeekView({ currentDate, onActivityClick }: WeekViewProps) {
         }
       );
     } else {
-      // Fallback to session endpoint if no workout_id
+      // Use planned_session_id for mutation (NOT session.id - that's a calendar view ID)
       updateSession.mutate(
         {
-          sessionId: session.id,
+          sessionId: plannedSessionId,
           scheduledDate: newDate,
         },
         {

@@ -1,5 +1,5 @@
-import { ReactNode, useEffect, useState } from "react";
-import { Navigate, useLocation } from "react-router-dom";
+import { ReactNode } from "react";
+import { Navigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { Skeleton } from "@/components/ui/skeleton";
 import { isPreviewMode } from "@/lib/preview";
@@ -29,43 +29,16 @@ function FullPageSkeleton() {
  * 3. Onboarding is ONLY shown when: status === "authenticated" && user.onboarding_complete === false
  * 4. Block all routing until auth resolves (status !== "loading")
  * 
- * CRITICAL: If OAuth token is in URL, wait for OAuthTokenHandler to clean it up
- * and check authentication via /me endpoint. OAuthTokenHandler does NOT use
- * the URL token for auth - /me is the only source of truth.
+ * NOTE: Backend should set HTTP-only cookies during OAuth callback.
+ * AuthContext automatically checks authentication via /me endpoint.
  */
 export function AuthLanding() {
   const { user, loading, status } = useAuth();
-  const location = useLocation();
-  const [hasOAuthToken, setHasOAuthToken] = useState(false);
 
   // Preview mode bypass - redirect directly to dashboard (no auth needed)
   if (isPreviewMode()) {
     console.log("[AuthLanding] Preview mode detected, redirecting to dashboard");
     return <Navigate to="/dashboard" replace />;
-  }
-
-  // Check if there's an OAuth token in the URL
-  useEffect(() => {
-    const searchParams = new URLSearchParams(location.search);
-    const token = searchParams.get('token');
-    if (token) {
-      console.log("[AuthLanding] OAuth token detected in URL, waiting for OAuthTokenHandler to process");
-      setHasOAuthToken(true);
-      // Give OAuthTokenHandler time to process (it will redirect to /connect-success)
-      // After a short delay, if we're still here, proceed with normal redirect
-      const timer = setTimeout(() => {
-        setHasOAuthToken(false);
-      }, 2000); // 2 seconds should be enough for OAuthTokenHandler to redirect
-      return () => clearTimeout(timer);
-    } else {
-      setHasOAuthToken(false);
-    }
-  }, [location.search]);
-
-  // CRITICAL: Block routing until auth resolves
-  // If OAuth token is being processed, show loading (OAuthTokenHandler will redirect)
-  if (hasOAuthToken) {
-    return <FullPageSkeleton />;
   }
 
   // CRITICAL: Hard gate - block all routing until auth status is resolved

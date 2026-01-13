@@ -4,32 +4,35 @@ import { isNative } from "@/lib/platform";
 
 /**
  * Hook to handle OAuth deep links in native apps.
- * Note: Backend should set HTTP-only cookies instead of returning tokens in URL.
- * This handler is kept for compatibility but tokens in URLs are deprecated.
+ * NOTE: Backend should set HTTP-only cookies during OAuth callback.
+ * This handler only navigates to home - AuthContext will check authentication via /me.
  */
-export function useAuthDeepLink(onToken: (t: string) => void) {
+export function useAuthDeepLink(onDeepLink?: () => void) {
   useEffect(() => {
     if (!isNative) return;
 
     const sub = App.addListener("appUrlOpen", ({ url }) => {
       if (!url) return;
 
-      // capacitor://localhost/auth/callback?token=XYZ
-      // NOTE: Legacy flow - backend should set cookies instead
+      // capacitor://localhost/auth/callback
+      // Backend should have set HTTP-only cookies during OAuth callback
+      // Navigate to home - AuthContext will automatically check authentication via /me
       if (url.includes("/auth/callback")) {
         const parsed = new URL(url);
         const token = parsed.searchParams.get("token");
 
+        // If token is in URL, log a warning (backend should set cookies instead)
         if (token) {
           console.warn('[AuthDeepLink] Token in URL detected - backend should set HTTP-only cookies instead');
-          // CRITICAL: Do NOT use token from URL for authentication
-          // /me endpoint is the ONLY source of truth for authentication
-          // Backend should have set HTTP-only cookies during OAuth callback
-          // If cookies are not set, /me will fail and user will be logged out (correct behavior)
-          // We call onToken callback for logging/cleanup, but do NOT use it for auth
-          onToken(token);
-          // Navigate to home using hash router
-          window.location.hash = "/";
+        }
+
+        // Navigate to home using hash router
+        // AuthContext will automatically check authentication via /me endpoint
+        window.location.hash = "/";
+        
+        // Call optional callback if provided
+        if (onDeepLink) {
+          onDeepLink();
         }
       }
     });
@@ -39,5 +42,5 @@ export function useAuthDeepLink(onToken: (t: string) => void) {
         // Ignore errors during cleanup (stub implementation)
       });
     };
-  }, [onToken]);
+  }, [onDeepLink]);
 }
