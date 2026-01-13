@@ -366,17 +366,20 @@ export async function fetchCurrentUser(): Promise<AuthUser | null> {
       const apiError = error as { status?: number };
       
       // 401 = not authenticated (cookie missing/invalid) - CORRECT behavior
-      // 404 = backend contract violation - /me should NEVER return 404
-      //      Should be 200 (authenticated), 401 (not authenticated), or 500 (server error)
       if (apiError.status === 401) {
         console.log("[Auth] /me returned 401 - user not authenticated (cookie missing/invalid)");
         return null;
       }
       
+      // 404 = backend contract violation - /me should NEVER return 404
+      // Should be 200 (authenticated), 401 (not authenticated), or 500 (server error)
+      // DEFENSIVE FIX: Return null (not authenticated) but don't trigger logout
+      // Backend should be fixed to return 401 instead of 404
       if (apiError.status === 404) {
         console.error(
           "[Auth] /me returned 404 - BACKEND CONTRACT VIOLATION. " +
-          "/me must NEVER return 404. Treating as not authenticated."
+          "/me must NEVER return 404. Backend should return 401 instead. " +
+          "Defensive fix: Returning null (not authenticated) but NOT triggering logout."
         );
         return null;
       }

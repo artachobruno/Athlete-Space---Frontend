@@ -50,14 +50,29 @@ export function useValidateAuth() {
         setIsValid(true);
         setIsValidating(false);
       } catch (error) {
-        // API interceptor converts 404 on /me to 401 (backend contract violation)
-        // 401 = authentication failure (cookie missing/invalid or backend returned 404)
         const apiError = error as { status?: number };
+        
+        // 401 = authentication failure (cookie missing/invalid)
         if (apiError.status === 401) {
           console.log('[Auth] /me returned 401 - not authenticated, redirecting to login');
           setIsValid(false);
           setIsValidating(false);
           navigate('/login', { replace: true });
+          return;
+        }
+        
+        // 404 = backend contract violation - /me should NEVER return 404
+        // DEFENSIVE FIX: Don't logout on 404, treat as temporary issue
+        // Backend should be fixed to return 401 instead of 404
+        if (apiError.status === 404) {
+          console.error(
+            '[Auth] /me returned 404 - BACKEND CONTRACT VIOLATION. ' +
+            'Defensive fix: NOT redirecting to login. Backend should return 401 instead of 404.'
+          );
+          // Treat as valid to avoid false logout
+          // User might still be authenticated, backend just has a bug
+          setIsValid(true);
+          setIsValidating(false);
           return;
         }
         

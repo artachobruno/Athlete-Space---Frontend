@@ -2929,22 +2929,22 @@ api.interceptors.response.use(
     const requestUrl = error?.config?.url || '';
     const isMeEndpoint = requestUrl === '/me' || requestUrl.endsWith('/me');
     
-    // CRITICAL: Treat 404 on /me as 401 (not authenticated)
-    // Backend contract violation: /me MUST NEVER return 404 for authenticated sessions
+    // CRITICAL: Backend contract violation - /me MUST NEVER return 404
     // 404 on /me means either:
     // 1. Endpoint doesn't exist (backend deployment issue)
     // 2. User doesn't exist (authentication failure)
     // 3. Backend error that should return 500, not 404
-    // Frontend correctly treats this as "not authenticated"
+    // DEFENSIVE FIX: Log the violation but do NOT trigger logout
+    // The backend should be fixed to return 401 instead of 404
     if (normalizedError.status === 404 && isMeEndpoint) {
       console.error(
         "[API] /me returned 404 - BACKEND CONTRACT VIOLATION. " +
         "/me must NEVER return 404. It should return 200 (authenticated), 401 (not authenticated), or 500 (server error). " +
-        "Treating 404 as not authenticated and triggering logout."
+        "Defensive fix: NOT triggering logout. Backend should be fixed to return 401 instead of 404."
       );
-      // Convert 404 to 401 behavior for /me endpoint
-      normalizedError.status = 401;
-      normalizedError.message = "Authentication required. Please log in.";
+      // Do NOT convert to 401 - let 404 pass through
+      // fetchCurrentUser() will handle 404 by returning null (user not authenticated)
+      // This prevents false logouts when backend incorrectly returns 404
     }
     
     // Handle 401: Trigger logout event
