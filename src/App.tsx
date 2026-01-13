@@ -9,6 +9,7 @@ import { RequireAuth } from "@/components/auth/RequireAuth";
 import { AuthLanding, PublicOnly } from "@/components/auth/AuthRedirects";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { useSyncActivities } from "@/hooks/useSyncActivities";
+import { useTimezoneSync } from "@/hooks/useTimezoneSync";
 import { useValidateAuth } from "@/hooks/useValidateAuth";
 import { auth } from "@/lib/auth";
 import { useEffect } from "react";
@@ -245,6 +246,9 @@ const AppContent = () => {
   // Only sync activities when auth is ready and user is authenticated
   // This prevents race conditions
   useSyncActivities();
+  
+  // Sync timezone to backend after authentication (once per session)
+  useTimezoneSync();
   
   // Capacitor requires HashRouter on native platforms
   const Router = isNative ? HashRouter : BrowserRouter;

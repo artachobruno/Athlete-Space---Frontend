@@ -13,6 +13,7 @@ export type AuthUser = {
   onboarding_complete: boolean;
   strava_connected: boolean;
   role?: 'athlete' | 'coach'; // User role for dashboard routing
+  timezone?: string; // IANA timezone string (e.g., "America/Chicago")
 };
 
 const TOKEN_KEY = "auth_token";
@@ -371,7 +372,7 @@ export async function fetchCurrentUser(): Promise<AuthUser | null> {
       // Backend may return minimal response: {"user_id": "...", "authenticated": true}
       // Or full UserOut: {"id": "...", "email": "...", "onboarding_complete": true, "strava_connected": true}
       // Transform it to match expected AuthUser shape
-      const backendResponse = response as { user_id?: string; id?: string; authenticated?: boolean; email?: string | null; onboarding_complete?: boolean; strava_connected?: boolean };
+      const backendResponse = response as { user_id?: string; id?: string; authenticated?: boolean; email?: string | null; onboarding_complete?: boolean; strava_connected?: boolean; timezone?: string };
       
       console.log("[Auth] Parsed backend response:", backendResponse);
       
@@ -397,6 +398,7 @@ export async function fetchCurrentUser(): Promise<AuthUser | null> {
         onboarding_complete: backendResponse.onboarding_complete ?? false,
         strava_connected: backendResponse.strava_connected ?? false,
         role: (backendResponse as { role?: 'athlete' | 'coach' }).role,
+        timezone: backendResponse.timezone || "UTC",
       };
       
       console.log("[Auth] Created user profile:", userProfile);

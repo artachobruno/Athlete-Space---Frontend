@@ -89,6 +89,20 @@ export async function updateProfile(
   });
 }
 
+/**
+ * PATCH /users/me
+ * Updates user settings (e.g., timezone).
+ */
+export async function updateUserSettings(data: { timezone?: string }): Promise<unknown | null> {
+  return safeCall(async () => {
+    const response = await api.patch("/users/me", data);
+    if (!response || typeof response !== 'object') {
+      return null;
+    }
+    return response;
+  });
+}
+
 // ============================================================================
 // TRAINING PREFERENCES
 // ============================================================================

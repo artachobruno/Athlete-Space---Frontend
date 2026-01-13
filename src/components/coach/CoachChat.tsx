@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Send, Brain, User } from 'lucide-react';
+import { Send, Brain, User, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { sendCoachChat, type PlanItem } from '@/lib/api';
 import { generateCoachGreeting } from '@/lib/coachGreeting';
@@ -12,6 +12,7 @@ import { RunnerProcessingIndicator } from './RunnerProcessingIndicator';
 import { usePlanningProgressStore } from '@/store/planningProgressStore';
 import { PlanningProgressPanel } from '@/components/planning/PlanningProgressPanel';
 import { useQueryClient } from '@tanstack/react-query';
+import { fetchConversationMessages, type ConversationMessage } from '@/lib/api/coach';
 
 type CoachMode = 'idle' | 'awaiting_intent' | 'planning' | 'executing' | 'done';
 
@@ -22,10 +23,17 @@ interface Message {
   content: string;
   timestamp: Date;
   progress_stage?: string;
+  stage?: string; // Backend stage field (STRUCTURE, WEEKS, WEEK_DETAIL, INSTRUCTIONS, DONE)
   show_plan?: boolean;
   plan_items?: PlanItem[];
   response_type?: 'plan' | 'weekly_plan' | 'season_plan' | 'session_plan' | 'recommendation' | 'summary' | 'greeting' | 'question' | 'explanation' | 'smalltalk';
   transient?: boolean;
+  message_type?: 'assistant' | 'progress' | 'final';
+  metadata?: {
+    week_number?: number | string;
+    total_weeks?: number | string;
+    [key: string]: unknown;
+  };
 }
 
 /**
@@ -86,23 +94,65 @@ export function CoachChat() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Only run on mount
 
-  // FE-3: Poll for plan updates when show_plan is true but plan_items is missing
+  /**
+   * Converts backend ConversationMessage to frontend Message format
+   */
+  const convertBackendMessage = (msg: ConversationMessage): Message => {
+    return {
+      id: msg.id,
+      type: msg.message_type === 'final' ? 'final' : msg.message_type === 'progress' ? 'progress' : 'assistant',
+      role: msg.role === 'user' ? 'athlete' : 'coach',
+      content: msg.content,
+      timestamp: new Date(msg.created_at),
+      stage: msg.stage,
+      progress_stage: msg.stage, // Keep for backward compatibility
+      transient: msg.transient === true,
+      show_plan: msg.show_plan === true,
+      plan_items: msg.plan_items,
+      message_type: msg.message_type,
+      metadata: msg.metadata,
+    };
+  };
+
+  /**
+   * Replaces transient messages by stage - same stage overwrites previous message
+   */
+  const replaceTransientByStage = (newMessage: Message, currentMessages: Message[]): Message[] => {
+    if (!newMessage.transient || !newMessage.stage) {
+      // Non-transient or no stage - just append
+      return [...currentMessages, newMessage];
+    }
+
+    // Find and replace message with same stage
+    const updated = [...currentMessages];
+    const existingIndex = updated.findIndex(
+      msg => msg.transient === true && msg.stage === newMessage.stage
+    );
+
+    if (existingIndex >= 0) {
+      updated[existingIndex] = newMessage;
+    } else {
+      updated.push(newMessage);
+    }
+
+    return updated;
+  };
+
+  // Poll for conversation messages while in executing mode
   useEffect(() => {
     if (!conversationId) return;
+    if (mode !== 'executing') return;
     
-    // Check if we have a message with show_plan=true but no plan_items
-    const needsPolling = messages.some(
-      msg => msg.role === 'coach' && 
-             msg.show_plan === true && 
-             (!msg.plan_items || msg.plan_items.length === 0)
-    );
+    // Check if we have a final message - stop polling
+    const hasFinalMessage = messages.some(msg => msg.message_type === 'final');
+    if (hasFinalMessage) return;
     
-    if (!needsPolling || (mode !== 'executing' && mode !== 'done')) return;
+    // Poll while executing - backend may be emitting transient progress messages
     
     let pollCount = 0;
-    const maxPolls = 15; // Poll for max 30 seconds (15 * 2s)
+    const maxPolls = 60; // Poll for max 2 minutes (60 * 2s)
     
-    // Poll every 2 seconds to check for plan updates
+    // Poll every 1-2 seconds for messages
     const intervalId = setInterval(async () => {
       pollCount++;
       
@@ -112,38 +162,47 @@ export function CoachChat() {
       }
       
       try {
-        // Send a minimal status check - backend should return plan if ready
-        const response = await sendCoachChat("show plan", { message_id: crypto.randomUUID() });
+        const backendMessages = await fetchConversationMessages(conversationId);
         
-        if (response.show_plan === true && response.plan_items && response.plan_items.length > 0) {
-          // Update the most recent message with show_plan=true but no plan_items
-          setMessages(prev => {
-            const updated = [...prev];
-            // Find the last coach message with show_plan=true but no plan_items
-            for (let i = updated.length - 1; i >= 0; i--) {
-              const msg = updated[i];
-              if (msg.role === 'coach' && msg.show_plan === true && (!msg.plan_items || msg.plan_items.length === 0)) {
-                updated[i] = {
-                  ...msg,
-                  plan_items: response.plan_items,
-                };
-                break;
-              }
-            }
-            return updated;
-          });
+        // Convert and merge messages
+        setMessages(prev => {
+          // Process all backend messages
+          let updated = [...prev];
           
-          // Stop polling once we have the plan
+          for (const backendMsg of backendMessages) {
+            const frontendMsg = convertBackendMessage(backendMsg);
+            
+            // Check if we already have this exact message by ID
+            const existingIndexById = updated.findIndex(m => m.id === frontendMsg.id);
+            
+            if (existingIndexById >= 0) {
+              // Update existing message (backend may have updated it)
+              updated[existingIndexById] = frontendMsg;
+            } else if (frontendMsg.transient && frontendMsg.stage) {
+              // Transient message with stage - replace by stage
+              updated = replaceTransientByStage(frontendMsg, updated);
+            } else {
+              // New non-transient message - append
+              updated.push(frontendMsg);
+            }
+          }
+          
+          return updated;
+        });
+        
+        // Check if we got a final message - stop polling
+        const finalMsg = backendMessages.find(msg => msg.message_type === 'final');
+        if (finalMsg) {
           clearInterval(intervalId);
         }
       } catch (error) {
-        console.error('[CoachChat] Failed to poll for plan updates:', error);
+        console.error('[CoachChat] Failed to poll for messages:', error);
         // Continue polling on error, but stop after max attempts
         if (pollCount >= maxPolls) {
           clearInterval(intervalId);
         }
       }
-    }, 2000);
+    }, 2000); // Poll every 2 seconds
     
     return () => {
       clearInterval(intervalId);
@@ -216,37 +275,29 @@ export function CoachChat() {
         setConversationId(response.conversation_id);
       }
       
-      // Handle progress messages
+      // Handle progress messages (transient)
       if (response.message_type === 'progress') {
         // If backend sends progress_stages array, use it
         if (response.progress_stages && response.progress_stages.length > 0) {
           setProgressStages(response.progress_stages);
-        } else if (response.progress_stage) {
-          // OPT1: Deduplication - update existing progress message with same stage
-          setMessages(prev => {
-            const updated = [...prev];
-            const existingIndex = updated.findIndex(
-              msg => msg.type === 'progress' && msg.progress_stage === response.progress_stage
-            );
-            
-            const progressMessage: Message = {
-              id: existingIndex >= 0 ? updated[existingIndex].id : (Date.now() + 1).toString(),
-              type: 'progress',
-              role: 'coach',
-              content: response.reply || response.progress_stage,
-              timestamp: new Date(),
-              progress_stage: response.progress_stage,
-              transient: true,
-            };
-            
-            if (existingIndex >= 0) {
-              updated[existingIndex] = progressMessage;
-            } else {
-              updated.push(progressMessage);
-            }
-            
-            return updated;
-          });
+        }
+        
+        // Handle transient progress message with stage
+        if (response.progress_stage) {
+          const progressMessage: Message = {
+            id: (Date.now() + 1).toString(),
+            type: 'progress',
+            role: 'coach',
+            content: response.reply || response.progress_stage,
+            timestamp: new Date(),
+            progress_stage: response.progress_stage,
+            stage: response.progress_stage, // Use stage for replace-by-stage logic
+            transient: true,
+            message_type: 'progress',
+          };
+          
+          // Use replace-by-stage logic for consistency
+          setMessages(prev => replaceTransientByStage(progressMessage, prev));
         }
       } else if (response.message_type === 'final') {
         // FE3: Collapse progress on final message - remove all transient progress messages
@@ -261,6 +312,7 @@ export function CoachChat() {
             show_plan: response.show_plan === true,
             plan_items: response.show_plan === true && response.plan_items && response.plan_items.length > 0 ? response.plan_items : undefined,
             response_type: response.response_type,
+            message_type: 'final',
           };
           // Clear progress stages when final message arrives
           setProgressStages([]);
@@ -277,6 +329,7 @@ export function CoachChat() {
           show_plan: response.show_plan === true,
           plan_items: response.show_plan === true && response.plan_items && response.plan_items.length > 0 ? response.plan_items : undefined,
           response_type: response.response_type,
+          message_type: response.message_type,
         };
         setMessages(prev => [...prev, coachMessage]);
       }
@@ -352,37 +405,29 @@ export function CoachChat() {
         setConversationId(response.conversation_id);
       }
       
-      // Handle progress messages
+      // Handle progress messages (transient)
       if (response.message_type === 'progress') {
         // If backend sends progress_stages array, use it
         if (response.progress_stages && response.progress_stages.length > 0) {
           setProgressStages(response.progress_stages);
-        } else if (response.progress_stage) {
-          // OPT1: Deduplication - update existing progress message with same stage
-          setMessages(prev => {
-            const updated = [...prev];
-            const existingIndex = updated.findIndex(
-              msg => msg.type === 'progress' && msg.progress_stage === response.progress_stage
-            );
-            
-            const progressMessage: Message = {
-              id: existingIndex >= 0 ? updated[existingIndex].id : (Date.now() + 1).toString(),
-              type: 'progress',
-              role: 'coach',
-              content: response.reply || response.progress_stage,
-              timestamp: new Date(),
-              progress_stage: response.progress_stage,
-              transient: true,
-            };
-            
-            if (existingIndex >= 0) {
-              updated[existingIndex] = progressMessage;
-            } else {
-              updated.push(progressMessage);
-            }
-            
-            return updated;
-          });
+        }
+        
+        // Handle transient progress message with stage
+        if (response.progress_stage) {
+          const progressMessage: Message = {
+            id: (Date.now() + 1).toString(),
+            type: 'progress',
+            role: 'coach',
+            content: response.reply || response.progress_stage,
+            timestamp: new Date(),
+            progress_stage: response.progress_stage,
+            stage: response.progress_stage, // Use stage for replace-by-stage logic
+            transient: true,
+            message_type: 'progress',
+          };
+          
+          // Use replace-by-stage logic for consistency
+          setMessages(prev => replaceTransientByStage(progressMessage, prev));
         }
       } else if (response.message_type === 'final') {
         // TODO 2: Store final plan in ref and persist in messages WITHOUT ending execution
@@ -395,6 +440,7 @@ export function CoachChat() {
           show_plan: response.show_plan === true,
           plan_items: response.show_plan === true && response.plan_items && response.plan_items.length > 0 ? response.plan_items : undefined,
           response_type: response.response_type,
+          message_type: 'final',
         };
 
         // Store in ref for later use in handleProgressComplete
@@ -418,6 +464,7 @@ export function CoachChat() {
           show_plan: response.show_plan === true,
           plan_items: response.show_plan === true && response.plan_items && response.plan_items.length > 0 ? response.plan_items : undefined,
           response_type: response.response_type,
+          message_type: response.message_type,
         };
         setMessages(prev => [...prev, coachResponse]);
         
@@ -520,57 +567,78 @@ export function CoachChat() {
           const progressMessages = messages.filter(msg => msg.type === 'progress');
           const hasFinalMessage = messages.some(msg => msg.type === 'final');
           
-          // FE3: Hide progress when final message arrives
+          // FE3: Hide progress when final message arrives, but still show transient messages
           if (hasFinalMessage) {
-            // Progress is hidden, render regular messages only
+            // Filter out old progress messages, but keep transient messages that are still relevant
             return messages
-              .filter(msg => msg.type !== 'progress')
+              .filter(msg => {
+                // Keep all non-progress messages
+                if (msg.type !== 'progress') return true;
+                // Keep transient messages (they're progress updates)
+                if (msg.transient) return true;
+                return false;
+              })
               .map((message) => (
                 <div key={message.id} className="space-y-2">
-                  <div
-                    className={cn(
-                      'flex gap-3 animate-fade-up',
-                      message.role === 'athlete' && 'flex-row-reverse'
-                    )}
-                  >
-                    <div
-                      className={cn(
-                        'w-8 h-8 rounded-full flex items-center justify-center shrink-0',
-                        message.role === 'coach'
-                          ? 'bg-coach text-coach-foreground'
-                          : 'bg-muted text-muted-foreground'
-                      )}
-                    >
-                      {message.role === 'coach' ? (
-                        <Brain className="h-4 w-4" />
-                      ) : (
-                        <User className="h-4 w-4" />
-                      )}
+                  {message.transient ? (
+                    // Transient message - distinct styling: spinner, muted, italic, no avatar
+                    <div className="flex gap-3 animate-fade-up">
+                      <div className="w-8 h-8 flex items-center justify-center shrink-0">
+                        <Loader2 className="h-4 w-4 text-muted-foreground animate-spin" />
+                      </div>
+                      <div className="max-w-[75%] rounded-lg px-4 py-2.5 bg-muted/30 text-muted-foreground">
+                        <p className="text-sm leading-relaxed italic">{message.content}</p>
+                      </div>
                     </div>
-                    <div
-                      className={cn(
-                        'max-w-[75%] rounded-lg px-4 py-2.5',
-                        message.role === 'coach'
-                          ? 'bg-[#2F4F4F]/10 text-foreground'
-                          : 'bg-accent text-accent-foreground'
-                      )}
-                    >
-                      <p className="text-sm leading-relaxed">{message.content}</p>
-                    </div>
-                  </div>
-                  {/* Plan List - rendered inline with coach message that produced it */}
-                  {message.role === 'coach' &&
-                    message.show_plan === true &&
-                    message.plan_items &&
-                    (!message.response_type ||
-                      ['plan', 'weekly_plan', 'season_plan', 'session_plan', 'recommendation', 'summary'].includes(message.response_type)) && (
-                      <div className={cn('flex gap-3')}>
-                        <div className="w-8 shrink-0" />
-                        <div className="max-w-[75%]">
-                          <PlanList planItems={message.plan_items} />
+                  ) : (
+                    // Regular message
+                    <>
+                      <div
+                        className={cn(
+                          'flex gap-3 animate-fade-up',
+                          message.role === 'athlete' && 'flex-row-reverse'
+                        )}
+                      >
+                        <div
+                          className={cn(
+                            'w-8 h-8 rounded-full flex items-center justify-center shrink-0',
+                            message.role === 'coach'
+                              ? 'bg-coach text-coach-foreground'
+                              : 'bg-muted text-muted-foreground'
+                          )}
+                        >
+                          {message.role === 'coach' ? (
+                            <Brain className="h-4 w-4" />
+                          ) : (
+                            <User className="h-4 w-4" />
+                          )}
+                        </div>
+                        <div
+                          className={cn(
+                            'max-w-[75%] rounded-lg px-4 py-2.5',
+                            message.role === 'coach'
+                              ? 'bg-[#2F4F4F]/10 text-foreground'
+                              : 'bg-accent text-accent-foreground'
+                          )}
+                        >
+                          <p className="text-sm leading-relaxed">{message.content}</p>
                         </div>
                       </div>
-                    )}
+                      {/* Plan List - rendered inline with coach message that produced it */}
+                      {message.role === 'coach' &&
+                        message.show_plan === true &&
+                        message.plan_items &&
+                        (!message.response_type ||
+                          ['plan', 'weekly_plan', 'season_plan', 'session_plan', 'recommendation', 'summary'].includes(message.response_type)) && (
+                          <div className={cn('flex gap-3')}>
+                            <div className="w-8 shrink-0" />
+                            <div className="max-w-[75%]">
+                              <PlanList planItems={message.plan_items} />
+                            </div>
+                          </div>
+                        )}
+                    </>
+                  )}
                 </div>
               ));
           }
@@ -605,7 +673,8 @@ export function CoachChat() {
             });
           }
           
-          // Render progress checklist and regular messages
+          // Render progress checklist and regular messages (including transient)
+          // DO NOT filter out transient messages - they must be rendered
           const regularMessages = messages.filter(msg => msg.type !== 'progress' && msg.type !== 'final');
           
           return (
@@ -613,50 +682,65 @@ export function CoachChat() {
               {stages.length > 0 && <CoachProgressList stages={stages} />}
               {regularMessages.map((message) => (
                 <div key={message.id} className="space-y-2">
-                  <div
-                    className={cn(
-                      'flex gap-3 animate-fade-up',
-                      message.role === 'athlete' && 'flex-row-reverse'
-                    )}
-                  >
-                    <div
-                      className={cn(
-                        'w-8 h-8 rounded-full flex items-center justify-center shrink-0',
-                        message.role === 'coach'
-                          ? 'bg-coach text-coach-foreground'
-                          : 'bg-muted text-muted-foreground'
-                      )}
-                    >
-                      {message.role === 'coach' ? (
-                        <Brain className="h-4 w-4" />
-                      ) : (
-                        <User className="h-4 w-4" />
-                      )}
+                  {message.transient ? (
+                    // Transient message - distinct styling: spinner, muted, italic, no avatar
+                    <div className="flex gap-3 animate-fade-up">
+                      <div className="w-8 h-8 flex items-center justify-center shrink-0">
+                        <Loader2 className="h-4 w-4 text-muted-foreground animate-spin" />
+                      </div>
+                      <div className="max-w-[75%] rounded-lg px-4 py-2.5 bg-muted/30 text-muted-foreground">
+                        <p className="text-sm leading-relaxed italic">{message.content}</p>
+                      </div>
                     </div>
-                    <div
-                      className={cn(
-                        'max-w-[75%] rounded-lg px-4 py-2.5',
-                        message.role === 'coach'
-                          ? 'bg-[#2F4F4F]/10 text-foreground'
-                          : 'bg-accent text-accent-foreground'
-                      )}
-                    >
-                      <p className="text-sm leading-relaxed">{message.content}</p>
-                    </div>
-                  </div>
-                  {/* Plan List - rendered inline with coach message that produced it */}
-                  {message.role === 'coach' &&
-                    message.show_plan === true &&
-                    message.plan_items &&
-                    (!message.response_type ||
-                      ['plan', 'weekly_plan', 'season_plan', 'session_plan', 'recommendation', 'summary'].includes(message.response_type)) && (
-                      <div className={cn('flex gap-3')}>
-                        <div className="w-8 shrink-0" />
-                        <div className="max-w-[75%]">
-                          <PlanList planItems={message.plan_items} />
+                  ) : (
+                    // Regular message
+                    <>
+                      <div
+                        className={cn(
+                          'flex gap-3 animate-fade-up',
+                          message.role === 'athlete' && 'flex-row-reverse'
+                        )}
+                      >
+                        <div
+                          className={cn(
+                            'w-8 h-8 rounded-full flex items-center justify-center shrink-0',
+                            message.role === 'coach'
+                              ? 'bg-coach text-coach-foreground'
+                              : 'bg-muted text-muted-foreground'
+                          )}
+                        >
+                          {message.role === 'coach' ? (
+                            <Brain className="h-4 w-4" />
+                          ) : (
+                            <User className="h-4 w-4" />
+                          )}
+                        </div>
+                        <div
+                          className={cn(
+                            'max-w-[75%] rounded-lg px-4 py-2.5',
+                            message.role === 'coach'
+                              ? 'bg-[#2F4F4F]/10 text-foreground'
+                              : 'bg-accent text-accent-foreground'
+                          )}
+                        >
+                          <p className="text-sm leading-relaxed">{message.content}</p>
                         </div>
                       </div>
-                    )}
+                      {/* Plan List - rendered inline with coach message that produced it */}
+                      {message.role === 'coach' &&
+                        message.show_plan === true &&
+                        message.plan_items &&
+                        (!message.response_type ||
+                          ['plan', 'weekly_plan', 'season_plan', 'session_plan', 'recommendation', 'summary'].includes(message.response_type)) && (
+                          <div className={cn('flex gap-3')}>
+                            <div className="w-8 shrink-0" />
+                            <div className="max-w-[75%]">
+                              <PlanList planItems={message.plan_items} />
+                            </div>
+                          </div>
+                        )}
+                    </>
+                  )}
                 </div>
               ))}
             </>

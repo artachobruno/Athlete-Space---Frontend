@@ -52,6 +52,7 @@ export const UserOutSchema = z.object({
   email: z.string().nullable(),
   onboarding_complete: z.boolean(),
   strava_connected: z.boolean(),
+  timezone: z.string().optional(), // IANA timezone string (e.g., "America/Chicago")
   // Add other fields from /me endpoint as needed
 });
 
