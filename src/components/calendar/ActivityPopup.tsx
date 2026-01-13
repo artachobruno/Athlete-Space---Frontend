@@ -1,20 +1,21 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Footprints, Bike, Waves, Clock, Route, Mountain, Heart, Zap, MessageCircle, CheckCircle2, ExternalLink, X, SkipForward, TrendingUp, Info } from 'lucide-react';
+import { Footprints, Bike, Waves, Clock, Route, Mountain, Heart, Zap, MessageCircle, CheckCircle2, ExternalLink, X, SkipForward, TrendingUp, Info, Download, Loader2 } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import { useNavigate } from 'react-router-dom';
 import type { PlannedWorkout, CompletedActivity } from '@/types';
 import { useUnitSystem } from '@/hooks/useUnitSystem';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { fetchTrainingLoad, type CalendarSession, type ProposalOnlyResponse } from '@/lib/api';
+import { fetchTrainingLoad, type CalendarSession, type ProposalOnlyResponse, getStructuredWorkout, exportWorkoutToFIT } from '@/lib/api';
 import { useMemo, useState } from 'react';
 import { getTssForDate, enrichActivitiesWithTss } from '@/lib/tss-utils';
 import { toast } from '@/hooks/use-toast';
 import { ConfirmationDialog } from '@/components/confirmation/ConfirmationDialog';
 import { checkForProposalResponse } from '@/lib/confirmation-handler';
 import { useUpdateSessionStatus } from '@/hooks/useCalendarMutations';
+import { useAuthenticatedQuery } from '@/hooks/useAuthenticatedQuery';
 
 interface ActivityPopupProps {
   open: boolean;
@@ -69,9 +70,54 @@ export function ActivityPopup({
   const workout = plannedWorkout;
   const activity = completedActivity;
   const SportIcon = sportIcons[workout?.sport || activity?.sport || 'running'];
+  const [isExporting, setIsExporting] = useState(false);
   
   // FE-3: Remove invalid filters - check if this is a session that can be updated
   const isPlannedSession = session && session.status !== 'completed' && session.status !== 'cancelled' && session.status !== 'skipped' && !activity;
+
+  // Fetch structured workout data if session exists
+  const { data: structuredWorkout } = useAuthenticatedQuery({
+    queryKey: ['structuredWorkout', session?.id],
+    queryFn: () => {
+      if (!session?.id) throw new Error('No session ID');
+      return getStructuredWorkout(session.id);
+    },
+    enabled: !!session?.id && open,
+    retry: 1,
+  });
+
+  const canExport = structuredWorkout && structuredWorkout.parse_status === 'success' && structuredWorkout.workout;
+
+  const handleExportFIT = async () => {
+    if (!session?.id || !canExport) return;
+
+    setIsExporting(true);
+    try {
+      const blob = await exportWorkoutToFIT(session.id);
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `workout-${session.id}.fit`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+
+      toast({
+        title: 'Workout exported',
+        description: 'Garmin FIT file downloaded successfully',
+      });
+    } catch (error) {
+      console.error('Failed to export workout:', error);
+      toast({
+        title: 'Export failed',
+        description: 'Failed to export workout to Garmin FIT format',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsExporting(false);
+    }
+  };
   
   // Parse and convert pace string (format: "X min/km")
   const formatPace = (paceString?: string): string | undefined => {
@@ -494,6 +540,26 @@ export function ActivityPopup({
                 <MessageCircle className="h-4 w-4 mr-2" />
                 Ask Coach
               </Button>
+              {canExport && (
+                <Button
+                  variant="outline"
+                  className="flex-1"
+                  onClick={handleExportFIT}
+                  disabled={isExporting}
+                >
+                  {isExporting ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Exporting...
+                    </>
+                  ) : (
+                    <>
+                      <Download className="h-4 w-4 mr-2" />
+                      Export FIT
+                    </>
+                  )}
+                </Button>
+              )}
               {activity && (
                 <Button
                   variant="default"

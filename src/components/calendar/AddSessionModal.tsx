@@ -1,15 +1,19 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { Loader2 } from 'lucide-react';
+import { Loader2, CheckCircle2, AlertTriangle, RefreshCw } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { useUnitSystem } from '@/hooks/useUnitSystem';
 import { format } from 'date-fns';
 import { useCreatePlannedSession } from '@/hooks/useCalendarMutations';
+import { parseWorkoutNotes, type ParsedWorkout } from '@/lib/api';
+import { useDebounce } from '@/hooks/useDebounce';
+import { Alert, AlertDescription } from '@/components/ui/alert';
+import { ParsedWorkoutPreview } from './ParsedWorkoutPreview';
 
 interface AddSessionModalProps {
   open: boolean;
@@ -27,9 +31,69 @@ export function AddSessionModal({ open, onOpenChange, initialDate, onSuccess }: 
   const [durationMinutes, setDurationMinutes] = useState<string>('');
   const [notes, setNotes] = useState<string>('');
   const [error, setError] = useState<string | null>(null);
+  const [parsingStatus, setParsingStatus] = useState<'idle' | 'parsing' | 'success' | 'warning' | 'failed'>('idle');
+  const [parsedWorkout, setParsedWorkout] = useState<ParsedWorkout | null>(null);
+  const [isParsing, setIsParsing] = useState(false);
 
   // Get distance unit label based on user's unit system
   const distanceUnit = unitSystem === 'imperial' ? 'mi' : 'km';
+
+  // Debounce notes for parsing
+  const debouncedNotes = useDebounce(notes, 1000);
+
+  // Parse notes when they change (only if type is set and notes are not empty)
+  useEffect(() => {
+    if (!type || type === 'rest' || !debouncedNotes.trim()) {
+      setParsingStatus('idle');
+      setParsedWorkout(null);
+      return;
+    }
+
+    const parseNotes = async () => {
+      setIsParsing(true);
+      setParsingStatus('parsing');
+      
+      try {
+        // Convert distance for parsing
+        let distanceKm: number | null = null;
+        if (distanceInput) {
+          const distanceValue = parseFloat(distanceInput);
+          if (!isNaN(distanceValue) && distanceValue > 0) {
+            if (unitSystem === 'imperial') {
+              distanceKm = distanceValue / 0.621371;
+            } else {
+              distanceKm = distanceValue;
+            }
+          }
+        }
+
+        const duration = durationMinutes ? parseInt(durationMinutes, 10) : null;
+        const result = await parseWorkoutNotes(
+          debouncedNotes,
+          type as 'easy' | 'workout' | 'long' | 'rest',
+          distanceKm,
+          duration && !isNaN(duration) && duration > 0 ? duration : null
+        );
+
+        setParsedWorkout(result);
+        if (result.success) {
+          setParsingStatus('success');
+        } else if (result.error) {
+          setParsingStatus('warning');
+        } else {
+          setParsingStatus('failed');
+        }
+      } catch (err) {
+        console.error('Failed to parse notes:', err);
+        setParsingStatus('failed');
+        setParsedWorkout(null);
+      } finally {
+        setIsParsing(false);
+      }
+    };
+
+    parseNotes();
+  }, [debouncedNotes, type, distanceInput, durationMinutes, unitSystem]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -252,6 +316,136 @@ export function AddSessionModal({ open, onOpenChange, initialDate, onSuccess }: 
               placeholder="Add any additional notes..."
               rows={3}
             />
+            <div className="text-xs text-muted-foreground space-y-1">
+              <p className="font-medium">Examples:</p>
+              <ul className="list-disc list-inside space-y-0.5 ml-2">
+                <li>3 miles warm up, 4x1 mile lt2 with 1 mile flow</li>
+                <li>10 min easy, 3x5 min threshold with 2 min recovery</li>
+                <li>20 min warmup, 2x20 min sweet spot, 10 min cooldown</li>
+              </ul>
+            </div>
+
+            {/* Parsing Status Indicator */}
+            {type && type !== 'rest' && notes.trim() && (
+              <div className="mt-2">
+                {isParsing ? (
+                  <Alert>
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    <AlertDescription>Parsing workout notes...</AlertDescription>
+                  </Alert>
+                ) : parsingStatus === 'success' && parsedWorkout?.workout ? (
+                  <Alert className="border-green-200 bg-green-50">
+                    <CheckCircle2 className="h-4 w-4 text-green-600" />
+                    <AlertDescription className="text-green-800">
+                      Structured workout created successfully
+                    </AlertDescription>
+                  </Alert>
+                ) : parsingStatus === 'warning' && parsedWorkout?.error ? (
+                  <Alert className="border-yellow-200 bg-yellow-50">
+                    <AlertTriangle className="h-4 w-4 text-yellow-600" />
+                    <AlertDescription className="text-yellow-800">
+                      {parsedWorkout.error}
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="ml-2 h-6 text-xs"
+                        onClick={async () => {
+                          setIsParsing(true);
+                          setParsingStatus('parsing');
+                          try {
+                            let distanceKm: number | null = null;
+                            if (distanceInput) {
+                              const distanceValue = parseFloat(distanceInput);
+                              if (!isNaN(distanceValue) && distanceValue > 0) {
+                                if (unitSystem === 'imperial') {
+                                  distanceKm = distanceValue / 0.621371;
+                                } else {
+                                  distanceKm = distanceValue;
+                                }
+                              }
+                            }
+                            const duration = durationMinutes ? parseInt(durationMinutes, 10) : null;
+                            const result = await parseWorkoutNotes(
+                              notes,
+                              type as 'easy' | 'workout' | 'long' | 'rest',
+                              distanceKm,
+                              duration && !isNaN(duration) && duration > 0 ? duration : null
+                            );
+                            setParsedWorkout(result);
+                            if (result.success) {
+                              setParsingStatus('success');
+                            } else {
+                              setParsingStatus('warning');
+                            }
+                          } catch (err) {
+                            setParsingStatus('failed');
+                          } finally {
+                            setIsParsing(false);
+                          }
+                        }}
+                      >
+                        <RefreshCw className="h-3 w-3 mr-1" />
+                        Retry
+                      </Button>
+                    </AlertDescription>
+                  </Alert>
+                ) : parsingStatus === 'failed' ? (
+                  <Alert className="border-red-200 bg-red-50">
+                    <AlertTriangle className="h-4 w-4 text-red-600" />
+                    <AlertDescription className="text-red-800">
+                      Notes could not be parsed
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="ml-2 h-6 text-xs"
+                        onClick={async () => {
+                          setIsParsing(true);
+                          setParsingStatus('parsing');
+                          try {
+                            let distanceKm: number | null = null;
+                            if (distanceInput) {
+                              const distanceValue = parseFloat(distanceInput);
+                              if (!isNaN(distanceValue) && distanceValue > 0) {
+                                if (unitSystem === 'imperial') {
+                                  distanceKm = distanceValue / 0.621371;
+                                } else {
+                                  distanceKm = distanceValue;
+                                }
+                              }
+                            }
+                            const duration = durationMinutes ? parseInt(durationMinutes, 10) : null;
+                            const result = await parseWorkoutNotes(
+                              notes,
+                              type as 'easy' | 'workout' | 'long' | 'rest',
+                              distanceKm,
+                              duration && !isNaN(duration) && duration > 0 ? duration : null
+                            );
+                            setParsedWorkout(result);
+                            if (result.success) {
+                              setParsingStatus('success');
+                            } else {
+                              setParsingStatus('warning');
+                            }
+                          } catch (err) {
+                            setParsingStatus('failed');
+                          } finally {
+                            setIsParsing(false);
+                          }
+                        }}
+                      >
+                        <RefreshCw className="h-3 w-3 mr-1" />
+                        Retry
+                      </Button>
+                    </AlertDescription>
+                  </Alert>
+                ) : null}
+              </div>
+            )}
+
+            {/* Workout Step Visualization */}
+            {parsingStatus === 'success' && parsedWorkout && parsedWorkout.workout && (
+              <ParsedWorkoutPreview parsedWorkout={parsedWorkout} />
+            )}
           </div>
 
           {error && (

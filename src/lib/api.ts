@@ -2103,6 +2103,118 @@ export const createManualSeason = async (sessions: Array<{
 };
 
 /**
+ * Parses workout notes into structured workout format.
+ * @param notes - Free-form workout notes text
+ * @param sessionType - Session type (easy, workout, long, rest)
+ * @param distanceKm - Optional distance in km
+ * @param durationMinutes - Optional duration in minutes
+ * @returns Structured workout with steps, repeats, and intensities
+ */
+export interface ParsedWorkout {
+  success: boolean;
+  workout?: {
+    steps: Array<{
+      order: number;
+      type: string;
+      duration_seconds?: number;
+      distance_meters?: number;
+      intensity?: string;
+      notes?: string;
+    }>;
+    repeats?: Array<{
+      start_step: number;
+      end_step: number;
+      count: number;
+    }>;
+    total_duration_seconds?: number;
+    total_distance_meters?: number;
+  };
+  error?: string;
+  confidence?: number;
+}
+
+export const parseWorkoutNotes = async (
+  notes: string,
+  sessionType: 'easy' | 'workout' | 'long' | 'rest',
+  distanceKm?: number | null,
+  durationMinutes?: number | null
+): Promise<ParsedWorkout> => {
+  console.log("[API] Parsing workout notes:", { notes, sessionType, distanceKm, durationMinutes });
+  try {
+    const response = await api.post("/training/sessions/parse-notes", {
+      notes,
+      session_type: sessionType,
+      distance_km: distanceKm,
+      duration_minutes: durationMinutes,
+    });
+    return response as unknown as ParsedWorkout;
+  } catch (error) {
+    console.error("[API] Failed to parse workout notes:", error);
+    throw error;
+  }
+};
+
+/**
+ * Exports a structured workout to Garmin FIT format.
+ * @param sessionId - The ID of the session to export
+ * @returns Blob containing the FIT file
+ */
+export const exportWorkoutToFIT = async (sessionId: string): Promise<Blob> => {
+  console.log("[API] Exporting workout to FIT:", sessionId);
+  try {
+    const response = await api.get(`/training/sessions/${sessionId}/export/fit`, {
+      responseType: 'blob',
+    });
+    return response as unknown as Blob;
+  } catch (error) {
+    console.error("[API] Failed to export workout to FIT:", error);
+    throw error;
+  }
+};
+
+/**
+ * Gets structured workout data for a session (including parsed steps and graph time series).
+ * @param sessionId - The ID of the session
+ * @returns Structured workout with steps and time series data
+ */
+export interface StructuredWorkoutResponse {
+  session_id: string;
+  workout?: {
+    steps: Array<{
+      order: number;
+      type: string;
+      duration_seconds?: number;
+      distance_meters?: number;
+      intensity?: string;
+      notes?: string;
+    }>;
+    repeats?: Array<{
+      start_step: number;
+      end_step: number;
+      count: number;
+    }>;
+  };
+  time_series?: {
+    time: number[];
+    intensity: (string | null)[];
+    distance?: number[];
+  };
+  parse_status: 'success' | 'warning' | 'failed';
+  parse_error?: string;
+}
+
+export const getStructuredWorkout = async (sessionId: string): Promise<StructuredWorkoutResponse> => {
+  console.log("[API] Fetching structured workout:", sessionId);
+  try {
+    const response = await api.get(`/training/sessions/${sessionId}/structured`);
+    return response as unknown as StructuredWorkoutResponse;
+  } catch (error) {
+    console.error("[API] Failed to fetch structured workout:", error);
+    throw error;
+  }
+};
+
+/**
  * Updates the status of a calendar session.
  * @param sessionId - The ID of the session to update
  * @param status - The new status: "completed", "skipped", "cancelled", or "planned"
