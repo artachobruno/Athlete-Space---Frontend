@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { useQuery } from '@tanstack/react-query';
 import { fetchCalendarSeason, fetchCalendarWeek, type CalendarSession } from '@/lib/api';
-import { startOfWeek, format, isWithinInterval, endOfWeek } from 'date-fns';
+import { startOfWeek, format, isWithinInterval, endOfWeek, isBefore, startOfDay, parseISO } from 'date-fns';
 import { CheckCircle2, Clock, TrendingUp, AlertCircle, Target } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -49,8 +49,20 @@ export function ComplianceDashboard({
     const sessions = Array.isArray(weekData?.sessions) ? weekData.sessions as CalendarSession[] : [];
     if (sessions.length === 0) return null;
 
-    const planned = sessions.filter(s => s?.status === 'planned' || s?.status === 'completed');
-    const completed = sessions.filter(s => s?.status === 'completed');
+    const todayStart = startOfDay(currentDate);
+    
+    // Filter sessions up to previous day (exclude today)
+    const sessionsUpToPreviousDay = sessions.filter(s => {
+      if (!s?.date) return false;
+      const sessionDate = parseISO(s.date);
+      return isBefore(sessionDate, todayStart);
+    });
+
+    // Count planned sessions up to previous day
+    const planned = sessionsUpToPreviousDay.filter(s => s?.status === 'planned' || s?.status === 'completed');
+    // Count completed sessions up to previous day
+    const completed = sessionsUpToPreviousDay.filter(s => s?.status === 'completed');
+    // Count skipped and cancelled from all sessions (for display purposes)
     const skipped = sessions.filter(s => s?.status === 'skipped');
     const cancelled = sessions.filter(s => s?.status === 'cancelled');
 
@@ -67,14 +79,26 @@ export function ComplianceDashboard({
       weeklyCompliance: complianceRate,
       missedSessions: planned.length - completed.length,
     };
-  }, [weekData]);
+  }, [weekData, currentDate]);
 
   const seasonStats = useMemo<ComplianceStats | null>(() => {
     const sessions = Array.isArray(seasonData?.sessions) ? seasonData.sessions as CalendarSession[] : [];
     if (sessions.length === 0) return null;
 
-    const planned = sessions.filter(s => s?.status === 'planned' || s?.status === 'completed');
-    const completed = sessions.filter(s => s?.status === 'completed');
+    const todayStart = startOfDay(currentDate);
+    
+    // Filter sessions up to previous day (exclude today)
+    const sessionsUpToPreviousDay = sessions.filter(s => {
+      if (!s?.date) return false;
+      const sessionDate = parseISO(s.date);
+      return isBefore(sessionDate, todayStart);
+    });
+
+    // Count planned sessions up to previous day
+    const planned = sessionsUpToPreviousDay.filter(s => s?.status === 'planned' || s?.status === 'completed');
+    // Count completed sessions up to previous day
+    const completed = sessionsUpToPreviousDay.filter(s => s?.status === 'completed');
+    // Count skipped and cancelled from all sessions (for display purposes)
     const skipped = sessions.filter(s => s?.status === 'skipped');
     const cancelled = sessions.filter(s => s?.status === 'cancelled');
 
@@ -91,7 +115,7 @@ export function ComplianceDashboard({
       weeklyCompliance: 0, // Not applicable for season view
       missedSessions: planned.length - completed.length,
     };
-  }, [seasonData]);
+  }, [seasonData, currentDate]);
 
   const getComplianceColor = (rate: number) => {
     if (rate >= 80) return 'text-load-fresh';

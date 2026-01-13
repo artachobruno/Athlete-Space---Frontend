@@ -72,7 +72,7 @@ export default function AdminAnalytics() {
     try {
       const baseURL = getBaseURL();
       const token = getToken();
-      const endpoint = `${baseURL}/api/admin/sql/query`;
+      const endpoint = `${baseURL}/admin/sql/query`;
       
       console.log('[AdminAnalytics] Executing SQL query:', {
         endpoint,

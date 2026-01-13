@@ -587,7 +587,7 @@ export function WeekView({ currentDate, onActivityClick }: WeekViewProps) {
               <DroppableDayCell key={day.toString()} date={day}>
                 <Card
                   className={cn(
-                    'p-3',
+                    'h-full min-h-[300px] p-3 flex flex-col',
                     isCurrentDay && 'ring-2 ring-accent'
                   )}
                 >
@@ -614,11 +614,13 @@ export function WeekView({ currentDate, onActivityClick }: WeekViewProps) {
             </div>
 
             {/* Workouts */}
-            <div className="space-y-2">
+            <div className="flex-1 flex flex-col space-y-2">
               {planned.length === 0 && completed.length === 0 && (
-                <p className="text-xs text-muted-foreground text-center py-4">
-                  Rest day
-                </p>
+                <div className="flex-1 flex items-center justify-center">
+                  <p className="text-xs text-muted-foreground text-center">
+                    Rest day
+                  </p>
+                </div>
               )}
 
               {planned.map((workout) => {
