@@ -201,8 +201,9 @@ export function MonthView({ currentDate, onActivityClick }: MonthViewProps) {
       return sessionDateStr === dateStr;
     });
     
+    // FE-3: Remove invalid filters - show sessions that aren't explicitly excluded
     // Separate planned and completed sessions
-    const plannedSessions = daySessions.filter(s => s.status === 'planned');
+    const plannedSessions = daySessions.filter(s => s.status !== 'completed' && s.status !== 'cancelled' && s.status !== 'skipped');
     const completedSessions = daySessions.filter(s => s.status === 'completed');
     
     // Map to workout/activity formats with validation

@@ -99,8 +99,8 @@ export function mapIntensityToIntent(intensity: string | null | undefined): Work
 export function mapSessionToWorkout(session: CalendarSession): import('@/types').PlannedWorkout | null {
   if (session.status === 'completed') return null;
   
-  // Validate required fields
-  if (!session.id || !session.date || !session.type) {
+  // FE-8: Defensive rendering - only require id and date
+  if (!session.id || !session.date) {
     console.warn('[mapSessionToWorkout] Invalid session data:', session);
     return null;
   }
@@ -108,12 +108,12 @@ export function mapSessionToWorkout(session: CalendarSession): import('@/types')
   return {
     id: session.id,
     date: session.date,
-    sport: normalizeSportType(session.type),
+    sport: normalizeSportType(session.type ?? 'Run'),
     intent: mapIntensityToIntent(session.intensity),
-    title: session.title || 'Untitled Workout',
-    description: session.notes || '',
-    duration: session.duration_minutes || 0,
-    distance: session.distance_km || undefined,
+    title: session.title ?? 'Run',
+    description: session.notes ?? '',
+    duration: session.duration_minutes ?? 0,
+    distance: session.distance_km ?? undefined,
     completed: false,
   };
 }

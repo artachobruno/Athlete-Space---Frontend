@@ -81,8 +81,8 @@ export function DailyWorkoutList({ currentDate }: DailyWorkoutListProps) {
       const date = addDays(weekStart, i);
       const dateStr = format(date, 'yyyy-MM-dd');
       
-      // Find planned session if weekData is available
-      const session = weekData?.sessions?.find(s => s.date === dateStr && s.status === 'planned');
+      // FE-3: Remove invalid filters - find sessions that aren't explicitly excluded
+      const session = weekData?.sessions?.find(s => s.date === dateStr && s.status !== 'completed' && s.status !== 'cancelled' && s.status !== 'skipped');
       const workout = session ? mapSessionToWorkout(session) : null;
       
       // Find completed activity - use activities even if not in planned sessions

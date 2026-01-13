@@ -247,7 +247,8 @@ export function WeekView({ currentDate, onActivityClick }: WeekViewProps) {
     if (!weekData || !overview) return null;
     
     const sessionsArray = Array.isArray(weekData?.sessions) ? weekData.sessions : [];
-    const plannedSessions = sessionsArray.filter(s => s?.status === 'planned').length;
+    // FE-3: Remove invalid filters - count sessions that aren't explicitly excluded
+    const plannedSessions = sessionsArray.filter(s => s?.status !== 'completed' && s?.status !== 'cancelled' && s?.status !== 'skipped').length;
     const completedSessions = sessionsArray.filter(s => s?.status === 'completed').length;
     
     const ctlData = Array.isArray(overview.metrics.ctl) ? overview.metrics.ctl : [];
@@ -365,12 +366,14 @@ export function WeekView({ currentDate, onActivityClick }: WeekViewProps) {
       }
     }
     
+    // FE-3: Remove invalid filters - show sessions that aren't explicitly excluded
     const plannedSessions = sessionsArray.filter(s => {
       if (!s || typeof s !== 'object') return false;
       // Normalize date strings for comparison (handle timezone issues)
       // Session dates from calendar API may have time components, so format consistently
       const sessionDate = s.date ? format(new Date(s.date), 'yyyy-MM-dd') : '';
-      return sessionDate === dateStr && s.status === 'planned';
+      // Show sessions that aren't completed, cancelled, or skipped (includes planned and null status)
+      return sessionDate === dateStr && s.status !== 'completed' && s.status !== 'cancelled' && s.status !== 'skipped';
     });
     
     const planned = plannedSessions.map(mapSessionToWorkout).filter((w): w is PlannedWorkout => w !== null);

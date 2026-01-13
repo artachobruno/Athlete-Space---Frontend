@@ -45,7 +45,8 @@ export function WeeklyPlanOverview({ currentDate }: WeeklyPlanOverviewProps) {
   }
 
   const sessionsArray = Array.isArray(weekData?.sessions) ? weekData.sessions : [];
-  const plannedSessions = sessionsArray.filter(s => s?.status === 'planned').length;
+  // FE-3: Remove invalid filters - count sessions that aren't explicitly excluded
+  const plannedSessions = sessionsArray.filter(s => s?.status !== 'completed' && s?.status !== 'cancelled' && s?.status !== 'skipped').length;
   const completedSessions = sessionsArray.filter(s => s?.status === 'completed').length;
   const plannedLoad = plannedSessions * 50; // Estimate
   const actualLoad = completedSessions * 50; // Estimate

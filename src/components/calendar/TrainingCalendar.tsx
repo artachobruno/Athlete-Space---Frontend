@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ChevronLeft, ChevronRight, MessageCircle, Download, Plus } from 'lucide-react';
@@ -19,6 +19,23 @@ type ViewType = 'month' | 'week' | 'season';
 
 export function TrainingCalendar() {
   const [currentDate, setCurrentDate] = useState(new Date());
+
+  // FE-1: Check for calendar focus date from plan generation
+  useEffect(() => {
+    const storedDate = localStorage.getItem('calendarFocusDate');
+    if (storedDate) {
+      try {
+        const focusDate = new Date(storedDate);
+        if (!isNaN(focusDate.getTime())) {
+          setCurrentDate(focusDate);
+          localStorage.removeItem('calendarFocusDate'); // Clear after use
+        }
+      } catch (error) {
+        console.error('[TrainingCalendar] Failed to parse calendarFocusDate:', error);
+        localStorage.removeItem('calendarFocusDate');
+      }
+    }
+  }, []);
   const [view, setView] = useState<ViewType>('month');
   const [coachOpen, setCoachOpen] = useState(false);
   const [selectedWorkout, setSelectedWorkout] = useState<string | null>(null);

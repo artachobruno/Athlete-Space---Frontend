@@ -456,6 +456,18 @@ export function CoachChat() {
       if (!alreadyRendered) {
         setMessages(prev => [...prev, finalPlanRef.current!]);
       }
+
+      // FE-1: Store first session date for calendar navigation
+      if (finalPlanRef.current.plan_items && finalPlanRef.current.plan_items.length > 0) {
+        const firstSessionDate = finalPlanRef.current.plan_items
+          .map(item => item.date ? new Date(item.date) : null)
+          .filter((date): date is Date => date !== null)
+          .sort((a, b) => a.getTime() - b.getTime())[0];
+
+        if (firstSessionDate) {
+          localStorage.setItem('calendarFocusDate', firstSessionDate.toISOString());
+        }
+      }
     }
 
     // Add explicit conclusion message

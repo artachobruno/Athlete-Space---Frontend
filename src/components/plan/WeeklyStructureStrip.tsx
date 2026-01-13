@@ -43,7 +43,8 @@ export function WeeklyStructureStrip({ currentDate, onDayClick }: WeeklyStructur
     return Array.from({ length: 7 }, (_, i) => {
       const date = addDays(weekStart, i);
       const dateStr = format(date, 'yyyy-MM-dd');
-      const session = weekData?.sessions?.find(s => s.date === dateStr && s.status === 'planned');
+      // FE-3: Remove invalid filters - find sessions that aren't explicitly excluded
+      const session = weekData?.sessions?.find(s => s.date === dateStr && s.status !== 'completed' && s.status !== 'cancelled' && s.status !== 'skipped');
       const workout = session ? mapSessionToWorkout(session) : null;
       
       return {

@@ -69,8 +69,8 @@ export function ActivityPopup({
   const activity = completedActivity;
   const SportIcon = sportIcons[workout?.sport || activity?.sport || 'running'];
   
-  // Check if this is a planned session that can be updated
-  const isPlannedSession = session?.status === 'planned' && !activity;
+  // FE-3: Remove invalid filters - check if this is a session that can be updated
+  const isPlannedSession = session && session.status !== 'completed' && session.status !== 'cancelled' && session.status !== 'skipped' && !activity;
   
   // Parse and convert pace string (format: "X min/km")
   const formatPace = (paceString?: string): string | undefined => {

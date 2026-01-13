@@ -34,9 +34,9 @@ export function useAutoMatchSessions(enabled: boolean = true) {
         const weekData = await fetchCalendarWeek(weekStartStr);
         const sessions = Array.isArray(weekData?.sessions) ? weekData.sessions : [];
 
-        // Filter to only planned sessions
+        // FE-3: Remove invalid filters - filter sessions that aren't explicitly excluded
         const plannedSessions = sessions.filter(
-          (s: CalendarSession) => s.status === 'planned'
+          (s: CalendarSession) => s.status !== 'completed' && s.status !== 'cancelled' && s.status !== 'skipped'
         ) as CalendarSession[];
 
         if (plannedSessions.length === 0) return;
