@@ -1515,6 +1515,7 @@ export interface CoachChatResponse {
     label: string;
     status: 'completed' | 'in_progress' | 'pending';
   }>;
+  workout_id?: string;
 }
 
 /**

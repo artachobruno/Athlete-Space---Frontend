@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Send, Brain, User, Loader2 } from 'lucide-react';
@@ -53,6 +54,7 @@ const hasPlanIntent = (message: string): boolean => {
 };
 
 export function CoachChat() {
+  const navigate = useNavigate();
   const [mode, setMode] = useState<CoachMode>('idle');
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
@@ -273,6 +275,12 @@ export function CoachChat() {
       // Track conversation ID from response if provided
       if (response.conversation_id) {
         setConversationId(response.conversation_id);
+      }
+      
+      // Navigate to WorkoutDetails if planner returned a workout_id
+      if (response.workout_id) {
+        navigate(`/workout/${response.workout_id}`);
+        return; // Exit early to prevent further message processing
       }
       
       // Handle progress messages (transient)
