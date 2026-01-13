@@ -130,47 +130,10 @@ export function MonthView({ currentDate, onActivityClick }: MonthViewProps) {
       .map(mapSessionToWorkout)
       .filter((w): w is PlannedWorkout => w !== null && w.sport !== undefined);
     
-    // Combine completed activities from both sources (activities API and calendar workouts)
-    // CRITICAL: Training load must come from EXECUTION (activity.trainingLoad or workout_execution.tss)
-    // Never synthesize or hardcode trainingLoad = 0 as a placeholder
-    const completedFromWorkouts = dayData.workouts
-      .map((session) => {
-        // Validate session has required fields
-        if (!session || !session.id || !session.date || !session.type) {
-          console.warn('[MonthView] Invalid session data:', session);
-          return null;
-        }
-        
-        // Try to find a matching CompletedActivity that's paired with this workout
-        // Priority: activity with workout_id matching session.workout_id, or planned_session_id matching session.id
-        const matchingActivity = dayData.completedActivities.find(a => 
-          (session.workout_id && a.workout_id === session.workout_id) ||
-          a.planned_session_id === session.id
-        );
-        
-        // Training load must come from execution data (activity.trainingLoad is the canonical source)
-        // If no matching activity found, we don't have execution data, so we can't provide training load
-        // Note: Type requires number, but semantically this represents missing execution data
-        const trainingLoad = matchingActivity?.trainingLoad ?? 0;
-        
-        const normalizedSport = normalizeSportType(session.type);
-        return {
-          id: session.id,
-          date: session.date,
-          sport: normalizedSport as CompletedActivity['sport'],
-          title: session.title || 'Untitled Activity',
-          duration: session.duration_minutes || 0,
-          distance: session.distance_km || 0,
-          trainingLoad: trainingLoad,
-          source: 'manual' as const,
-        };
-      })
-      .filter((a): a is CompletedActivity => a !== null && a.sport !== undefined);
-    
-    // Merge completed activities, avoiding duplicates
-    const seenActivityIds = new Set(completedFromWorkouts.map(a => a.id));
-    const uniqueActivitiesFromAPI = dayData.completedActivities.filter(a => !seenActivityIds.has(a.id));
-    const completed = [...completedFromWorkouts, ...uniqueActivitiesFromAPI];
+    // Completed activities MUST ONLY come from /activities endpoint
+    // Never synthesize them from workouts - workouts are containers, not executions
+    // The rendering code will do lookup-only pairing when displaying workouts
+    const completed = dayData.completedActivities;
     
     return {
       planned,
@@ -405,31 +368,21 @@ export function MonthView({ currentDate, onActivityClick }: MonthViewProps) {
                   
                   if (!session) return null;
                   
-                  // Find matching completed session by sport (same day, same sport)
+                  // Find matching activity using canonical pairing criteria (lookup-only, never synthesize)
+                  // Priority: activity with workout_id matching session.workout_id, or planned_session_id matching session.id
+                  const matchingActivity = completed.find(a => 
+                    (session.workout_id && a.workout_id === session.workout_id) ||
+                    a.planned_session_id === session.id
+                  ) || null;
+                  
+                  // Find matching completed session for display purposes
                   const matchingCompletedSession = completedSessions.find(s => {
                     if (!s || !s.type) return false;
-                    return normalizeSportType(s.type) === normalizeSportType(workout.sport);
+                    // Match by workout_id if available, otherwise by ID
+                    if (session.workout_id && s.workout_id === session.workout_id) return true;
+                    if (s.id === session.id) return true;
+                    return false;
                   });
-                  
-                  // Find matching activity - first check if there's a session, then check all completed activities
-                  let matchingActivity: CompletedActivity | null = null;
-                  if (matchingCompletedSession) {
-                    matchingActivity = completed.find(c => c.id === matchingCompletedSession.id) || null;
-                  }
-                  
-                  // If no matching session, check if there's a matching activity from API by sport
-                  if (!matchingActivity) {
-                    // Find all activities with same sport
-                    const allMatchingActivities = completed.filter(c => 
-                      normalizeSportType(c.sport) === normalizeSportType(workout.sport)
-                    );
-                    // Prefer activity on same date
-                    const sessionDateStr = session.date ? format(new Date(session.date), 'yyyy-MM-dd') : '';
-                    matchingActivity = allMatchingActivities.find(c => {
-                      const activityDate = c.date ? format(new Date(c.date), 'yyyy-MM-dd') : '';
-                      return activityDate === sessionDateStr;
-                    }) || allMatchingActivities[0] || null;
-                  }
                   
                   const isCompleted = !!matchingActivity;
                   const completedSession = matchingCompletedSession || null;
