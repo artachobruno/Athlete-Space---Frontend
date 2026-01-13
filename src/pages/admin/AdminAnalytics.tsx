@@ -73,7 +73,7 @@ export default function AdminAnalytics() {
       const baseURL = getBaseURL();
       const token = getToken();
       
-      const response = await fetch(`${baseURL}/admin/sql/query`, {
+      const response = await fetch(`${baseURL}/api/admin/sql/query`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

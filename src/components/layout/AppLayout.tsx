@@ -15,6 +15,7 @@ import {
   Shield,
   HelpCircle,
   Bot,
+  Database,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/context/AuthContext';
@@ -33,6 +34,7 @@ const navItems = [
   { path: '/coach', label: 'Coach', icon: Brain },
   { path: '/admin', label: 'Admin Ops', icon: Shield },
   { path: '/admin/ai', label: 'Admin AI', icon: Bot },
+  { path: '/admin/analytics', label: 'Admin Analytics', icon: Database },
   { path: '/settings', label: 'Settings', icon: Settings },
 ];
 
