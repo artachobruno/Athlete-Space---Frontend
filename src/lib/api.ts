@@ -7,6 +7,7 @@ import { getConversationId } from "./utils";
 import { isPreviewMode } from "./preview";
 import { mockActivities } from "@/mock/activities.mock";
 import { mockCalendarSessions, getMockWeekSessions, getMockTodaySessions } from "@/mock/calendarSessions.mock";
+import type { CompletedActivity } from "@/types";
 
 const getBaseURL = () => {
   // Check if we're in Capacitor (native app)
@@ -160,6 +161,107 @@ export interface StreamsData {
 
 export interface ActivityStreamsResponse extends StreamsData {}
 
+/**
+ * Generates mock activity stream data for preview mode.
+ * Creates realistic time-series data based on activity properties.
+ */
+function generateMockActivityStreams(activity: CompletedActivity): ActivityStreamsResponse {
+  const durationSeconds = (activity.duration || 30) * 60;
+  const interval = 5; // 5 second intervals
+  const dataPoints = Math.ceil(durationSeconds / interval);
+  
+  const time: number[] = [];
+  const route_points: number[][] = [];
+  const elevation: number[] = [];
+  const pace: (number | null)[] = [];
+  const heartrate: number[] = [];
+  const distance: number[] = [];
+  const power: number[] = [];
+  const cadence: number[] = [];
+  
+  // Base values from activity
+  const avgHR = activity.avgHeartRate || 145;
+  const avgPower = activity.avgPower || 200;
+  const totalDistance = (activity.distance || 10) * 1000; // Convert km to meters
+  const totalElevation = activity.elevation || 100;
+  
+  // Parse avg pace (e.g., "5:29/km" -> 5.48)
+  let avgPaceMinKm = 5.5;
+  if (activity.avgPace && activity.avgPace.includes(':')) {
+    const [mins, secs] = activity.avgPace.split(':').map(s => parseFloat(s));
+    if (!isNaN(mins) && !isNaN(secs)) {
+      avgPaceMinKm = mins + secs / 60;
+    }
+  }
+  
+  // Starting GPS coordinates (mock location)
+  const startLat = 37.7749;
+  const startLng = -122.4194;
+  
+  for (let i = 0; i < dataPoints; i++) {
+    const t = i * interval;
+    const progress = t / durationSeconds;
+    
+    time.push(t);
+    
+    // Generate route with slight movement
+    const latOffset = progress * 0.01 + Math.sin(i * 0.1) * 0.001;
+    const lngOffset = progress * 0.015 + Math.cos(i * 0.1) * 0.001;
+    route_points.push([startLat + latOffset, startLng + lngOffset]);
+    
+    // Cumulative distance
+    distance.push(Math.round(progress * totalDistance));
+    
+    // Elevation with some variation (hill profile)
+    const elevBase = Math.sin(progress * Math.PI * 2) * (totalElevation / 3);
+    const elevNoise = (Math.random() - 0.5) * 5;
+    elevation.push(Math.max(0, Math.round(100 + elevBase + elevNoise)));
+    
+    // Heart rate with realistic variation
+    const hrVariation = Math.sin(progress * Math.PI * 4) * 8;
+    const hrNoise = (Math.random() - 0.5) * 6;
+    const hrFatigue = progress * 5; // Slight increase as fatigue builds
+    heartrate.push(Math.round(avgHR + hrVariation + hrNoise + hrFatigue));
+    
+    // Pace with variation (slower on hills, null occasionally for stops)
+    if (Math.random() > 0.02) { // 2% chance of being stopped
+      const paceVariation = Math.sin(progress * Math.PI * 3) * 0.3;
+      const paceNoise = (Math.random() - 0.5) * 0.2;
+      // Pace increases (slower) on elevation gains
+      const elevEffect = elevation[i] > (elevation[i - 1] || 100) ? 0.15 : -0.05;
+      pace.push(Math.max(3, avgPaceMinKm + paceVariation + paceNoise + elevEffect));
+    } else {
+      pace.push(null);
+    }
+    
+    // Power (for cycling) with realistic variation
+    if (activity.avgPower || activity.sport === 'cycling') {
+      const powerVariation = Math.sin(progress * Math.PI * 5) * 30;
+      const powerNoise = (Math.random() - 0.5) * 20;
+      // More power on climbs
+      const climbEffect = elevation[i] > (elevation[i - 1] || 100) ? 25 : -10;
+      power.push(Math.max(50, Math.round(avgPower + powerVariation + powerNoise + climbEffect)));
+    }
+    
+    // Cadence
+    const baseCadence = activity.sport === 'cycling' ? 85 : 175;
+    const cadenceVariation = Math.sin(progress * Math.PI * 6) * 5;
+    const cadenceNoise = (Math.random() - 0.5) * 4;
+    cadence.push(Math.round(baseCadence + cadenceVariation + cadenceNoise));
+  }
+  
+  return {
+    time,
+    route_points,
+    elevation,
+    pace,
+    heartrate,
+    distance,
+    data_points: dataPoints,
+    ...(power.length > 0 ? { power } : {}),
+    cadence,
+  };
+}
 // Axios instance configured for CORS
 // - withCredentials: true enables sending cookies/credentials with cross-origin requests
 // - Backend CORS is configured to allow requests from https://pace-ai.onrender.com
@@ -1273,6 +1375,20 @@ const normalizeActivityStreamsResponse = (raw: unknown): ActivityStreamsResponse
 
 export const fetchActivityStreams = async (id: string): Promise<ActivityStreamsResponse> => {
   console.log("[API] Fetching activity streams", id);
+  
+  // Check if we're in preview mode - return mock stream data
+  if (isPreviewMode()) {
+    console.log("[API] Preview mode: Returning mock activity streams:", id);
+    await new Promise(resolve => setTimeout(resolve, 300)); // Simulate network delay
+    
+    const activity = mockActivities.find(a => a.id === id);
+    if (!activity) {
+      throw new Error(`Activity ${id} not found in mock data`);
+    }
+    
+    return generateMockActivityStreams(activity);
+  }
+  
   try {
     // First, try to get the activity to check if streams are available
     let activity;
