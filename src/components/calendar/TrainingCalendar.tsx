@@ -12,7 +12,8 @@ import { AddSessionModal } from './AddSessionModal';
 import { AddWeekModal } from './AddWeekModal';
 import { fetchCalendarSeason, type CalendarSession } from '@/lib/api';
 import { downloadIcsFile } from '@/lib/ics-export';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
+import { useAuthenticatedQuery } from '@/hooks/useAuthenticatedQuery';
 import type { PlannedWorkout, CompletedActivity } from '@/types';
 
 type ViewType = 'month' | 'week' | 'season';
@@ -95,17 +96,20 @@ export function TrainingCalendar() {
   };
 
   const handleStatusChange = () => {
-    // Invalidate queries to refresh calendar data
-    queryClient.invalidateQueries({ queryKey: ['calendarWeek'] });
-    queryClient.invalidateQueries({ queryKey: ['calendarSeason'] });
-    queryClient.invalidateQueries({ queryKey: ['calendarToday'] });
+    // Invalidate all calendar queries to refresh calendar data
+    // CRITICAL: Must invalidate all calendar query keys
+    queryClient.invalidateQueries({ queryKey: ['calendar'], exact: false });
+    queryClient.invalidateQueries({ queryKey: ['calendarWeek'], exact: false });
+    queryClient.invalidateQueries({ queryKey: ['calendarSeason'], exact: false });
+    queryClient.invalidateQueries({ queryKey: ['calendarToday'], exact: false });
   };
 
   const handleSessionAdded = () => {
     handleStatusChange();
   };
 
-  const { data: seasonData } = useQuery({
+  // CRITICAL: Use useAuthenticatedQuery to gate behind auth and prevent race conditions
+  const { data: seasonData } = useAuthenticatedQuery({
     queryKey: ['calendarSeason'],
     queryFn: () => fetchCalendarSeason(),
     retry: 1,

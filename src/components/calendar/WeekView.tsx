@@ -20,6 +20,7 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useAuthenticatedQuery } from '@/hooks/useAuthenticatedQuery';
 import type { PlannedWorkout, CompletedActivity, TrainingLoad } from '@/types';
 import { useUnitSystem } from '@/hooks/useUnitSystem';
 import { 
@@ -83,7 +84,8 @@ export function WeekView({ currentDate, onActivityClick }: WeekViewProps) {
   const monthKey = format(monthStart, 'yyyy-MM');
 
   // Fetch month data (includes planned sessions, completed activities, and workouts)
-  const { data: monthData, isLoading: monthLoading, error: monthError } = useQuery({
+  // CRITICAL: Use useAuthenticatedQuery to gate behind auth and prevent race conditions
+  const { data: monthData, isLoading: monthLoading, error: monthError } = useAuthenticatedQuery({
     queryKey: ['calendar', 'month', monthKey],
     queryFn: () => fetchCalendarMonth(currentDate),
     retry: 1,
@@ -440,6 +442,11 @@ export function WeekView({ currentDate, onActivityClick }: WeekViewProps) {
             description: `Moved to ${format(parseISO(newDate), 'MMM d, yyyy')}`,
           });
 
+          // Invalidate all calendar queries to refresh UI
+          queryClient.invalidateQueries({ queryKey: ['calendar'], exact: false });
+          queryClient.invalidateQueries({ queryKey: ['calendarWeek'], exact: false });
+          queryClient.invalidateQueries({ queryKey: ['calendarSeason'], exact: false });
+          
           // Trigger auto-match after a short delay to allow backend to process
           setTimeout(() => {
             queryClient.invalidateQueries({ queryKey: ['activities', 'limit', 100] });

@@ -15,19 +15,16 @@ import { getSeasonIntelligence } from '@/lib/intelligence';
 import { normalizeSportType } from '@/lib/session-utils';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { useQuery, useQueries } from '@tanstack/react-query';
+import { useQueries } from '@tanstack/react-query';
+import { useAuthenticatedQuery } from '@/hooks/useAuthenticatedQuery';
 import { Loader2, Flag, Target, RefreshCw } from 'lucide-react';
 import type { CompletedActivity } from '@/types';
-import { useAuth } from '@/context/AuthContext';
 
 interface SeasonViewProps {
   currentDate: Date;
 }
 
 export function SeasonView({ currentDate }: SeasonViewProps) {
-  // Get auth state to gate queries
-  const { status: authStatus } = useAuth();
-  
   // Get 12 weeks centered around current date
   const weeks = useMemo(() => {
     const quarterStart = new Date(currentDate);
@@ -44,12 +41,11 @@ export function SeasonView({ currentDate }: SeasonViewProps) {
     );
   }, [currentDate]);
 
-  const { data: seasonData, isLoading: seasonLoading } = useQuery({
+  // CRITICAL: Use useAuthenticatedQuery to gate behind auth and prevent race conditions
+  const { data: seasonData, isLoading: seasonLoading } = useAuthenticatedQuery({
     queryKey: ['calendarSeason'],
     queryFn: () => fetchCalendarSeason(),
     retry: 1,
-    // CRITICAL: Only execute when authenticated
-    enabled: authStatus === "authenticated",
   });
 
   // Calculate how many months back we need to fetch activities for

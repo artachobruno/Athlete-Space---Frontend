@@ -77,11 +77,13 @@ export function useAutoMatchSessions(enabled: boolean = true) {
           }
         }
 
-        // Invalidate calendar queries to refresh
+        // Invalidate all calendar queries to refresh
+        // CRITICAL: Must invalidate all calendar query keys including month queries
         if (successfulMatches.length > 0) {
-          await queryClient.invalidateQueries({ queryKey: ['calendarWeek'] });
-          await queryClient.invalidateQueries({ queryKey: ['calendarSeason'] });
-          await queryClient.invalidateQueries({ queryKey: ['calendarToday'] });
+          await queryClient.invalidateQueries({ queryKey: ['calendar'], exact: false });
+          await queryClient.invalidateQueries({ queryKey: ['calendarWeek'], exact: false });
+          await queryClient.invalidateQueries({ queryKey: ['calendarSeason'], exact: false });
+          await queryClient.invalidateQueries({ queryKey: ['calendarToday'], exact: false });
           
           let description = `Matched ${successfulMatches.length} activity${successfulMatches.length > 1 ? 'ies' : ''} to planned sessions`;
           if (needsConfirmation.length > 0) {

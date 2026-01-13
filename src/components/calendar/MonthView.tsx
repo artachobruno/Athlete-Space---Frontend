@@ -17,7 +17,8 @@ import { useUpdatePlannedSession } from '@/hooks/useCalendarMutations';
 import { mapSessionToWorkout, normalizeSportType } from '@/lib/session-utils';
 import { fetchCalendarMonth, normalizeCalendarMonth, type DayCalendarData } from '@/lib/calendar-month';
 import { Footprints, Bike, Waves, CheckCircle2, MessageCircle, Loader2, AlertTriangle } from 'lucide-react';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
+import { useAuthenticatedQuery } from '@/hooks/useAuthenticatedQuery';
 import type { PlannedWorkout, CompletedActivity } from '@/types';
 import { DndContext, DragEndEvent, DragOverlay, DragStartEvent, closestCenter } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
@@ -63,7 +64,8 @@ export function MonthView({ currentDate, onActivityClick }: MonthViewProps) {
   const monthKey = format(monthStart, 'yyyy-MM');
   
   // Fetch month data (includes planned sessions, completed activities, and workouts)
-  const { data: monthData, isLoading } = useQuery({
+  // CRITICAL: Use useAuthenticatedQuery to gate behind auth and prevent race conditions
+  const { data: monthData, isLoading } = useAuthenticatedQuery({
     queryKey: ['calendar', 'month', monthKey],
     queryFn: () => fetchCalendarMonth(currentDate),
     retry: 1,
@@ -228,6 +230,11 @@ export function MonthView({ currentDate, onActivityClick }: MonthViewProps) {
             description: `Moved to ${format(parseISO(newDate), 'MMM d, yyyy')}`,
           });
 
+          // Invalidate all calendar queries to refresh UI
+          queryClient.invalidateQueries({ queryKey: ['calendar'], exact: false });
+          queryClient.invalidateQueries({ queryKey: ['calendarWeek'], exact: false });
+          queryClient.invalidateQueries({ queryKey: ['calendarSeason'], exact: false });
+          
           // Trigger auto-match after a short delay to allow backend to process
           setTimeout(() => {
             queryClient.invalidateQueries({ queryKey: ['activities', 'limit', 100] });

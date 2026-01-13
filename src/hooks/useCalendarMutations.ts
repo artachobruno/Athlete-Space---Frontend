@@ -11,10 +11,31 @@ import {
 /**
  * Invalidates all calendar-related queries.
  * This ensures the calendar UI updates immediately after any mutation.
+ * 
+ * CRITICAL: Must invalidate all calendar query keys to ensure UI updates:
+ * - ['calendar'] - base calendar queries
+ * - ['calendar', 'month', ...] - month-specific queries
+ * - ['calendarWeek'] - week queries
+ * - ['calendarSeason'] - season queries
+ * - ['calendarToday'] - today queries
  */
 function invalidateCalendar(queryClient: ReturnType<typeof useQueryClient>) {
+  // Invalidate all calendar queries with prefix matching
   queryClient.invalidateQueries({
     queryKey: ['calendar'],
+    exact: false,
+  });
+  // Also invalidate specific query keys to be thorough
+  queryClient.invalidateQueries({
+    queryKey: ['calendarWeek'],
+    exact: false,
+  });
+  queryClient.invalidateQueries({
+    queryKey: ['calendarSeason'],
+    exact: false,
+  });
+  queryClient.invalidateQueries({
+    queryKey: ['calendarToday'],
     exact: false,
   });
 }
