@@ -1243,6 +1243,8 @@ export const fetchActivities = async (params?: { limit?: number; offset?: number
                        typeof act.load === 'number' ? act.load : 0,
           source: 'strava' as const,
           workout_id: typeof act.workout_id === 'string' ? act.workout_id : undefined, // Link to canonical Workout (backend Phase 4+)
+          planned_session_id: typeof act.planned_session_id === 'string' ? act.planned_session_id : 
+                             (act.planned_session_id === null ? null : undefined), // Link to planned session (pairing field)
           coachFeedback: typeof act.coach_feedback === 'string' ? act.coach_feedback :
                         typeof act.coachFeedback === 'string' ? act.coachFeedback : undefined,
           normalizedPower: typeof act.normalized_power === 'number' ? act.normalized_power :
