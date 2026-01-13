@@ -216,6 +216,13 @@ export function AddWeekModal({ open, onOpenChange, initialDate, onSuccess }: Add
           },
         }
       );
+    } catch (err) {
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError('An error occurred while validating sessions');
+      }
+    }
   };
 
   const handleClose = () => {
@@ -300,7 +307,7 @@ export function AddWeekModal({ open, onOpenChange, initialDate, onSuccess }: Add
                               min="0"
                               value={session.distance_km}
                               onChange={(e) => updateSession(dateStr, sessionIndex, 'distance_km', e.target.value)}
-                              disabled={isSubmitting || session.type === 'rest'}
+                              disabled={createWeek.isPending || session.type === 'rest'}
                               placeholder="Optional"
                             />
                           </div>
@@ -313,7 +320,7 @@ export function AddWeekModal({ open, onOpenChange, initialDate, onSuccess }: Add
                               min="0"
                               value={session.duration_minutes}
                               onChange={(e) => updateSession(dateStr, sessionIndex, 'duration_minutes', e.target.value)}
-                              disabled={isSubmitting || session.type === 'rest'}
+                              disabled={createWeek.isPending || session.type === 'rest'}
                               placeholder="Optional"
                             />
                           </div>
