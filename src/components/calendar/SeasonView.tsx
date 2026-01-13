@@ -15,8 +15,9 @@ import { getSeasonIntelligence } from '@/lib/intelligence';
 import { normalizeSportType } from '@/lib/session-utils';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { useQueries } from '@tanstack/react-query';
+import { useQueries, useQuery } from '@tanstack/react-query';
 import { useAuthenticatedQuery } from '@/hooks/useAuthenticatedQuery';
+import { useAuth } from '@/context/AuthContext';
 import { Loader2, Flag, Target, RefreshCw } from 'lucide-react';
 import type { CompletedActivity } from '@/types';
 
@@ -25,6 +26,8 @@ interface SeasonViewProps {
 }
 
 export function SeasonView({ currentDate }: SeasonViewProps) {
+  const { status: authStatus } = useAuth();
+  
   // Get 12 weeks centered around current date
   const weeks = useMemo(() => {
     const quarterStart = new Date(currentDate);

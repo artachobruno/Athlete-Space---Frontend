@@ -360,7 +360,7 @@ export function WeekView({ currentDate, onActivityClick }: WeekViewProps) {
           source: 'manual' as const,
         };
       })
-      .filter((a): a is CompletedActivity => a !== null && a.sport !== undefined);
+      .filter((a): a is { id: string; date: string; sport: CompletedActivity['sport']; title: string; duration: number; distance: number; trainingLoad: number; source: 'manual' } => a !== null && a.sport !== undefined) as CompletedActivity[];
     
     // Merge completed activities, avoiding duplicates
     const seenActivityIds = new Set(completedFromWorkouts.map(a => a.id));
@@ -671,13 +671,13 @@ export function WeekView({ currentDate, onActivityClick }: WeekViewProps) {
                         </span>
                         <div className="ml-auto shrink-0 flex items-center gap-1">
                           {isMoved && (
-                            <AlertTriangle className="h-3.5 w-3.5 text-amber-500" title="Session moved after completion" />
+                            <AlertTriangle className="h-3.5 w-3.5 text-amber-500" aria-label="Session moved after completion" />
                           )}
                           {isCompleted && !isMoved && (
                             <CheckCircle2 className="h-4 w-4 text-load-fresh" />
                           )}
                           {!isCompleted && !isMoved && (
-                            <div className="h-3 w-3 rounded-full border border-muted-foreground/30" title="Unmatched" />
+                            <div className="h-3 w-3 rounded-full border border-muted-foreground/30" aria-label="Unmatched" />
                           )}
                         </div>
                       </div>
