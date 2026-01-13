@@ -414,13 +414,13 @@ export function MonthView({ currentDate, onActivityClick }: MonthViewProps) {
                         <span className="truncate">{workout.title || 'Untitled Workout'}</span>
                         <div className="ml-auto shrink-0 flex items-center gap-0.5">
                           {isMoved && (
-                            <AlertTriangle className="h-2.5 w-2.5 text-amber-500" title="Moved" />
+                            <AlertTriangle className="h-2.5 w-2.5 text-amber-500" aria-label="Moved" />
                           )}
                           {isCompleted && !isMoved && (
                             <CheckCircle2 className="h-3 w-3 shrink-0" />
                           )}
                           {!isCompleted && !isMoved && (
-                            <div className="h-2 w-2 rounded-full border border-muted-foreground/30" title="Unmatched" />
+                            <div className="h-2 w-2 rounded-full border border-muted-foreground/30" aria-label="Unmatched" />
                           )}
                         </div>
                       </div>

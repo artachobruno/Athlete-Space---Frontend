@@ -36,6 +36,7 @@ import ConnectSuccess from "./pages/ConnectSuccess";
 import NotFound from "./pages/NotFound";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import AiDashboard from "./pages/admin/AiDashboard";
+import AdminAnalytics from "./pages/admin/AdminAnalytics";
 import WorkoutDetails from "./screens/WorkoutDetails";
 
 const queryClient = new QueryClient({
@@ -354,6 +355,14 @@ const AppContent = () => {
           element={
             <RequireAuth>
               <AiDashboard />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/admin/analytics"
+          element={
+            <RequireAuth>
+              <AdminAnalytics />
             </RequireAuth>
           }
         />
