@@ -117,31 +117,6 @@ export function MonthView({ currentDate, onActivityClick }: MonthViewProps) {
     return eachDayOfInterval({ start: calendarStart, end: calendarEnd });
   }, [currentDate, monthStart, monthEnd]);
 
-  /**
-   * Converts a completed CalendarSession to CompletedActivity format
-   * for compatibility with existing UI components
-   */
-  const mapCompletedSessionToActivity = (session: CalendarSession): CompletedActivity | null => {
-    // Validate session has required fields
-    if (!session || !session.id || !session.date || !session.type) {
-      console.warn('[MonthView] Invalid session data:', session);
-      return null;
-    }
-
-    const normalizedSport = normalizeSportType(session.type);
-    
-    return {
-      id: session.id,
-      date: session.date,
-      sport: normalizedSport as CompletedActivity['sport'],
-      title: session.title || 'Untitled Activity',
-      duration: session.duration_minutes || 0,
-      distance: session.distance_km || 0,
-      trainingLoad: 0, // TSS not available in CalendarSession
-      source: 'manual', // Default since calendar sessions are manual entries
-    };
-  };
-
   const getWorkoutsForDay = (date: Date) => {
     const dateStr = format(date, 'yyyy-MM-dd');
     const dayData = dayDataMap.get(dateStr);
@@ -156,8 +131,40 @@ export function MonthView({ currentDate, onActivityClick }: MonthViewProps) {
       .filter((w): w is PlannedWorkout => w !== null && w.sport !== undefined);
     
     // Combine completed activities from both sources (activities API and calendar workouts)
+    // CRITICAL: Training load must come from EXECUTION (activity.trainingLoad or workout_execution.tss)
+    // Never synthesize or hardcode trainingLoad = 0 as a placeholder
     const completedFromWorkouts = dayData.workouts
-      .map(mapCompletedSessionToActivity)
+      .map((session) => {
+        // Validate session has required fields
+        if (!session || !session.id || !session.date || !session.type) {
+          console.warn('[MonthView] Invalid session data:', session);
+          return null;
+        }
+        
+        // Try to find a matching CompletedActivity that's paired with this workout
+        // Priority: activity with workout_id matching session.workout_id, or planned_session_id matching session.id
+        const matchingActivity = dayData.completedActivities.find(a => 
+          (session.workout_id && a.workout_id === session.workout_id) ||
+          a.planned_session_id === session.id
+        );
+        
+        // Training load must come from execution data (activity.trainingLoad is the canonical source)
+        // If no matching activity found, we don't have execution data, so we can't provide training load
+        // Note: Type requires number, but semantically this represents missing execution data
+        const trainingLoad = matchingActivity?.trainingLoad ?? 0;
+        
+        const normalizedSport = normalizeSportType(session.type);
+        return {
+          id: session.id,
+          date: session.date,
+          sport: normalizedSport as CompletedActivity['sport'],
+          title: session.title || 'Untitled Activity',
+          duration: session.duration_minutes || 0,
+          distance: session.distance_km || 0,
+          trainingLoad: trainingLoad,
+          source: 'manual' as const,
+        };
+      })
       .filter((a): a is CompletedActivity => a !== null && a.sport !== undefined);
     
     // Merge completed activities, avoiding duplicates

@@ -235,7 +235,11 @@ export function SeasonView({ currentDate }: SeasonViewProps) {
 
     // Estimate load from all week activities (not just unique ones, for accurate TSS)
     // Use all activities for load calculation to get accurate total TSS
-    const totalLoad = weekActivities.reduce((sum, a) => sum + (a.trainingLoad || 0), 0);
+    // Only sum numeric training load values (explicitly check for number type)
+    const totalLoad = weekActivities.reduce((sum, a) => {
+      if (!a || typeof a !== 'object') return sum;
+      return sum + (typeof a.trainingLoad === 'number' ? a.trainingLoad : 0);
+    }, 0);
 
     // Count completed: completed sessions + unique activities (those without a corresponding session)
     // Use deduplicated activities to ensure we don't count the same activity multiple times

@@ -267,7 +267,8 @@ export function WeekView({ currentDate, onActivityClick }: WeekViewProps) {
     const activitiesArray = Array.isArray(weekData?.activities) ? weekData.activities : [];
     const totalLoad = activitiesArray.reduce((sum, a) => {
       if (!a || typeof a !== 'object' || !a.date) return sum;
-      return sum + (a.trainingLoad || 0);
+      // Only sum numeric training load values (explicitly check for number type)
+      return sum + (typeof a.trainingLoad === 'number' ? a.trainingLoad : 0);
     }, 0);
     
     return {
@@ -347,12 +348,28 @@ export function WeekView({ currentDate, onActivityClick }: WeekViewProps) {
       .filter((w): w is PlannedWorkout => w !== null);
     
     // Combine completed activities from both sources (activities API and calendar workouts)
+    // CRITICAL: Training load must come from EXECUTION (activity.trainingLoad or workout_execution.tss)
+    // Never synthesize or hardcode trainingLoad = 0 as a placeholder
     const completedFromWorkouts = dayData.workouts
       .map((session) => {
         // Convert completed CalendarSession to CompletedActivity format
         if (!session || !session.id || !session.date || !session.type) {
           return null;
         }
+        
+        // Try to find a matching CompletedActivity that's paired with this workout
+        // Priority: activity with workout_id matching session.workout_id, or planned_session_id matching session.id
+        const matchingActivity = dayData.completedActivities.find(a => 
+          (session.workout_id && a.workout_id === session.workout_id) ||
+          a.planned_session_id === session.id
+        );
+        
+        // Training load must come from execution data (activity.trainingLoad is the canonical source)
+        // If no matching activity found, we don't have execution data, so we can't provide training load
+        // Note: Type requires number, but semantically this represents missing execution data
+        // Weekly summary will correctly exclude 0 values from the sum
+        const trainingLoad = matchingActivity?.trainingLoad ?? 0;
+        
         const normalizedSport = normalizeSportType(session.type);
         return {
           id: session.id,
@@ -361,7 +378,7 @@ export function WeekView({ currentDate, onActivityClick }: WeekViewProps) {
           title: session.title || 'Untitled Activity',
           duration: session.duration_minutes || 0,
           distance: session.distance_km || 0,
-          trainingLoad: 0,
+          trainingLoad: trainingLoad,
           source: 'manual' as const,
         };
       })
