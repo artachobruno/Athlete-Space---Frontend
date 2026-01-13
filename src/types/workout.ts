@@ -19,7 +19,7 @@ export type WorkoutStep = {
 export type Workout = {
   id: string
   sport: string
-  source: "planner" | "upload" | "manual"
+  source: "planner" | "upload" | "manual" | "mock"
 
   total_duration_seconds?: number
   total_distance_meters?: number

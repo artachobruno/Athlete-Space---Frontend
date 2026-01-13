@@ -1,5 +1,5 @@
 import type { Workout } from '@/types/workout';
-import type { WorkoutTimeline, WorkoutTimelineSegment } from '@/types/workoutTimeline';
+import type { WorkoutTimeline, WorkoutTimelineSegment, WorkoutStreams } from '@/types/workoutTimeline';
 
 /**
  * Mock workouts (canonical) for preview mode.
@@ -582,6 +582,60 @@ export const mockWorkouts: Workout[] = [
 ];
 
 /**
+ * Generates a metric value with realistic noise.
+ * Returns null if min/max are not provided.
+ */
+function generateMetricValue(
+  min?: number,
+  max?: number
+): number | null {
+  if (min == null || max == null) return null;
+
+  const noise = 0.85 + Math.random() * 0.3;
+  return Math.round((min + (max - min) * noise) * 10) / 10;
+}
+
+/**
+ * Builds mock stream data aligned with workout segments.
+ * Generates time-aligned arrays with 5-second intervals.
+ */
+function buildMockStreams(
+  workout: Workout,
+  segments: WorkoutTimelineSegment[]
+): WorkoutStreams {
+  const time: number[] = [];
+  const hr: (number | null)[] = [];
+  const pace: (number | null)[] = [];
+  const power: (number | null)[] = [];
+
+  for (let t = 0; t <= workout.total_duration_seconds!; t += 5) {
+    time.push(t);
+
+    const segment = segments.find(
+      s => s.start_second <= t && s.end_second > t
+    );
+
+    if (!segment || !segment.target.metric) {
+      hr.push(null);
+      pace.push(null);
+      power.push(null);
+      continue;
+    }
+
+    const value = generateMetricValue(
+      segment.target.min,
+      segment.target.max
+    );
+
+    hr.push(segment.target.metric === 'hr' ? value : null);
+    pace.push(segment.target.metric === 'pace' ? value : null);
+    power.push(segment.target.metric === 'power' ? value : null);
+  }
+
+  return { time, hr, pace, power };
+}
+
+/**
  * Builds a mock timeline from a workout.
  * Creates segments from workout steps with compliance data.
  */
@@ -628,10 +682,13 @@ export function buildTimelineFromMockWorkout(workoutId: string): WorkoutTimeline
     }
   }
 
+  const streams = buildMockStreams(workout, segments);
+
   return {
     workout_id: workoutId,
     total_duration_seconds: workout.total_duration_seconds || 0,
     segments,
+    streams,
     overall_compliance_percent: 88,
     total_paused_seconds: 0,
     actual_data: actualData.length > 0 ? actualData : undefined,
