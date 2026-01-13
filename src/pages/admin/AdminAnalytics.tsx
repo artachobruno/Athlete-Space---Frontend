@@ -72,8 +72,15 @@ export default function AdminAnalytics() {
     try {
       const baseURL = getBaseURL();
       const token = getToken();
+      const endpoint = `${baseURL}/api/admin/sql/query`;
       
-      const response = await fetch(`${baseURL}/api/admin/sql/query`, {
+      console.log('[AdminAnalytics] Executing SQL query:', {
+        endpoint,
+        baseURL,
+        hasToken: !!token,
+      });
+      
+      const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -85,9 +92,30 @@ export default function AdminAnalytics() {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({})) as Record<string, unknown>;
+        let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+        let errorDetail: string | undefined = typeof errorData.detail === 'string' ? errorData.detail : undefined;
+        
+        console.error('[AdminAnalytics] Query failed:', {
+          status: response.status,
+          statusText: response.statusText,
+          endpoint,
+          errorData,
+        });
+        
+        if (response.status === 404) {
+          errorMessage = 'Endpoint not found';
+          errorDetail = `The endpoint /api/admin/sql/query is not available on the backend server (${baseURL}). Please ensure the backend API has this endpoint implemented.`;
+        } else if (response.status === 403) {
+          errorMessage = 'Access denied';
+          errorDetail = 'You do not have permission to execute SQL queries. Admin access is required.';
+        } else if (response.status === 401) {
+          errorMessage = 'Authentication required';
+          errorDetail = 'Please log in to access this feature.';
+        }
+        
         setError({
-          error: `HTTP ${response.status}: ${response.statusText}`,
-          detail: typeof errorData.detail === 'string' ? errorData.detail : undefined,
+          error: errorMessage,
+          detail: errorDetail,
         });
         return;
       }

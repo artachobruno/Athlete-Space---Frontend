@@ -16,7 +16,7 @@ import { type CalendarSession } from '@/lib/api';
 import { useUpdatePlannedSession, useUpdateWorkoutDate } from '@/hooks/useCalendarMutations';
 import { mapSessionToWorkout, normalizeSportType } from '@/lib/session-utils';
 import { fetchCalendarMonth, normalizeCalendarMonth, type DayCalendarData } from '@/lib/calendar-month';
-import { Footprints, Bike, Waves, CheckCircle2, MessageCircle, Loader2, AlertTriangle } from 'lucide-react';
+import { Footprints, Bike, Waves, CheckCircle2, MessageCircle, Loader2, AlertTriangle, CheckCircle } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAuthenticatedQuery } from '@/hooks/useAuthenticatedQuery';
 import type { PlannedWorkout, CompletedActivity } from '@/types';
@@ -25,6 +25,7 @@ import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { DraggablePlannedSession } from './DraggablePlannedSession';
 import { DroppableDayCell } from './DroppableDayCell';
 import { toast } from '@/hooks/use-toast';
+import { Badge } from '@/components/ui/badge';
 
 interface MonthViewProps {
   currentDate: Date;
@@ -315,7 +316,7 @@ export function MonthView({ currentDate, onActivityClick }: MonthViewProps) {
         onDragCancel={handleDragCancel}
       >
         <SortableContext items={allPlannedSessionIds} strategy={verticalListSortingStrategy}>
-          <div className="grid grid-cols-7">
+          <div className="grid grid-cols-7 grid-rows-6 min-h-[960px]">
             {days.map((day, idx) => {
               const { planned, completed, plannedSessions, completedSessions } = getWorkoutsForDay(day);
               const isCurrentMonth = isSameMonth(day, currentDate);
@@ -326,16 +327,16 @@ export function MonthView({ currentDate, onActivityClick }: MonthViewProps) {
                   key={idx}
                   date={day}
                   className={cn(
-                    'min-h-[100px] p-2 border-b border-r border-border',
+                    'h-full min-h-[160px] p-3 border-b border-r border-border flex flex-col',
                     !isCurrentMonth && 'bg-muted/30',
                     idx % 7 === 6 && 'border-r-0'
                   )}
                 >
               {/* Day number */}
-              <div className="flex items-center justify-between mb-1">
+              <div className="flex items-center justify-between mb-3">
                 <span
                   className={cn(
-                    'text-sm font-medium',
+                    'text-sm font-semibold',
                     !isCurrentMonth && 'text-muted-foreground',
                     isCurrentDay &&
                       'bg-accent text-accent-foreground w-6 h-6 rounded-full flex items-center justify-center'
@@ -346,8 +347,15 @@ export function MonthView({ currentDate, onActivityClick }: MonthViewProps) {
               </div>
 
               {/* Workouts */}
-              <div className="space-y-1">
-                {planned.map((workout) => {
+              <div className="flex flex-col gap-3 flex-1 overflow-hidden">
+                {(() => {
+                  const MAX_VISIBLE = 2;
+                  const visiblePlanned = planned.slice(0, MAX_VISIBLE);
+                  const remainingPlanned = Math.max(0, planned.length - MAX_VISIBLE);
+                  
+                  return (
+                    <>
+                      {visiblePlanned.map((workout) => {
                   // Guard against undefined sport
                   if (!workout.sport) {
                     console.warn('[MonthView] Workout missing sport:', workout);
@@ -392,6 +400,28 @@ export function MonthView({ currentDate, onActivityClick }: MonthViewProps) {
                   const sessionDateStr = session.date ? format(new Date(session.date), 'yyyy-MM-dd') : '';
                   const activityDateStr = matchingActivity?.date || '';
                   const isMoved = !!matchingActivity && sessionDateStr !== activityDateStr;
+                  
+                  // Format duration
+                  const duration = session.duration_minutes || workout.duration || 0;
+                  const durationHours = Math.floor(duration / 60);
+                  const durationMinutes = duration % 60;
+                  const durationStr = durationHours > 0 
+                    ? `${durationHours}h ${durationMinutes}m`
+                    : `${durationMinutes}m`;
+                  
+                  // Get intensity for badge
+                  const intensity = session.intensity || workout.intent || null;
+                  const intensityLower = intensity?.toLowerCase() || '';
+                  
+                  // Determine intensity badge variant
+                  let intensityBadgeClass = 'bg-blue-100 text-blue-700 border-blue-200';
+                  if (intensityLower.includes('easy') || intensityLower.includes('recovery') || intensityLower.includes('aerobic')) {
+                    intensityBadgeClass = 'bg-green-100 text-green-700 border-green-200';
+                  } else if (intensityLower.includes('hard') || intensityLower.includes('threshold') || intensityLower.includes('interval')) {
+                    intensityBadgeClass = 'bg-red-100 text-red-700 border-red-200';
+                  } else if (intensityLower.includes('moderate') || intensityLower.includes('tempo')) {
+                    intensityBadgeClass = 'bg-yellow-100 text-yellow-700 border-yellow-200';
+                  }
 
                   return (
                     <DraggablePlannedSession
@@ -404,60 +434,113 @@ export function MonthView({ currentDate, onActivityClick }: MonthViewProps) {
                     >
                       <div
                         className={cn(
-                          'flex items-center gap-1 px-1.5 py-0.5 rounded text-xs group hover:ring-1 hover:ring-accent/50',
+                          'rounded-lg px-3 py-2 min-h-[56px] flex flex-col justify-center shadow-sm group hover:ring-1 hover:ring-accent/50 transition-all',
                           isCompleted
-                            ? 'bg-load-fresh/20 text-load-fresh'
-                            : 'bg-muted text-muted-foreground'
+                            ? 'bg-green-100 border border-green-300'
+                            : 'bg-blue-50 border border-blue-200'
                         )}
                       >
-                        <Icon className="h-3 w-3 shrink-0" />
-                        <span className="truncate">{workout.title || 'Untitled Workout'}</span>
-                        <div className="ml-auto shrink-0 flex items-center gap-0.5">
-                          {isMoved && (
-                            <AlertTriangle className="h-2.5 w-2.5 text-amber-500" aria-label="Moved" />
-                          )}
-                          {isCompleted && !isMoved && (
-                            <CheckCircle2 className="h-3 w-3 shrink-0" />
-                          )}
-                          {!isCompleted && !isMoved && (
-                            <div className="h-2 w-2 rounded-full border border-muted-foreground/30" aria-label="Unmatched" />
-                          )}
+                        <div className="flex items-center justify-between mb-1">
+                          <div className="flex items-center gap-1.5">
+                            <Icon className="h-4 w-4 shrink-0" />
+                            <span className="font-medium text-sm">{workout.title || 'Untitled Workout'}</span>
+                          </div>
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            <span className="text-xs text-muted-foreground">{durationStr}</span>
+                            {isCompleted && (
+                              <CheckCircle className="h-4 w-4 text-green-600 shrink-0" />
+                            )}
+                            {!isCompleted && !isMoved && (
+                              <div className="h-2 w-2 rounded-full border border-muted-foreground/30 shrink-0" aria-label="Unmatched" />
+                            )}
+                            {isMoved && (
+                              <AlertTriangle className="h-3.5 w-3.5 text-amber-500 shrink-0" aria-label="Moved" />
+                            )}
+                          </div>
                         </div>
+                        {intensity && (
+                          <div className="flex items-center gap-2 mt-1">
+                            <Badge 
+                              variant="outline" 
+                              className={cn('text-xs border', intensityBadgeClass)}
+                            >
+                              {intensity}
+                            </Badge>
+                          </div>
+                        )}
                       </div>
                     </DraggablePlannedSession>
                   );
-                })}
+                  })}
+                      {remainingPlanned > 0 && (
+                        <div className="text-xs text-muted-foreground px-3 py-1">
+                          +{remainingPlanned} more
+                        </div>
+                      )}
+                    </>
+                  );
+                })()}
 
                 {/* Completed activities without a plan */}
-                {completed
-                  .filter(c => {
+                {(() => {
+                  const MAX_VISIBLE_COMPLETED = 2;
+                  const unplannedCompleted = completed.filter(c => {
                     // Guard against invalid activities
                     if (!c || !c.sport) {
                       console.warn('[MonthView] Invalid completed activity:', c);
                       return false;
                     }
                     return !planned.some(p => normalizeSportType(p.sport) === normalizeSportType(c.sport));
-                  })
-                  .map((activity) => {
-                    // Double-check sport exists (should be filtered above, but extra safety)
-                    if (!activity.sport) {
-                      return null;
-                    }
+                  });
+                  const visibleCompleted = unplannedCompleted.slice(0, MAX_VISIBLE_COMPLETED);
+                  const remainingCompleted = Math.max(0, unplannedCompleted.length - MAX_VISIBLE_COMPLETED);
+                  
+                  return (
+                    <>
+                      {visibleCompleted.map((activity) => {
+                        // Double-check sport exists (should be filtered above, but extra safety)
+                        if (!activity.sport) {
+                          return null;
+                        }
 
-                    const Icon = getSportIcon(activity.sport);
-                    const completedSession = completedSessions.find(s => s.id === activity.id) || null;
-                    
-                    return (
-                      <div
-                        key={activity.id || `completed-${activity.date}-${activity.title}`}
-                        className="flex items-center gap-1 px-1.5 py-0.5 rounded text-xs bg-accent/20 text-accent cursor-pointer hover:ring-1 hover:ring-accent/50"
-                        onClick={() => onActivityClick?.(null, activity, completedSession)}
-                      >
-                        <Icon className="h-3 w-3 shrink-0" />
-                        <span className="truncate">{activity.title || 'Untitled Activity'}</span>
-                      </div>
-                    );
-                  })}
+                        const Icon = getSportIcon(activity.sport);
+                        const completedSession = completedSessions.find(s => s.id === activity.id) || null;
+                        
+                        // Format duration
+                        const duration = activity.duration || 0;
+                        const durationHours = Math.floor(duration / 60);
+                        const durationMinutes = duration % 60;
+                        const durationStr = durationHours > 0 
+                          ? `${durationHours}h ${durationMinutes}m`
+                          : `${durationMinutes}m`;
+                        
+                        return (
+                          <div
+                            key={activity.id || `completed-${activity.date}-${activity.title}`}
+                            className="rounded-lg px-3 py-2 min-h-[56px] flex flex-col justify-center bg-green-100 border border-green-300 shadow-sm cursor-pointer hover:ring-1 hover:ring-accent/50 transition-all"
+                            onClick={() => onActivityClick?.(null, activity, completedSession)}
+                          >
+                            <div className="flex items-center justify-between mb-1">
+                              <div className="flex items-center gap-1.5">
+                                <Icon className="h-4 w-4 shrink-0" />
+                                <span className="font-medium text-sm">{activity.title || 'Untitled Activity'}</span>
+                              </div>
+                              <div className="flex items-center gap-1.5 shrink-0">
+                                <span className="text-xs text-muted-foreground">{durationStr}</span>
+                                <CheckCircle className="h-4 w-4 text-green-600 shrink-0" />
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                      {remainingCompleted > 0 && (
+                        <div className="text-xs text-muted-foreground px-3 py-1">
+                          +{remainingCompleted} more
+                        </div>
+                      )}
+                    </>
+                  );
+                })()}
               </div>
                 </DroppableDayCell>
               );
