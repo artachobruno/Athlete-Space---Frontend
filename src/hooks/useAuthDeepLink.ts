@@ -1,8 +1,12 @@
 import { useEffect } from "react";
 import { App } from "@/lib/capacitor-stubs/app";
 import { isNative } from "@/lib/platform";
-import { auth } from "@/lib/auth";
 
+/**
+ * Hook to handle OAuth deep links in native apps.
+ * Note: Backend should set HTTP-only cookies instead of returning tokens in URL.
+ * This handler is kept for compatibility but tokens in URLs are deprecated.
+ */
 export function useAuthDeepLink(onToken: (t: string) => void) {
   useEffect(() => {
     if (!isNative) return;
@@ -11,12 +15,15 @@ export function useAuthDeepLink(onToken: (t: string) => void) {
       if (!url) return;
 
       // capacitor://localhost/auth/callback?token=XYZ
+      // NOTE: Legacy flow - backend should set cookies instead
       if (url.includes("/auth/callback")) {
         const parsed = new URL(url);
         const token = parsed.searchParams.get("token");
 
         if (token) {
-          auth.setToken(token);
+          console.warn('[AuthDeepLink] Token in URL detected - backend should set HTTP-only cookies instead');
+          // Call onToken callback (but don't store in localStorage)
+          // If backend set cookies, auth will work via /me
           onToken(token);
           // Navigate to home using hash router
           window.location.hash = "/";

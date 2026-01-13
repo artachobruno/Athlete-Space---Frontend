@@ -14,7 +14,6 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { getToken } from '@/auth/token';
 
 interface QueryResult {
   columns: string[];
@@ -71,20 +70,17 @@ export default function AdminAnalytics() {
 
     try {
       const baseURL = getBaseURL();
-      const token = getToken();
       const endpoint = `${baseURL}/admin/sql/query`;
       
       console.log('[AdminAnalytics] Executing SQL query:', {
         endpoint,
         baseURL,
-        hasToken: !!token,
       });
       
       const response = await fetch(endpoint, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
         },
         credentials: 'include',
         body: JSON.stringify({ sql: sql.trim() }),

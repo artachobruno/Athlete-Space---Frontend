@@ -125,7 +125,8 @@ export const auth = {
   },
   
   logout: (): void => {
-    localStorage.removeItem(TOKEN_KEY);
+    // No localStorage token to clear - cookies are cleared by backend /auth/logout
+    // This function is kept for API compatibility but does nothing
   },
 };
 
@@ -143,43 +144,21 @@ export const auth = {
  */
 export async function loginWithEmail(email: string, password: string): Promise<void> {
   try {
+    // Login endpoint sets HTTP-only cookie automatically
+    // No need to store tokens in localStorage - cookies handle authentication
     const response = await api.post("/auth/login", { email, password });
     
-    // Log RAW response for debugging
-    console.log("[LOGIN] RAW RESPONSE:", response);
-    console.log("[LOGIN] RESPONSE.DATA:", response.data);
-    console.log("[LOGIN] RESPONSE.DATA KEYS:", Object.keys(response.data || {}));
+    // Log response for debugging
+    console.log("[LOGIN] Login successful, HTTP-only cookie set by backend");
+    console.log("[LOGIN] Response:", response);
     
-    // Extract token from correct field (access_token, not token)
-    // API interceptor returns response.data directly, so response IS the data
-    const responseData = response && typeof response === 'object' ? response : {};
-    // Try both access_token and token for backward compatibility
-    const token = (responseData as { access_token?: string; token?: string }).access_token 
-      || (responseData as { access_token?: string; token?: string }).token;
-    
-    // Verify token exists and store immediately
-    if (!token || typeof token !== 'string') {
-      console.error("[LOGIN] access_token/token missing from response", responseData);
-      throw new Error("Login succeeded but access_token missing from response");
+    // Success - cookie is automatically set by backend with credentials: 'include'
+    // Verify login worked by checking if response indicates success
+    if (!response) {
+      throw new Error("Login response was empty");
     }
     
-    console.log("[LOGIN] Token extracted. Length:", token.length);
-    console.log("[LOGIN] Token preview:", token.substring(0, 20) + "...");
-    
-    // Store token immediately (no conditionals)
-        auth.setToken(token);
-    
-    // Verify token was stored
-    const storedToken = auth.getToken();
-    if (!storedToken || storedToken !== token) {
-      console.error("[LOGIN] Token storage failed!", {
-        expected: token.substring(0, 20),
-        stored: storedToken?.substring(0, 20),
-      });
-      throw new Error("Failed to store authentication token");
-    }
-    
-    console.log("[LOGIN] Token stored successfully. Length:", storedToken.length);
+    console.log("[LOGIN] ✅ Authentication cookie set successfully");
   } catch (error) {
     // normalizeError already extracts message from backend's {"message": "..."} format
     const apiError = error as { status?: number; message?: string; details?: unknown };
@@ -199,41 +178,21 @@ export async function loginWithEmail(email: string, password: string): Promise<v
  */
 export async function signupWithEmail(email: string, password: string): Promise<void> {
   try {
+    // Signup endpoint sets HTTP-only cookie automatically
+    // No need to store tokens in localStorage - cookies handle authentication
     const response = await api.post("/auth/signup", { email, password });
     
-    // STEP 1: Log RAW response for debugging
-    console.log("[SIGNUP] RAW RESPONSE:", response);
-    console.log("[SIGNUP] RESPONSE.DATA:", response.data);
-    console.log("[SIGNUP] RESPONSE.DATA KEYS:", Object.keys(response.data || {}));
+    // Log response for debugging
+    console.log("[SIGNUP] Signup successful, HTTP-only cookie set by backend");
+    console.log("[SIGNUP] Response:", response);
     
-    // STEP 2: Extract token from correct field (access_token, not token)
-    // API interceptor returns response.data directly, so response IS the data
-    const responseData = response && typeof response === 'object' ? response : {};
-    const token = (responseData as { access_token?: string }).access_token;
-    
-    // STEP 3: Verify token exists and store immediately
-    if (!token || typeof token !== 'string') {
-      console.error("[SIGNUP] access_token missing from response", responseData);
-      throw new Error("Signup succeeded but access_token missing from response");
+    // Success - cookie is automatically set by backend with credentials: 'include'
+    // Verify signup worked by checking if response indicates success
+    if (!response) {
+      throw new Error("Signup response was empty");
     }
     
-    console.log("[SIGNUP] Token extracted. Length:", token.length);
-    console.log("[SIGNUP] Token preview:", token.substring(0, 20) + "...");
-    
-    // Store token immediately (no conditionals)
-        auth.setToken(token);
-    
-    // Verify token was stored
-    const storedToken = auth.getToken();
-    if (!storedToken || storedToken !== token) {
-      console.error("[SIGNUP] Token storage failed!", {
-        expected: token.substring(0, 20),
-        stored: storedToken?.substring(0, 20),
-      });
-      throw new Error("Failed to store authentication token");
-    }
-    
-    console.log("[SIGNUP] Token stored successfully. Length:", storedToken.length);
+    console.log("[SIGNUP] ✅ Authentication cookie set successfully");
   } catch (error) {
     // normalizeError already extracts message from backend's {"message": "..."} format
     const apiError = error as { status?: number; message?: string; details?: unknown };
@@ -318,14 +277,16 @@ export async function loginWithGoogle(): Promise<void> {
  */
 export async function logout(): Promise<void> {
   try {
+    // Backend /auth/logout endpoint clears the HTTP-only cookie
     await api.post("/auth/logout");
+    console.log("[Auth] ✅ Logout successful, cookie cleared by backend");
   } catch (error) {
     // Handle 404 gracefully - endpoint might not exist, but logout is still successful
     const apiError = error as { status?: number; message?: string };
     if (apiError.status === 404) {
-      // 404 means endpoint doesn't exist - this is fine, logout is about clearing local state
+      // 404 means endpoint doesn't exist - this is fine
       if (import.meta.env.DEV) {
-        console.log("[Auth] Logout endpoint not found (404) - clearing local state only");
+        console.log("[Auth] Logout endpoint not found (404) - continuing");
       }
     } else {
       // Log other errors in development
@@ -333,10 +294,9 @@ export async function logout(): Promise<void> {
         console.error("[Auth] Logout error:", error);
       }
     }
-    // Still clear local auth state even if API call fails
-  } finally {
-    auth.clear();
+    // Cookie will be cleared by backend if endpoint exists
   }
+  // No localStorage token to clear - cookies are the source of truth
 }
 
 // Guard to prevent multiple simultaneous calls to /me
@@ -350,20 +310,6 @@ let fetchCurrentUserPromise: Promise<AuthUser | null> | null = null;
  * @returns User profile if authenticated, null otherwise
  */
 export async function fetchCurrentUser(): Promise<AuthUser | null> {
-  // If no token exists, don't even try to fetch
-  const token = auth.getToken();
-  if (!token) {
-    console.log("[Auth] No token found, skipping /me call");
-    return null;
-  }
-  
-  // If token is expired, clear it and return null
-  if (auth.isTokenExpired()) {
-    console.log("[Auth] Token is expired, clearing");
-    auth.clear();
-    return null;
-  }
-  
   // If a request is already in flight, return the same promise
   if (fetchCurrentUserPromise) {
     return fetchCurrentUserPromise;
@@ -371,7 +317,8 @@ export async function fetchCurrentUser(): Promise<AuthUser | null> {
   
   fetchCurrentUserPromise = (async () => {
     try {
-      // /me endpoint is REQUIRED - this validates authentication
+      // /me endpoint validates authentication via HTTP-only cookie
+      // No need to check for localStorage tokens - cookies handle auth automatically
       const response = await api.get("/me");
       
       console.log("[Auth] /me response received:", response);
@@ -379,7 +326,6 @@ export async function fetchCurrentUser(): Promise<AuthUser | null> {
       // Validate response is not undefined/null
       if (!response || typeof response !== 'object') {
         console.warn("[Auth] /me returned invalid response:", response);
-        auth.clear();
         return null;
       }
       
@@ -394,7 +340,6 @@ export async function fetchCurrentUser(): Promise<AuthUser | null> {
       const userId = backendResponse.id || backendResponse.user_id;
       if (!userId) {
         console.warn("[Auth] /me response missing user_id/id:", response);
-        auth.clear();
         return null;
       }
       
@@ -402,7 +347,6 @@ export async function fetchCurrentUser(): Promise<AuthUser | null> {
       // Email is mandatory - if backend doesn't provide it, this is an error state
       if (!backendResponse.email) {
         console.warn("[Auth] /me response missing email (email is mandatory):", response);
-        auth.clear();
         return null;
       }
       
@@ -421,16 +365,16 @@ export async function fetchCurrentUser(): Promise<AuthUser | null> {
     } catch (error) {
       const apiError = error as { status?: number };
       
-      // 401 = not authenticated (handled by interceptor, but clear here too)
+      // 401 = not authenticated (cookie missing/invalid)
       // 404 = endpoint doesn't exist OR user doesn't exist = not authenticated
       if (apiError.status === 401 || apiError.status === 404) {
         // User is not authenticated or endpoint is broken
-        auth.clear();
+        console.log("[Auth] /me returned 401/404 - user not authenticated");
         return null;
       }
       
       // For other errors (network, 500, etc.), log and return null
-      // Don't clear token on network errors - might be temporary
+      // Don't treat network errors as auth failure - might be temporary
       console.warn("[Auth] Failed to fetch /me:", error);
       return null;
     } finally {

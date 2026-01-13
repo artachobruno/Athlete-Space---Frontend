@@ -3,7 +3,6 @@ import { Button } from "@/components/ui/button"
 import { Download, Loader2, AlertCircle, CheckCircle2 } from "lucide-react"
 import { createWorkoutExport, getWorkoutExportStatus, type WorkoutExport } from "@/api/workouts"
 import { api } from "@/lib/api"
-import { getToken } from "@/auth/token"
 
 interface WorkoutActionsProps {
   workoutId: string
@@ -40,17 +39,12 @@ export function WorkoutActions({ workoutId }: WorkoutActionsProps) {
         fullUrl = `${baseURL}${cleanUrl}`
       }
       
-      // Get auth token for Authorization header
-      const token = getToken()
-      const headers: Record<string, string> = {}
-      if (token && token !== "null" && token.trim() !== "") {
-        headers.Authorization = `Bearer ${token}`
-      }
-      
-      // Fetch the file with credentials and auth header
+      // Fetch the file with credentials (HTTP-only cookies handle authentication)
       const response = await fetch(fullUrl, {
         credentials: "include",
-        headers,
+        headers: {
+          'Content-Type': 'application/json',
+        },
       })
       
       if (!response.ok) {

@@ -24,6 +24,8 @@ import { DndContext, DragEndEvent, DragOverlay, DragStartEvent, closestCenter } 
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { DraggablePlannedSession } from './DraggablePlannedSession';
 import { DroppableDayCell } from './DroppableDayCell';
+import { PairingDetailsModal } from './PairingDetailsModal';
+import { unpairActivity } from '@/lib/api';
 import { toast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
 
@@ -61,6 +63,9 @@ export function MonthView({ currentDate, onActivityClick }: MonthViewProps) {
   const updateWorkout = useUpdateWorkoutDate();
   const [activeId, setActiveId] = useState<string | null>(null);
   const [draggedSession, setDraggedSession] = useState<CalendarSession | null>(null);
+  const [pairingModalOpen, setPairingModalOpen] = useState(false);
+  const [selectedPairingActivity, setSelectedPairingActivity] = useState<CompletedActivity | null>(null);
+  const [selectedPairingSession, setSelectedPairingSession] = useState<CalendarSession | null>(null);
   const monthStart = startOfMonth(currentDate);
   const monthEnd = endOfMonth(currentDate);
   const monthKey = format(monthStart, 'yyyy-MM');
@@ -284,6 +289,32 @@ export function MonthView({ currentDate, onActivityClick }: MonthViewProps) {
     setDraggedSession(null);
   };
 
+  const handleUnpair = async () => {
+    if (!selectedPairingActivity) return;
+    
+    try {
+      await unpairActivity(selectedPairingActivity.id);
+      toast({
+        title: 'Activity unpaired',
+        description: 'The activity has been unpaired from its planned session.',
+      });
+      
+      // Invalidate all calendar queries to refresh data
+      queryClient.invalidateQueries({ queryKey: ['calendar'], exact: false });
+      queryClient.invalidateQueries({ queryKey: ['calendarWeek'], exact: false });
+      queryClient.invalidateQueries({ queryKey: ['calendarSeason'], exact: false });
+      queryClient.invalidateQueries({ queryKey: ['activities'] });
+    } catch (error) {
+      console.error('Failed to unpair activity:', error);
+      toast({
+        title: 'Unpair failed',
+        description: 'Failed to unpair the activity. Please try again.',
+        variant: 'destructive',
+      });
+      throw error;
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -401,6 +432,18 @@ export function MonthView({ currentDate, onActivityClick }: MonthViewProps) {
                   const activityDateStr = matchingActivity?.date || '';
                   const isMoved = !!matchingActivity && sessionDateStr !== activityDateStr;
                   
+                  // Check if activity is paired (has planned_session_id)
+                  const isPaired = Boolean(matchingActivity?.planned_session_id);
+
+                  const handlePairingIconClick = (e: React.MouseEvent) => {
+                    e.stopPropagation();
+                    if (matchingActivity && isPaired) {
+                      setSelectedPairingActivity(matchingActivity);
+                      setSelectedPairingSession(completedSession || session);
+                      setPairingModalOpen(true);
+                    }
+                  };
+                  
                   // Format duration
                   const duration = session.duration_minutes || workout.duration || 0;
                   const durationHours = Math.floor(duration / 60);
@@ -447,14 +490,23 @@ export function MonthView({ currentDate, onActivityClick }: MonthViewProps) {
                           </div>
                           <div className="flex items-center gap-1.5 shrink-0">
                             <span className="text-xs text-muted-foreground">{durationStr}</span>
-                            {isCompleted && (
+                            {isPaired && (
+                              <button
+                                onClick={handlePairingIconClick}
+                                className="cursor-pointer hover:opacity-80 transition-opacity"
+                                aria-label="Activity is paired - view pairing details"
+                              >
+                                <AlertTriangle className="h-3.5 w-3.5 text-amber-500 shrink-0" />
+                              </button>
+                            )}
+                            {isMoved && !isPaired && (
+                              <AlertTriangle className="h-3.5 w-3.5 text-amber-500 shrink-0" aria-label="Moved" />
+                            )}
+                            {isCompleted && !isMoved && !isPaired && (
                               <CheckCircle className="h-4 w-4 text-green-600 shrink-0" />
                             )}
                             {!isCompleted && !isMoved && (
                               <div className="h-2 w-2 rounded-full border border-muted-foreground/30 shrink-0" aria-label="Unmatched" />
-                            )}
-                            {isMoved && (
-                              <AlertTriangle className="h-3.5 w-3.5 text-amber-500 shrink-0" aria-label="Moved" />
                             )}
                           </div>
                         </div>
@@ -555,6 +607,17 @@ export function MonthView({ currentDate, onActivityClick }: MonthViewProps) {
           ) : null}
         </DragOverlay>
       </DndContext>
+      
+      {/* Pairing Details Modal */}
+      {selectedPairingActivity && (
+        <PairingDetailsModal
+          open={pairingModalOpen}
+          onOpenChange={setPairingModalOpen}
+          activity={selectedPairingActivity}
+          session={selectedPairingSession}
+          onUnpair={handleUnpair}
+        />
+      )}
     </div>
   );
 }

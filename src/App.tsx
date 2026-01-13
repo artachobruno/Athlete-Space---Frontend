@@ -11,8 +11,6 @@ import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { useSyncActivities } from "@/hooks/useSyncActivities";
 import { useTimezoneSync } from "@/hooks/useTimezoneSync";
 import { useValidateAuth } from "@/hooks/useValidateAuth";
-import { auth } from "@/lib/auth";
-import { getToken, setToken } from "@/auth/token";
 import { useEffect } from "react";
 import { useAuthDeepLink } from "@/hooks/useAuthDeepLink";
 import { ThemeProvider } from "@/hooks/useTheme";
@@ -150,37 +148,27 @@ const OAuthTokenHandler = () => {
     }
     
     if (token) {
-      console.log('[OAuth] Token found in URL on route:', location.pathname, {
+      console.warn('[OAuth] Token found in URL - this is legacy behavior. Backend should set HTTP-only cookies instead.');
+      console.log('[OAuth] Token in URL on route:', location.pathname, {
         tokenLength: token.length,
         tokenPreview: token.substring(0, 30) + '...',
       });
       
-      // Store the token using centralized utility
-      setToken(token);
+      // Remove token from URL to clean up
+      // Backend should be setting HTTP-only cookies, not returning tokens in URL
+      const newSearchParams = new URLSearchParams(searchParams);
+      newSearchParams.delete('token');
+      const newSearch = newSearchParams.toString();
+      const newUrl = `${location.pathname}${newSearch ? `?${newSearch}` : ''}`;
+      window.history.replaceState({}, '', newUrl);
       
-      // Verify token was stored
-      const storedToken = getToken();
-      if (storedToken) {
-        console.log('[OAuth] ✅ Token stored successfully');
-        
-        // CRITICAL: DO NOT navigate yet
-        // Let AuthContext rehydrate naturally
-        // Remove token from URL to clean up
-        const newSearchParams = new URLSearchParams(searchParams);
-        newSearchParams.delete('token');
-        const newSearch = newSearchParams.toString();
-        const newUrl = `${location.pathname}${newSearch ? `?${newSearch}` : ''}`;
-        window.history.replaceState({}, '', newUrl);
-        
-        // Trigger refreshUser to rehydrate auth state
-        // AuthContext will see the token, call /me, authenticate
-        // Then RequireAuth will allow navigation naturally
-        refreshUser().catch((err) => {
-          console.error('[OAuth] Failed to refresh user after token storage:', err);
-        });
-      } else {
-        console.error('[OAuth] ❌ Failed to store token!');
-      }
+      // Trigger refreshUser to check if cookies are set
+      // If backend set cookies properly, /me will succeed
+      // If not, user will need to log in again (expected during migration to cookies)
+      refreshUser().catch((err) => {
+        console.error('[OAuth] Failed to refresh user after OAuth callback:', err);
+        console.warn('[OAuth] If cookies are not set by backend, user will need to log in again');
+      });
     }
   }, [location, navigate, refreshUser, user]);
   

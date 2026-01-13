@@ -108,9 +108,9 @@ export async function testRawFetch() {
     const response = await fetch(testUrl, {
       method: 'GET',
       headers: {
-        'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json',
       },
+      credentials: 'include', // Required for HTTP-only cookies
     });
     
     const data = await response.json();

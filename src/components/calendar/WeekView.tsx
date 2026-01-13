@@ -41,6 +41,8 @@ import { DndContext, DragEndEvent, DragOverlay, DragStartEvent, closestCenter } 
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { DraggablePlannedSession } from './DraggablePlannedSession';
 import { DroppableDayCell } from './DroppableDayCell';
+import { PairingDetailsModal } from './PairingDetailsModal';
+import { unpairActivity } from '@/lib/api';
 
 interface WeekViewProps {
   currentDate: Date;
@@ -79,6 +81,9 @@ export function WeekView({ currentDate, onActivityClick }: WeekViewProps) {
   const [isSharing, setIsSharing] = useState(false);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [draggedSession, setDraggedSession] = useState<CalendarSession | null>(null);
+  const [pairingModalOpen, setPairingModalOpen] = useState(false);
+  const [selectedPairingActivity, setSelectedPairingActivity] = useState<CompletedActivity | null>(null);
+  const [selectedPairingSession, setSelectedPairingSession] = useState<CalendarSession | null>(null);
   const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
   const weekEnd = endOfWeek(currentDate, { weekStartsOn: 1 });
   const monthStart = startOfMonth(currentDate);
@@ -495,6 +500,32 @@ export function WeekView({ currentDate, onActivityClick }: WeekViewProps) {
     setDraggedSession(null);
   };
 
+  const handleUnpair = async () => {
+    if (!selectedPairingActivity) return;
+    
+    try {
+      await unpairActivity(selectedPairingActivity.id);
+      toast({
+        title: 'Activity unpaired',
+        description: 'The activity has been unpaired from its planned session.',
+      });
+      
+      // Invalidate all calendar queries to refresh data
+      queryClient.invalidateQueries({ queryKey: ['calendar'], exact: false });
+      queryClient.invalidateQueries({ queryKey: ['calendarWeek'], exact: false });
+      queryClient.invalidateQueries({ queryKey: ['calendarSeason'], exact: false });
+      queryClient.invalidateQueries({ queryKey: ['activities'] });
+    } catch (error) {
+      console.error('Failed to unpair activity:', error);
+      toast({
+        title: 'Unpair failed',
+        description: 'Failed to unpair the activity. Please try again.',
+        variant: 'destructive',
+      });
+      throw error;
+    }
+  };
+
   if (monthLoading) {
     return (
       <div className="flex items-center justify-center py-12">
@@ -648,6 +679,18 @@ export function WeekView({ currentDate, onActivityClick }: WeekViewProps) {
                 const sessionDateStr = session.date ? format(new Date(session.date), 'yyyy-MM-dd') : '';
                 const activityDateStr = matchingActivity?.date || '';
                 const isMoved = !!matchingActivity && sessionDateStr !== activityDateStr;
+                
+                // Check if activity is paired (has planned_session_id)
+                const isPaired = Boolean(matchingActivity?.planned_session_id);
+
+                const handlePairingIconClick = (e: React.MouseEvent) => {
+                  e.stopPropagation();
+                  if (matchingActivity && isPaired) {
+                    setSelectedPairingActivity(matchingActivity);
+                    setSelectedPairingSession(session);
+                    setPairingModalOpen(true);
+                  }
+                };
 
                 return (
                   <DraggablePlannedSession
@@ -672,10 +715,19 @@ export function WeekView({ currentDate, onActivityClick }: WeekViewProps) {
                           {workout.title}
                         </span>
                         <div className="ml-auto shrink-0 flex items-center gap-1">
-                          {isMoved && (
+                          {isPaired && (
+                            <button
+                              onClick={handlePairingIconClick}
+                              className="cursor-pointer hover:opacity-80 transition-opacity"
+                              aria-label="Activity is paired - view pairing details"
+                            >
+                              <AlertTriangle className="h-3.5 w-3.5 text-amber-500" />
+                            </button>
+                          )}
+                          {isMoved && !isPaired && (
                             <AlertTriangle className="h-3.5 w-3.5 text-amber-500" aria-label="Session moved after completion" />
                           )}
-                          {isCompleted && !isMoved && (
+                          {isCompleted && !isMoved && !isPaired && (
                             <CheckCircle2 className="h-4 w-4 text-load-fresh" />
                           )}
                           {!isCompleted && !isMoved && (
@@ -776,6 +828,17 @@ export function WeekView({ currentDate, onActivityClick }: WeekViewProps) {
           ) : null}
         </DragOverlay>
       </DndContext>
+      
+      {/* Pairing Details Modal */}
+      {selectedPairingActivity && (
+        <PairingDetailsModal
+          open={pairingModalOpen}
+          onOpenChange={setPairingModalOpen}
+          activity={selectedPairingActivity}
+          session={selectedPairingSession}
+          onUnpair={handleUnpair}
+        />
+      )}
     </div>
   );
 }

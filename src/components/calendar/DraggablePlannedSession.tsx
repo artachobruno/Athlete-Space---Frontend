@@ -17,6 +17,7 @@ interface DraggablePlannedSessionProps {
 /**
  * Wraps a planned session card to make it draggable.
  * Uses @dnd-kit for drag-and-drop functionality.
+ * Disables dragging when the matching activity is paired.
  */
 export function DraggablePlannedSession({
   session,
@@ -27,6 +28,10 @@ export function DraggablePlannedSession({
   children,
   className,
 }: DraggablePlannedSessionProps) {
+  // Check if activity is paired (has planned_session_id)
+  const isPaired = Boolean(matchingActivity?.planned_session_id);
+  const enableDnD = !isPaired;
+
   const {
     attributes,
     listeners,
@@ -36,6 +41,7 @@ export function DraggablePlannedSession({
     isDragging,
   } = useSortable({
     id: session.id,
+    disabled: !enableDnD,
     data: {
       type: 'planned-session',
       session,
@@ -55,12 +61,13 @@ export function DraggablePlannedSession({
     <div
       ref={setNodeRef}
       style={style}
-      {...attributes}
-      {...listeners}
+      {...(enableDnD ? attributes : {})}
+      {...(enableDnD ? listeners : {})}
       className={cn(
         className,
-        isDragging && 'cursor-grabbing',
-        !isDragging && 'cursor-grab'
+        enableDnD && isDragging && 'cursor-grabbing',
+        enableDnD && !isDragging && 'cursor-grab',
+        !enableDnD && 'cursor-default'
       )}
       onClick={onClick}
     >

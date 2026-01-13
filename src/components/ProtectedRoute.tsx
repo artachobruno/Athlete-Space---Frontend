@@ -1,6 +1,6 @@
-import { ReactNode, useEffect } from 'react';
+import { ReactNode } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
-import { auth } from '@/lib/auth';
+import { useAuth } from '@/context/AuthContext';
 
 interface ProtectedRouteProps {
   children: ReactNode;
@@ -10,18 +10,18 @@ interface ProtectedRouteProps {
  * ProtectedRoute component that redirects to login if user is not authenticated.
  * This enforces that all protected routes require valid credentials.
  * 
- * Since credentials are mandatory, there is no path that allows access without auth.
+ * Authentication is handled by HTTP-only cookies, checked via AuthContext.
  */
 export function ProtectedRoute({ children }: ProtectedRouteProps) {
   const location = useLocation();
-  const isAuthenticated = auth.isLoggedIn();
+  const { status, authReady } = useAuth();
+  const isAuthenticated = authReady && status === "authenticated";
 
-  useEffect(() => {
-    // If not authenticated, clear any stale token
-    if (!isAuthenticated) {
-      auth.clear();
-    }
-  }, [isAuthenticated]);
+  // Wait for auth to be ready before making routing decisions
+  if (!authReady) {
+    // Still loading auth state - could show loading spinner here
+    return null;
+  }
 
   // Always require authentication - credentials are mandatory
   if (!isAuthenticated) {

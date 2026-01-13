@@ -1,16 +1,14 @@
 import { useAuth } from '@/context/AuthContext';
-import { getToken } from '@/auth/token';
 
 /**
  * Auth state that tracks if authentication is ready.
  * This prevents race conditions where API calls are made before auth is initialized.
  * 
- * Now uses AuthContext for consistency instead of checking localStorage directly.
+ * Uses AuthContext - authentication is handled by HTTP-only cookies.
  */
 export interface AuthState {
   isLoaded: boolean;
   isAuthenticated: boolean;
-  token: string | null;
 }
 
 /**
@@ -19,13 +17,13 @@ export interface AuthState {
  * 
  * Usage:
  * ```ts
- * const { isLoaded, isAuthenticated, token } = useAuthState();
+ * const { isLoaded, isAuthenticated } = useAuthState();
  * 
  * useEffect(() => {
  *   if (!isLoaded) return; // Wait for auth to load
  *   if (!isAuthenticated) return; // Don't make authenticated calls
  *   
- *   // Now safe to make API calls
+ *   // Now safe to make API calls (cookies are sent automatically)
  *   fetchData();
  * }, [isLoaded, isAuthenticated]);
  * ```
@@ -33,19 +31,14 @@ export interface AuthState {
 export function useAuthState(): AuthState {
   const { status, user, authReady } = useAuth();
   
-  // SINGLE SOURCE OF TRUTH: Read token using centralized utility
-  // This ensures consistency with interceptor
-  const token = getToken();
-  
   // isLoaded = auth check is complete (authReady from context)
-  // isAuthenticated = user exists, status is authenticated, AND token exists
-  // CRITICAL: All three must be true - prevents divergence
-  const isAuthenticated = authReady && status === "authenticated" && !!user && !!token;
+  // isAuthenticated = user exists and status is authenticated
+  // Cookies handle authentication automatically - no token needed
+  const isAuthenticated = authReady && status === "authenticated" && !!user;
   
   return {
     isLoaded: authReady,
     isAuthenticated,
-    token: isAuthenticated ? token : null,
   };
 }
 

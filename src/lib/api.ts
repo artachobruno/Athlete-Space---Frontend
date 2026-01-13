@@ -1,8 +1,6 @@
 import axios, { AxiosError, AxiosHeaders } from "axios";
 import type { InternalAxiosRequestConfig } from "axios";
 import { format, startOfWeek, endOfWeek, subDays, addDays } from "date-fns";
-import { auth } from "./auth";
-import { getToken, clearToken } from "@/auth/token";
 import type { AthleteProfileOut } from "./apiValidation";
 import { getConversationId } from "./utils";
 import { isPreviewMode } from "./preview";
@@ -1277,6 +1275,20 @@ export const fetchActivity = async (id: string): Promise<import("../types").Comp
     return response as unknown as import("../types").CompletedActivity;
   } catch (error) {
     console.error("[API] Failed to fetch activity:", error);
+    throw error;
+  }
+};
+
+/**
+ * Unpairs an activity from its planned session.
+ * Removes the planned_session_id link, making the activity unpaired.
+ */
+export const unpairActivity = async (activityId: string): Promise<void> => {
+  console.log("[API] Unpairing activity", activityId);
+  try {
+    await api.post(`/activities/${activityId}/unpair`);
+  } catch (error) {
+    console.error("[API] Failed to unpair activity:", error);
     throw error;
   }
 };
@@ -2784,48 +2796,15 @@ const normalizeError = (error: unknown): ApiError => {
   };
 };
 
-// Request interceptor: Adds Authorization header for authenticated requests
+// Request interceptor: Sets Content-Type and conversation ID headers
 // CRITICAL: This interceptor is SYNCHRONOUS - no async operations allowed
-// Token source of truth: getToken() from centralized utility
+// AUTHENTICATION: Handled by HTTP-only cookies automatically via withCredentials: true
+// No Authorization header needed - browser sends cookies with credentials: 'include'
 api.interceptors.request.use(
   (config: InternalAxiosRequestConfig) => {
     // Ensure headers object exists (axios may not initialize it)
     if (!config.headers) {
       config.headers = new AxiosHeaders();
-    }
-    
-    // SINGLE SOURCE OF TRUTH: Read token using centralized utility (synchronous)
-    const token = getToken();
-    
-    // If token exists and is not "null" string, add Authorization header
-    if (token && token !== 'null' && token.trim() !== '') {
-      // Check if token is expired (synchronous check)
-      try {
-        const parts = token.split('.');
-        if (parts.length === 3) {
-          const payload = JSON.parse(atob(parts[1]));
-          const exp = payload.exp;
-          if (exp && exp * 1000 < Date.now()) {
-            // Token is expired - clear it
-            clearToken();
-            // Don't add header - request will go unauthenticated
-            // Response interceptor will handle 401
-          } else {
-            // Token is valid - add Authorization header
-            const authHeader = `Bearer ${token}`;
-            
-            // Set header
-            if (typeof (config.headers as { set?: (name: string, value: string) => void }).set === 'function') {
-              (config.headers as { set: (name: string, value: string) => void }).set('Authorization', authHeader);
-            } else {
-              (config.headers as Record<string, string>)['Authorization'] = authHeader;
-            }
-          }
-        }
-      } catch {
-        // Invalid token format - clear it
-        clearToken();
-      }
     }
     
     // Ensure Content-Type is set for POST/PUT requests with data
@@ -2921,14 +2900,11 @@ api.interceptors.response.use(
       normalizedError.message = "Authentication required. Please log in.";
     }
     
-    // Handle 401: ALWAYS clear token and trigger logout
-    // This ensures auth state and token never diverge
+    // Handle 401: Trigger logout event
+    // Authentication is handled by HTTP-only cookies, so we just need to update React state
     if (normalizedError.status === 401) {
-      // CRITICAL: Clear token immediately (single source of truth)
-      clearToken();
-      
       // Trigger logout event for AuthContext to handle
-      // This ensures React state is updated to match token state
+      // This ensures React state is updated when auth fails
       triggerLogoutEvent();
       
       // Trigger navigation to login (unless on public pages)

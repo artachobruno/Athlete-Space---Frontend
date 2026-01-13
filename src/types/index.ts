@@ -106,6 +106,7 @@ export interface CompletedActivity {
   trainingLoad: number; // TSS equivalent
   source: 'strava' | 'manual';
   workout_id?: string; // Link to canonical Workout
+  planned_session_id?: string | null; // Link to planned session (activity is paired if this is non-null)
   coachFeedback?: string;
   normalizedPower?: number; // Normalized Power (cycling) or Normalized Effort (running)
   intensityFactor?: number; // Intensity Factor (IF)

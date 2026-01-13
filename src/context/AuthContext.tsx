@@ -1,6 +1,5 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from "react";
 import { fetchCurrentUser, logout as logoutApi, type AuthUser } from "@/lib/auth";
-import { getToken, clearToken } from "@/auth/token";
 
 export type AuthStatus = "bootstrapping" | "unauthenticated" | "authenticated";
 
@@ -45,42 +44,26 @@ export function AuthProvider({ children }: AuthProviderProps) {
     // Don't set status to "loading" here - preserve bootstrapping if this is initial load
     
     try {
-      // CRITICAL: Enforce token → /me ordering
-      // Step 1: Check if token exists (synchronous check)
-      const token = getToken();
-      if (!token || token === 'null' || token.trim() === '') {
-        // No token = unauthenticated (don't call /me)
-        console.log("[AuthContext] No token found, setting unauthenticated");
-        setUser(null);
-        setStatus("unauthenticated");
-        setLoading(false);
-        setIsRefreshing(false);
-        return;
-      }
-      
-      // Step 2: Call /me to validate token and get user
+      // Call /me to validate authentication (HTTP-only cookie handles auth)
       // This is the ONLY way to set status to "authenticated"
       const currentUser = await fetchCurrentUser();
       
       // CRITICAL: Only set "authenticated" if /me succeeded
-      // If /me returns null, it means token is invalid or expired
+      // If /me returns null, it means cookie is missing/invalid
       if (!currentUser) {
-        // /me failed = unauthenticated (token was invalid/expired)
+        // /me failed = unauthenticated (cookie missing/invalid)
         console.log("[AuthContext] /me returned null, setting unauthenticated");
-        clearToken();
         setUser(null);
         setStatus("unauthenticated");
       } else {
         // /me succeeded = authenticated
         // CRITICAL: Backend is source of truth for onboarding_complete
-        // Never override backend state with localStorage
         setUser(currentUser);
         setStatus("authenticated");
       }
     } catch (error) {
       console.error("[AuthContext] Unexpected error:", error);
       // Any error = unauthenticated (don't assume authenticated)
-      clearToken();
       setUser(null);
       setStatus("unauthenticated");
     } finally {
@@ -107,7 +90,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
       console.log("[AuthContext] Received logout event from API interceptor");
       // CRITICAL: 401 = unauthenticated, NOT onboarding
       // Clear user and set status to unauthenticated
-      clearToken();
       setUser(null);
       setStatus("unauthenticated");
       setLoading(false);
@@ -125,23 +107,13 @@ export function AuthProvider({ children }: AuthProviderProps) {
     const bootstrapAuth = async () => {
       console.log("[AuthContext] Bootstrapping auth...");
       
-      const token = getToken();
-      
-      if (!token || token === 'null' || token.trim() === '') {
-        console.log("[AuthContext] No token found, setting unauthenticated");
-        setStatus("unauthenticated");
-        setLoading(false);
-        return;
-      }
-      
-      console.log("[AuthContext] Token found, calling /me");
-      
+      // Call /me to check authentication (HTTP-only cookie handles auth)
+      // No need to check for localStorage tokens - cookies are the source of truth
       try {
         const currentUser = await fetchCurrentUser();
         
         if (!currentUser) {
           console.log("[AuthContext] /me returned null, setting unauthenticated");
-          clearToken();
           setStatus("unauthenticated");
         } else {
           console.log("[AuthContext] /me succeeded, setting authenticated");
@@ -150,7 +122,6 @@ export function AuthProvider({ children }: AuthProviderProps) {
         }
       } catch (error) {
         console.error("[AuthContext] Bootstrap error:", error);
-        clearToken();
         setStatus("unauthenticated");
       } finally {
         setLoading(false);
