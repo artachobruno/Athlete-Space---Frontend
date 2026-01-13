@@ -6,9 +6,9 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Loader2, Plus, X } from 'lucide-react';
-import { createManualWeek } from '@/lib/api';
 import { toast } from '@/hooks/use-toast';
 import { format, startOfWeek, addDays, eachDayOfInterval } from 'date-fns';
+import { useCreatePlannedWeek } from '@/hooks/useCalendarMutations';
 
 interface SessionFormData {
   type: 'easy' | 'workout' | 'long' | 'rest' | '';
@@ -32,6 +32,7 @@ interface AddWeekModalProps {
 const weekDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
 export function AddWeekModal({ open, onOpenChange, initialDate, onSuccess }: AddWeekModalProps) {
+  const createWeek = useCreatePlannedWeek();
   const weekStart = useMemo(() => {
     if (initialDate) {
       return startOfWeek(initialDate, { weekStartsOn: 1 });
@@ -54,7 +55,6 @@ export function AddWeekModal({ open, onOpenChange, initialDate, onSuccess }: Add
   });
 
   const [error, setError] = useState<string | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const addSessionToDay = (dateStr: string) => {
     setDaySessions((prev) => {
@@ -179,43 +179,47 @@ export function AddWeekModal({ open, onOpenChange, initialDate, onSuccess }: Add
         return;
       }
 
-      setIsSubmitting(true);
+      createWeek.mutate(
+        {
+          weekStart: format(weekStart, 'yyyy-MM-dd'),
+          sessions,
+        },
+        {
+          onSuccess: () => {
+            toast({
+              title: 'Week added',
+              description: `${sessions.length} session(s) have been added to your calendar.`,
+            });
 
-      await createManualWeek(format(weekStart, 'yyyy-MM-dd'), sessions);
+            // Reset form
+            setDaySessions(
+              weekDates.map((date) => ({
+                date: format(date, 'yyyy-MM-dd'),
+                sessions: [],
+              }))
+            );
+            setError(null);
 
-      toast({
-        title: 'Week added',
-        description: `${sessions.length} session(s) have been added to your calendar.`,
-      });
-
-      // Reset form
-      setDaySessions(
-        weekDates.map((date) => ({
-          date: format(date, 'yyyy-MM-dd'),
-          sessions: [],
-        }))
+            // Close modal and refresh calendar
+            onOpenChange(false);
+            onSuccess?.();
+          },
+          onError: (err) => {
+            console.error('Failed to create week:', err);
+            if (err instanceof Error) {
+              setError(err.message);
+            } else {
+              const apiError = err as { message?: string; response?: { data?: { message?: string; detail?: string } } };
+              const errorMessage = apiError.response?.data?.message || apiError.response?.data?.detail || apiError.message || 'Failed to create week';
+              setError(errorMessage);
+            }
+          },
+        }
       );
-      setError(null);
-
-      // Close modal and refresh calendar
-      onOpenChange(false);
-      onSuccess?.();
-    } catch (err) {
-      console.error('Failed to create week:', err);
-      if (err instanceof Error) {
-        setError(err.message);
-      } else {
-        const apiError = err as { message?: string; response?: { data?: { message?: string; detail?: string } } };
-        const errorMessage = apiError.response?.data?.message || apiError.response?.data?.detail || apiError.message || 'Failed to create week';
-        setError(errorMessage);
-      }
-    } finally {
-      setIsSubmitting(false);
-    }
   };
 
   const handleClose = () => {
-    if (!isSubmitting) {
+    if (!createWeek.isPending) {
       setError(null);
       onOpenChange(false);
     }
@@ -254,7 +258,7 @@ export function AddWeekModal({ open, onOpenChange, initialDate, onSuccess }: Add
                       variant="outline"
                       size="sm"
                       onClick={() => addSessionToDay(dateStr)}
-                      disabled={isSubmitting}
+                      disabled={createWeek.isPending}
                     >
                       <Plus className="h-4 w-4 mr-1" />
                       Add Session
@@ -274,7 +278,7 @@ export function AddWeekModal({ open, onOpenChange, initialDate, onSuccess }: Add
                             <Select
                               value={session.type}
                               onValueChange={(value) => updateSession(dateStr, sessionIndex, 'type', value)}
-                              disabled={isSubmitting}
+                              disabled={createWeek.isPending}
                             >
                               <SelectTrigger>
                                 <SelectValue placeholder="Select type" />
@@ -319,7 +323,7 @@ export function AddWeekModal({ open, onOpenChange, initialDate, onSuccess }: Add
                             <Input
                               value={session.notes}
                               onChange={(e) => updateSession(dateStr, sessionIndex, 'notes', e.target.value)}
-                              disabled={isSubmitting}
+                              disabled={createWeek.isPending}
                               placeholder="Optional"
                             />
                           </div>
@@ -330,7 +334,7 @@ export function AddWeekModal({ open, onOpenChange, initialDate, onSuccess }: Add
                           variant="ghost"
                           size="icon"
                           onClick={() => removeSessionFromDay(dateStr, sessionIndex)}
-                          disabled={isSubmitting}
+                          disabled={createWeek.isPending}
                           className="flex-shrink-0"
                         >
                           <X className="h-4 w-4" />
@@ -354,11 +358,11 @@ export function AddWeekModal({ open, onOpenChange, initialDate, onSuccess }: Add
           </div>
 
           <DialogFooter>
-            <Button type="button" variant="outline" onClick={handleClose} disabled={isSubmitting}>
+            <Button type="button" variant="outline" onClick={handleClose} disabled={createWeek.isPending}>
               Cancel
             </Button>
-            <Button type="submit" disabled={isSubmitting || totalSessions === 0 || totalSessions > 500}>
-              {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            <Button type="submit" disabled={createWeek.isPending || totalSessions === 0 || totalSessions > 500}>
+              {createWeek.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Add Week ({totalSessions} session{totalSessions !== 1 ? 's' : ''})
             </Button>
           </DialogFooter>

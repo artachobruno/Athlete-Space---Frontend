@@ -8,12 +8,13 @@ import { useNavigate } from 'react-router-dom';
 import type { PlannedWorkout, CompletedActivity } from '@/types';
 import { useUnitSystem } from '@/hooks/useUnitSystem';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { fetchTrainingLoad, updateSessionStatus, type CalendarSession, type ProposalOnlyResponse } from '@/lib/api';
+import { fetchTrainingLoad, type CalendarSession, type ProposalOnlyResponse } from '@/lib/api';
 import { useMemo, useState } from 'react';
 import { getTssForDate, enrichActivitiesWithTss } from '@/lib/tss-utils';
 import { toast } from '@/hooks/use-toast';
 import { ConfirmationDialog } from '@/components/confirmation/ConfirmationDialog';
 import { checkForProposalResponse } from '@/lib/confirmation-handler';
+import { useUpdateSessionStatus } from '@/hooks/useCalendarMutations';
 
 interface ActivityPopupProps {
   open: boolean;
@@ -59,7 +60,7 @@ export function ActivityPopup({
 }: ActivityPopupProps) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-  const [isUpdatingStatus, setIsUpdatingStatus] = useState(false);
+  const updateStatus = useUpdateSessionStatus();
   const [pendingConfirmation, setPendingConfirmation] = useState<{
     proposal: ProposalOnlyResponse;
     status: 'completed' | 'skipped' | 'cancelled';
@@ -132,90 +133,89 @@ export function ActivityPopup({
     }
   };
 
-  const handleStatusUpdate = async (newStatus: 'completed' | 'skipped' | 'cancelled') => {
+  const handleStatusUpdate = (newStatus: 'completed' | 'skipped' | 'cancelled') => {
     if (!session || !isPlannedSession) return;
     
-    setIsUpdatingStatus(true);
-    try {
-      const response = await updateSessionStatus(session.id, newStatus);
-      
-      // Check if response requires confirmation (PROPOSAL_ONLY)
-      const proposal = checkForProposalResponse(response);
-      
-      if (proposal) {
-        // Store pending confirmation
-        setPendingConfirmation({ proposal, status: newStatus });
-        setIsUpdatingStatus(false);
-        return; // Don't close dialog, wait for confirmation
+    updateStatus.mutate(
+      {
+        sessionId: session.id,
+        status: newStatus,
+      },
+      {
+        onSuccess: (response) => {
+          // Check if response requires confirmation (PROPOSAL_ONLY)
+          const proposal = checkForProposalResponse(response);
+          
+          if (proposal) {
+            // Store pending confirmation
+            setPendingConfirmation({ proposal, status: newStatus });
+            return; // Don't close dialog, wait for confirmation
+          }
+          
+          // Success - no confirmation needed (auto-adjusted/pre-authorized)
+          toast({
+            title: 'Session updated',
+            description: `Auto-adjusted (pre-authorized)`,
+          });
+          
+          onStatusChange?.();
+          onOpenChange(false);
+        },
+        onError: (error) => {
+          console.error('Failed to update session status:', error);
+          toast({
+            title: 'Update failed',
+            description: 'Failed to update session status. Please try again.',
+            variant: 'destructive',
+          });
+        },
       }
-      
-      // Success - no confirmation needed (auto-adjusted/pre-authorized)
-      await queryClient.invalidateQueries({ queryKey: ['calendarWeek'] });
-      await queryClient.invalidateQueries({ queryKey: ['calendarSeason'] });
-      await queryClient.invalidateQueries({ queryKey: ['calendarToday'] });
-      
-      toast({
-        title: 'Session updated',
-        description: `Auto-adjusted (pre-authorized)`,
-      });
-      
-      onStatusChange?.();
-      onOpenChange(false);
-    } catch (error) {
-      console.error('Failed to update session status:', error);
-      toast({
-        title: 'Update failed',
-        description: 'Failed to update session status. Please try again.',
-        variant: 'destructive',
-      });
-    } finally {
-      setIsUpdatingStatus(false);
-    }
+    );
   };
 
-  const handleConfirmStatusUpdate = async () => {
+  const handleConfirmStatusUpdate = () => {
     if (!session || !pendingConfirmation) return;
     
-    setIsUpdatingStatus(true);
-    try {
-      // Retry with confirmed=true
-      const response = await updateSessionStatus(
-        session.id,
-        pendingConfirmation.status,
-        undefined,
-        true // confirmed flag
-      );
-      
-      // Check if still PROPOSAL_ONLY (shouldn't happen but handle it)
-      const proposal = checkForProposalResponse(response);
-      if (proposal) {
-        throw new Error('Backend still returned PROPOSAL_ONLY even with confirmed=true');
+    updateStatus.mutate(
+      {
+        sessionId: session.id,
+        status: pendingConfirmation.status,
+        confirmed: true, // confirmed flag
+      },
+      {
+        onSuccess: (response) => {
+          // Check if still PROPOSAL_ONLY (shouldn't happen but handle it)
+          const proposal = checkForProposalResponse(response);
+          if (proposal) {
+            toast({
+              title: 'Confirmation failed',
+              description: 'Backend still returned PROPOSAL_ONLY even with confirmed=true',
+              variant: 'destructive',
+            });
+            return;
+          }
+          
+          // Success
+          toast({
+            title: 'Session updated',
+            description: `Created after your confirmation`,
+          });
+          
+          setPendingConfirmation(null);
+          onStatusChange?.();
+          onOpenChange(false);
+        },
+        onError: (error) => {
+          console.error('Failed to confirm session status update:', error);
+          toast({
+            title: 'Confirmation failed',
+            description: 'Failed to confirm session status update. Please try again.',
+            variant: 'destructive',
+          });
+          // Keep dialog open for retry
+        },
       }
-      
-      // Success
-      await queryClient.invalidateQueries({ queryKey: ['calendarWeek'] });
-      await queryClient.invalidateQueries({ queryKey: ['calendarSeason'] });
-      await queryClient.invalidateQueries({ queryKey: ['calendarToday'] });
-      
-      toast({
-        title: 'Session updated',
-        description: `Created after your confirmation`,
-      });
-      
-      setPendingConfirmation(null);
-      onStatusChange?.();
-      onOpenChange(false);
-    } catch (error) {
-      console.error('Failed to confirm session status update:', error);
-      toast({
-        title: 'Confirmation failed',
-        description: 'Failed to confirm session status update. Please try again.',
-        variant: 'destructive',
-      });
-      // Keep dialog open for retry
-    } finally {
-      setIsUpdatingStatus(false);
-    }
+    );
   };
 
   const handleCancelConfirmation = () => {
@@ -456,7 +456,7 @@ export function ActivityPopup({
                   variant="default"
                   className="flex-1"
                   onClick={() => handleStatusUpdate('completed')}
-                  disabled={isUpdatingStatus}
+                  disabled={updateStatus.isPending}
                 >
                   <CheckCircle2 className="h-4 w-4 mr-2" />
                   Mark Completed
@@ -465,7 +465,7 @@ export function ActivityPopup({
                   variant="outline"
                   className="flex-1"
                   onClick={() => handleStatusUpdate('skipped')}
-                  disabled={isUpdatingStatus}
+                  disabled={updateStatus.isPending}
                 >
                   <SkipForward className="h-4 w-4 mr-2" />
                   Skip
@@ -474,7 +474,7 @@ export function ActivityPopup({
                   variant="outline"
                   className="flex-1"
                   onClick={() => handleStatusUpdate('cancelled')}
-                  disabled={isUpdatingStatus}
+                  disabled={updateStatus.isPending}
                 >
                   <X className="h-4 w-4 mr-2" />
                   Cancel
@@ -520,7 +520,7 @@ export function ActivityPopup({
         proposal={pendingConfirmation.proposal}
         onConfirm={handleConfirmStatusUpdate}
         onCancel={handleCancelConfirmation}
-        isLoading={isUpdatingStatus}
+        isLoading={updateStatus.isPending}
       />
     )}
     </>

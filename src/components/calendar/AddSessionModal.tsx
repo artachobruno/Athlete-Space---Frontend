@@ -6,10 +6,10 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { Loader2 } from 'lucide-react';
-import { createManualSession } from '@/lib/api';
 import { toast } from '@/hooks/use-toast';
 import { useUnitSystem } from '@/hooks/useUnitSystem';
 import { format } from 'date-fns';
+import { useCreatePlannedSession } from '@/hooks/useCalendarMutations';
 
 interface AddSessionModalProps {
   open: boolean;
@@ -20,12 +20,12 @@ interface AddSessionModalProps {
 
 export function AddSessionModal({ open, onOpenChange, initialDate, onSuccess }: AddSessionModalProps) {
   const { unitSystem } = useUnitSystem();
+  const createSession = useCreatePlannedSession();
   const [date, setDate] = useState(initialDate ? format(initialDate, 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd'));
   const [type, setType] = useState<'easy' | 'workout' | 'long' | 'rest' | ''>('');
   const [distanceInput, setDistanceInput] = useState<string>('');
   const [durationMinutes, setDurationMinutes] = useState<string>('');
   const [notes, setNotes] = useState<string>('');
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   // Get distance unit label based on user's unit system
@@ -59,110 +59,110 @@ export function AddSessionModal({ open, onOpenChange, initialDate, onSuccess }: 
       return;
     }
 
-    setIsSubmitting(true);
-
-    try {
-      // Convert distance from user units to km for the API
-      let distanceKm: number | null = null;
-      if (distanceInput) {
-        const distanceValue = parseFloat(distanceInput);
-        if (unitSystem === 'imperial') {
-          // Convert miles to km
-          distanceKm = distanceValue / 0.621371;
-        } else {
-          // Already in km
-          distanceKm = distanceValue;
-        }
+    // Convert distance from user units to km for the API
+    let distanceKm: number | null = null;
+    if (distanceInput) {
+      const distanceValue = parseFloat(distanceInput);
+      if (unitSystem === 'imperial') {
+        // Convert miles to km
+        distanceKm = distanceValue / 0.621371;
+      } else {
+        // Already in km
+        distanceKm = distanceValue;
       }
+    }
 
-      await createManualSession({
+    createSession.mutate(
+      {
         date,
         type,
         distance_km: distanceKm,
         duration_minutes: durationMinutes ? parseInt(durationMinutes, 10) : null,
         notes: notes.trim() || null,
-      });
+      },
+      {
+        onSuccess: () => {
+          toast({
+            title: 'Session added',
+            description: 'The session has been added to your calendar.',
+          });
 
-      toast({
-        title: 'Session added',
-        description: 'The session has been added to your calendar.',
-      });
+          // Reset form
+          setType('');
+          setDistanceInput('');
+          setDurationMinutes('');
+          setNotes('');
+          setError(null);
 
-      // Reset form
-      setType('');
-      setDistanceInput('');
-      setDurationMinutes('');
-      setNotes('');
-      setError(null);
-
-      // Close modal and refresh calendar
-      onOpenChange(false);
-      onSuccess?.();
-    } catch (err) {
-      console.error('Failed to create session:', err);
-      const apiError = err as { 
-        message?: string; 
-        response?: { 
-          status?: number;
-          data?: { 
+          // Close modal and refresh calendar
+          onOpenChange(false);
+          onSuccess?.();
+        },
+        onError: (err) => {
+          console.error('Failed to create session:', err);
+          const apiError = err as { 
             message?: string; 
-            detail?: string | unknown;
-            errors?: Array<{ field: string; message: string }>;
-          } 
-        } 
-      };
-      
-      // Try to extract a meaningful error message
-      let errorMessage = 'Failed to create session';
-      if (apiError.response?.data) {
-        const data = apiError.response.data;
-        
-        // Log full details for debugging
-        console.error('API error details:', data);
-        
-        // Handle Pydantic/FastAPI validation errors (422 status)
-        if (apiError.response.status === 422 && data.detail) {
-          if (Array.isArray(data.detail)) {
-            // FastAPI validation errors format: [{"loc": ["field"], "msg": "...", "type": "..."}]
-            const validationErrors = data.detail as Array<{ loc?: unknown[]; msg?: string; type?: string }>;
-            const fieldErrors = validationErrors.map(err => {
-              const field = Array.isArray(err.loc) ? err.loc[err.loc.length - 1] : 'unknown';
-              return `${field}: ${err.msg || err.type || 'validation error'}`;
-            });
-            errorMessage = fieldErrors.length > 0 ? fieldErrors.join(', ') : 'Validation error';
-          } else if (typeof data.detail === 'object') {
-            // Handle object format validation errors
-            const detailObj = data.detail as Record<string, unknown>;
-            const fieldErrors: string[] = [];
-            for (const [field, errors] of Object.entries(detailObj)) {
-              if (Array.isArray(errors) && errors.length > 0) {
-                const errorMsg = errors[0] && typeof errors[0] === 'object' && 'msg' in errors[0]
-                  ? String(errors[0].msg)
-                  : String(errors[0]);
-                fieldErrors.push(`${field}: ${errorMsg}`);
+            response?: { 
+              status?: number;
+              data?: { 
+                message?: string; 
+                detail?: string | unknown;
+                errors?: Array<{ field: string; message: string }>;
+              } 
+            } 
+          };
+          
+          // Try to extract a meaningful error message
+          let errorMessage = 'Failed to create session';
+          if (apiError.response?.data) {
+            const data = apiError.response.data;
+            
+            // Log full details for debugging
+            console.error('API error details:', data);
+            
+            // Handle Pydantic/FastAPI validation errors (422 status)
+            if (apiError.response.status === 422 && data.detail) {
+              if (Array.isArray(data.detail)) {
+                // FastAPI validation errors format: [{"loc": ["field"], "msg": "...", "type": "..."}]
+                const validationErrors = data.detail as Array<{ loc?: unknown[]; msg?: string; type?: string }>;
+                const fieldErrors = validationErrors.map(err => {
+                  const field = Array.isArray(err.loc) ? err.loc[err.loc.length - 1] : 'unknown';
+                  return `${field}: ${err.msg || err.type || 'validation error'}`;
+                });
+                errorMessage = fieldErrors.length > 0 ? fieldErrors.join(', ') : 'Validation error';
+              } else if (typeof data.detail === 'object') {
+                // Handle object format validation errors
+                const detailObj = data.detail as Record<string, unknown>;
+                const fieldErrors: string[] = [];
+                for (const [field, errors] of Object.entries(detailObj)) {
+                  if (Array.isArray(errors) && errors.length > 0) {
+                    const errorMsg = errors[0] && typeof errors[0] === 'object' && 'msg' in errors[0]
+                      ? String(errors[0].msg)
+                      : String(errors[0]);
+                    fieldErrors.push(`${field}: ${errorMsg}`);
+                  }
+                }
+                errorMessage = fieldErrors.length > 0 ? fieldErrors.join(', ') : 'Validation error';
+              } else if (typeof data.detail === 'string') {
+                errorMessage = data.detail;
               }
+            } else if (data.message) {
+              errorMessage = data.message;
+            } else if (Array.isArray(data.errors) && data.errors.length > 0) {
+              errorMessage = data.errors.map(e => `${e.field}: ${e.message}`).join(', ');
             }
-            errorMessage = fieldErrors.length > 0 ? fieldErrors.join(', ') : 'Validation error';
-          } else if (typeof data.detail === 'string') {
-            errorMessage = data.detail;
+          } else if (apiError.message) {
+            errorMessage = apiError.message;
           }
-        } else if (data.message) {
-          errorMessage = data.message;
-        } else if (Array.isArray(data.errors) && data.errors.length > 0) {
-          errorMessage = data.errors.map(e => `${e.field}: ${e.message}`).join(', ');
-        }
-      } else if (apiError.message) {
-        errorMessage = apiError.message;
+          
+          setError(errorMessage);
+        },
       }
-      
-      setError(errorMessage);
-    } finally {
-      setIsSubmitting(false);
-    }
+    );
   };
 
   const handleClose = () => {
-    if (!isSubmitting) {
+    if (!createSession.isPending) {
       setError(null);
       onOpenChange(false);
     }
@@ -187,7 +187,7 @@ export function AddSessionModal({ open, onOpenChange, initialDate, onSuccess }: 
               value={date}
               onChange={(e) => setDate(e.target.value)}
               required
-              disabled={isSubmitting}
+              disabled={createSession.isPending}
             />
           </div>
 
@@ -242,7 +242,7 @@ export function AddSessionModal({ open, onOpenChange, initialDate, onSuccess }: 
               id="notes"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              disabled={isSubmitting}
+              disabled={createSession.isPending}
               placeholder="Add any additional notes..."
               rows={3}
             />
@@ -258,8 +258,8 @@ export function AddSessionModal({ open, onOpenChange, initialDate, onSuccess }: 
             <Button type="button" variant="outline" onClick={handleClose} disabled={isSubmitting}>
               Cancel
             </Button>
-            <Button type="submit" disabled={isSubmitting}>
-              {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            <Button type="submit" disabled={createSession.isPending}>
+              {createSession.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Add Session
             </Button>
           </DialogFooter>

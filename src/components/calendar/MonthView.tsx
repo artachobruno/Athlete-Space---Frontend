@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import {
   startOfMonth,
   endOfMonth,
@@ -8,14 +8,22 @@ import {
   format,
   isSameMonth,
   isToday,
-  eachWeekOfInterval,
+  parseISO,
+  isPast,
 } from 'date-fns';
 import { cn } from '@/lib/utils';
-import { fetchCalendarWeek, fetchActivities, type CalendarSession } from '@/lib/api';
+import { type CalendarSession } from '@/lib/api';
+import { useUpdatePlannedSession } from '@/hooks/useCalendarMutations';
 import { mapSessionToWorkout, normalizeSportType } from '@/lib/session-utils';
-import { Footprints, Bike, Waves, CheckCircle2, MessageCircle, Loader2 } from 'lucide-react';
-import { useQueries } from '@tanstack/react-query';
+import { fetchCalendarMonth, normalizeCalendarMonth, type DayCalendarData } from '@/lib/calendar-month';
+import { Footprints, Bike, Waves, CheckCircle2, MessageCircle, Loader2, AlertTriangle } from 'lucide-react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import type { PlannedWorkout, CompletedActivity } from '@/types';
+import { DndContext, DragEndEvent, DragOverlay, DragStartEvent, closestCenter } from '@dnd-kit/core';
+import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import { DraggablePlannedSession } from './DraggablePlannedSession';
+import { DroppableDayCell } from './DroppableDayCell';
+import { toast } from '@/hooks/use-toast';
 
 interface MonthViewProps {
   currentDate: Date;
@@ -46,113 +54,51 @@ function getSportIcon(sport: string | null | undefined): typeof Footprints {
  * alongside sessions to provide a complete view of training activities.
  */
 export function MonthView({ currentDate, onActivityClick }: MonthViewProps) {
+  const queryClient = useQueryClient();
+  const updateSession = useUpdatePlannedSession();
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const [draggedSession, setDraggedSession] = useState<CalendarSession | null>(null);
   const monthStart = startOfMonth(currentDate);
-  const monthEnd = endOfMonth(currentDate);
+  const monthKey = format(monthStart, 'yyyy-MM');
   
-  // Fetch data for all weeks in the month
-  const weeks = useMemo(() => {
-    return eachWeekOfInterval({ start: monthStart, end: monthEnd }, { weekStartsOn: 1 });
-  }, [monthStart, monthEnd]);
-
-  const weekQueries = useQueries({
-    queries: weeks.map(weekStart => {
-      const weekStartStr = format(weekStart, 'yyyy-MM-dd');
-      return {
-        queryKey: ['calendarWeek', weekStartStr],
-        queryFn: () => fetchCalendarWeek(weekStartStr),
-        retry: 1,
-      };
-    }),
+  // Fetch month data (includes planned sessions, completed activities, and workouts)
+  const { data: monthData, isLoading } = useQuery({
+    queryKey: ['calendar', 'month', monthKey],
+    queryFn: () => fetchCalendarMonth(currentDate),
+    retry: 1,
   });
 
-  // Calculate how many months back we need to fetch activities for
-  // We'll fetch activities for the current month plus buffer months to ensure we have historical data
-  const monthsToFetch = useMemo(() => {
-    const now = new Date();
-    const monthsDiff = (currentDate.getFullYear() - now.getFullYear()) * 12 + (currentDate.getMonth() - now.getMonth());
-    return Math.max(0, monthsDiff + 3);
-  }, [currentDate]);
-
-  // Fetch activities with pagination to cover the date range being viewed
-  const activityQueryConfigs = useMemo(() => {
-    const configs = [];
-    // Always fetch the first page (most recent 100 activities)
-    // Use the same query key as Calendar.tsx to share cache
-    configs.push({
-      queryKey: ['activities', 'limit', 100],
-      queryFn: () => fetchActivities({ limit: 100 }),
-    });
+  // Normalize month data by day
+  const dayDataMap = useMemo(() => {
+    if (!monthData) return new Map<string, DayCalendarData>();
     
-    // If we need to go back further, fetch additional pages
-    const pagesNeeded = Math.ceil(monthsToFetch / 3); // ~3 months per 100 activities
-    for (let page = 1; page <= pagesNeeded && page <= 10; page++) { // Limit to 10 pages (1000 activities max)
-      configs.push({
-        queryKey: ['activities', 'limit', 100, 'offset', page * 100],
-        queryFn: () => fetchActivities({ limit: 100, offset: page * 100 }),
-      });
+    const normalizedDays = normalizeCalendarMonth(monthData);
+    const map = new Map<string, DayCalendarData>();
+    for (const day of normalizedDays) {
+      map.set(day.date, day);
     }
-    return configs;
-  }, [monthsToFetch]);
-
-  // Execute all activity queries using useQueries
-  const activityQueryResults = useQueries({
-    queries: activityQueryConfigs.map(config => ({
-      ...config,
-      retry: 1,
-      staleTime: 5 * 60 * 1000, // 5 minutes
-      gcTime: 30 * 60 * 1000, // 30 minutes
-    })),
-  });
-
-  // Combine all activity results
-  const activities = useMemo(() => {
-    const allActivities: CompletedActivity[] = [];
-    const seenIds = new Set<string>();
-    
-    for (const result of activityQueryResults) {
-      if (result.data && Array.isArray(result.data)) {
-        for (const activity of result.data) {
-          if (activity && activity.id && !seenIds.has(activity.id)) {
-            seenIds.add(activity.id);
-            allActivities.push(activity);
-          }
-        }
-      }
-    }
-    
-    // Sort by date descending (most recent first)
-    // Dates are already normalized YYYY-MM-DD strings, so we can compare directly
-    return allActivities.sort((a, b) => {
-      if (!a.date || !b.date) return 0;
-      // Compare YYYY-MM-DD strings directly (lexicographic comparison works for ISO dates)
-      return b.date.localeCompare(a.date);
-    });
-  }, [activityQueryResults]);
-
-  const isLoading = weekQueries.some(q => q.isLoading);
-  const activitiesLoading = activityQueryResults.some(q => q.isLoading);
-  const allWeekData = weekQueries.map(q => q.data).filter(Boolean);
+    return map;
+  }, [monthData]);
   
-  // Collect all sessions from all weeks
+  // Collect all sessions for drag-and-drop
   const allSessions = useMemo(() => {
-    return allWeekData.flatMap(w => {
-      const sessions = w?.sessions;
-      return Array.isArray(sessions) ? sessions : [];
-    });
-  }, [allWeekData]);
+    if (!monthData) return [];
+    return [...monthData.planned_sessions, ...monthData.workouts];
+  }, [monthData]);
   
   // Debug logging
-  if (allSessions.length > 0) {
+  if (monthData) {
     const totalSessions = allSessions.length;
-    const plannedCount = allSessions.filter(s => s?.status === 'planned').length;
-    const completedCount = allSessions.filter(s => s?.status === 'completed').length;
-    console.log('[MonthView] Total sessions across all weeks:', totalSessions);
-    console.log('[MonthView] Planned sessions:', plannedCount, 'Completed sessions:', completedCount);
-    console.log('[MonthView] Sessions for month:', format(currentDate, 'MMMM yyyy'));
-  }
-  
-  if (activities.length > 0) {
-    console.log('[MonthView] Loaded activities:', activities.length);
+    const plannedCount = monthData.planned_sessions.length;
+    const completedCount = monthData.completed_activities.length;
+    const workoutsCount = monthData.workouts.length;
+    console.log('[MonthView] Month data loaded:', {
+      month: format(currentDate, 'MMMM yyyy'),
+      plannedSessions: plannedCount,
+      completedActivities: completedCount,
+      workouts: workoutsCount,
+      totalSessions,
+    });
   }
 
   const days = useMemo(() => {
@@ -188,52 +134,122 @@ export function MonthView({ currentDate, onActivityClick }: MonthViewProps) {
 
   const getWorkoutsForDay = (date: Date) => {
     const dateStr = format(date, 'yyyy-MM-dd');
+    const dayData = dayDataMap.get(dateStr);
     
-    // Filter sessions for this specific day with proper timezone handling
-    const daySessions = allSessions.filter(s => {
-      if (!s || typeof s !== 'object' || !s.date) return false;
-      
-      // Normalize date strings for comparison (handle timezone issues)
-      // Parse the session date and compare only the date part (YYYY-MM-DD)
-      const sessionDate = new Date(s.date);
-      // Ensure we're comparing local dates, not UTC
-      const sessionDateStr = format(sessionDate, 'yyyy-MM-dd');
-      return sessionDateStr === dateStr;
-    });
+    if (!dayData) {
+      return { planned: [], completed: [], plannedSessions: [], completedSessions: [] };
+    }
     
-    // FE-3: Remove invalid filters - show sessions that aren't explicitly excluded
-    // Separate planned and completed sessions
-    const plannedSessions = daySessions.filter(s => s.status !== 'completed' && s.status !== 'cancelled' && s.status !== 'skipped');
-    const completedSessions = daySessions.filter(s => s.status === 'completed');
-    
-    // Map to workout/activity formats with validation
-    const planned = plannedSessions
+    // Map planned sessions to workouts
+    const planned = dayData.plannedSessions
       .map(mapSessionToWorkout)
       .filter((w): w is PlannedWorkout => w !== null && w.sport !== undefined);
     
-    // Get completed activities from both CalendarSession objects and activities API
-    const completedFromSessions = completedSessions
+    // Combine completed activities from both sources (activities API and calendar workouts)
+    const completedFromWorkouts = dayData.workouts
       .map(mapCompletedSessionToActivity)
       .filter((a): a is CompletedActivity => a !== null && a.sport !== undefined);
     
-    // Get completed activities from activities API for this day
-    const activitiesArray = Array.isArray(activities) ? activities : [];
-    const completedFromActivities = activitiesArray.filter((a: CompletedActivity) => {
-      if (!a || typeof a !== 'object' || !a.date) return false;
-      // Date is already normalized to YYYY-MM-DD format from API
-      const activityDate = a.date;
-      return activityDate === dateStr;
-    });
+    // Merge completed activities, avoiding duplicates
+    const seenActivityIds = new Set(completedFromWorkouts.map(a => a.id));
+    const uniqueActivitiesFromAPI = dayData.completedActivities.filter(a => !seenActivityIds.has(a.id));
+    const completed = [...completedFromWorkouts, ...uniqueActivitiesFromAPI];
     
-    // Merge completed activities from both sources, avoiding duplicates
-    const seenActivityIds = new Set(completedFromSessions.map(a => a.id));
-    const uniqueActivitiesFromAPI = completedFromActivities.filter(a => !seenActivityIds.has(a.id));
-    const completed = [...completedFromSessions, ...uniqueActivitiesFromAPI];
-    
-    return { planned, completed, plannedSessions, completedSessions };
+    return {
+      planned,
+      completed,
+      plannedSessions: dayData.plannedSessions,
+      completedSessions: dayData.workouts,
+    };
   };
 
-  if (isLoading || activitiesLoading) {
+  // Get all planned session IDs for SortableContext
+  const allPlannedSessionIds = useMemo(() => {
+    if (!monthData) return [];
+    return monthData.planned_sessions.map(s => s.id);
+  }, [monthData]);
+
+  const handleDragStart = (event: DragStartEvent) => {
+    setActiveId(event.active.id as string);
+    const activeData = event.active.data.current;
+    if (activeData?.session) {
+      setDraggedSession(activeData.session);
+    }
+  };
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+    setActiveId(null);
+    setDraggedSession(null);
+
+    if (!over) return;
+
+    const activeData = active.data.current;
+    const overData = over.data.current;
+
+    // Only handle drops on day cells
+    if (overData?.type !== 'day' || !activeData?.session) return;
+
+    const session = activeData.session as CalendarSession;
+    const newDate = overData.date as string;
+    const oldDate = session.date ? format(new Date(session.date), 'yyyy-MM-dd') : '';
+
+    // Don't update if dropped on the same day
+    if (newDate === oldDate) return;
+
+    // Check if dragging a past/completed session
+    const sessionDate = session.date ? parseISO(session.date) : null;
+    const isPastSession = sessionDate && isPast(sessionDate) && !isToday(sessionDate);
+    const hasCompletedActivity = activeData.matchingActivity !== null && activeData.matchingActivity !== undefined;
+
+    // Show warning for past sessions or completed workouts
+    if (isPastSession || hasCompletedActivity) {
+      const warningMessage = hasCompletedActivity
+        ? 'You moved a completed workout. Completion was preserved.'
+        : 'You moved a past session.';
+      
+      toast({
+        title: 'Session moved',
+        description: warningMessage,
+        variant: 'default',
+      });
+    }
+
+    updateSession.mutate(
+      {
+        sessionId: session.id,
+        scheduledDate: newDate,
+      },
+      {
+        onSuccess: () => {
+          toast({
+            title: 'Session moved',
+            description: `Moved to ${format(parseISO(newDate), 'MMM d, yyyy')}`,
+          });
+
+          // Trigger auto-match after a short delay to allow backend to process
+          setTimeout(() => {
+            queryClient.invalidateQueries({ queryKey: ['activities', 'limit', 100] });
+          }, 500);
+        },
+        onError: (error) => {
+          console.error('Failed to move session:', error);
+          toast({
+            title: 'Move failed',
+            description: 'Failed to move session. Please try again.',
+            variant: 'destructive',
+          });
+        },
+      }
+    );
+  };
+
+  const handleDragCancel = () => {
+    setActiveId(null);
+    setDraggedSession(null);
+  };
+
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center py-12">
         <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
@@ -258,21 +274,29 @@ export function MonthView({ currentDate, onActivityClick }: MonthViewProps) {
       </div>
 
       {/* Days Grid */}
-      <div className="grid grid-cols-7">
-        {days.map((day, idx) => {
-          const { planned, completed, plannedSessions, completedSessions } = getWorkoutsForDay(day);
-          const isCurrentMonth = isSameMonth(day, currentDate);
-          const isCurrentDay = isToday(day);
+      <DndContext
+        collisionDetection={closestCenter}
+        onDragStart={handleDragStart}
+        onDragEnd={handleDragEnd}
+        onDragCancel={handleDragCancel}
+      >
+        <SortableContext items={allPlannedSessionIds} strategy={verticalListSortingStrategy}>
+          <div className="grid grid-cols-7">
+            {days.map((day, idx) => {
+              const { planned, completed, plannedSessions, completedSessions } = getWorkoutsForDay(day);
+              const isCurrentMonth = isSameMonth(day, currentDate);
+              const isCurrentDay = isToday(day);
 
-          return (
-            <div
-              key={idx}
-              className={cn(
-                'min-h-[100px] p-2 border-b border-r border-border',
-                !isCurrentMonth && 'bg-muted/30',
-                idx % 7 === 6 && 'border-r-0'
-              )}
-            >
+              return (
+                <DroppableDayCell
+                  key={idx}
+                  date={day}
+                  className={cn(
+                    'min-h-[100px] p-2 border-b border-r border-border',
+                    !isCurrentMonth && 'bg-muted/30',
+                    idx % 7 === 6 && 'border-r-0'
+                  )}
+                >
               {/* Day number */}
               <div className="flex items-center justify-between mb-1">
                 <span
@@ -297,6 +321,9 @@ export function MonthView({ currentDate, onActivityClick }: MonthViewProps) {
                   }
 
                   const Icon = getSportIcon(workout.sport);
+                  const session = plannedSessions.find(s => s.id === workout.id);
+                  
+                  if (!session) return null;
                   
                   // Find matching completed session by sport (same day, same sport)
                   const matchingCompletedSession = completedSessions.find(s => {
@@ -312,34 +339,58 @@ export function MonthView({ currentDate, onActivityClick }: MonthViewProps) {
                   
                   // If no matching session, check if there's a matching activity from API by sport
                   if (!matchingActivity) {
-                    matchingActivity = completed.find(c => 
+                    // Find all activities with same sport
+                    const allMatchingActivities = completed.filter(c => 
                       normalizeSportType(c.sport) === normalizeSportType(workout.sport)
-                    ) || null;
+                    );
+                    // Prefer activity on same date
+                    const sessionDateStr = session.date ? format(new Date(session.date), 'yyyy-MM-dd') : '';
+                    matchingActivity = allMatchingActivities.find(c => {
+                      const activityDate = c.date ? format(new Date(c.date), 'yyyy-MM-dd') : '';
+                      return activityDate === sessionDateStr;
+                    }) || allMatchingActivities[0] || null;
                   }
                   
                   const isCompleted = !!matchingActivity;
-                  const session = plannedSessions.find(s => s.id === workout.id);
                   const completedSession = matchingCompletedSession || null;
 
+                  // Check if session was moved after completion (has activity but dates don't match)
+                  const sessionDateStr = session.date ? format(new Date(session.date), 'yyyy-MM-dd') : '';
+                  const activityDateStr = matchingActivity?.date || '';
+                  const isMoved = !!matchingActivity && sessionDateStr !== activityDateStr;
+
                   return (
-                    <div
+                    <DraggablePlannedSession
                       key={workout.id || `planned-${workout.date}-${workout.title}`}
-                      className={cn(
-                        'flex items-center gap-1 px-1.5 py-0.5 rounded text-xs group cursor-pointer hover:ring-1 hover:ring-accent/50',
-                        isCompleted
-                          ? 'bg-load-fresh/20 text-load-fresh'
-                          : 'bg-muted text-muted-foreground'
-                      )}
+                      session={session}
+                      workout={workout}
+                      isCompleted={isCompleted}
+                      matchingActivity={matchingActivity || null}
                       onClick={() => onActivityClick?.(workout, matchingActivity || null, completedSession || session || null)}
                     >
-                      <Icon className="h-3 w-3 shrink-0" />
-                      <span className="truncate">{workout.title || 'Untitled Workout'}</span>
-                      {isCompleted ? (
-                        <CheckCircle2 className="h-3 w-3 shrink-0 ml-auto" />
-                      ) : (
-                        <MessageCircle className="h-3 w-3 shrink-0 ml-auto opacity-0 group-hover:opacity-100 transition-opacity" />
-                      )}
-                    </div>
+                      <div
+                        className={cn(
+                          'flex items-center gap-1 px-1.5 py-0.5 rounded text-xs group hover:ring-1 hover:ring-accent/50',
+                          isCompleted
+                            ? 'bg-load-fresh/20 text-load-fresh'
+                            : 'bg-muted text-muted-foreground'
+                        )}
+                      >
+                        <Icon className="h-3 w-3 shrink-0" />
+                        <span className="truncate">{workout.title || 'Untitled Workout'}</span>
+                        <div className="ml-auto shrink-0 flex items-center gap-0.5">
+                          {isMoved && (
+                            <AlertTriangle className="h-2.5 w-2.5 text-amber-500" title="Moved" />
+                          )}
+                          {isCompleted && !isMoved && (
+                            <CheckCircle2 className="h-3 w-3 shrink-0" />
+                          )}
+                          {!isCompleted && !isMoved && (
+                            <div className="h-2 w-2 rounded-full border border-muted-foreground/30" title="Unmatched" />
+                          )}
+                        </div>
+                      </div>
+                    </DraggablePlannedSession>
                   );
                 })}
 
@@ -374,10 +425,19 @@ export function MonthView({ currentDate, onActivityClick }: MonthViewProps) {
                     );
                   })}
               </div>
+                </DroppableDayCell>
+              );
+            })}
+          </div>
+        </SortableContext>
+        <DragOverlay>
+          {activeId && draggedSession ? (
+            <div className="flex items-center gap-1 px-1.5 py-0.5 rounded text-xs bg-muted text-muted-foreground opacity-90 shadow-lg">
+              <span className="truncate">{draggedSession.title || 'Untitled Workout'}</span>
             </div>
-          );
-        })}
-      </div>
+          ) : null}
+        </DragOverlay>
+      </DndContext>
     </div>
   );
 }

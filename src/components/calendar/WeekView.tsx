@@ -6,16 +6,20 @@ import {
   format,
   isToday,
   isSameDay,
-  subDays,
+  parseISO,
+  isPast,
+  startOfMonth,
 } from 'date-fns';
 import { cn } from '@/lib/utils';
-import { fetchCalendarWeek, fetchActivities, fetchOverview } from '@/lib/api';
+import { fetchActivities, fetchOverview, type CalendarSession } from '@/lib/api';
+import { useUpdatePlannedSession } from '@/hooks/useCalendarMutations';
+import { fetchCalendarMonth, normalizeCalendarMonth, type DayCalendarData } from '@/lib/calendar-month';
 import { mapSessionToWorkout, normalizeSportType } from '@/lib/session-utils';
-import { Footprints, Bike, Waves, Clock, Route, CheckCircle2, MessageCircle, Loader2, Sparkles, Share2, Copy, Download } from 'lucide-react';
+import { Footprints, Bike, Waves, Clock, Route, CheckCircle2, MessageCircle, Loader2, Sparkles, Share2, Copy, Download, AlertTriangle } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { useQuery, useQueries } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import type { PlannedWorkout, CompletedActivity, TrainingLoad } from '@/types';
 import { useUnitSystem } from '@/hooks/useUnitSystem';
 import { 
@@ -32,6 +36,10 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { toast } from '@/hooks/use-toast';
+import { DndContext, DragEndEvent, DragOverlay, DragStartEvent, closestCenter } from '@dnd-kit/core';
+import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import { DraggablePlannedSession } from './DraggablePlannedSession';
+import { DroppableDayCell } from './DroppableDayCell';
 
 interface WeekViewProps {
   currentDate: Date;
@@ -64,107 +72,79 @@ const intentColors = {
 
 export function WeekView({ currentDate, onActivityClick }: WeekViewProps) {
   const { convertDistance } = useUnitSystem();
+  const queryClient = useQueryClient();
+  const updateSession = useUpdatePlannedSession();
   const [isSharing, setIsSharing] = useState(false);
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const [draggedSession, setDraggedSession] = useState<CalendarSession | null>(null);
   const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
-  const weekStartStr = format(weekStart, 'yyyy-MM-dd');
   const weekEnd = endOfWeek(currentDate, { weekStartsOn: 1 });
+  const monthStart = startOfMonth(currentDate);
+  const monthKey = format(monthStart, 'yyyy-MM');
 
-  const { data: weekData, isLoading: weekLoading, error: weekError } = useQuery({
-    queryKey: ['calendarWeek', weekStartStr],
-    queryFn: () => fetchCalendarWeek(weekStartStr),
+  // Fetch month data (includes planned sessions, completed activities, and workouts)
+  const { data: monthData, isLoading: monthLoading, error: monthError } = useQuery({
+    queryKey: ['calendar', 'month', monthKey],
+    queryFn: () => fetchCalendarMonth(currentDate),
     retry: 1,
   });
 
-  // Debug logging
-  if (weekData) {
-    console.log('[WeekView] Week data received:', weekData);
-    console.log('[WeekView] Sessions count:', weekData.sessions?.length || 0);
-  }
-  if (weekError) {
-    console.error('[WeekView] Error loading week data:', weekError);
-  }
-
-  // Calculate how many months back we need to fetch activities for
-  // We'll fetch activities for the current week plus buffer months to ensure we have historical data
-  const monthsToFetch = useMemo(() => {
-    const now = new Date();
-    const monthsDiff = (currentDate.getFullYear() - now.getFullYear()) * 12 + (currentDate.getMonth() - now.getMonth());
-    return Math.max(0, monthsDiff + 3);
-  }, [currentDate]);
-
-  // Fetch activities with pagination to cover the date range being viewed
-  // Use the same query key structure as MonthView to share cache with Calendar.tsx
-  const activityQueryConfigs = useMemo(() => {
-    const configs = [];
-    // Always fetch the first page (most recent 100 activities)
-    // Use the same query key as Calendar.tsx to share cache
-    configs.push({
-      queryKey: ['activities', 'limit', 100],
-      queryFn: () => fetchActivities({ limit: 100 }),
-    });
+  // Normalize month data by day
+  const dayDataMap = useMemo(() => {
+    if (!monthData) return new Map<string, DayCalendarData>();
     
-    // If we need to go back further, fetch additional pages
-    const pagesNeeded = Math.ceil(monthsToFetch / 3); // ~3 months per 100 activities
-    for (let page = 1; page <= pagesNeeded && page <= 10; page++) { // Limit to 10 pages (1000 activities max)
-      configs.push({
-        queryKey: ['activities', 'limit', 100, 'offset', page * 100],
-        queryFn: () => fetchActivities({ limit: 100, offset: page * 100 }),
-      });
+    const normalizedDays = normalizeCalendarMonth(monthData);
+    const map = new Map<string, DayCalendarData>();
+    for (const day of normalizedDays) {
+      map.set(day.date, day);
     }
-    return configs;
-  }, [monthsToFetch]);
+    return map;
+  }, [monthData]);
 
-  // Execute all activity queries using useQueries
-  const activityQueryResults = useQueries({
-    queries: activityQueryConfigs.map(config => ({
-      ...config,
-      retry: 1,
-      staleTime: 5 * 60 * 1000, // 5 minutes
-      gcTime: 30 * 60 * 1000, // 30 minutes
-    })),
-  });
-
-  // Combine all activity results
-  const activities = useMemo(() => {
-    const allActivities: CompletedActivity[] = [];
-    const seenIds = new Set<string>();
+  // Filter to week range
+  const weekStartStr = format(weekStart, 'yyyy-MM-dd');
+  const weekEndStr = format(weekEnd, 'yyyy-MM-dd');
+  
+  // Get week data from month data
+  const weekData = useMemo(() => {
+    if (!monthData) return null;
     
-    for (const result of activityQueryResults) {
-      if (result.data && Array.isArray(result.data)) {
-        for (const activity of result.data) {
-          if (activity && activity.id && !seenIds.has(activity.id)) {
-            seenIds.add(activity.id);
-            allActivities.push(activity);
-          }
-        }
+    const weekSessions: CalendarSession[] = [];
+    const weekActivities: CompletedActivity[] = [];
+    
+    // Filter sessions and activities to week range
+    for (const session of [...monthData.planned_sessions, ...monthData.workouts]) {
+      if (session.date && session.date >= weekStartStr && session.date <= weekEndStr) {
+        weekSessions.push(session);
       }
     }
     
-    // Sort by date descending (most recent first)
-    // Dates are already normalized YYYY-MM-DD strings, so we can compare directly
-    return allActivities.sort((a, b) => {
-      if (!a.date || !b.date) return 0;
-      // Compare YYYY-MM-DD strings directly (lexicographic comparison works for ISO dates)
-      return b.date.localeCompare(a.date);
-    });
-  }, [activityQueryResults]);
+    for (const activity of monthData.completed_activities) {
+      if (activity.date && activity.date >= weekStartStr && activity.date <= weekEndStr) {
+        weekActivities.push(activity);
+      }
+    }
+    
+    return {
+      week_start: weekStartStr,
+      week_end: weekEndStr,
+      sessions: weekSessions,
+      activities: weekActivities,
+    };
+  }, [monthData, weekStartStr, weekEndStr]);
 
-  // Temporary debug log (REMOVE AFTER FIX)
-  if (activities.length > 0) {
-    const todayKey = format(new Date(), 'yyyy-MM-dd');
-    const yesterdayKey = format(subDays(new Date(), 1), 'yyyy-MM-dd');
-    console.log('[Calendar Debug]', {
-      today: todayKey,
-      yesterday: yesterdayKey,
-      sample: activities.slice(0, 3).map(a => ({
-        raw: a.date,
-        key: a.date, // Already normalized YYYY-MM-DD string
-      })),
-      totalActivities: activities.length,
+  // Debug logging
+  if (weekData) {
+    console.log('[WeekView] Week data from month:', {
+      weekStart: weekStartStr,
+      weekEnd: weekEndStr,
+      sessionsCount: weekData.sessions?.length || 0,
+      activitiesCount: weekData.activities?.length || 0,
     });
   }
-
-  const activitiesLoading = activityQueryResults.some(q => q.isLoading);
+  if (monthError) {
+    console.error('[WeekView] Error loading month data:', monthError);
+  }
 
   const { data: overview } = useQuery({
     queryKey: ['overview', 14],
@@ -276,17 +256,10 @@ export function WeekView({ currentDate, onActivityClick }: WeekViewProps) {
       };
     }).filter(item => item.date !== '').slice(-14);
     
-    const activitiesArray = Array.isArray(activities) ? activities : [];
-    const weekStartStr = format(weekStart, 'yyyy-MM-dd');
-    const weekEndStr = format(weekEnd, 'yyyy-MM-dd');
+    const activitiesArray = Array.isArray(weekData?.activities) ? weekData.activities : [];
     const totalLoad = activitiesArray.reduce((sum, a) => {
       if (!a || typeof a !== 'object' || !a.date) return sum;
-      // Date is already normalized to YYYY-MM-DD format from API
-      const activityDate = a.date;
-      if (activityDate >= weekStartStr && activityDate <= weekEndStr) {
-        return sum + (a.trainingLoad || 0);
-      }
-      return sum;
+      return sum + (a.trainingLoad || 0);
     }, 0);
     
     return {
@@ -298,7 +271,7 @@ export function WeekView({ currentDate, onActivityClick }: WeekViewProps) {
       insight: weeklyInsight?.insight || '',
       trainingLoad: trainingLoadData.length >= 7 ? trainingLoadData : undefined,
     };
-  }, [weekData, overview, activities, weekStart, weekEnd, weeklyInsight]);
+  }, [weekData, overview, weeklyInsight]);
 
   const handleShare = async () => {
     if (!weeklySummaryData) return;
@@ -354,40 +327,142 @@ export function WeekView({ currentDate, onActivityClick }: WeekViewProps) {
 
   const getWorkoutsForDay = (date: Date) => {
     const dateStr = format(date, 'yyyy-MM-dd');
+    const dayData = dayDataMap.get(dateStr);
     
-    // Ensure sessions is an array
-    const sessionsArray = Array.isArray(weekData?.sessions) ? weekData.sessions : [];
-    
-    // Debug logging for specific day
-    if (sessionsArray.length > 0) {
-      const allSessionsForDay = sessionsArray.filter(s => s?.date === dateStr);
-      if (allSessionsForDay.length > 0) {
-        console.log(`[WeekView] Found ${allSessionsForDay.length} sessions for ${dateStr}:`, allSessionsForDay);
-      }
+    if (!dayData) {
+      return { planned: [], completed: [], plannedSessions: [] };
     }
     
-    // FE-3: Remove invalid filters - show sessions that aren't explicitly excluded
-    const plannedSessions = sessionsArray.filter(s => {
-      if (!s || typeof s !== 'object') return false;
-      // Normalize date strings for comparison (handle timezone issues)
-      // Session dates from calendar API may have time components, so format consistently
-      const sessionDate = s.date ? format(new Date(s.date), 'yyyy-MM-dd') : '';
-      // Show sessions that aren't completed, cancelled, or skipped (includes planned and null status)
-      return sessionDate === dateStr && s.status !== 'completed' && s.status !== 'cancelled' && s.status !== 'skipped';
-    });
+    // Map planned sessions to workouts
+    const planned = dayData.plannedSessions
+      .map(mapSessionToWorkout)
+      .filter((w): w is PlannedWorkout => w !== null);
     
-    const planned = plannedSessions.map(mapSessionToWorkout).filter((w): w is PlannedWorkout => w !== null);
-    const activitiesArray = Array.isArray(activities) ? activities : [];
-    const completed = activitiesArray.filter((a: CompletedActivity) => {
-      if (!a || typeof a !== 'object' || !a.date) return false;
-      // Date is already normalized to YYYY-MM-DD format from API
-      const activityDate = a.date;
-      return activityDate === dateStr;
-    });
-    return { planned, completed, plannedSessions };
+    // Combine completed activities from both sources (activities API and calendar workouts)
+    const completedFromWorkouts = dayData.workouts
+      .map((session) => {
+        // Convert completed CalendarSession to CompletedActivity format
+        if (!session || !session.id || !session.date || !session.type) {
+          return null;
+        }
+        const normalizedSport = normalizeSportType(session.type);
+        return {
+          id: session.id,
+          date: session.date,
+          sport: normalizedSport as CompletedActivity['sport'],
+          title: session.title || 'Untitled Activity',
+          duration: session.duration_minutes || 0,
+          distance: session.distance_km || 0,
+          trainingLoad: 0,
+          source: 'manual' as const,
+        };
+      })
+      .filter((a): a is CompletedActivity => a !== null && a.sport !== undefined);
+    
+    // Merge completed activities, avoiding duplicates
+    const seenActivityIds = new Set(completedFromWorkouts.map(a => a.id));
+    const uniqueActivitiesFromAPI = dayData.completedActivities.filter(a => !seenActivityIds.has(a.id));
+    const completed = [...completedFromWorkouts, ...uniqueActivitiesFromAPI];
+    
+    return {
+      planned,
+      completed,
+      plannedSessions: dayData.plannedSessions,
+    };
   };
 
-  if (weekLoading || activitiesLoading) {
+  // Get all planned session IDs for SortableContext
+  const allPlannedSessionIds = useMemo(() => {
+    if (!monthData) return [];
+    return monthData.planned_sessions
+      .filter(s => {
+        const sessionDate = s.date || '';
+        return sessionDate >= weekStartStr && sessionDate <= weekEndStr;
+      })
+      .map(s => s.id);
+  }, [monthData, weekStartStr, weekEndStr]);
+
+  const handleDragStart = (event: DragStartEvent) => {
+    setActiveId(event.active.id as string);
+    const activeData = event.active.data.current;
+    if (activeData?.session) {
+      setDraggedSession(activeData.session);
+    }
+  };
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event;
+    setActiveId(null);
+    setDraggedSession(null);
+
+    if (!over) return;
+
+    const activeData = active.data.current;
+    const overData = over.data.current;
+
+    // Only handle drops on day cells
+    if (overData?.type !== 'day' || !activeData?.session) return;
+
+    const session = activeData.session as CalendarSession;
+    const newDate = overData.date as string;
+    const oldDate = session.date ? format(new Date(session.date), 'yyyy-MM-dd') : '';
+
+    // Don't update if dropped on the same day
+    if (newDate === oldDate) return;
+
+    // Check if dragging a past/completed session
+    const sessionDate = session.date ? parseISO(session.date) : null;
+    const isPastSession = sessionDate && isPast(sessionDate) && !isToday(sessionDate);
+    const hasCompletedActivity = activeData.matchingActivity !== null && activeData.matchingActivity !== undefined;
+
+    // Show warning for past sessions or completed workouts
+    if (isPastSession || hasCompletedActivity) {
+      const warningMessage = hasCompletedActivity
+        ? 'You moved a completed workout. Completion was preserved.'
+        : 'You moved a past session.';
+      
+      toast({
+        title: 'Session moved',
+        description: warningMessage,
+        variant: 'default',
+      });
+    }
+
+    updateSession.mutate(
+      {
+        sessionId: session.id,
+        scheduledDate: newDate,
+      },
+      {
+        onSuccess: () => {
+          toast({
+            title: 'Session moved',
+            description: `Moved to ${format(parseISO(newDate), 'MMM d, yyyy')}`,
+          });
+
+          // Trigger auto-match after a short delay to allow backend to process
+          setTimeout(() => {
+            queryClient.invalidateQueries({ queryKey: ['activities', 'limit', 100] });
+          }, 500);
+        },
+        onError: (error) => {
+          console.error('Failed to move session:', error);
+          toast({
+            title: 'Move failed',
+            description: 'Failed to move session. Please try again.',
+            variant: 'destructive',
+          });
+        },
+      }
+    );
+  };
+
+  const handleDragCancel = () => {
+    setActiveId(null);
+    setDraggedSession(null);
+  };
+
+  if (monthLoading) {
     return (
       <div className="flex items-center justify-center py-12">
         <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
@@ -395,12 +470,12 @@ export function WeekView({ currentDate, onActivityClick }: WeekViewProps) {
     );
   }
 
-  if (weekError) {
+  if (monthError) {
     return (
       <div className="flex flex-col items-center justify-center py-12 text-center">
         <p className="text-muted-foreground mb-2">Unable to load calendar data</p>
         <p className="text-xs text-muted-foreground">
-          {weekError instanceof Error ? weekError.message : 'Unknown error'}
+          {monthError instanceof Error ? monthError.message : 'Unknown error'}
         </p>
       </div>
     );
@@ -463,19 +538,26 @@ export function WeekView({ currentDate, onActivityClick }: WeekViewProps) {
       )}
 
       {/* Week Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-7 gap-3">
-      {days.map((day) => {
-        const { planned, completed, plannedSessions } = getWorkoutsForDay(day);
-        const isCurrentDay = isToday(day);
+      <DndContext
+        collisionDetection={closestCenter}
+        onDragStart={handleDragStart}
+        onDragEnd={handleDragEnd}
+        onDragCancel={handleDragCancel}
+      >
+        <SortableContext items={allPlannedSessionIds} strategy={verticalListSortingStrategy}>
+          <div className="grid grid-cols-1 md:grid-cols-7 gap-3">
+          {days.map((day) => {
+            const { planned, completed, plannedSessions } = getWorkoutsForDay(day);
+            const isCurrentDay = isToday(day);
 
-        return (
-          <Card
-            key={day.toString()}
-            className={cn(
-              'p-3',
-              isCurrentDay && 'ring-2 ring-accent'
-            )}
-          >
+            return (
+              <DroppableDayCell key={day.toString()} date={day}>
+                <Card
+                  className={cn(
+                    'p-3',
+                    isCurrentDay && 'ring-2 ring-accent'
+                  )}
+                >
             {/* Day header */}
             <div className="flex items-center justify-between mb-3">
               <div>
@@ -514,58 +596,84 @@ export function WeekView({ currentDate, onActivityClick }: WeekViewProps) {
                 }
 
                 const Icon = getSportIcon(workout.sport);
-                const matchingActivity = completed.find(c =>
-                  isSameDay(new Date(c.date), new Date(workout.date)) &&
+                // Find matching activity by sport (check all activities, not just same date)
+                const allMatchingActivities = completed.filter(c =>
                   normalizeSportType(c.sport) === normalizeSportType(workout.sport)
                 );
+                // Prefer activity on same date
+                const matchingActivity = allMatchingActivities.find(c =>
+                  isSameDay(new Date(c.date), new Date(workout.date))
+                ) || allMatchingActivities[0] || null;
                 const isCompleted = !!matchingActivity;
                 const session = plannedSessions.find(s => s.id === workout.id);
 
+                if (!session) return null;
+
+                // Check if session was moved after completion (has activity but dates don't match)
+                const sessionDateStr = session.date ? format(new Date(session.date), 'yyyy-MM-dd') : '';
+                const activityDateStr = matchingActivity?.date || '';
+                const isMoved = !!matchingActivity && sessionDateStr !== activityDateStr;
+
                 return (
-                  <div
+                  <DraggablePlannedSession
                     key={workout.id || `planned-${workout.date}-${workout.title}`}
-                    className={cn(
-                      'p-2 rounded-lg border cursor-pointer transition-all hover:ring-1 hover:ring-accent/50',
-                      isCompleted
-                        ? 'bg-load-fresh/10 border-load-fresh/30'
-                        : 'bg-muted/50 border-border'
-                    )}
+                    session={session}
+                    workout={workout}
+                    isCompleted={isCompleted}
+                    matchingActivity={matchingActivity || null}
                     onClick={() => onActivityClick?.(workout, matchingActivity || null, session || null)}
                   >
-                    <div className="flex items-center gap-2 mb-1">
-                      <Icon className="h-4 w-4 text-muted-foreground" />
-                      <span className="text-sm font-medium truncate">
-                        {workout.title}
-                      </span>
-                      {isCompleted && (
-                        <CheckCircle2 className="h-4 w-4 text-load-fresh ml-auto shrink-0" />
+                    <div
+                      className={cn(
+                        'p-2 rounded-lg border transition-all hover:ring-1 hover:ring-accent/50',
+                        isCompleted
+                          ? 'bg-load-fresh/10 border-load-fresh/30'
+                          : 'bg-muted/50 border-border'
                       )}
-                    </div>
-                    <div className="flex items-center gap-3 text-xs text-muted-foreground">
-                      <span className="flex items-center gap-1">
-                        <Clock className="h-3 w-3" />
-                        {workout.duration}m
-                      </span>
-                      {workout.distance !== undefined && workout.distance > 0 && (
-                        <span className="flex items-center gap-1">
-                          <Route className="h-3 w-3" />
-                          {(() => {
-                            const dist = convertDistance(workout.distance);
-                            return `${dist.value.toFixed(1)}${dist.unit}`;
-                          })()}
+                    >
+                      <div className="flex items-center gap-2 mb-1">
+                        <Icon className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-sm font-medium truncate">
+                          {workout.title}
                         </span>
-                      )}
+                        <div className="ml-auto shrink-0 flex items-center gap-1">
+                          {isMoved && (
+                            <AlertTriangle className="h-3.5 w-3.5 text-amber-500" title="Session moved after completion" />
+                          )}
+                          {isCompleted && !isMoved && (
+                            <CheckCircle2 className="h-4 w-4 text-load-fresh" />
+                          )}
+                          {!isCompleted && !isMoved && (
+                            <div className="h-3 w-3 rounded-full border border-muted-foreground/30" title="Unmatched" />
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3 text-xs text-muted-foreground">
+                        <span className="flex items-center gap-1">
+                          <Clock className="h-3 w-3" />
+                          {workout.duration}m
+                        </span>
+                        {workout.distance !== undefined && workout.distance > 0 && (
+                          <span className="flex items-center gap-1">
+                            <Route className="h-3 w-3" />
+                            {(() => {
+                              const dist = convertDistance(workout.distance);
+                              return `${dist.value.toFixed(1)}${dist.unit}`;
+                            })()}
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center justify-between mt-2">
+                        <Badge
+                          variant="outline"
+                          className={cn('text-xs', intentColors[workout.intent])}
+                        >
+                          {workout.intent}
+                        </Badge>
+                        <MessageCircle className="h-3 w-3 text-muted-foreground opacity-50" />
+                      </div>
                     </div>
-                    <div className="flex items-center justify-between mt-2">
-                      <Badge
-                        variant="outline"
-                        className={cn('text-xs', intentColors[workout.intent])}
-                      >
-                        {workout.intent}
-                      </Badge>
-                      <MessageCircle className="h-3 w-3 text-muted-foreground opacity-50" />
-                    </div>
-                  </div>
+                  </DraggablePlannedSession>
                 );
               })}
 
@@ -615,10 +723,24 @@ export function WeekView({ currentDate, onActivityClick }: WeekViewProps) {
                   );
                 })}
             </div>
-          </Card>
-        );
-      })}
-      </div>
+                </Card>
+              </DroppableDayCell>
+            );
+          })}
+          </div>
+        </SortableContext>
+        <DragOverlay>
+          {activeId && draggedSession ? (
+            <div className="p-2 rounded-lg border bg-muted/50 border-border opacity-90 shadow-lg">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-sm font-medium">
+                  {draggedSession.title || 'Untitled Workout'}
+                </span>
+              </div>
+            </div>
+          ) : null}
+        </DragOverlay>
+      </DndContext>
     </div>
   );
 }

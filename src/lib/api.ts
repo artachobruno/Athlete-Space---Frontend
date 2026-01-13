@@ -2090,6 +2090,47 @@ export const updateSessionStatus = async (
 };
 
 /**
+ * Updates a planned session's scheduled date.
+ * Only updates the date - does not modify activities or completed workout timestamps.
+ * 
+ * @param sessionId - The ID of the planned session to update
+ * @param scheduledDate - New scheduled date in YYYY-MM-DD format
+ * @param startTime - Optional new start time (HH:MM format)
+ * @param orderInDay - Optional new order within the day
+ * @returns Updated CalendarSession
+ */
+export const updatePlannedSessionDate = async (
+  sessionId: string,
+  scheduledDate: string,
+  startTime?: string | null,
+  orderInDay?: number | null
+): Promise<CalendarSession> => {
+  console.log("[API] Updating planned session date:", { sessionId, scheduledDate, startTime, orderInDay });
+  try {
+    const payload: Record<string, unknown> = {
+      scheduled_date: scheduledDate,
+    };
+    
+    if (startTime !== undefined) {
+      payload.start_time = startTime;
+    }
+    
+    if (orderInDay !== undefined) {
+      payload.order_in_day = orderInDay;
+    }
+
+    const response = await api.patch(`/planned-sessions/${sessionId}`, payload);
+    console.log("[API] Planned session date updated:", response);
+    
+    const responseData = response.data || response;
+    return responseData as CalendarSession;
+  } catch (error) {
+    console.error("[API] Failed to update planned session date:", error);
+    throw error;
+  }
+};
+
+/**
  * Gets athlete sync status and connection state.
  */
 export const fetchUserStatus = async (): Promise<{
