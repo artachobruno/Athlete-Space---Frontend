@@ -192,9 +192,25 @@ export function ImportSeasonModal({ open, onOpenChange, onSuccess }: ImportSeaso
       onSuccess?.();
     } catch (err) {
       console.error('Failed to import season:', err);
-      const apiError = err as { message?: string; response?: { data?: { message?: string; detail?: string } } };
-      const errorMessage = apiError.response?.data?.message || apiError.response?.data?.detail || apiError.message || 'Failed to import season';
-      setSubmitError(errorMessage);
+      const apiError = err as { 
+        message?: string; 
+        response?: { 
+          status?: number;
+          data?: { 
+            message?: string; 
+            detail?: string;
+          } 
+        } 
+      };
+      
+      // Handle 500 errors with user-friendly message
+      if (apiError.response?.status === 500) {
+        setSubmitError('Failed to import sessions. Please try again or refresh.');
+      } else {
+        // Try to extract a meaningful error message
+        const errorMessage = apiError.response?.data?.message || apiError.response?.data?.detail || apiError.message || 'Failed to import season';
+        setSubmitError(errorMessage);
+      }
     } finally {
       setIsSubmitting(false);
     }

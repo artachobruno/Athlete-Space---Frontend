@@ -112,6 +112,12 @@ export function AddSessionModal({ open, onOpenChange, initialDate, onSuccess }: 
             } 
           };
           
+          // Handle 500 errors with user-friendly message
+          if (apiError.response?.status === 500) {
+            setError('Failed to create session. Please try again or refresh.');
+            return;
+          }
+          
           // Try to extract a meaningful error message
           let errorMessage = 'Failed to create session';
           if (apiError.response?.data) {

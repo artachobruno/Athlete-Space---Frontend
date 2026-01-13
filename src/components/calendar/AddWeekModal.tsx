@@ -206,10 +206,27 @@ export function AddWeekModal({ open, onOpenChange, initialDate, onSuccess }: Add
           },
           onError: (err) => {
             console.error('Failed to create week:', err);
+            const apiError = err as { 
+              message?: string; 
+              response?: { 
+                status?: number;
+                data?: { 
+                  message?: string; 
+                  detail?: string;
+                } 
+              } 
+            };
+            
+            // Handle 500 errors with user-friendly message
+            if (apiError.response?.status === 500) {
+              setError('Failed to create sessions. Please try again or refresh.');
+              return;
+            }
+            
+            // Try to extract a meaningful error message
             if (err instanceof Error) {
               setError(err.message);
             } else {
-              const apiError = err as { message?: string; response?: { data?: { message?: string; detail?: string } } };
               const errorMessage = apiError.response?.data?.message || apiError.response?.data?.detail || apiError.message || 'Failed to create week';
               setError(errorMessage);
             }
