@@ -13,7 +13,7 @@ import {
 } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { type CalendarSession } from '@/lib/api';
-import { useUpdatePlannedSession } from '@/hooks/useCalendarMutations';
+import { useUpdatePlannedSession, useUpdateWorkoutDate } from '@/hooks/useCalendarMutations';
 import { mapSessionToWorkout, normalizeSportType } from '@/lib/session-utils';
 import { fetchCalendarMonth, normalizeCalendarMonth, type DayCalendarData } from '@/lib/calendar-month';
 import { Footprints, Bike, Waves, CheckCircle2, MessageCircle, Loader2, AlertTriangle } from 'lucide-react';
@@ -57,6 +57,7 @@ function getSportIcon(sport: string | null | undefined): typeof Footprints {
 export function MonthView({ currentDate, onActivityClick }: MonthViewProps) {
   const queryClient = useQueryClient();
   const updateSession = useUpdatePlannedSession();
+  const updateWorkout = useUpdateWorkoutDate();
   const [activeId, setActiveId] = useState<string | null>(null);
   const [draggedSession, setDraggedSession] = useState<CalendarSession | null>(null);
   const monthStart = startOfMonth(currentDate);
@@ -218,38 +219,63 @@ export function MonthView({ currentDate, onActivityClick }: MonthViewProps) {
       });
     }
 
-    updateSession.mutate(
-      {
-        sessionId: session.id,
-        scheduledDate: newDate,
-      },
-      {
-        onSuccess: () => {
-          toast({
-            title: 'Session moved',
-            description: `Moved to ${format(parseISO(newDate), 'MMM d, yyyy')}`,
-          });
-
-          // Invalidate all calendar queries to refresh UI
-          queryClient.invalidateQueries({ queryKey: ['calendar'], exact: false });
-          queryClient.invalidateQueries({ queryKey: ['calendarWeek'], exact: false });
-          queryClient.invalidateQueries({ queryKey: ['calendarSeason'], exact: false });
-          
-          // Trigger auto-match after a short delay to allow backend to process
-          setTimeout(() => {
-            queryClient.invalidateQueries({ queryKey: ['activities', 'limit', 100] });
-          }, 500);
+    // PHASE F5: Prefer workout endpoint if workout_id exists
+    if (session.workout_id) {
+      updateWorkout.mutate(
+        {
+          workoutId: session.workout_id,
+          scheduledDate: newDate,
         },
-        onError: (error) => {
-          console.error('Failed to move session:', error);
-          toast({
-            title: 'Move failed',
-            description: 'Failed to move session. Please try again.',
-            variant: 'destructive',
-          });
+        {
+          onSuccess: () => {
+            toast({
+              title: 'Workout moved',
+              description: `Moved to ${format(parseISO(newDate), 'MMM d, yyyy')}`,
+            });
+            // PHASE F4: Invalidate aggressively - backend handles reorder
+            queryClient.invalidateQueries({ queryKey: ['calendar'], exact: false });
+            queryClient.invalidateQueries({ queryKey: ['calendarWeek'], exact: false });
+            queryClient.invalidateQueries({ queryKey: ['calendarSeason'], exact: false });
+          },
+          onError: (error) => {
+            console.error('Failed to move workout:', error);
+            toast({
+              title: 'Move failed',
+              description: 'Failed to move workout. Please try again.',
+              variant: 'destructive',
+            });
+          },
+        }
+      );
+    } else {
+      // Fallback to session endpoint if no workout_id
+      updateSession.mutate(
+        {
+          sessionId: session.id,
+          scheduledDate: newDate,
         },
-      }
-    );
+        {
+          onSuccess: () => {
+            toast({
+              title: 'Session moved',
+              description: `Moved to ${format(parseISO(newDate), 'MMM d, yyyy')}`,
+            });
+            // PHASE F4: Invalidate aggressively
+            queryClient.invalidateQueries({ queryKey: ['calendar'], exact: false });
+            queryClient.invalidateQueries({ queryKey: ['calendarWeek'], exact: false });
+            queryClient.invalidateQueries({ queryKey: ['calendarSeason'], exact: false });
+          },
+          onError: (error) => {
+            console.error('Failed to move session:', error);
+            toast({
+              title: 'Move failed',
+              description: 'Failed to move session. Please try again.',
+              variant: 'destructive',
+            });
+          },
+        }
+      );
+    }
   };
 
   const handleDragCancel = () => {

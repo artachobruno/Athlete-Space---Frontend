@@ -313,12 +313,26 @@ export async function loginWithGoogle(): Promise<void> {
 
 /**
  * Logout the current user.
+ * Note: Logout is primarily about clearing local auth state.
+ * If the backend endpoint doesn't exist (404), we still treat it as success.
  */
 export async function logout(): Promise<void> {
   try {
     await api.post("/auth/logout");
   } catch (error) {
-    console.error("[Auth] Logout error:", error);
+    // Handle 404 gracefully - endpoint might not exist, but logout is still successful
+    const apiError = error as { status?: number; message?: string };
+    if (apiError.status === 404) {
+      // 404 means endpoint doesn't exist - this is fine, logout is about clearing local state
+      if (import.meta.env.DEV) {
+        console.log("[Auth] Logout endpoint not found (404) - clearing local state only");
+      }
+    } else {
+      // Log other errors in development
+      if (import.meta.env.DEV) {
+        console.error("[Auth] Logout error:", error);
+      }
+    }
     // Still clear local auth state even if API call fails
   } finally {
     auth.clear();

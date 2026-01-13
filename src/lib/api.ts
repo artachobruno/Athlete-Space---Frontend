@@ -8,7 +8,7 @@ import { getConversationId } from "./utils";
 import { isPreviewMode } from "./preview";
 import { mockActivities } from "@/mock/activities.mock";
 import { mockCalendarSessions, getMockWeekSessions, getMockTodaySessions } from "@/mock/calendarSessions.mock";
-import type { CompletedActivity } from "@/types";
+import type { CompletedActivity, PlannedWorkout } from "@/types";
 
 const getBaseURL = () => {
   // Check if we're in Capacitor (native app)
@@ -125,6 +125,8 @@ export interface CalendarSession {
   intensity: string | null;
   status: "planned" | "completed" | "skipped" | "cancelled";
   notes: string | null;
+  // PHASE F3: Calendar API should return workout_id
+  workout_id?: string | null;
 }
 
 export interface TodayResponse {
@@ -1240,6 +1242,7 @@ export const fetchActivities = async (params?: { limit?: number; offset?: number
                        typeof act.stress_score === 'number' ? act.stress_score :
                        typeof act.load === 'number' ? act.load : 0,
           source: 'strava' as const,
+          workout_id: typeof act.workout_id === 'string' ? act.workout_id : undefined, // Link to canonical Workout (backend Phase 4+)
           coachFeedback: typeof act.coach_feedback === 'string' ? act.coach_feedback :
                         typeof act.coachFeedback === 'string' ? act.coachFeedback : undefined,
           normalizedPower: typeof act.normalized_power === 'number' ? act.normalized_power :
@@ -2965,4 +2968,116 @@ api.interceptors.response.use(
     return Promise.reject(normalizedError);
   }
 );
+
+/**
+ * Fetches a workout by ID.
+ * PHASE F2: Activities always render Workout panel - this endpoint is required.
+ * @param workoutId - The ID of the workout to fetch
+ * @returns Workout data
+ */
+export const fetchWorkout = async (workoutId: string): Promise<PlannedWorkout> => {
+  console.log("[API] Fetching workout:", workoutId);
+  try {
+    const response = await api.get(`/workouts/${workoutId}`);
+    return response as unknown as PlannedWorkout;
+  } catch (error) {
+    console.error("[API] Failed to fetch workout:", error);
+    throw error;
+  }
+};
+
+/**
+ * Fetches workout execution data.
+ * PHASE F2: Activities always render Workout panel with Execution tab.
+ * @param workoutId - The ID of the workout
+ * @returns Execution data
+ */
+export const fetchWorkoutExecution = async (workoutId: string): Promise<{
+  completed: boolean;
+  actualActivityId?: string;
+  executionDate?: string;
+  metrics?: {
+    duration?: number;
+    distance?: number;
+    avgHeartRate?: number;
+    avgPower?: number;
+    trainingLoad?: number;
+  };
+}> => {
+  console.log("[API] Fetching workout execution:", workoutId);
+  try {
+    const response = await api.get(`/workouts/${workoutId}/execution`);
+    return response as unknown as {
+      completed: boolean;
+      actualActivityId?: string;
+      executionDate?: string;
+      metrics?: {
+        duration?: number;
+        distance?: number;
+        avgHeartRate?: number;
+        avgPower?: number;
+        trainingLoad?: number;
+      };
+    };
+  } catch (error) {
+    console.error("[API] Failed to fetch workout execution:", error);
+    throw error;
+  }
+};
+
+/**
+ * Fetches workout compliance data.
+ * PHASE F2: Activities always render Workout panel with Compliance tab.
+ * @param workoutId - The ID of the workout
+ * @returns Compliance data
+ */
+export const fetchWorkoutCompliance = async (workoutId: string): Promise<{
+  adherence: number; // 0-100 percentage
+  metrics: {
+    duration?: { planned: number; actual: number; diff: number };
+    distance?: { planned: number; actual: number; diff: number };
+    intensity?: { planned: string; actual: string; match: boolean };
+  };
+  status: 'on_target' | 'over' | 'under' | 'no_data';
+}> => {
+  console.log("[API] Fetching workout compliance:", workoutId);
+  try {
+    const response = await api.get(`/workouts/${workoutId}/compliance`);
+    return response as unknown as {
+      adherence: number;
+      metrics: {
+        duration?: { planned: number; actual: number; diff: number };
+        distance?: { planned: number; actual: number; diff: number };
+        intensity?: { planned: string; actual: string; match: boolean };
+      };
+      status: 'on_target' | 'over' | 'under' | 'no_data';
+    };
+  } catch (error) {
+    console.error("[API] Failed to fetch workout compliance:", error);
+    throw error;
+  }
+};
+
+/**
+ * Updates a workout's scheduled date.
+ * PHASE F5: Drag & drop updates workout date via this endpoint.
+ * @param workoutId - The ID of the workout
+ * @param scheduledDate - New scheduled date in YYYY-MM-DD format
+ * @returns Updated workout
+ */
+export const updateWorkoutDate = async (
+  workoutId: string,
+  scheduledDate: string
+): Promise<PlannedWorkout> => {
+  console.log("[API] Updating workout date:", { workoutId, scheduledDate });
+  try {
+    const response = await api.patch(`/workouts/${workoutId}`, {
+      scheduled_date: scheduledDate,
+    });
+    return response as unknown as PlannedWorkout;
+  } catch (error) {
+    console.error("[API] Failed to update workout date:", error);
+    throw error;
+  }
+};
 

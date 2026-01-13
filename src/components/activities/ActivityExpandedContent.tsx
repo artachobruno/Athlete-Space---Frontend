@@ -4,18 +4,17 @@ import { cn } from '@/lib/utils';
 import type { CompletedActivity } from '@/types';
 import {
   Clock, Route, Heart, Zap, Mountain, Bot,
-  TrendingUp, TrendingDown, Minus, CheckCircle2, Info
+  TrendingUp, TrendingDown, Minus, CheckCircle2, Info, ListChecks, PlayCircle
 } from 'lucide-react';
 import { ActivityCharts } from './ActivityCharts';
 import { ActivityMap } from './ActivityMap';
 import { useUnitSystem } from '@/hooks/useUnitSystem';
 import { useQuery } from '@tanstack/react-query';
-import { fetchActivityStreams, fetchCalendarWeek } from '@/lib/api';
+import { fetchActivityStreams, fetchWorkout, fetchWorkoutExecution, fetchWorkoutCompliance } from '@/lib/api';
 import { useMemo } from 'react';
 import { normalizeRoutePointsFromStreams } from '@/lib/route-utils';
-import { matchActivityToSession } from '@/lib/session-utils';
-import { startOfWeek, format } from 'date-fns';
 import { useAuthenticatedQuery } from '@/hooks/useAuthenticatedQuery';
+import { Loader2 } from 'lucide-react';
 
 interface ActivityExpandedContentProps {
   activity: CompletedActivity;
@@ -24,56 +23,48 @@ interface ActivityExpandedContentProps {
 export function ActivityExpandedContent({ activity }: ActivityExpandedContentProps) {
   const { convertDistance, convertElevation } = useUnitSystem();
   
-  // Get the week start date for the activity's date
-  const activityDate = useMemo(() => {
-    return activity.date ? new Date(activity.date) : new Date();
-  }, [activity.date]);
+  // PHASE F1: Assume activity.workout_id always exists (frontend invariant)
+  // PHASE F2: Always fetch workout data for Activities page
+  const workoutId = activity.workout_id;
   
-  const weekStart = useMemo(() => {
-    return startOfWeek(activityDate, { weekStartsOn: 1 });
-  }, [activityDate]);
-  
-  const weekStartStr = useMemo(() => {
-    return format(weekStart, 'yyyy-MM-dd');
-  }, [weekStart]);
-  
-  // Fetch calendar week data to find planned sessions
-  const { data: weekData } = useAuthenticatedQuery({
-    queryKey: ['calendarWeek', weekStartStr],
-    queryFn: () => fetchCalendarWeek(weekStartStr),
+  // Fetch workout data
+  const { data: workout, isLoading: workoutLoading } = useAuthenticatedQuery({
+    queryKey: ['workout', workoutId],
+    queryFn: () => fetchWorkout(workoutId!),
     retry: 1,
+    enabled: !!workoutId,
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
   
-  // Find the matching planned session for this activity
-  const plannedSession = useMemo(() => {
-    if (!weekData?.sessions || !Array.isArray(weekData.sessions)) {
-      return null;
-    }
-    
-    const sessionId = matchActivityToSession(activity, weekData.sessions, 0);
-    if (!sessionId) {
-      return null;
-    }
-    
-    return weekData.sessions.find(s => s.id === sessionId) || null;
-  }, [activity, weekData]);
+  // Fetch workout execution data
+  const { data: execution, isLoading: executionLoading } = useAuthenticatedQuery({
+    queryKey: ['workout', workoutId, 'execution'],
+    queryFn: () => fetchWorkoutExecution(workoutId!),
+    retry: 1,
+    enabled: !!workoutId,
+    staleTime: 5 * 60 * 1000,
+  });
   
-  // Extract planned data from the matched session
+  // Fetch workout compliance data
+  const { data: compliance, isLoading: complianceLoading } = useAuthenticatedQuery({
+    queryKey: ['workout', workoutId, 'compliance'],
+    queryFn: () => fetchWorkoutCompliance(workoutId!),
+    retry: 1,
+    enabled: !!workoutId,
+    staleTime: 5 * 60 * 1000,
+  });
+  
+  // Extract planned data from workout
   const plannedData = useMemo(() => {
-    if (!plannedSession) {
+    if (!workout) {
       return null;
     }
     
     return {
-      duration: plannedSession.duration_minutes || 0,
-      distance: plannedSession.distance_km || undefined,
-      // Note: Heart rate and power are not typically in planned sessions
-      // These would need to come from workout structure or be estimated
-      avgHeartRate: undefined,
-      avgPower: undefined,
+      duration: workout.duration || 0,
+      distance: workout.distance,
     };
-  }, [plannedSession]);
+  }, [workout]);
   
   // Fetch activity streams for route data
   // Note: retry is set to false to avoid retrying on CORS errors
@@ -293,33 +284,248 @@ export function ActivityExpandedContent({ activity }: ActivityExpandedContentPro
         </div>
       </div>
 
-      {/* Tabs for Charts and Map */}
-      <Tabs defaultValue="charts" className="w-full">
-        <TabsList className="w-full grid grid-cols-2">
-          <TabsTrigger value="charts">Performance Data</TabsTrigger>
-          <TabsTrigger value="map">Route Map</TabsTrigger>
+      {/* PHASE F2: Tabs for Overview, Steps, Execution, Compliance */}
+      <Tabs defaultValue="overview" className="w-full">
+        <TabsList className="w-full grid grid-cols-4">
+          <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="steps">Steps</TabsTrigger>
+          <TabsTrigger value="execution">Execution</TabsTrigger>
+          <TabsTrigger value="compliance">Compliance</TabsTrigger>
         </TabsList>
-        <TabsContent value="charts" className="mt-4">
-          <ActivityCharts activity={activity} />
-        </TabsContent>
-        <TabsContent value="map" className="mt-4">
-          {streamsLoading ? (
-            <div className="flex items-center justify-center h-64 text-muted-foreground">
-              <div className="text-center">
-                <p className="text-sm">Loading route data...</p>
+        
+        <TabsContent value="overview" className="mt-4 space-y-4">
+          {/* Performance Charts */}
+          <div className="space-y-4">
+            <h4 className="text-sm font-semibold text-foreground">Performance Data</h4>
+            <ActivityCharts activity={activity} />
+          </div>
+          
+          {/* Route Map */}
+          <div className="space-y-4">
+            <h4 className="text-sm font-semibold text-foreground">Route Map</h4>
+            {streamsLoading ? (
+              <div className="flex items-center justify-center h-64 text-muted-foreground">
+                <div className="text-center">
+                  <Loader2 className="h-6 w-6 animate-spin mx-auto mb-2" />
+                  <p className="text-sm">Loading route data...</p>
+                </div>
               </div>
-            </div>
-          ) : streamsError ? (
+            ) : streamsError ? (
+              <div className="flex items-center justify-center h-64 text-muted-foreground">
+                <div className="text-center">
+                  <p className="text-sm font-medium mb-1">Unable to load route map</p>
+                  <p className="text-xs">
+                    {streamsError instanceof Error ? streamsError.message : 'Failed to fetch route data'}
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <ActivityMap coordinates={routeCoordinates} />
+            )}
+          </div>
+        </TabsContent>
+        
+        <TabsContent value="steps" className="mt-4">
+          {workoutLoading ? (
             <div className="flex items-center justify-center h-64 text-muted-foreground">
-              <div className="text-center">
-                <p className="text-sm font-medium mb-1">Unable to load route map</p>
-                <p className="text-xs">
-                  {streamsError instanceof Error ? streamsError.message : 'Failed to fetch route data'}
-                </p>
+              <Loader2 className="h-6 w-6 animate-spin" />
+            </div>
+          ) : workout?.structure && workout.structure.length > 0 ? (
+            <div className="space-y-3">
+              {workout.structure.map((step, idx) => (
+                <div key={idx} className="p-4 bg-muted/50 rounded-lg">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="text-sm font-semibold text-foreground capitalize">{step.type}</span>
+                    {step.duration && (
+                      <span className="text-xs text-muted-foreground">{step.duration} min</span>
+                    )}
+                    {step.distance && (
+                      <span className="text-xs text-muted-foreground">
+                        {convertDistance(step.distance).value.toFixed(1)} {convertDistance(step.distance).unit}
+                      </span>
+                    )}
+                  </div>
+                  {step.intensity && (
+                    <p className="text-sm text-muted-foreground">{step.intensity}</p>
+                  )}
+                  {step.notes && (
+                    <p className="text-sm text-foreground mt-2">{step.notes}</p>
+                  )}
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-12 text-muted-foreground">
+              <ListChecks className="h-8 w-8 mx-auto mb-2 opacity-50" />
+              <p className="text-sm">No workout structure available</p>
+            </div>
+          )}
+        </TabsContent>
+        
+        <TabsContent value="execution" className="mt-4">
+          {executionLoading ? (
+            <div className="flex items-center justify-center h-64 text-muted-foreground">
+              <Loader2 className="h-6 w-6 animate-spin" />
+            </div>
+          ) : execution ? (
+            <div className="space-y-4">
+              <div className="p-4 bg-muted/50 rounded-lg">
+                <div className="flex items-center gap-2 mb-3">
+                  <PlayCircle className="h-5 w-5 text-foreground" />
+                  <span className="text-sm font-semibold text-foreground">Execution Status</span>
+                </div>
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Completed</span>
+                    <span className={cn(
+                      "text-sm font-medium",
+                      execution.completed ? "text-load-fresh" : "text-muted-foreground"
+                    )}>
+                      {execution.completed ? "Yes" : "No"}
+                    </span>
+                  </div>
+                  {execution.executionDate && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-muted-foreground">Execution Date</span>
+                      <span className="text-sm text-foreground">{execution.executionDate}</span>
+                    </div>
+                  )}
+                  {execution.metrics && (
+                    <div className="mt-4 space-y-2 pt-4 border-t border-border">
+                      <h5 className="text-sm font-semibold text-foreground">Metrics</h5>
+                      {execution.metrics.duration && (
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-muted-foreground">Duration</span>
+                          <span className="text-sm text-foreground">{execution.metrics.duration} min</span>
+                        </div>
+                      )}
+                      {execution.metrics.distance && (
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-muted-foreground">Distance</span>
+                          <span className="text-sm text-foreground">
+                            {convertDistance(execution.metrics.distance).value.toFixed(1)} {convertDistance(execution.metrics.distance).unit}
+                          </span>
+                        </div>
+                      )}
+                      {execution.metrics.avgHeartRate && (
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-muted-foreground">Avg HR</span>
+                          <span className="text-sm text-foreground">{execution.metrics.avgHeartRate} bpm</span>
+                        </div>
+                      )}
+                      {execution.metrics.avgPower && (
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-muted-foreground">Avg Power</span>
+                          <span className="text-sm text-foreground">{execution.metrics.avgPower} W</span>
+                        </div>
+                      )}
+                      {execution.metrics.trainingLoad && (
+                        <div className="flex items-center justify-between">
+                          <span className="text-sm text-muted-foreground">TSS</span>
+                          <span className="text-sm text-foreground">{Math.round(execution.metrics.trainingLoad)}</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
           ) : (
-            <ActivityMap coordinates={routeCoordinates} />
+            <div className="text-center py-12 text-muted-foreground">
+              <PlayCircle className="h-8 w-8 mx-auto mb-2 opacity-50" />
+              <p className="text-sm">No execution data available</p>
+            </div>
+          )}
+        </TabsContent>
+        
+        <TabsContent value="compliance" className="mt-4">
+          {complianceLoading ? (
+            <div className="flex items-center justify-center h-64 text-muted-foreground">
+              <Loader2 className="h-6 w-6 animate-spin" />
+            </div>
+          ) : compliance ? (
+            <div className="space-y-4">
+              <div className="p-4 bg-muted/50 rounded-lg">
+                <div className="flex items-center gap-2 mb-3">
+                  <CheckCircle2 className="h-5 w-5 text-foreground" />
+                  <span className="text-sm font-semibold text-foreground">Compliance Status</span>
+                </div>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Adherence</span>
+                    <span className={cn(
+                      "text-sm font-semibold",
+                      compliance.adherence >= 80 ? "text-load-fresh" :
+                      compliance.adherence >= 60 ? "text-load-optimal" :
+                      "text-load-overreaching"
+                    )}>
+                      {compliance.adherence.toFixed(0)}%
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm text-muted-foreground">Status</span>
+                    <span className={cn(
+                      "text-sm font-medium capitalize",
+                      compliance.status === 'on_target' ? "text-load-fresh" :
+                      compliance.status === 'over' ? "text-load-overreaching" :
+                      compliance.status === 'under' ? "text-load-optimal" :
+                      "text-muted-foreground"
+                    )}>
+                      {compliance.status.replace('_', ' ')}
+                    </span>
+                  </div>
+                  {compliance.metrics && (
+                    <div className="mt-4 space-y-3 pt-4 border-t border-border">
+                      <h5 className="text-sm font-semibold text-foreground">Metric Comparison</h5>
+                      {compliance.metrics.duration && (
+                        <div className="space-y-1">
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="text-muted-foreground">Duration</span>
+                            <span className="text-foreground">
+                              {compliance.metrics.duration.actual} / {compliance.metrics.duration.planned} min
+                            </span>
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            Diff: {compliance.metrics.duration.diff > 0 ? '+' : ''}{compliance.metrics.duration.diff.toFixed(0)}%
+                          </div>
+                        </div>
+                      )}
+                      {compliance.metrics.distance && (
+                        <div className="space-y-1">
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="text-muted-foreground">Distance</span>
+                            <span className="text-foreground">
+                              {convertDistance(compliance.metrics.distance.actual).value.toFixed(1)} / {convertDistance(compliance.metrics.distance.planned).value.toFixed(1)} {convertDistance(compliance.metrics.distance.actual).unit}
+                            </span>
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            Diff: {compliance.metrics.distance.diff > 0 ? '+' : ''}{compliance.metrics.distance.diff.toFixed(0)}%
+                          </div>
+                        </div>
+                      )}
+                      {compliance.metrics.intensity && (
+                        <div className="space-y-1">
+                          <div className="flex items-center justify-between text-sm">
+                            <span className="text-muted-foreground">Intensity</span>
+                            <span className="text-foreground">
+                              {compliance.metrics.intensity.actual} / {compliance.metrics.intensity.planned}
+                            </span>
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            Match: {compliance.metrics.intensity.match ? 'Yes' : 'No'}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="text-center py-12 text-muted-foreground">
+              <CheckCircle2 className="h-8 w-8 mx-auto mb-2 opacity-50" />
+              <p className="text-sm">No compliance data available</p>
+            </div>
           )}
         </TabsContent>
       </Tabs>

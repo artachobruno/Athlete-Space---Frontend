@@ -94,6 +94,7 @@ export const ActivityOutSchema = z.object({
   training_load: z.number().nullable(),
   coach_feedback: z.string().nullable(),
   strava_activity_id: z.string().nullable(),
+  workout_id: z.string().nullable().optional(), // Link to canonical Workout (backend Phase 4+)
   normalized_power: z.number().nullable().optional(),
   intensity_factor: z.number().nullable().optional(),
   effort_source: z.enum(['power', 'pace', 'hr']).nullable().optional(),

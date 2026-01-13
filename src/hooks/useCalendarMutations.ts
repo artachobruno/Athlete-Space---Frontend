@@ -4,28 +4,38 @@ import {
   createManualWeek,
   updatePlannedSessionDate,
   updateSessionStatus,
+  updateWorkoutDate,
   type CalendarSession,
   type WriteResponse,
 } from '@/lib/api';
 
 /**
- * Invalidates all calendar-related queries.
+ * PHASE F4: Invalidates all calendar-related queries aggressively.
  * This ensures the calendar UI updates immediately after any mutation.
  * 
  * CRITICAL: Must invalidate all calendar query keys to ensure UI updates:
- * - ['calendar'] - base calendar queries
- * - ['calendar', 'month', ...] - month-specific queries
+ * - ['calendar'] - base calendar queries (including month views)
  * - ['calendarWeek'] - week queries
  * - ['calendarSeason'] - season queries
  * - ['calendarToday'] - today queries
+ * 
+ * No local state mutation. Ever. Always re-fetch from backend.
  */
 function invalidateCalendar(queryClient: ReturnType<typeof useQueryClient>) {
-  // Invalidate all calendar queries with prefix matching
+  // PHASE F4: Invalidate aggressively - all calendar-related queries
   queryClient.invalidateQueries({
     queryKey: ['calendar'],
     exact: false,
   });
-  // Also invalidate specific query keys to be thorough
+  queryClient.invalidateQueries({
+    queryKey: ['calendar-week'],
+    exact: false,
+  });
+  queryClient.invalidateQueries({
+    queryKey: ['calendar-season'],
+    exact: false,
+  });
+  // Also invalidate with camelCase variants
   queryClient.invalidateQueries({
     queryKey: ['calendarWeek'],
     exact: false,
@@ -130,6 +140,28 @@ export function useUpdateSessionStatus() {
         // Direct CalendarSession response (not wrapped in WriteResponse)
         invalidateCalendar(queryClient);
       }
+    },
+  });
+}
+
+/**
+ * PHASE F5: Hook for updating a workout's scheduled date via drag & drop.
+ * Updates workout date via PATCH /workouts/{id}.
+ * Backend handles session reorder and conflict resolution.
+ * Frontend just re-fetches.
+ */
+export function useUpdateWorkoutDate() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      workoutId,
+      scheduledDate,
+    }: {
+      workoutId: string;
+      scheduledDate: string;
+    }) => updateWorkoutDate(workoutId, scheduledDate),
+    onSuccess: () => {
+      invalidateCalendar(queryClient);
     },
   });
 }

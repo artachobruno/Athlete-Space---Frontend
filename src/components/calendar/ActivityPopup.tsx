@@ -227,7 +227,8 @@ export function ActivityPopup({
     });
   };
 
-  if (!workout && !activity) return null;
+  // PHASE F1: Remove defensive checks - assume workout or activity always exists
+  // If this breaks, it's a backend bug
 
   return (
     <>

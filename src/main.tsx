@@ -87,4 +87,22 @@ window.onerror = (message, source, lineno, colno, error) => {
   return false;
 };
 
-createRoot(document.getElementById("root")!).render(<App />);
+// Wait for DOM and stylesheets to be ready before rendering to prevent FOUC
+function initializeApp(): void {
+  // If DOM is already loaded, render immediately
+  if (document.readyState === 'complete' || document.readyState === 'interactive') {
+    // Use requestAnimationFrame to ensure stylesheets have been processed
+    requestAnimationFrame(() => {
+      createRoot(document.getElementById("root")!).render(<App />);
+    });
+  } else {
+    // Wait for DOMContentLoaded, then render
+    document.addEventListener('DOMContentLoaded', () => {
+      requestAnimationFrame(() => {
+        createRoot(document.getElementById("root")!).render(<App />);
+      });
+    });
+  }
+}
+
+initializeApp();

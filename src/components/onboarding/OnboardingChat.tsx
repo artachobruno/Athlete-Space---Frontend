@@ -477,6 +477,7 @@ export function OnboardingChat({ onComplete, isComplete }: OnboardingChatProps) 
 
       // Prepare profile data for backend (map to backend format - snake_case)
       // Note: primary_sports goes in training_preferences, not profile
+      // Only include profile if we have actual data to send
       const profileData: Record<string, unknown> = {};
       
       // Store goal as free text verbatim (no parsing/normalization)
@@ -502,8 +503,22 @@ export function OnboardingChat({ onComplete, isComplete }: OnboardingChatProps) 
 
       // Send ALL fields on save (not deltas)
       // Complete onboarding using the dedicated endpoint
-      const result = await completeOnboarding({
-        profile: profileData as Partial<AthleteProfile>,
+      // Only include profile if we have data (prevents backend from trying to process empty profile)
+      const onboardingPayload: {
+        profile?: Record<string, unknown>;
+        training_preferences: {
+          years_of_training: number;
+          primary_sports: string[];
+          available_days: string[];
+          weekly_hours: number;
+          training_focus: 'race_focused' | 'general_fitness';
+          injury_history: boolean;
+          injury_notes: string | null;
+          consistency: string | null;
+          goal: string | null;
+        };
+        generate_initial_plan: boolean;
+      } = {
         training_preferences: {
           years_of_training: 1, // Default, can be updated later
           primary_sports: data.sports,
@@ -516,7 +531,14 @@ export function OnboardingChat({ onComplete, isComplete }: OnboardingChatProps) 
           goal: data.goal || null, // Free text, stored verbatim
         },
         generate_initial_plan: data.stravaConnected, // Only generate plan if Strava is connected
-      });
+      };
+
+      // Only include profile if we have actual data to send
+      if (Object.keys(profileData).length > 0) {
+        onboardingPayload.profile = profileData;
+      }
+
+      const result = await completeOnboarding(onboardingPayload);
 
       // Handle onboarding response - only proceed if backend confirms success
       if (result.status === 'ok') {
