@@ -2149,7 +2149,7 @@ export const parseWorkoutNotes = async (
     });
     return response as unknown as ParsedWorkout;
   } catch (error) {
-    console.error("[API] Failed to parse workout notes:", error);
+    console.info("[API] Workout notes parsing unavailable");
     throw error;
   }
 };
@@ -2209,6 +2209,16 @@ export const getStructuredWorkout = async (sessionId: string): Promise<Structure
     const response = await api.get(`/training/sessions/${sessionId}/structured`);
     return response as unknown as StructuredWorkoutResponse;
   } catch (error) {
+    // Missing steps ≠ error. 404 means no structured workout yet - this is valid.
+    const apiError = error as { status?: number };
+    if (apiError.status === 404) {
+      // Return empty response - missing steps is valid, not an error
+      return {
+        session_id: sessionId,
+        parse_status: 'failed',
+      };
+    }
+    // Only log non-404 errors
     console.error("[API] Failed to fetch structured workout:", error);
     throw error;
   }

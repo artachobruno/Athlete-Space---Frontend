@@ -85,6 +85,9 @@ export function ParsedWorkoutPreview({ parsedWorkout }: ParsedWorkoutPreviewProp
     <Card className="mt-4">
       <CardHeader>
         <CardTitle className="text-sm">Structured Workout Preview</CardTitle>
+        <p className="text-xs text-muted-foreground mt-1">
+          Preview only — steps will be generated after saving.
+        </p>
       </CardHeader>
       <CardContent className="space-y-3">
         {stepsWithRepeats.map((group, groupIdx) => (
