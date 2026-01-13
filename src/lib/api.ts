@@ -1,8 +1,12 @@
 import axios, { AxiosError, AxiosHeaders } from "axios";
 import type { InternalAxiosRequestConfig } from "axios";
+import { format, startOfWeek, endOfWeek, subDays, addDays } from "date-fns";
 import { auth } from "./auth";
 import type { AthleteProfileOut } from "./apiValidation";
 import { getConversationId } from "./utils";
+import { isPreviewMode } from "./preview";
+import { mockActivities } from "@/mock/activities.mock";
+import { mockCalendarSessions, getMockWeekSessions, getMockTodaySessions } from "@/mock/calendarSessions.mock";
 
 const getBaseURL = () => {
   // Check if we're in Capacitor (native app)
@@ -934,8 +938,30 @@ function normalizeActivityDate(dateField: unknown): string {
 /**
  * Fetches activities from the backend.
  * Note: Backend has a maximum limit of 100. Larger limits will be capped at 100.
+ * 
+ * In preview mode: Returns mock activities data for visualization on Lovable.
  */
 export const fetchActivities = async (params?: { limit?: number; offset?: number }): Promise<import("../types").CompletedActivity[]> => {
+  // Check if we're in preview mode (Lovable preview or VITE_PREVIEW_MODE)
+  if (isPreviewMode()) {
+    console.log("[API] Preview mode: Returning mock activities");
+    // Simulate network delay for realistic preview
+    await new Promise(resolve => setTimeout(resolve, 300));
+    
+    // Apply pagination to mock data if params are provided
+    let activities = [...mockActivities];
+    
+    if (params?.offset) {
+      activities = activities.slice(params.offset);
+    }
+    
+    if (params?.limit) {
+      activities = activities.slice(0, params.limit);
+    }
+    
+    return activities;
+  }
+  
   console.log("[API] Fetching activities with params:", params);
   try {
     // Ensure limit doesn't exceed backend maximum of 100
@@ -1610,8 +1636,27 @@ export const sendCoachChat = async (
 /**
  * Fetches calendar week data for a specific week.
  * @param date - Optional date string (YYYY-MM-DD) for the week start. If not provided, returns current week.
+ * 
+ * In preview mode: Returns mock calendar sessions that match mock activities.
  */
 export const fetchCalendarWeek = async (date?: string): Promise<WeekResponse> => {
+  // Check if we're in preview mode
+  if (isPreviewMode()) {
+    console.log("[API] Preview mode: Returning mock calendar week");
+    // Simulate network delay for realistic preview
+    await new Promise(resolve => setTimeout(resolve, 200));
+    
+    const sessions = getMockWeekSessions(date);
+    const weekStart = date || format(startOfWeek(new Date(), { weekStartsOn: 1 }), 'yyyy-MM-dd');
+    const weekEnd = format(endOfWeek(new Date(weekStart), { weekStartsOn: 1 }), 'yyyy-MM-dd');
+    
+    return {
+      week_start: weekStart,
+      week_end: weekEnd,
+      sessions,
+    };
+  }
+  
   console.log("[API] Fetching calendar week", date ? `(requested date: ${date})` : "(current week)");
   try {
     const response = await api.get("/calendar/week", date ? { params: { date } } : {});
@@ -1667,8 +1712,25 @@ export const fetchCalendarWeek = async (date?: string): Promise<WeekResponse> =>
 /**
  * Fetches calendar today data.
  * Note: The API endpoint doesn't accept a date parameter - it returns today's data.
+ * 
+ * In preview mode: Returns mock calendar sessions for today.
  */
 export const fetchCalendarToday = async (date?: string): Promise<TodayResponse> => {
+  // Check if we're in preview mode
+  if (isPreviewMode()) {
+    console.log("[API] Preview mode: Returning mock calendar today");
+    // Simulate network delay for realistic preview
+    await new Promise(resolve => setTimeout(resolve, 200));
+    
+    const sessions = getMockTodaySessions();
+    const todayStr = format(new Date(), 'yyyy-MM-dd');
+    
+    return {
+      date: todayStr,
+      sessions,
+    };
+  }
+  
   console.log("[API] Fetching calendar today", date ? `(requested date: ${date} - API returns today)` : "");
   try {
     const response = await api.get("/calendar/today");
@@ -1693,8 +1755,33 @@ export const fetchCalendarToday = async (date?: string): Promise<TodayResponse> 
 
 /**
  * Fetches calendar season data.
+ * 
+ * In preview mode: Returns mock calendar sessions for the season.
  */
 export const fetchCalendarSeason = async (): Promise<SeasonResponse> => {
+  // Check if we're in preview mode
+  if (isPreviewMode()) {
+    console.log("[API] Preview mode: Returning mock calendar season");
+    // Simulate network delay for realistic preview
+    await new Promise(resolve => setTimeout(resolve, 200));
+    
+    // Return all mock sessions as season data
+    const sessions = mockCalendarSessions;
+    const seasonStart = format(subDays(new Date(), 14), 'yyyy-MM-dd');
+    const seasonEnd = format(addDays(new Date(), 7), 'yyyy-MM-dd');
+    const plannedSessions = sessions.filter(s => s.status === 'planned').length;
+    const completedSessions = sessions.filter(s => s.status === 'completed').length;
+    
+    return {
+      season_start: seasonStart,
+      season_end: seasonEnd,
+      sessions,
+      total_sessions: sessions.length,
+      completed_sessions: completedSessions,
+      planned_sessions: plannedSessions,
+    };
+  }
+  
   console.log("[API] Fetching calendar season");
   try {
     const response = await api.get("/calendar/season");
