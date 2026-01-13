@@ -141,15 +141,15 @@ export function ActivityExpandedContent({ activity }: ActivityExpandedContentPro
     return { label: 'Close to target', color: 'text-muted-foreground', icon: Minus };
   };
 
-  const compliance = getComplianceStatus();
-  const ComplianceIcon = compliance.icon;
+  const complianceStatus = getComplianceStatus();
+  const ComplianceIcon = complianceStatus.icon;
 
   return (
     <div className="px-4 pb-4 pt-0 border-t border-border space-y-5">
       {/* Compliance Badge */}
-      <div className={cn('flex items-center gap-2 pt-4', compliance.color)}>
+      <div className={cn('flex items-center gap-2 pt-4', complianceStatus.color)}>
         <ComplianceIcon className="h-4 w-4" />
-        <span className="text-sm font-medium">{compliance.label}</span>
+        <span className="text-sm font-medium">{complianceStatus.label}</span>
       </div>
 
       {/* Coach Insight - Primary Visual */}
