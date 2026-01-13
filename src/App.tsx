@@ -113,7 +113,7 @@ const AuthValidator = () => {
 
 // Component to handle OAuth errors from URL (legacy support)
 // NOTE: Backend should set HTTP-only cookies and redirect without tokens/errors in URL
-// This component only handles error cases for backward compatibility
+// Token-in-URL is legacy behavior and is ignored - /me is the single source of truth
 const OAuthTokenHandler = () => {
   const navigate = useNavigate();
   const location = useLocation();
@@ -125,24 +125,20 @@ const OAuthTokenHandler = () => {
       return;
     }
     
-    // Only handle errors - tokens are NOT processed (backend should set cookies)
     const searchParams = new URLSearchParams(location.search);
     const token = searchParams.get('token');
     const error = searchParams.get('error');
     
-    // If token is in URL, remove it silently (backend should have set cookies)
+    // Token-in-URL is legacy - ignore it completely
+    // Auth state comes from /me only (cookie-based, not token-based)
     if (token) {
-      console.warn('[OAuth] Token found in URL - removing. Backend should set HTTP-only cookies instead.');
+      console.warn('[OAuth] Token found in URL - this is legacy behavior. Token-in-URL is ignored. Auth state comes from /me only.');
       // Remove token from URL to clean up
       const newSearchParams = new URLSearchParams(searchParams);
       newSearchParams.delete('token');
       const newSearch = newSearchParams.toString();
       const newUrl = `${location.pathname}${newSearch ? `?${newSearch}` : ''}`;
       window.history.replaceState({}, '', newUrl);
-      
-      // AuthContext will automatically check authentication via /me endpoint
-      // If cookies are set by backend, user will be authenticated
-      // If cookies are not set, user will remain unauthenticated (correct behavior)
       return;
     }
     

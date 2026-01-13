@@ -2160,6 +2160,11 @@ export const updatePlannedSessionDate = async (
   startTime?: string | null,
   orderInDay?: number | null
 ): Promise<CalendarSession> => {
+  // HARD ASSERT: planned_session_id is required to move session
+  if (!sessionId) {
+    throw new Error("planned_session_id required to move session");
+  }
+  
   console.log("[API] Updating planned session date:", { sessionId, scheduledDate, startTime, orderInDay });
   try {
     const payload: Record<string, unknown> = {
@@ -2174,6 +2179,8 @@ export const updatePlannedSessionDate = async (
       payload.order_in_day = orderInDay;
     }
 
+    // CRITICAL: Use planned_session_id in endpoint path
+    // NEVER use /workouts/{id} or /calendar-sessions/{id}
     const response = await api.patch(`/planned-sessions/${sessionId}`, payload);
     console.log("[API] Planned session date updated:", response);
     
@@ -2929,25 +2936,47 @@ api.interceptors.response.use(
     const requestUrl = error?.config?.url || '';
     const isMeEndpoint = requestUrl === '/me' || requestUrl.endsWith('/me');
     
-    // CRITICAL: Backend contract violation - /me MUST NEVER return 404
-    // 404 on /me means either:
-    // 1. Endpoint doesn't exist (backend deployment issue)
-    // 2. User doesn't exist (authentication failure)
-    // 3. Backend error that should return 500, not 404
-    // DEFENSIVE FIX: Log the violation but do NOT trigger logout
-    // The backend should be fixed to return 401 instead of 404
-    if (normalizedError.status === 404 && isMeEndpoint) {
-      console.error(
-        "[API] /me returned 404 - BACKEND CONTRACT VIOLATION. " +
-        "/me must NEVER return 404. It should return 200 (authenticated), 401 (not authenticated), or 500 (server error). " +
-        "Defensive fix: NOT triggering logout. Backend should be fixed to return 401 instead of 404."
-      );
-      // Do NOT convert to 401 - let 404 pass through
-      // fetchCurrentUser() will handle 404 by returning null (user not authenticated)
-      // This prevents false logouts when backend incorrectly returns 404
+    // CRITICAL: Frontend invariant - NEVER logout on 404
+    // Status 200 = authenticated
+    // Status 401 = logout
+    // Status 404 = ignore (backend bug, don't logout)
+    // Status 500 = show error
+    if (isMeEndpoint) {
+      if (normalizedError.status === 401) {
+        // 401 = authentication failure (cookie missing/invalid)
+        triggerLogoutEvent();
+        
+        // Trigger navigation to login (unless on public pages)
+        const currentPath = typeof window !== 'undefined' ? window.location.pathname : '';
+        const publicPaths = ["/login", "/signup", "/onboarding"];
+        const isPublicPath = publicPaths.some(path => 
+          currentPath === path || currentPath.startsWith(`${path}/`)
+        );
+        
+        if (!isPublicPath) {
+          createNavigationEvent("/login");
+        }
+        
+        return Promise.reject(normalizedError);
+      }
+      
+      if (normalizedError.status === 404) {
+        // 404 = backend bug, ignore - NEVER logout
+        console.error(
+          "[API] /me returned 404 - BACKEND CONTRACT VIOLATION. " +
+          "/me must NEVER return 404. It should return 200 (authenticated), 401 (not authenticated), or 500 (server error). " +
+          "Frontend invariant: NOT logging out on 404. Backend should be fixed to return 401 instead of 404."
+        );
+        // Return resolved promise to prevent logout
+        // This ensures the frontend never logs out on 404
+        return Promise.resolve({ data: null, status: 404 });
+      }
+      
+      // For other errors on /me (500, network, etc.), reject normally
+      return Promise.reject(normalizedError);
     }
     
-    // Handle 401: Trigger logout event
+    // Handle 401 for non-/me endpoints: Trigger logout event
     // Authentication is handled by HTTP-only cookies, so we just need to update React state
     if (normalizedError.status === 401) {
       // Trigger logout event for AuthContext to handle

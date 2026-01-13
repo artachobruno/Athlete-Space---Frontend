@@ -171,11 +171,20 @@ export function MonthView({ currentDate, onActivityClick }: MonthViewProps) {
   }, [monthData]);
 
   const handleDragStart = (event: DragStartEvent) => {
-    setActiveId(event.active.id as string);
     const activeData = event.active.data.current;
-    if (activeData?.session) {
-      setDraggedSession(activeData.session);
+    if (!activeData?.session) return;
+    
+    const session = activeData.session as CalendarSession;
+    
+    // CRITICAL: Block drag if planned_session_id is missing
+    // Drag only allowed when planned_session_id exists
+    if (!session.planned_session_id) {
+      console.warn('[MonthView] Blocked drag: missing planned_session_id', session);
+      return;
     }
+    
+    setActiveId(event.active.id as string);
+    setDraggedSession(session);
   };
 
   const handleDragEnd = async (event: DragEndEvent) => {
@@ -218,13 +227,14 @@ export function MonthView({ currentDate, onActivityClick }: MonthViewProps) {
 
     // CRITICAL: Only planned_sessions.id may be mutated.
     // Calendar sessions, workouts, and activities are READ-ONLY views.
+    // GUARD: Block move if planned_session_id is missing
     const plannedSessionId = session.planned_session_id;
     
     if (!plannedSessionId) {
-      console.error('[MonthView] Cannot move session: missing planned_session_id', session);
+      console.warn('[MonthView] Blocked move: missing planned_session_id', session);
       toast({
         title: 'Move failed',
-        description: 'Cannot move session: missing planned session ID.',
+        description: 'Cannot move session: missing planned session ID. Unpair activity to move this session.',
         variant: 'destructive',
       });
       return;
