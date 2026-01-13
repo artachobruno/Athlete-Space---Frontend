@@ -1,5 +1,5 @@
 import { useMemo, useCallback, useRef, useEffect } from 'react'
-import type { WorkoutTimeline, WorkoutTimelineSegment } from '@/types/workoutTimeline'
+import type { WorkoutTimeline, WorkoutTimelineSegment, WorkoutStreams } from '@/types/workoutTimeline'
 
 type WorkoutGraphProps = {
   timeline: WorkoutTimeline
@@ -12,7 +12,22 @@ function findSegmentForTime(segments: WorkoutTimelineSegment[], timeInSeconds: n
   return segments.find(seg => timeInSeconds >= seg.start_second && timeInSeconds <= seg.end_second) || null
 }
 
-function getYDomain(segments: WorkoutTimelineSegment[], actualData?: Array<{ time_second: number; value: number }>): [number, number] {
+function getStreamValues(streams?: WorkoutStreams): number[] {
+  if (!streams) return []
+  const values: number[] = []
+  
+  streams.hr?.forEach(v => { if (v !== null) values.push(v) })
+  streams.pace?.forEach(v => { if (v !== null) values.push(v) })
+  streams.power?.forEach(v => { if (v !== null) values.push(v) })
+  
+  return values
+}
+
+function getYDomain(
+  segments: WorkoutTimelineSegment[], 
+  streams?: WorkoutStreams,
+  actualData?: Array<{ time_second: number; value: number }>
+): [number, number] {
   const values: number[] = []
   
   segments.forEach(seg => {
@@ -21,6 +36,9 @@ function getYDomain(segments: WorkoutTimelineSegment[], actualData?: Array<{ tim
     if (target.max !== undefined) values.push(target.max)
     if (target.value !== undefined) values.push(target.value)
   })
+
+  // Include stream values in domain calculation
+  values.push(...getStreamValues(streams))
 
   if (actualData) {
     actualData.forEach(point => {
@@ -57,8 +75,12 @@ export function WorkoutGraph({ timeline, activeStepOrder, onStepHover, showActua
   }, [activeStepOrder])
 
   const yDomain = useMemo(() => {
-    return getYDomain(sortedSegments, showActual ? timeline.actual_data : undefined)
-  }, [sortedSegments, showActual, timeline.actual_data])
+    return getYDomain(
+      sortedSegments, 
+      showActual ? timeline.streams : undefined,
+      showActual ? timeline.actual_data : undefined
+    )
+  }, [sortedSegments, showActual, timeline.streams, timeline.actual_data])
 
   const [yMin, yMax] = yDomain
   const yRange = yMax - yMin
@@ -218,8 +240,68 @@ export function WorkoutGraph({ timeline, activeStepOrder, onStepHover, showActua
           )
         })}
 
-        {/* Actual data trace */}
-        {showActual && timeline.actual_data && timeline.actual_data.length > 0 && (
+        {/* Stream data traces */}
+        {showActual && timeline.streams && (
+          <g>
+            {/* HR stream - red */}
+            {timeline.streams.hr && timeline.streams.hr.some(v => v !== null) && (
+              <polyline
+                points={timeline.streams.time
+                  .map((t, i) => {
+                    const val = timeline.streams!.hr![i]
+                    if (val === null) return null
+                    return `${getX(t, 720) + 40},${getY(val, 180) + 10}`
+                  })
+                  .filter(Boolean)
+                  .join(' ')}
+                fill="none"
+                stroke="hsl(0 84% 60%)"
+                strokeWidth="1.5"
+                opacity={activeSegment ? 0.9 : 0.6}
+                mask={activeSegment ? "url(#fadeMask)" : undefined}
+              />
+            )}
+            {/* Pace stream - blue */}
+            {timeline.streams.pace && timeline.streams.pace.some(v => v !== null) && (
+              <polyline
+                points={timeline.streams.time
+                  .map((t, i) => {
+                    const val = timeline.streams!.pace![i]
+                    if (val === null) return null
+                    return `${getX(t, 720) + 40},${getY(val, 180) + 10}`
+                  })
+                  .filter(Boolean)
+                  .join(' ')}
+                fill="none"
+                stroke="hsl(217 91% 60%)"
+                strokeWidth="1.5"
+                opacity={activeSegment ? 0.9 : 0.6}
+                mask={activeSegment ? "url(#fadeMask)" : undefined}
+              />
+            )}
+            {/* Power stream - orange */}
+            {timeline.streams.power && timeline.streams.power.some(v => v !== null) && (
+              <polyline
+                points={timeline.streams.time
+                  .map((t, i) => {
+                    const val = timeline.streams!.power![i]
+                    if (val === null) return null
+                    return `${getX(t, 720) + 40},${getY(val, 180) + 10}`
+                  })
+                  .filter(Boolean)
+                  .join(' ')}
+                fill="none"
+                stroke="hsl(25 95% 53%)"
+                strokeWidth="1.5"
+                opacity={activeSegment ? 0.9 : 0.6}
+                mask={activeSegment ? "url(#fadeMask)" : undefined}
+              />
+            )}
+          </g>
+        )}
+
+        {/* Legacy actual data trace (fallback) */}
+        {showActual && !timeline.streams && timeline.actual_data && timeline.actual_data.length > 0 && (
           <g>
             <polyline
               points={timeline.actual_data
