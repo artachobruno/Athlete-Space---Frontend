@@ -50,22 +50,23 @@ export function useValidateAuth() {
         setIsValid(true);
         setIsValidating(false);
       } catch (error) {
-        // Only 401 means authentication failure (cookie missing/invalid)
-        // 404 is routing/deployment issue, not auth failure
+        // API interceptor converts 404 on /me to 401 (backend contract violation)
+        // 401 = authentication failure (cookie missing/invalid or backend returned 404)
         const apiError = error as { status?: number };
         if (apiError.status === 401) {
-          console.log('[Auth] Cookie is invalid (401), redirecting to login');
+          console.log('[Auth] /me returned 401 - not authenticated, redirecting to login');
           setIsValid(false);
           setIsValidating(false);
           navigate('/login', { replace: true });
           return;
         }
         
-        // Other errors (404, network, 500, etc.) - don't treat as auth failure
-        // 404 = routing/deployment issue, not authentication
-        // Network/500 = temporary issue, don't redirect
+        // Other errors (network, 500, etc.) - don't treat as auth failure
+        // Network errors = temporary issue, don't redirect
+        // 500 = server error, but user might still be authenticated
         console.warn('[Auth] /me error (not auth failure):', apiError.status);
         // Treat as valid to avoid redirecting on temporary errors
+        // Note: This means network errors won't trigger logout, which is correct
         setIsValid(true);
         setIsValidating(false);
       }

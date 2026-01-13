@@ -22,8 +22,11 @@ export function useAuthDeepLink(onToken: (t: string) => void) {
 
         if (token) {
           console.warn('[AuthDeepLink] Token in URL detected - backend should set HTTP-only cookies instead');
-          // Call onToken callback (but don't store in localStorage)
-          // If backend set cookies, auth will work via /me
+          // CRITICAL: Do NOT use token from URL for authentication
+          // /me endpoint is the ONLY source of truth for authentication
+          // Backend should have set HTTP-only cookies during OAuth callback
+          // If cookies are not set, /me will fail and user will be logged out (correct behavior)
+          // We call onToken callback for logging/cleanup, but do NOT use it for auth
           onToken(token);
           // Navigate to home using hash router
           window.location.hash = "/";

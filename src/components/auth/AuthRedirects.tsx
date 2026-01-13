@@ -29,9 +29,9 @@ function FullPageSkeleton() {
  * 3. Onboarding is ONLY shown when: status === "authenticated" && user.onboarding_complete === false
  * 4. Block all routing until auth resolves (status !== "loading")
  * 
- * CRITICAL: If OAuth token is in URL, wait for OAuthTokenHandler to process it
- * before redirecting. This prevents race conditions where we redirect before
- * the token is stored and user state is refreshed.
+ * CRITICAL: If OAuth token is in URL, wait for OAuthTokenHandler to clean it up
+ * and check authentication via /me endpoint. OAuthTokenHandler does NOT use
+ * the URL token for auth - /me is the only source of truth.
  */
 export function AuthLanding() {
   const { user, loading, status } = useAuth();

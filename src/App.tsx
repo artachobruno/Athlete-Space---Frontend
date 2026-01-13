@@ -154,6 +154,11 @@ const OAuthTokenHandler = () => {
         tokenPreview: token.substring(0, 30) + '...',
       });
       
+      // CRITICAL: Do NOT use token from URL for authentication
+      // /me endpoint is the ONLY source of truth for authentication
+      // Backend should have set HTTP-only cookies during OAuth callback
+      // If cookies are not set, /me will fail and user will be logged out (correct behavior)
+      
       // Remove token from URL to clean up
       // Backend should be setting HTTP-only cookies, not returning tokens in URL
       const newSearchParams = new URLSearchParams(searchParams);
@@ -162,12 +167,13 @@ const OAuthTokenHandler = () => {
       const newUrl = `${location.pathname}${newSearch ? `?${newSearch}` : ''}`;
       window.history.replaceState({}, '', newUrl);
       
-      // Trigger refreshUser to check if cookies are set
-      // If backend set cookies properly, /me will succeed
-      // If not, user will need to log in again (expected during migration to cookies)
+      // Trigger refreshUser to check authentication via /me endpoint
+      // /me will succeed if backend set cookies properly
+      // /me will fail (401/404) if cookies are not set, triggering logout (correct behavior)
+      // We do NOT use the URL token - cookies are the source of truth
       refreshUser().catch((err) => {
         console.error('[OAuth] Failed to refresh user after OAuth callback:', err);
-        console.warn('[OAuth] If cookies are not set by backend, user will need to log in again');
+        console.warn('[OAuth] If cookies are not set by backend, /me will fail and user will be logged out');
       });
     }
   }, [location, navigate, refreshUser, user]);
@@ -225,11 +231,16 @@ const AppContent = () => {
   }
   
   // Handle deep links for mobile OAuth callbacks
+  // CRITICAL: Token in URL is NOT used for authentication
+  // /me endpoint is the ONLY source of truth - if backend set cookies, /me will succeed
   useAuthDeepLink((token) => {
-    console.log("Logged in with token:", token);
-    // Refresh user state after token is received
+    console.warn("[App] Token received in deep link - NOT using for auth. Backend should set HTTP-only cookies.");
+    // Refresh user state to check authentication via /me endpoint
+    // /me will succeed if backend set cookies properly
+    // /me will fail (401/404) if cookies are not set, triggering logout (correct behavior)
     refreshUser().catch((err) => {
       console.error("[App] Failed to refresh user after deep link:", err);
+      console.warn("[App] If cookies are not set by backend, /me will fail and user will be logged out");
     });
   });
   

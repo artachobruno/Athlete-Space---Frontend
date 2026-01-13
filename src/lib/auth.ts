@@ -365,17 +365,30 @@ export async function fetchCurrentUser(): Promise<AuthUser | null> {
     } catch (error) {
       const apiError = error as { status?: number };
       
-      // 401 = not authenticated (cookie missing/invalid)
-      // 404 = endpoint doesn't exist OR user doesn't exist = not authenticated
-      if (apiError.status === 401 || apiError.status === 404) {
-        // User is not authenticated or endpoint is broken
-        console.log("[Auth] /me returned 401/404 - user not authenticated");
+      // 401 = not authenticated (cookie missing/invalid) - CORRECT behavior
+      // 404 = backend contract violation - /me should NEVER return 404
+      //      Should be 200 (authenticated), 401 (not authenticated), or 500 (server error)
+      if (apiError.status === 401) {
+        console.log("[Auth] /me returned 401 - user not authenticated (cookie missing/invalid)");
+        return null;
+      }
+      
+      if (apiError.status === 404) {
+        console.error(
+          "[Auth] /me returned 404 - BACKEND CONTRACT VIOLATION. " +
+          "/me must NEVER return 404. Treating as not authenticated."
+        );
         return null;
       }
       
       // For other errors (network, 500, etc.), log and return null
       // Don't treat network errors as auth failure - might be temporary
-      console.warn("[Auth] Failed to fetch /me:", error);
+      // But 500 on /me is also a backend issue that should be investigated
+      if (apiError.status === 500) {
+        console.error("[Auth] /me returned 500 - backend server error. Treating as not authenticated.");
+      } else {
+        console.warn("[Auth] Failed to fetch /me:", error);
+      }
       return null;
     } finally {
       // Clear the promise so future calls can make new requests
