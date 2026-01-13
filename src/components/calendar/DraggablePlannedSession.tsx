@@ -28,8 +28,9 @@ export function DraggablePlannedSession({
   children,
   className,
 }: DraggablePlannedSessionProps) {
-  // Check if activity is paired (has planned_session_id)
-  const isPaired = Boolean(matchingActivity?.planned_session_id);
+  // Check if session is paired (has completed_activity_id)
+  // Frontend invariant: UI = lookup only, backend = authority
+  const isPaired = Boolean(session.completed_activity_id);
   const enableDnD = !isPaired;
 
   const {
@@ -51,23 +52,34 @@ export function DraggablePlannedSession({
     },
   });
 
-  const style = {
+  const style = enableDnD ? {
     transform: CSS.Transform.toString(transform),
     transition,
     opacity: isDragging ? 0.5 : 1,
-  };
+  } : undefined;
+
+  // When paired (not draggable), render without drag handlers
+  if (!enableDnD) {
+    return (
+      <div
+        className={cn(className, 'cursor-default')}
+        onClick={onClick}
+      >
+        {children}
+      </div>
+    );
+  }
 
   return (
     <div
       ref={setNodeRef}
       style={style}
-      {...(enableDnD ? attributes : {})}
-      {...(enableDnD ? listeners : {})}
+      {...attributes}
+      {...listeners}
       className={cn(
         className,
-        enableDnD && isDragging && 'cursor-grabbing',
-        enableDnD && !isDragging && 'cursor-grab',
-        !enableDnD && 'cursor-default'
+        isDragging && 'cursor-grabbing',
+        !isDragging && 'cursor-grab'
       )}
       onClick={onClick}
     >

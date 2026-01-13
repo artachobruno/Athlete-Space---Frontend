@@ -16,7 +16,7 @@ import { type CalendarSession } from '@/lib/api';
 import { useUpdatePlannedSession, useUpdateWorkoutDate } from '@/hooks/useCalendarMutations';
 import { mapSessionToWorkout, normalizeSportType } from '@/lib/session-utils';
 import { fetchCalendarMonth, normalizeCalendarMonth, type DayCalendarData } from '@/lib/calendar-month';
-import { Footprints, Bike, Waves, CheckCircle2, MessageCircle, Loader2, AlertTriangle, CheckCircle } from 'lucide-react';
+import { Footprints, Bike, Waves, CheckCircle2, MessageCircle, Loader2, AlertTriangle, CheckCircle, Link2, MoreVertical, Trash2 } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAuthenticatedQuery } from '@/hooks/useAuthenticatedQuery';
 import type { PlannedWorkout, CompletedActivity } from '@/types';
@@ -25,9 +25,26 @@ import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { DraggablePlannedSession } from './DraggablePlannedSession';
 import { DroppableDayCell } from './DroppableDayCell';
 import { PairingDetailsModal } from './PairingDetailsModal';
-import { unpairActivity } from '@/lib/api';
-import { toast } from '@/hooks/use-toast';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { toast } from '@/hooks/use-toast';
+import { useDeleteActivity, useDeletePlannedSession } from '@/hooks/useDeleteMutations';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 interface MonthViewProps {
   currentDate: Date;
@@ -66,6 +83,10 @@ export function MonthView({ currentDate, onActivityClick }: MonthViewProps) {
   const [pairingModalOpen, setPairingModalOpen] = useState(false);
   const [selectedPairingActivity, setSelectedPairingActivity] = useState<CompletedActivity | null>(null);
   const [selectedPairingSession, setSelectedPairingSession] = useState<CalendarSession | null>(null);
+  const deleteActivityMutation = useDeleteActivity();
+  const deletePlannedSessionMutation = useDeletePlannedSession();
+  const [deleteActivityDialog, setDeleteActivityDialog] = useState<{ open: boolean; activity: CompletedActivity | null }>({ open: false, activity: null });
+  const [deleteSessionDialog, setDeleteSessionDialog] = useState<{ open: boolean; session: CalendarSession | null }>({ open: false, session: null });
   const monthStart = startOfMonth(currentDate);
   const monthEnd = endOfMonth(currentDate);
   const monthKey = format(monthStart, 'yyyy-MM');
@@ -259,29 +280,53 @@ export function MonthView({ currentDate, onActivityClick }: MonthViewProps) {
     setDraggedSession(null);
   };
 
-  const handleUnpair = async () => {
-    if (!selectedPairingActivity) return;
+  const handleDeleteActivityClick = (e: React.MouseEvent, activity: CompletedActivity) => {
+    e.stopPropagation();
+    setDeleteActivityDialog({ open: true, activity });
+  };
+
+  const handleDeleteActivityConfirm = async () => {
+    if (!deleteActivityDialog.activity) return;
     
     try {
-      await unpairActivity(selectedPairingActivity.id);
+      await deleteActivityMutation.mutateAsync(deleteActivityDialog.activity.id);
       toast({
-        title: 'Activity unpaired',
-        description: 'The activity has been unpaired from its planned session.',
+        title: 'Activity deleted',
+        description: 'The activity has been deleted.',
       });
-      
-      // Invalidate all calendar queries to refresh data
-      queryClient.invalidateQueries({ queryKey: ['calendar'], exact: false });
-      queryClient.invalidateQueries({ queryKey: ['calendarWeek'], exact: false });
-      queryClient.invalidateQueries({ queryKey: ['calendarSeason'], exact: false });
-      queryClient.invalidateQueries({ queryKey: ['activities'] });
+      setDeleteActivityDialog({ open: false, activity: null });
     } catch (error) {
-      console.error('Failed to unpair activity:', error);
+      console.error('Failed to delete activity:', error);
       toast({
-        title: 'Unpair failed',
-        description: 'Failed to unpair the activity. Please try again.',
+        title: 'Delete failed',
+        description: 'Failed to delete the activity. Please try again.',
         variant: 'destructive',
       });
-      throw error;
+    }
+  };
+
+  const handleDeleteSessionClick = (e: React.MouseEvent, session: CalendarSession) => {
+    e.stopPropagation();
+    setDeleteSessionDialog({ open: true, session });
+  };
+
+  const handleDeleteSessionConfirm = async () => {
+    if (!deleteSessionDialog.session) return;
+    
+    try {
+      await deletePlannedSessionMutation.mutateAsync(deleteSessionDialog.session.id);
+      toast({
+        title: 'Planned session deleted',
+        description: 'The planned session has been deleted.',
+      });
+      setDeleteSessionDialog({ open: false, session: null });
+    } catch (error) {
+      console.error('Failed to delete planned session:', error);
+      toast({
+        title: 'Delete failed',
+        description: 'Failed to delete the planned session. Please try again.',
+        variant: 'destructive',
+      });
     }
   };
 
@@ -392,8 +437,9 @@ export function MonthView({ currentDate, onActivityClick }: MonthViewProps) {
                   const activityDateStr = matchingActivity?.date || '';
                   const isMoved = !!matchingActivity && sessionDateStr !== activityDateStr;
                   
-                  // Check if activity is paired (has planned_session_id)
-                  const isPaired = Boolean(matchingActivity?.planned_session_id);
+                  // Check if session is paired (has completed_activity_id)
+                  // Frontend invariant: UI = lookup only, backend = authority
+                  const isPaired = Boolean(session.completed_activity_id);
 
                   const handlePairingIconClick = (e: React.MouseEvent) => {
                     e.stopPropagation();
@@ -456,7 +502,7 @@ export function MonthView({ currentDate, onActivityClick }: MonthViewProps) {
                                 className="cursor-pointer hover:opacity-80 transition-opacity"
                                 aria-label="Activity is paired - view pairing details"
                               >
-                                <AlertTriangle className="h-3.5 w-3.5 text-amber-500 shrink-0" />
+                                <Link2 className="h-3.5 w-3.5 text-green-600 dark:text-green-400 shrink-0" />
                               </button>
                             )}
                             {isMoved && !isPaired && (
@@ -468,6 +514,28 @@ export function MonthView({ currentDate, onActivityClick }: MonthViewProps) {
                             {!isCompleted && !isMoved && (
                               <div className="h-2 w-2 rounded-full border border-muted-foreground/30 shrink-0" aria-label="Unmatched" />
                             )}
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-6 w-6 p-0"
+                                  onClick={(e) => e.stopPropagation()}
+                                >
+                                  <MoreVertical className="h-3.5 w-3.5" />
+                                  <span className="sr-only">Open menu</span>
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem
+                                  onClick={(e) => handleDeleteSessionClick(e, session)}
+                                  className="text-destructive"
+                                >
+                                  <Trash2 className="mr-2 h-4 w-4" />
+                                  Delete Planned Session
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
                           </div>
                         </div>
                         {intensity && (
@@ -540,6 +608,28 @@ export function MonthView({ currentDate, onActivityClick }: MonthViewProps) {
                               <div className="flex items-center gap-1.5 shrink-0">
                                 <span className="text-xs text-muted-foreground">{durationStr}</span>
                                 <CheckCircle className="h-4 w-4 text-green-600 shrink-0" />
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="sm"
+                                      className="h-6 w-6 p-0"
+                                      onClick={(e) => e.stopPropagation()}
+                                    >
+                                      <MoreVertical className="h-3.5 w-3.5" />
+                                      <span className="sr-only">Open menu</span>
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end">
+                                    <DropdownMenuItem
+                                      onClick={(e) => handleDeleteActivityClick(e, activity)}
+                                      className="text-destructive"
+                                    >
+                                      <Trash2 className="mr-2 h-4 w-4" />
+                                      Delete Activity
+                                    </DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
                               </div>
                             </div>
                           </div>
@@ -575,9 +665,60 @@ export function MonthView({ currentDate, onActivityClick }: MonthViewProps) {
           onOpenChange={setPairingModalOpen}
           activity={selectedPairingActivity}
           session={selectedPairingSession}
-          onUnpair={handleUnpair}
         />
       )}
+
+      {/* Delete Activity Confirmation Dialog */}
+      <AlertDialog open={deleteActivityDialog.open} onOpenChange={(open) => setDeleteActivityDialog({ open, activity: open ? deleteActivityDialog.activity : null })}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Activity?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {deleteActivityDialog.activity?.planned_session_id
+                ? "This activity is linked to a planned session.\nDeleting it will unpair the session."
+                : "Delete this activity?"}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleteActivityMutation.isPending}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteActivityConfirm}
+              disabled={deleteActivityMutation.isPending}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleteActivityMutation.isPending ? 'Deleting...' : 'Delete'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete Planned Session Confirmation Dialog */}
+      <AlertDialog open={deleteSessionDialog.open} onOpenChange={(open) => setDeleteSessionDialog({ open, session: open ? deleteSessionDialog.session : null })}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Planned Session?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {deleteSessionDialog.session?.completed_activity_id
+                ? "This session is linked to a completed activity.\nThe activity will remain but become unpaired."
+                : "Delete this planned session?"}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deletePlannedSessionMutation.isPending}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteSessionConfirm}
+              disabled={deletePlannedSessionMutation.isPending}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deletePlannedSessionMutation.isPending ? 'Deleting...' : 'Delete'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

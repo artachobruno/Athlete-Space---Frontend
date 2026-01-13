@@ -15,7 +15,7 @@ import { fetchActivities, fetchOverview, type CalendarSession } from '@/lib/api'
 import { useUpdatePlannedSession, useUpdateWorkoutDate } from '@/hooks/useCalendarMutations';
 import { fetchCalendarMonth, normalizeCalendarMonth, type DayCalendarData } from '@/lib/calendar-month';
 import { mapSessionToWorkout, normalizeSportType } from '@/lib/session-utils';
-import { Footprints, Bike, Waves, Clock, Route, CheckCircle2, MessageCircle, Loader2, Sparkles, Share2, Copy, Download, AlertTriangle } from 'lucide-react';
+import { Footprints, Bike, Waves, Clock, Route, CheckCircle2, MessageCircle, Loader2, Sparkles, Share2, Copy, Download, AlertTriangle, Link2, MoreVertical, Trash2 } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -42,7 +42,17 @@ import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 import { DraggablePlannedSession } from './DraggablePlannedSession';
 import { DroppableDayCell } from './DroppableDayCell';
 import { PairingDetailsModal } from './PairingDetailsModal';
-import { unpairActivity } from '@/lib/api';
+import { useDeleteActivity, useDeletePlannedSession } from '@/hooks/useDeleteMutations';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 interface WeekViewProps {
   currentDate: Date;
@@ -84,6 +94,10 @@ export function WeekView({ currentDate, onActivityClick }: WeekViewProps) {
   const [pairingModalOpen, setPairingModalOpen] = useState(false);
   const [selectedPairingActivity, setSelectedPairingActivity] = useState<CompletedActivity | null>(null);
   const [selectedPairingSession, setSelectedPairingSession] = useState<CalendarSession | null>(null);
+  const deleteActivityMutation = useDeleteActivity();
+  const deletePlannedSessionMutation = useDeletePlannedSession();
+  const [deleteActivityDialog, setDeleteActivityDialog] = useState<{ open: boolean; activity: CompletedActivity | null }>({ open: false, activity: null });
+  const [deleteSessionDialog, setDeleteSessionDialog] = useState<{ open: boolean; session: CalendarSession | null }>({ open: false, session: null });
   const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
   const weekEnd = endOfWeek(currentDate, { weekStartsOn: 1 });
   const monthStart = startOfMonth(currentDate);
@@ -480,29 +494,53 @@ export function WeekView({ currentDate, onActivityClick }: WeekViewProps) {
     setDraggedSession(null);
   };
 
-  const handleUnpair = async () => {
-    if (!selectedPairingActivity) return;
+  const handleDeleteActivityClick = (e: React.MouseEvent, activity: CompletedActivity) => {
+    e.stopPropagation();
+    setDeleteActivityDialog({ open: true, activity });
+  };
+
+  const handleDeleteActivityConfirm = async () => {
+    if (!deleteActivityDialog.activity) return;
     
     try {
-      await unpairActivity(selectedPairingActivity.id);
+      await deleteActivityMutation.mutateAsync(deleteActivityDialog.activity.id);
       toast({
-        title: 'Activity unpaired',
-        description: 'The activity has been unpaired from its planned session.',
+        title: 'Activity deleted',
+        description: 'The activity has been deleted.',
       });
-      
-      // Invalidate all calendar queries to refresh data
-      queryClient.invalidateQueries({ queryKey: ['calendar'], exact: false });
-      queryClient.invalidateQueries({ queryKey: ['calendarWeek'], exact: false });
-      queryClient.invalidateQueries({ queryKey: ['calendarSeason'], exact: false });
-      queryClient.invalidateQueries({ queryKey: ['activities'] });
+      setDeleteActivityDialog({ open: false, activity: null });
     } catch (error) {
-      console.error('Failed to unpair activity:', error);
+      console.error('Failed to delete activity:', error);
       toast({
-        title: 'Unpair failed',
-        description: 'Failed to unpair the activity. Please try again.',
+        title: 'Delete failed',
+        description: 'Failed to delete the activity. Please try again.',
         variant: 'destructive',
       });
-      throw error;
+    }
+  };
+
+  const handleDeleteSessionClick = (e: React.MouseEvent, session: CalendarSession) => {
+    e.stopPropagation();
+    setDeleteSessionDialog({ open: true, session });
+  };
+
+  const handleDeleteSessionConfirm = async () => {
+    if (!deleteSessionDialog.session) return;
+    
+    try {
+      await deletePlannedSessionMutation.mutateAsync(deleteSessionDialog.session.id);
+      toast({
+        title: 'Planned session deleted',
+        description: 'The planned session has been deleted.',
+      });
+      setDeleteSessionDialog({ open: false, session: null });
+    } catch (error) {
+      console.error('Failed to delete planned session:', error);
+      toast({
+        title: 'Delete failed',
+        description: 'Failed to delete the planned session. Please try again.',
+        variant: 'destructive',
+      });
     }
   };
 
@@ -660,8 +698,9 @@ export function WeekView({ currentDate, onActivityClick }: WeekViewProps) {
                 const activityDateStr = matchingActivity?.date || '';
                 const isMoved = !!matchingActivity && sessionDateStr !== activityDateStr;
                 
-                // Check if activity is paired (has planned_session_id)
-                const isPaired = Boolean(matchingActivity?.planned_session_id);
+                // Check if session is paired (has completed_activity_id)
+                // Frontend invariant: UI = lookup only, backend = authority
+                const isPaired = Boolean(session.completed_activity_id);
 
                 const handlePairingIconClick = (e: React.MouseEvent) => {
                   e.stopPropagation();
@@ -701,7 +740,7 @@ export function WeekView({ currentDate, onActivityClick }: WeekViewProps) {
                               className="cursor-pointer hover:opacity-80 transition-opacity"
                               aria-label="Activity is paired - view pairing details"
                             >
-                              <AlertTriangle className="h-3.5 w-3.5 text-amber-500" />
+                              <Link2 className="h-3.5 w-3.5 text-green-600 dark:text-green-400" />
                             </button>
                           )}
                           {isMoved && !isPaired && (
@@ -713,6 +752,28 @@ export function WeekView({ currentDate, onActivityClick }: WeekViewProps) {
                           {!isCompleted && !isMoved && (
                             <div className="h-3 w-3 rounded-full border border-muted-foreground/30" aria-label="Unmatched" />
                           )}
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-6 w-6 p-0"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <MoreVertical className="h-3.5 w-3.5" />
+                                <span className="sr-only">Open menu</span>
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem
+                                onClick={(e) => handleDeleteSessionClick(e, session)}
+                                className="text-destructive"
+                              >
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                Delete Planned Session
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </div>
                       </div>
                       <div className="flex items-center gap-3 text-xs text-muted-foreground">
@@ -761,6 +822,7 @@ export function WeekView({ currentDate, onActivityClick }: WeekViewProps) {
                   }
 
                   const Icon = getSportIcon(activity.sport);
+                  const isActivityPaired = Boolean(activity.planned_session_id);
                   return (
                     <div
                       key={activity.id || `completed-${activity.date}-${activity.title}`}
@@ -772,6 +834,30 @@ export function WeekView({ currentDate, onActivityClick }: WeekViewProps) {
                         <span className="text-sm font-medium truncate">
                           {activity.title}
                         </span>
+                        <div className="ml-auto shrink-0">
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-6 w-6 p-0"
+                                onClick={(e) => e.stopPropagation()}
+                              >
+                                <MoreVertical className="h-3.5 w-3.5" />
+                                <span className="sr-only">Open menu</span>
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem
+                                onClick={(e) => handleDeleteActivityClick(e, activity)}
+                                className="text-destructive"
+                              >
+                                <Trash2 className="mr-2 h-4 w-4" />
+                                Delete Activity
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
                       </div>
                       <div className="flex items-center gap-3 text-xs text-muted-foreground">
                         <span className="flex items-center gap-1">
@@ -816,9 +902,60 @@ export function WeekView({ currentDate, onActivityClick }: WeekViewProps) {
           onOpenChange={setPairingModalOpen}
           activity={selectedPairingActivity}
           session={selectedPairingSession}
-          onUnpair={handleUnpair}
         />
       )}
+
+      {/* Delete Activity Confirmation Dialog */}
+      <AlertDialog open={deleteActivityDialog.open} onOpenChange={(open) => setDeleteActivityDialog({ open, activity: open ? deleteActivityDialog.activity : null })}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Activity?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {deleteActivityDialog.activity?.planned_session_id
+                ? "This activity is linked to a planned session.\nDeleting it will unpair the session."
+                : "Delete this activity?"}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deleteActivityMutation.isPending}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteActivityConfirm}
+              disabled={deleteActivityMutation.isPending}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deleteActivityMutation.isPending ? 'Deleting...' : 'Delete'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Delete Planned Session Confirmation Dialog */}
+      <AlertDialog open={deleteSessionDialog.open} onOpenChange={(open) => setDeleteSessionDialog({ open, session: open ? deleteSessionDialog.session : null })}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Planned Session?</AlertDialogTitle>
+            <AlertDialogDescription>
+              {deleteSessionDialog.session?.completed_activity_id
+                ? "This session is linked to a completed activity.\nThe activity will remain but become unpaired."
+                : "Delete this planned session?"}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={deletePlannedSessionMutation.isPending}>
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleDeleteSessionConfirm}
+              disabled={deletePlannedSessionMutation.isPending}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {deletePlannedSessionMutation.isPending ? 'Deleting...' : 'Delete'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

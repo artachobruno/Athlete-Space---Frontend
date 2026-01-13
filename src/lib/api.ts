@@ -125,6 +125,8 @@ export interface CalendarSession {
   notes: string | null;
   // PHASE F3: Calendar API should return workout_id
   workout_id?: string | null;
+  // Pairing: session is paired if this is non-null
+  completed_activity_id?: string | null;
 }
 
 export interface TodayResponse {
@@ -1289,6 +1291,39 @@ export const unpairActivity = async (activityId: string): Promise<void> => {
     await api.post(`/activities/${activityId}/unpair`);
   } catch (error) {
     console.error("[API] Failed to unpair activity:", error);
+    throw error;
+  }
+};
+
+/**
+ * Manually pairs an activity with a planned session.
+ * POST /admin/pairing/merge
+ */
+export const manualPair = async (activityId: string, plannedSessionId: string): Promise<void> => {
+  console.log("[API] Manually pairing activity", activityId, "with session", plannedSessionId);
+  try {
+    await api.post('/admin/pairing/merge', {
+      activity_id: activityId,
+      planned_session_id: plannedSessionId,
+    });
+  } catch (error) {
+    console.error("[API] Failed to manually pair activity:", error);
+    throw error;
+  }
+};
+
+/**
+ * Manually unpairs an activity from its planned session.
+ * POST /admin/pairing/unmerge
+ */
+export const manualUnpair = async (activityId: string): Promise<void> => {
+  console.log("[API] Manually unpairing activity", activityId);
+  try {
+    await api.post('/admin/pairing/unmerge', {
+      activity_id: activityId,
+    });
+  } catch (error) {
+    console.error("[API] Failed to manually unpair activity:", error);
     throw error;
   }
 };
