@@ -35,6 +35,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { toast } from '@/hooks/use-toast';
 import { useDeleteActivity, useDeletePlannedSession } from '@/hooks/useDeleteMutations';
+import { markDragOperationComplete } from '@/hooks/useAutoMatchSessions';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -253,6 +254,8 @@ export function MonthView({ currentDate, onActivityClick }: MonthViewProps) {
               title: 'Workout moved',
               description: `Moved to ${format(parseISO(newDate), 'MMM d, yyyy')}`,
             });
+            // CRITICAL: Mark drag operation complete to prevent useAutoMatchSessions from interfering
+            markDragOperationComplete();
             // PHASE F4: Invalidate aggressively - backend handles reorder
             queryClient.invalidateQueries({ queryKey: ['calendar'], exact: false });
             queryClient.invalidateQueries({ queryKey: ['calendarWeek'], exact: false });
@@ -281,6 +284,8 @@ export function MonthView({ currentDate, onActivityClick }: MonthViewProps) {
               title: 'Session moved',
               description: `Moved to ${format(parseISO(newDate), 'MMM d, yyyy')}`,
             });
+            // CRITICAL: Mark drag operation complete to prevent useAutoMatchSessions from interfering
+            markDragOperationComplete();
             // PHASE F4: Invalidate aggressively
             queryClient.invalidateQueries({ queryKey: ['calendar'], exact: false });
             queryClient.invalidateQueries({ queryKey: ['calendarWeek'], exact: false });

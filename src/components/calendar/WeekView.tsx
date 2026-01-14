@@ -43,6 +43,7 @@ import { DraggablePlannedSession } from './DraggablePlannedSession';
 import { DroppableDayCell } from './DroppableDayCell';
 import { PairingDetailsModal } from './PairingDetailsModal';
 import { useDeleteActivity, useDeletePlannedSession } from '@/hooks/useDeleteMutations';
+import { markDragOperationComplete } from '@/hooks/useAutoMatchSessions';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -467,6 +468,8 @@ export function WeekView({ currentDate, onActivityClick }: WeekViewProps) {
               title: 'Workout moved',
               description: `Moved to ${format(parseISO(newDate), 'MMM d, yyyy')}`,
             });
+            // CRITICAL: Mark drag operation complete to prevent useAutoMatchSessions from interfering
+            markDragOperationComplete();
             // PHASE F4: Invalidate aggressively - backend handles reorder
             queryClient.invalidateQueries({ queryKey: ['calendar'], exact: false });
             queryClient.invalidateQueries({ queryKey: ['calendarWeek'], exact: false });
@@ -495,6 +498,8 @@ export function WeekView({ currentDate, onActivityClick }: WeekViewProps) {
               title: 'Session moved',
               description: `Moved to ${format(parseISO(newDate), 'MMM d, yyyy')}`,
             });
+            // CRITICAL: Mark drag operation complete to prevent useAutoMatchSessions from interfering
+            markDragOperationComplete();
             // PHASE F4: Invalidate aggressively
             queryClient.invalidateQueries({ queryKey: ['calendar'], exact: false });
             queryClient.invalidateQueries({ queryKey: ['calendarWeek'], exact: false });

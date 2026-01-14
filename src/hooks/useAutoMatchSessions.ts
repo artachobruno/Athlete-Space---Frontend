@@ -7,8 +7,26 @@ import { checkForProposalResponse } from '@/lib/confirmation-handler';
 import type { CompletedActivity } from '@/types';
 
 /**
+ * Module-level timestamp tracking last drag operation.
+ * Prevents auto-match from running immediately after drag operations.
+ */
+let lastDragOperationTime = 0;
+const DRAG_COOLDOWN_MS = 5000; // 5 seconds cooldown after drag
+
+/**
+ * Called by drag handlers to mark that a drag operation just completed.
+ * This prevents useAutoMatchSessions from interfering with drag operations.
+ */
+export function markDragOperationComplete() {
+  lastDragOperationTime = Date.now();
+}
+
+/**
  * Hook that automatically matches completed activities to planned sessions.
  * Runs when activities are fetched and marks matching sessions as completed.
+ * 
+ * CRITICAL: Skips execution if a drag operation completed recently to prevent
+ * calendar from snapping back after drag-and-drop.
  */
 export function useAutoMatchSessions(enabled: boolean = true) {
   const queryClient = useQueryClient();
@@ -22,6 +40,16 @@ export function useAutoMatchSessions(enabled: boolean = true) {
 
   useEffect(() => {
     if (!enabled || !activities || activities.length === 0) return;
+
+    // CRITICAL: Skip auto-match if a drag operation completed recently
+    // This prevents calendar from snapping back after drag-and-drop
+    const timeSinceLastDrag = Date.now() - lastDragOperationTime;
+    if (timeSinceLastDrag < DRAG_COOLDOWN_MS) {
+      const remainingCooldown = Math.ceil((DRAG_COOLDOWN_MS - timeSinceLastDrag) / 1000);
+      console.log(`[AutoMatch] Skipping: drag operation completed ${remainingCooldown}s ago (cooldown: ${DRAG_COOLDOWN_MS / 1000}s)`);
+      // Effect will naturally re-run when activities change after cooldown expires
+      return;
+    }
 
     const autoMatch = async () => {
       try {
@@ -108,6 +136,7 @@ export function useAutoMatchSessions(enabled: boolean = true) {
     };
 
     // Debounce auto-matching to avoid too many API calls
+    // Note: This debounce is in addition to the drag cooldown check above
     const timeoutId = setTimeout(autoMatch, 2000);
     return () => clearTimeout(timeoutId);
   }, [activities, enabled, queryClient]);
