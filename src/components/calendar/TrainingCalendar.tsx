@@ -3,8 +3,8 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ChevronLeft, ChevronRight, MessageCircle, Download, Plus } from 'lucide-react';
 import { format, addMonths, subMonths, addWeeks, subWeeks } from 'date-fns';
-import { MonthView } from './MonthView';
-import { WeekView } from './WeekView';
+import { MonthCalendar } from './MonthCalendar';
+import { WeekCalendar } from './WeekCalendar';
 import { SeasonView } from './SeasonView';
 import { CoachDrawer } from './CoachDrawer';
 import { ActivityPopup } from './ActivityPopup';
@@ -193,8 +193,8 @@ export function TrainingCalendar() {
       </div>
 
       {/* Calendar Views */}
-      {view === 'month' && <MonthView currentDate={currentDate} onActivityClick={handleActivityClick} />}
-      {view === 'week' && <WeekView currentDate={currentDate} onActivityClick={handleActivityClick} />}
+      {view === 'month' && <MonthCalendar currentDate={currentDate} onActivityClick={handleActivityClick} />}
+      {view === 'week' && <WeekCalendar currentDate={currentDate} onActivityClick={handleActivityClick} />}
       {view === 'season' && <SeasonView currentDate={currentDate} />}
 
       {/* Activity Popup */}
