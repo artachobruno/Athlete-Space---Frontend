@@ -82,6 +82,10 @@ export function useUnitSystem() {
     };
   };
 
+  const formatDistance = (converted: { value: number; unit: string }): string => {
+    return `${converted.value} ${converted.unit}`;
+  };
+
   return {
     unitSystem,
     isLoading: false, // Always ready since we have a default
@@ -90,6 +94,7 @@ export function useUnitSystem() {
     convertWeight,
     convertHeight,
     convertPace,
+    formatDistance,
   };
 }
 
