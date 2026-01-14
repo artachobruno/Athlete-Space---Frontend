@@ -7,7 +7,7 @@ import type { WorkoutTimeline } from "@/types/workoutTimeline"
 export interface StructuredWorkoutStep {
   id: string
   order: number
-  step_type: "warmup" | "steady" | "interval" | "cooldown" | "rest"
+  step_type: string // Allow any string - backend can produce new types
   distance_meters: number | null
   duration_seconds: number | null
   target_type: "pace" | "hr" | "power" | null

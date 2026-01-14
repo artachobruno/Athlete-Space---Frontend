@@ -8,12 +8,18 @@ interface WorkoutTimelineProps {
   totalDurationSeconds: number | null
 }
 
-const STEP_COLORS: Record<StructuredWorkoutStep['step_type'], string> = {
+const STEP_COLORS: Record<string, string> = {
   warmup: '#A3E635',
   steady: '#60A5FA',
   interval: '#F97316',
   cooldown: '#38BDF8',
   rest: '#CBD5E1',
+  tempo: '#F59E0B',
+  threshold: '#EF4444',
+  recovery: '#10B981',
+  easy: '#84CC16',
+  long: '#8B5CF6',
+  repeat_block: '#EC4899',
 }
 
 export function WorkoutTimeline({
@@ -63,14 +69,14 @@ export function WorkoutTimeline({
       <div className="flex items-center gap-1 h-12 rounded-lg overflow-hidden">
         {sortedSteps.map((step) => {
           const stepValue =
-            step.distance_meters !== null
+            (step.distance_meters !== null && step.distance_meters !== undefined)
               ? step.distance_meters
-              : step.duration_seconds !== null
+              : (step.duration_seconds !== null && step.duration_seconds !== undefined)
                 ? step.duration_seconds
                 : 0
 
           const widthPercent = totalValue > 0 ? (stepValue / totalValue) * 100 : 0
-          const color = STEP_COLORS[step.step_type] || STEP_COLORS.steady
+          const color = STEP_COLORS[step.step_type] || STEP_COLORS.steady || '#60A5FA'
 
           return (
             <div

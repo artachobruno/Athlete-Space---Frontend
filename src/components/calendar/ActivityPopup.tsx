@@ -188,8 +188,14 @@ export function ActivityPopup({
         interval: 'Interval',
         cooldown: 'CD',
         rest: 'Rest',
+        tempo: 'Tempo',
+        threshold: 'Threshold',
+        recovery: 'Recovery',
+        easy: 'Easy',
+        long: 'Long',
+        repeat_block: 'Repeat',
       };
-      return typeLabels[step.step_type] || step.step_type;
+      return typeLabels[step.step_type] || (step.step_type ? step.step_type.charAt(0).toUpperCase() + step.step_type.slice(1) : 'Step');
     });
 
     // Generate compact summary (1-2 lines max)
