@@ -1,9 +1,10 @@
-import { useMemo } from 'react';
+import { useMemo, useState, useCallback } from 'react';
 import { startOfWeek, addDays, format, isToday, isBefore } from 'date-fns';
-import { fetchCalendarWeek, fetchActivities, fetchTrainingLoad } from '@/lib/api';
+import { fetchCalendarWeek, fetchActivities, fetchTrainingLoad, type CalendarSession } from '@/lib/api';
 import { mapSessionToWorkout } from '@/lib/session-utils';
 import { getTodayIntelligence } from '@/lib/intelligence';
 import { DailyWorkoutCard } from './DailyWorkoutCard';
+import { PlannedWorkoutExpanded } from './PlannedWorkoutExpanded';
 import { useAuthenticatedQuery } from '@/hooks/useAuthenticatedQuery';
 import { Loader2 } from 'lucide-react';
 import type { PlannedWorkout, CompletedActivity } from '@/types';
@@ -11,9 +12,10 @@ import { enrichActivitiesWithTss } from '@/lib/tss-utils';
 
 interface DailyWorkoutListProps {
   currentDate?: Date;
+  onDayClick?: (dateStr: string) => void;
 }
 
-export function DailyWorkoutList({ currentDate }: DailyWorkoutListProps) {
+export function DailyWorkoutList({ currentDate, onDayClick }: DailyWorkoutListProps) {
   const today = new Date();
   const viewDate = currentDate || today;
   const weekStart = startOfWeek(viewDate, { weekStartsOn: 1 });
@@ -67,6 +69,14 @@ export function DailyWorkoutList({ currentDate }: DailyWorkoutListProps) {
     gcTime: 60 * 60 * 1000, // Keep in cache for 1 hour
   });
 
+  // Expansion state - controlled by workout_id
+  const [expandedWorkoutId, setExpandedWorkoutId] = useState<string | null>(null);
+
+  const toggleWorkout = useCallback((workoutId: string | null) => {
+    if (!workoutId) return;
+    setExpandedWorkoutId((prev) => (prev === workoutId ? null : workoutId));
+  }, []);
+
   // Enrich activities with TSS
   const enrichedActivities = useMemo(() => {
     if (!activities) return [];
@@ -111,6 +121,7 @@ export function DailyWorkoutList({ currentDate }: DailyWorkoutListProps) {
       return {
         date,
         dateStr,
+        session,
         workout,
         completed: completed || undefined,
         status,
@@ -135,17 +146,28 @@ export function DailyWorkoutList({ currentDate }: DailyWorkoutListProps) {
     <div className="space-y-3">
       <h3 className="text-lg font-semibold text-foreground">Daily Schedule</h3>
       <div className="space-y-3">
-        {weekDays.map((day) => (
-          <DailyWorkoutCard
-            key={day.date.toString()}
-            date={day.date}
-            dateId={`workout-${day.dateStr}`}
-            workout={day.workout}
-            completed={day.completed}
-            status={day.status}
-            dailyDecision={day.dailyDecision}
-          />
-        ))}
+        {weekDays.map((day) => {
+          const workoutId = day.session?.workout_id;
+          const isExpanded = workoutId && expandedWorkoutId === workoutId;
+
+          return (
+            <div key={day.date.toString()} id={`workout-${day.dateStr}`} className="space-y-2">
+              <DailyWorkoutCard
+                date={day.date}
+                dateId={`workout-${day.dateStr}`}
+                workout={day.workout}
+                completed={day.completed}
+                status={day.status}
+                dailyDecision={day.dailyDecision}
+                onClick={workoutId ? () => toggleWorkout(workoutId) : undefined}
+                isExpanded={isExpanded}
+              />
+              {isExpanded && workoutId && (
+                <PlannedWorkoutExpanded workoutId={workoutId} />
+              )}
+            </div>
+          );
+        })}
       </div>
     </div>
   );

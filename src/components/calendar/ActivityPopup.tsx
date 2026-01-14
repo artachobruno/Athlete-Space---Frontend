@@ -1,7 +1,7 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Footprints, Bike, Waves, Clock, Route, Mountain, Heart, Zap, MessageCircle, CheckCircle2, ExternalLink, X, SkipForward, TrendingUp, Info, Download, Loader2 } from 'lucide-react';
+import { Footprints, Bike, Waves, Clock, Route, Mountain, Heart, Zap, MessageCircle, CheckCircle2, ExternalLink, X, SkipForward, TrendingUp, Info, Download, Loader2, ArrowRight } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import { useNavigate } from 'react-router-dom';
@@ -172,12 +172,49 @@ export function ActivityPopup({
   const displayTss = enrichedActivity?.trainingLoad || 
     (activity?.date ? getTssForDate(activity.date, trainingLoadData) : null);
 
+  // Generate lightweight structured workout preview (recognition, not duplication)
+  const workoutPreview = useMemo(() => {
+    if (!structuredWorkout?.steps || structuredWorkout.steps.length === 0) {
+      return null;
+    }
+
+    const sortedSteps = [...structuredWorkout.steps].sort((a, b) => a.order - b.order);
+    
+    // Generate step type chips (categorical only, no details)
+    const stepTypes = sortedSteps.map((step) => {
+      const typeLabels: Record<string, string> = {
+        warmup: 'WU',
+        steady: 'Steady',
+        interval: 'Interval',
+        cooldown: 'CD',
+        rest: 'Rest',
+      };
+      return typeLabels[step.step_type] || step.step_type;
+    });
+
+    // Generate compact summary (1-2 lines max)
+    const summary = stepTypes.join(' → ');
+
+    return {
+      summary,
+      stepTypes: sortedSteps.map((step) => step.step_type),
+      stepCount: sortedSteps.length,
+    };
+  }, [structuredWorkout]);
+
   const handleViewDetails = () => {
     onOpenChange(false);
     if (activity?.id) {
       navigate(`/activities?activity=${activity.id}`);
     } else {
       navigate('/activities');
+    }
+  };
+
+  const handleViewWorkout = () => {
+    if (session?.workout_id) {
+      onOpenChange(false);
+      navigate(`/workout/${session.workout_id}`);
     }
   };
 
@@ -455,8 +492,55 @@ export function ActivityPopup({
             </div>
           )}
 
-          {/* Workout structure */}
-          {workout?.structure && workout.structure.length > 0 && (
+          {/* Structured workout preview (recognition, not duplication) */}
+          {workoutPreview && session?.workout_id && (
+            <div className="mt-3 rounded-md bg-muted/50 p-3 border border-border/50">
+              <div className="text-xs text-muted-foreground mb-1.5 uppercase tracking-wide">
+                Structured workout
+              </div>
+              <div className="text-sm font-medium text-foreground mb-2">
+                {workoutPreview.summary}
+              </div>
+              <div className="flex items-center gap-1.5 flex-wrap mb-2">
+                {workoutPreview.stepTypes.map((stepType, idx) => {
+                  const stepLabels: Record<string, string> = {
+                    warmup: 'WU',
+                    steady: 'Steady',
+                    interval: 'Interval',
+                    cooldown: 'CD',
+                    rest: 'Rest',
+                  };
+                  const stepColors: Record<string, string> = {
+                    warmup: 'bg-training-recovery/20 text-training-recovery border-training-recovery/30',
+                    steady: 'bg-training-aerobic/20 text-training-aerobic border-training-aerobic/30',
+                    interval: 'bg-training-vo2/20 text-training-vo2 border-training-vo2/30',
+                    cooldown: 'bg-training-recovery/20 text-training-recovery border-training-recovery/30',
+                    rest: 'bg-muted text-muted-foreground border-muted-foreground/30',
+                  };
+                  return (
+                    <Badge
+                      key={idx}
+                      variant="outline"
+                      className={cn('text-xs', stepColors[stepType] || 'bg-muted text-muted-foreground')}
+                    >
+                      {stepLabels[stepType] || stepType}
+                    </Badge>
+                  );
+                })}
+              </div>
+              <button
+                type="button"
+                onClick={handleViewWorkout}
+                className="text-sm text-primary hover:text-primary/80 underline flex items-center gap-1 mt-1"
+              >
+                View full workout
+                <ArrowRight className="h-3 w-3" />
+              </button>
+            </div>
+          )}
+
+          {/* Legacy workout structure (keep for backward compatibility) */}
+          {workout?.structure && workout.structure.length > 0 && !workoutPreview && (
             <div className="space-y-2">
               <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
                 Structure
@@ -531,6 +615,16 @@ export function ActivityPopup({
               </div>
             )}
             <div className="flex gap-2">
+              {session?.workout_id && (
+                <Button
+                  variant="default"
+                  className="flex-1"
+                  onClick={handleViewWorkout}
+                >
+                  <ExternalLink className="h-4 w-4 mr-2" />
+                  View Workout
+                </Button>
+              )}
               <Button
                 variant="outline"
                 className="flex-1"

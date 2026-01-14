@@ -16,6 +16,8 @@ interface DailyWorkoutCardProps {
   completed?: CompletedActivity;
   status: 'upcoming' | 'today' | 'completed' | 'missed';
   dailyDecision?: { decision: DailyDecision; reason: string } | null;
+  onClick?: () => void;
+  isExpanded?: boolean;
 }
 
 const sportIcons = {
@@ -48,7 +50,7 @@ const coachNotes: Record<string, string> = {
   recovery: 'Very easy. Heart rate should stay low throughout.',
 };
 
-export function DailyWorkoutCard({ date, dateId, workout, completed, status, dailyDecision }: DailyWorkoutCardProps) {
+export function DailyWorkoutCard({ date, dateId, workout, completed, status, dailyDecision, onClick, isExpanded }: DailyWorkoutCardProps) {
   const { convertDistance } = useUnitSystem();
   const isRestDay = !workout && !completed;
   // Use activity icon if no workout but has completed activity
@@ -62,8 +64,10 @@ export function DailyWorkoutCard({ date, dateId, workout, completed, status, dai
       className={cn(
         'transition-all scroll-mt-4',
         status === 'today' && 'ring-2 ring-accent',
-        status === 'missed' && 'opacity-60'
+        status === 'missed' && 'opacity-60',
+        onClick && 'cursor-pointer hover:bg-muted/50'
       )}
+      onClick={onClick}
     >
       <CardContent className="p-4">
         <div className="flex flex-col lg:flex-row lg:items-start gap-4">
