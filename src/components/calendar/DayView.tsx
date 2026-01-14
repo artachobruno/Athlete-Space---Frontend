@@ -153,7 +153,7 @@ export function DayView({ date, items, onBack, onItemClick }: DayViewProps) {
       {/* Session Cards */}
       <div className="space-y-4">
         {sortedItems.map((item) => {
-          const Icon = sportIcons[item.sport];
+          const Icon = sportIcons[item.sport] || Activity;
           const phases = getWorkoutPhases(item);
           const time = format(parseISO(item.startLocal), 'h:mm a');
           

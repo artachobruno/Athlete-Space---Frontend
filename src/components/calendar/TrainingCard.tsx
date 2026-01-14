@@ -85,7 +85,7 @@ function getCardStyles(
 export function TrainingCard({ group, variant = 'compact', onClick }: TrainingCardProps) {
   const [expanded, setExpanded] = useState(false);
   const primaryItem = group.items[0];
-  const Icon = sportIcons[primaryItem.sport];
+  const Icon = sportIcons[primaryItem.sport] || Activity;
   const isMultiple = group.count > 1;
   
   const handleClick = () => {

@@ -54,7 +54,11 @@ export function DailyWorkoutCard({ date, dateId, workout, completed, status, dai
   const { convertDistance } = useUnitSystem();
   const isRestDay = !workout && !completed;
   // Use activity icon if no workout but has completed activity
-  const Icon = workout ? sportIcons[workout.sport] : (completed ? sportIcons[completed.sport] : Moon);
+  const Icon = workout 
+    ? (sportIcons[workout.sport as keyof typeof sportIcons] || Footprints)
+    : (completed 
+      ? (sportIcons[completed.sport as keyof typeof sportIcons] || Footprints)
+      : Moon);
   const decisionInfo = dailyDecision ? decisionConfig[dailyDecision.decision] : null;
   const DecisionIcon = decisionInfo?.icon;
 

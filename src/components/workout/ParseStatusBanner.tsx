@@ -7,7 +7,7 @@ interface ParseStatusBannerProps {
 }
 
 export function ParseStatusBanner({ parseStatus }: ParseStatusBannerProps) {
-  if (parseStatus === 'parsed') {
+  if (parseStatus === 'parsed' || !parseStatus) {
     return null
   }
 
@@ -29,8 +29,8 @@ export function ParseStatusBanner({ parseStatus }: ParseStatusBannerProps) {
     },
   }
 
-  const statusConfig = config[parseStatus]
-  const Icon = statusConfig.icon
+  const statusConfig = config[parseStatus] || config.failed
+  const Icon = statusConfig?.icon || AlertCircle
 
   return (
     <Alert variant={statusConfig.variant}>

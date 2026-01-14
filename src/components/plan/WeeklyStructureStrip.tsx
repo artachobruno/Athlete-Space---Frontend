@@ -61,7 +61,7 @@ export function WeeklyStructureStrip({ currentDate, onDayClick }: WeeklyStructur
   return (
     <div className="flex gap-1 overflow-x-auto pb-2">
       {weekDays.map((day) => {
-        const Icon = day.workout ? sportIcons[day.workout.sport] : Moon;
+        const Icon = day.workout ? (sportIcons[day.workout.sport as keyof typeof sportIcons] || Footprints) : Moon;
         const intentColor = day.workout ? intentColors[day.workout.intent] : 'bg-muted';
 
         return (

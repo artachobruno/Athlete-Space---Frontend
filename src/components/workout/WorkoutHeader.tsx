@@ -60,8 +60,8 @@ export function WorkoutHeader({ workout }: WorkoutHeaderProps) {
     },
   }
 
-  const statusConfig = parseStatusConfig[workout.parse_status]
-  const StatusIcon = statusConfig.icon
+  const statusConfig = parseStatusConfig[workout.parse_status] || parseStatusConfig.failed
+  const StatusIcon = statusConfig?.icon || HelpCircle
 
   return (
     <div className="flex items-start justify-between gap-4">
