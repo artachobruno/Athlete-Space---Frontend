@@ -726,7 +726,7 @@ export const completeOnboarding = async (data: {
  * @param data - Profile data to update (same schema as onboarding)
  * @returns Success response
  */
-export const updateSettingsProfile = async (data: {
+export const updateAthleteProfileSettings = async (data: {
   first_name: string;
   last_name?: string;
   timezone: string;
@@ -738,12 +738,12 @@ export const updateSettingsProfile = async (data: {
   injury_status: 'none' | 'managing' | 'injured';
   injury_notes?: string;
 }): Promise<{ status: 'ok' }> => {
-  console.log("[API] Updating settings profile");
+  console.log("[API] Updating athlete profile settings");
   try {
     const response = await api.put("/api/settings/profile", data);
     return response as { status: 'ok' };
   } catch (error) {
-    console.error("[API] Failed to update settings profile:", error);
+    console.error("[API] Failed to update athlete profile settings:", error);
     throw error;
   }
 };
