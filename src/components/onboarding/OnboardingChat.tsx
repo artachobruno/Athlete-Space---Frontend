@@ -197,35 +197,13 @@ export function OnboardingChat({ onComplete, isComplete }: OnboardingChatProps) 
 
     setTimeout(() => {
       addCoachMessage(
-        `Nice to meet you, ${firstName}. I've detected your timezone as ${data.timezone}. Is that correct, or would you like to change it?`,
-        'text-input'
-      );
-      setStep('timezone');
-      setShowTextInput(true);
-    }, 300);
-  };
-
-  const handleTimezoneInput = () => {
-    const input = textInput.trim();
-    const timezone = input || data.timezone; // Use input if provided, otherwise keep detected
-    
-    setData(prev => ({ ...prev, timezone }));
-    if (input) {
-      addAthleteMessage(input);
-    } else {
-      addAthleteMessage('Yes, that\'s correct');
-    }
-    setTextInput('');
-    setShowTextInput(false);
-
-    setTimeout(() => {
-      addCoachMessage(
-        "Great. Now let's talk about your training. Which sport or sports are you training for right now?",
+        `Nice to meet you, ${firstName}. Now let's talk about your training. Which sport or sports are you training for right now?`,
         'sports'
       );
       setStep('sports');
     }, 300);
   };
+
 
   const handleSportsSelect = (sports: Sport[]) => {
     setData(prev => ({ ...prev, sports }));
@@ -925,7 +903,6 @@ export function OnboardingChat({ onComplete, isComplete }: OnboardingChatProps) 
             onKeyDown={(e) => {
               if (e.key === 'Enter') {
                 if (step === 'name') handleNameInput();
-                if (step === 'timezone') handleTimezoneInput();
                 if (step === 'race-details') handleRaceDetails();
                 if (step === 'injury-details') handleInjuryDetails();
               }
@@ -936,13 +913,12 @@ export function OnboardingChat({ onComplete, isComplete }: OnboardingChatProps) 
           <Button
             onClick={() => {
               if (step === 'name') handleNameInput();
-              if (step === 'timezone') handleTimezoneInput();
               if (step === 'race-details') handleRaceDetails();
               if (step === 'injury-details') handleInjuryDetails();
             }}
             disabled={(step === 'name' || step === 'race-details') && !textInput.trim()}
             className="bg-[#2F4F4F] hover:bg-[#2F4F4F]/90 text-white"
-            // Allow proceeding with timezone and injury details even if empty
+            // Allow proceeding with injury details even if empty
           >
             <Send className="h-4 w-4" />
           </Button>
