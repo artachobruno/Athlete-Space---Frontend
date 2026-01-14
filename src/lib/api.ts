@@ -740,8 +740,8 @@ export const updateAthleteProfileSettings = async (data: {
 }): Promise<{ status: 'ok' }> => {
   console.log("[API] Updating athlete profile settings");
   try {
-    const response = await api.put("/api/settings/profile", data);
-    return response as { status: 'ok' };
+    await api.put("/api/settings/profile", data);
+    return { status: 'ok' };
   } catch (error) {
     console.error("[API] Failed to update athlete profile settings:", error);
     throw error;
