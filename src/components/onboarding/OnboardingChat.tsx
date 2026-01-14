@@ -12,6 +12,7 @@ import { saveProfile, saveOnboardingAdditionalData, saveOnboardingPlans, saveSea
 import { toast } from '@/hooks/use-toast';
 import type { AthleteProfile, Sport } from '@/types';
 import { useAuth } from '@/context/AuthContext';
+import { detectTimezone } from '@/lib/timezone';
 
 export interface AthleteOnboardingProfile {
   sports: Sport[];
@@ -35,20 +36,20 @@ interface OnboardingChatProps {
   isComplete: boolean;
 }
 
-type Step = 'welcome' | 'sports' | 'consistency' | 'goals' | 'race-details' | 'availability' | 'hours' | 'injuries' | 'injury-details' | 'strava' | 'analyzing' | 'summary' | 'complete';
+type Step = 'role' | 'welcome' | 'name' | 'timezone' | 'sports' | 'consistency' | 'goals' | 'race-details' | 'availability' | 'hours' | 'injuries' | 'injury-details' | 'strava' | 'analyzing' | 'summary' | 'complete';
 
 interface Message {
   id: string;
   role: 'coach' | 'athlete';
   content: string;
-  component?: 'sports' | 'consistency' | 'goals' | 'availability' | 'hours' | 'injuries' | 'strava' | 'summary' | 'text-input';
+  component?: 'role' | 'sports' | 'consistency' | 'goals' | 'availability' | 'hours' | 'injuries' | 'strava' | 'summary' | 'text-input';
 }
 
 const stepOrder: Step[] = ['welcome', 'sports', 'consistency', 'goals', 'availability', 'injuries', 'strava', 'summary', 'complete'];
 
 export function OnboardingChat({ onComplete, isComplete }: OnboardingChatProps) {
   const { status } = useAuth();
-  const [step, setStep] = useState<Step>('welcome');
+  const [step, setStep] = useState<Step>('role');
   const [messages, setMessages] = useState<Message[]>([]);
   const [isTyping, setIsTyping] = useState(false);
   const [textInput, setTextInput] = useState('');
@@ -57,6 +58,10 @@ export function OnboardingChat({ onComplete, isComplete }: OnboardingChatProps) 
 
   // Collected data
   const [data, setData] = useState({
+    role: '' as 'athlete' | 'coach' | '',
+    firstName: '',
+    lastName: '',
+    timezone: detectTimezone(), // Default from browser
     sports: [] as Sport[],
     consistency: '',
     goal: '',
@@ -66,7 +71,7 @@ export function OnboardingChat({ onComplete, isComplete }: OnboardingChatProps) 
     hoursPerWeek: 0,
     hasInjury: false,
     injuryDetails: '',
-    stravaConnected: auth.isLoggedIn(), // Check if token exists (from OAuth callback)
+    stravaConnected: false, // Will be checked later, not required for onboarding
   });
 
   const scrollToBottom = () => {
@@ -99,26 +104,58 @@ export function OnboardingChat({ onComplete, isComplete }: OnboardingChatProps) 
     }
   }, [auth.isLoggedIn(), step, data.stravaConnected]);
 
-  // Start with welcome
+  // Start with role selection
   useEffect(() => {
     if (messages.length === 0) {
       setTimeout(() => {
         addCoachMessage(
-          "Welcome. I'm your AI training coach. Before we begin, I want to understand you — your background, your goals, and how you train. This helps me coach you properly, not just generate workouts.",
-          undefined,
-          () => {
-            setTimeout(() => {
-              addCoachMessage(
-                "Let's start with the basics. Which sport or sports are you training for right now?",
-                'sports'
-              );
-              setStep('sports');
-            }, 800);
-          }
+          "Welcome to AthleteSpace! How will you primarily use AthleteSpace?",
+          'role'
         );
       }, 500);
     }
   }, []);
+
+  const handleRoleSelect = (role: 'athlete' | 'coach') => {
+    setData(prev => ({ ...prev, role }));
+    const roleLabel = role === 'athlete' ? 'Athlete' : 'Coach';
+    addAthleteMessage(roleLabel);
+
+    setTimeout(() => {
+      if (role === 'athlete') {
+        addCoachMessage(
+          "Great! I'm your AI training coach. Before we begin, I want to understand you — your background, your goals, and how you train. This helps me coach you properly, not just generate workouts.",
+          undefined,
+          () => {
+            setTimeout(() => {
+              addCoachMessage(
+                "Let's start with the basics. What's your first name?",
+                'text-input'
+              );
+              setStep('name');
+              setShowTextInput(true);
+            }, 800);
+          }
+        );
+      } else {
+        // Coach flow - simplified for now
+        addCoachMessage(
+          "Coach features are coming soon! For now, you can explore the platform as an athlete.",
+          undefined,
+          () => {
+            setTimeout(() => {
+              addCoachMessage(
+                "Let's start with the basics. What's your first name?",
+                'text-input'
+              );
+              setStep('name');
+              setShowTextInput(true);
+            }, 800);
+          }
+        );
+      }
+    }, 300);
+  };
 
   const addCoachMessage = (content: string, component?: Message['component'], onComplete?: () => void) => {
     setIsTyping(true);
@@ -140,6 +177,54 @@ export function OnboardingChat({ onComplete, isComplete }: OnboardingChatProps) 
       role: 'athlete',
       content,
     }]);
+  };
+
+  const handleNameInput = () => {
+    if (!textInput.trim()) return;
+    const nameParts = textInput.trim().split(/\s+/);
+    const firstName = nameParts[0] || '';
+    const lastName = nameParts.slice(1).join(' ') || '';
+    
+    if (!firstName) {
+      // Should not happen due to disabled button, but just in case
+      return;
+    }
+    
+    setData(prev => ({ ...prev, firstName, lastName }));
+    addAthleteMessage(textInput.trim());
+    setTextInput('');
+    setShowTextInput(false);
+
+    setTimeout(() => {
+      addCoachMessage(
+        `Nice to meet you, ${firstName}. I've detected your timezone as ${data.timezone}. Is that correct, or would you like to change it?`,
+        'text-input'
+      );
+      setStep('timezone');
+      setShowTextInput(true);
+    }, 300);
+  };
+
+  const handleTimezoneInput = () => {
+    const input = textInput.trim();
+    const timezone = input || data.timezone; // Use input if provided, otherwise keep detected
+    
+    setData(prev => ({ ...prev, timezone }));
+    if (input) {
+      addAthleteMessage(input);
+    } else {
+      addAthleteMessage('Yes, that\'s correct');
+    }
+    setTextInput('');
+    setShowTextInput(false);
+
+    setTimeout(() => {
+      addCoachMessage(
+        "Great. Now let's talk about your training. Which sport or sports are you training for right now?",
+        'sports'
+      );
+      setStep('sports');
+    }, 300);
   };
 
   const handleSportsSelect = (sports: Sport[]) => {
@@ -469,75 +554,75 @@ export function OnboardingChat({ onComplete, isComplete }: OnboardingChatProps) 
     saveOnboardingAdditionalData(onboardingData);
 
     try {
-      // Use the onboarding endpoint to save all data and optionally generate plans
-      const weekDays = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
-      const availableDays = weekDays.slice(0, data.availableDays);
-      
-      // Map goal to training focus
-      const trainingFocus = data.goal.toLowerCase().includes('race') ? 'race_focused' : 'general_fitness';
+      // Map sports to primary_sport (single value)
+      // If multiple sports selected, prioritize: tri > bike > run
+      let primarySport: 'run' | 'bike' | 'tri' = 'run';
+      if (data.sports.includes('triathlon')) {
+        primarySport = 'tri';
+      } else if (data.sports.includes('cycling')) {
+        primarySport = 'bike';
+      } else if (data.sports.includes('running')) {
+        primarySport = 'run';
+      } else if (data.sports.length > 0) {
+        // Default to first sport, mapping to closest match
+        const firstSport = data.sports[0];
+        if (firstSport === 'cycling') primarySport = 'bike';
+        else if (firstSport === 'triathlon') primarySport = 'tri';
+        else primarySport = 'run';
+      }
 
-      // Prepare profile data for backend (map to backend format - snake_case)
-      // Note: primary_sports goes in training_preferences, not profile
-      // Only include profile if we have actual data to send
-      const profileData: Record<string, unknown> = {};
-      
-      // Store goal as free text verbatim (no parsing/normalization)
+      // Map goal to goal_type
+      let goalType: 'performance' | 'completion' | 'general' = 'general';
       if (data.goal) {
-        profileData.goals = [data.goal];
-      }
-      
-      // Send race info as raw user input with source marker
-      if (targetEvent || data.raceDetails) {
-        if (targetEvent) {
-          profileData.target_event = targetEvent;
+        const goalLower = data.goal.toLowerCase();
+        if (goalLower.includes('race') || goalLower.includes('event') || goalLower.includes('marathon') || goalLower.includes('competition')) {
+          goalType = 'completion';
+        } else if (goalLower.includes('performance') || goalLower.includes('improve') || goalLower.includes('faster') || goalLower.includes('better')) {
+          goalType = 'performance';
         }
-        
-        // Send race_input with source marker for backend LLM processing
-        profileData.race_input = {
-          event_name: targetEvent?.name || '',
-          event_date: targetEvent?.date || '',
-          details: data.raceDetails || '',
-          source: 'user' as const,
-        };
       }
-      // strava_connected is set automatically by backend based on connection status
 
-      // Send ALL fields on save (not deltas)
-      // Complete onboarding using the dedicated endpoint
-      // Only include profile if we have data (prevents backend from trying to process empty profile)
-      const onboardingPayload: {
-        profile?: Record<string, unknown>;
-        training_preferences: {
-          years_of_training: number;
-          primary_sports: string[];
-          available_days: string[];
-          weekly_hours: number;
-          training_focus: 'race_focused' | 'general_fitness';
-          injury_history: boolean;
-          injury_notes: string | null;
-          consistency: string | null;
-          goal: string | null;
-        };
-        generate_initial_plan: boolean;
-      } = {
-        training_preferences: {
-          years_of_training: 1, // Default, can be updated later
-          primary_sports: data.sports,
-          available_days: availableDays,
-          weekly_hours: data.hoursPerWeek,
-          training_focus: trainingFocus,
-          injury_history: data.hasInjury,
-          injury_notes: data.hasInjury && data.injuryDetails ? data.injuryDetails : null,
-          consistency: data.consistency || null,
-          goal: data.goal || null, // Free text, stored verbatim
-        },
+      // Map consistency to experience_level
+      let experienceLevel: 'beginner' | 'structured' | 'competitive' = 'beginner';
+      if (data.consistency) {
+        const consistencyLower = data.consistency.toLowerCase();
+        if (consistencyLower.includes('structured') || consistencyLower.includes('competitive')) {
+          experienceLevel = 'competitive';
+        } else if (consistencyLower.includes('consistent')) {
+          experienceLevel = 'structured';
+        }
+      }
+
+      // Map injury status
+      let injuryStatus: 'none' | 'managing' | 'injured' = 'none';
+      if (data.hasInjury) {
+        if (data.injuryDetails && (data.injuryDetails.toLowerCase().includes('managing') || data.injuryDetails.toLowerCase().includes('recovering'))) {
+          injuryStatus = 'managing';
+        } else {
+          injuryStatus = 'injured';
+        }
+      }
+
+      // Validate role is set
+      if (!data.role || (data.role !== 'athlete' && data.role !== 'coach')) {
+        throw new Error('Role must be selected before completing onboarding');
+      }
+
+      // Build new onboarding payload matching backend schema
+      const onboardingPayload = {
+        role: data.role,
+        first_name: data.firstName || 'User', // Fallback if somehow empty
+        last_name: data.lastName || null,
+        timezone: data.timezone,
+        primary_sport: primarySport,
+        goal_type: goalType,
+        experience_level: experienceLevel,
+        availability_days_per_week: data.availableDays,
+        availability_hours_per_week: data.hoursPerWeek,
+        injury_status: injuryStatus,
+        injury_notes: data.hasInjury && data.injuryDetails ? data.injuryDetails : null,
         generate_initial_plan: data.stravaConnected, // Only generate plan if Strava is connected
       };
-
-      // Only include profile if we have actual data to send
-      if (Object.keys(profileData).length > 0) {
-        onboardingPayload.profile = profileData;
-      }
 
       const result = await completeOnboarding(onboardingPayload);
 
@@ -702,6 +787,37 @@ export function OnboardingChat({ onComplete, isComplete }: OnboardingChatProps) 
             <MessageBubble message={message} />
             
             {/* Render interactive components */}
+            {message.component === 'role' && step === 'role' && (
+              <div className="mt-4 space-y-3">
+                <Button
+                  onClick={() => handleRoleSelect('athlete')}
+                  className="w-full h-auto p-6 flex flex-col items-start gap-2 bg-card hover:bg-accent border-2 border-border hover:border-primary transition-colors"
+                  variant="outline"
+                >
+                  <div className="flex items-center gap-3 w-full">
+                    <span className="text-2xl">🏃</span>
+                    <div className="flex-1 text-left">
+                      <div className="font-semibold text-lg">Athlete</div>
+                      <div className="text-sm text-muted-foreground">I train and track my own performance</div>
+                    </div>
+                  </div>
+                </Button>
+                <Button
+                  onClick={() => handleRoleSelect('coach')}
+                  className="w-full h-auto p-6 flex flex-col items-start gap-2 bg-card hover:bg-accent border-2 border-border hover:border-primary transition-colors"
+                  variant="outline"
+                >
+                  <div className="flex items-center gap-3 w-full">
+                    <span className="text-2xl">🎓</span>
+                    <div className="flex-1 text-left">
+                      <div className="font-semibold text-lg">Coach</div>
+                      <div className="text-sm text-muted-foreground">I coach or manage athletes</div>
+                    </div>
+                  </div>
+                </Button>
+              </div>
+            )}
+
             {message.component === 'sports' && step === 'sports' && (
               <OnboardingOptionChips
                 options={[
@@ -808,6 +924,8 @@ export function OnboardingChat({ onComplete, isComplete }: OnboardingChatProps) 
             onChange={(e) => setTextInput(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === 'Enter') {
+                if (step === 'name') handleNameInput();
+                if (step === 'timezone') handleTimezoneInput();
                 if (step === 'race-details') handleRaceDetails();
                 if (step === 'injury-details') handleInjuryDetails();
               }
@@ -817,12 +935,14 @@ export function OnboardingChat({ onComplete, isComplete }: OnboardingChatProps) 
           />
           <Button
             onClick={() => {
+              if (step === 'name') handleNameInput();
+              if (step === 'timezone') handleTimezoneInput();
               if (step === 'race-details') handleRaceDetails();
               if (step === 'injury-details') handleInjuryDetails();
             }}
-            disabled={step === 'race-details' && !textInput.trim()}
+            disabled={(step === 'name' || step === 'race-details') && !textInput.trim()}
             className="bg-[#2F4F4F] hover:bg-[#2F4F4F]/90 text-white"
-            // Allow proceeding with injury details even if empty (user can skip details)
+            // Allow proceeding with timezone and injury details even if empty
           >
             <Send className="h-4 w-4" />
           </Button>

@@ -8,7 +8,7 @@ import { Badge } from '@/components/ui/badge';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { User, Save, Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { fetchUserProfile, updateUserProfile } from '@/lib/api';
+import { fetchUserProfile, updateUserProfile, fetchSettingsProfile, updateSettingsProfile } from '@/lib/api';
 import { toast } from '@/hooks/use-toast';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/context/AuthContext';
@@ -375,7 +375,7 @@ export function AthleteProfileSection() {
         </div>
       </CardHeader>
       <CardContent className="space-y-6">
-        {/* Name */}
+        {/* Name, Email, and Role */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-2">
             <Label htmlFor="name">Full Name</Label>
@@ -398,6 +398,41 @@ export function AthleteProfileSection() {
               Email cannot be changed here. Use the Privacy & Security section to change your email.
             </p>
           </div>
+        </div>
+
+        {/* Role */}
+        <div className="space-y-2">
+          <Label htmlFor="role">Role</Label>
+          <Select
+            value={user?.role || 'athlete'}
+            onValueChange={async (value: 'athlete' | 'coach') => {
+              try {
+                await updateSettingsProfile({ role: value });
+                toast({
+                  title: 'Role updated',
+                  description: `Your role has been changed to ${value}.`,
+                });
+                // Refresh user context
+                window.location.reload(); // Simple refresh to update auth context
+              } catch (error) {
+                console.error('Failed to update role:', error);
+                toast({
+                  title: 'Error',
+                  description: 'Failed to update role. Please try again.',
+                  variant: 'destructive',
+                });
+              }
+            }}
+          >
+            <SelectTrigger id="role">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="athlete">🏃 Athlete</SelectItem>
+              <SelectItem value="coach">🎓 Coach</SelectItem>
+            </SelectContent>
+          </Select>
+          <p className="text-xs text-muted-foreground">Your role determines which features are available to you.</p>
         </div>
 
         {/* Gender, Weight, Height, Date of Birth */}

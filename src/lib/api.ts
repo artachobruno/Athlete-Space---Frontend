@@ -674,32 +674,27 @@ export const fetchTrainingPreferences = async (): Promise<{
 
 /**
  * Completes the onboarding process. This endpoint:
- * 1. Persists all onboarding data (profile and training preferences)
- * 2. Extracts structured race attributes from free-text goals using LLM
- * 3. Conditionally generates initial training plans (if user opts in)
- * 4. Marks onboarding as complete
+ * 1. Persists all onboarding data to users, athlete_profiles, and user_settings
+ * 2. Sets onboarding_complete flag
+ * 3. Conditionally generates initial training plans (if user opted in and has data)
  * 
- * Note: This is the recommended way to complete onboarding, but the frontend
- * currently uses separate updateUserProfile() and updateTrainingPreferences() calls.
- * 
- * @param data - Onboarding data including profile, training preferences, and plan generation flag
+ * @param data - Onboarding data with all required fields
  * @returns Onboarding result with optional plans
  * 
  * Reference: See backend docs POST /api/onboarding/complete for complete details
  */
 export const completeOnboarding = async (data: {
-  profile?: Record<string, unknown>;
-  training_preferences?: {
-    years_of_training?: number;
-    primary_sports?: string[];
-    available_days?: string[];
-    weekly_hours?: number;
-    training_focus?: 'race_focused' | 'general_fitness';
-    injury_history?: boolean;
-    injury_notes?: string | null;
-    consistency?: string | null;
-    goal?: string | null;
-  };
+  role: 'athlete' | 'coach';
+  first_name: string;
+  last_name: string | null;
+  timezone: string;
+  primary_sport: 'run' | 'bike' | 'tri';
+  goal_type: 'performance' | 'completion' | 'general';
+  experience_level: 'beginner' | 'structured' | 'competitive';
+  availability_days_per_week: number;
+  availability_hours_per_week: number;
+  injury_status: 'none' | 'managing' | 'injured';
+  injury_notes: string | null;
   generate_initial_plan: boolean;
 }): Promise<{
   status: 'ok';
@@ -710,21 +705,7 @@ export const completeOnboarding = async (data: {
 }> => {
   console.log("[API] Completing onboarding");
   try {
-    // Map frontend profile format to backend format (backend expects snake_case)
-    const backendData: Record<string, unknown> = {
-      generate_initial_plan: data.generate_initial_plan,
-    };
-
-    if (data.profile && Object.keys(data.profile).length > 0) {
-      // Profile data is already in backend format (snake_case) from OnboardingChat
-      backendData.profile = data.profile;
-    }
-
-    if (data.training_preferences) {
-      backendData.training_preferences = data.training_preferences;
-    }
-
-    const response = await api.post("/api/onboarding/complete", backendData);
+    const response = await api.post("/api/onboarding/complete", data);
     return response as unknown as {
       status: 'ok';
       weekly_intent: any | null;
@@ -734,6 +715,35 @@ export const completeOnboarding = async (data: {
     };
   } catch (error) {
     console.error("[API] Failed to complete onboarding:", error);
+    throw error;
+  }
+};
+
+/**
+ * Updates athlete profile settings.
+ * Uses the same schema and logic as onboarding completion.
+ * 
+ * @param data - Profile data to update (same schema as onboarding)
+ * @returns Success response
+ */
+export const updateSettingsProfile = async (data: {
+  first_name: string;
+  last_name?: string;
+  timezone: string;
+  primary_sport: 'run' | 'bike' | 'tri';
+  goal_type: 'performance' | 'completion' | 'general';
+  experience_level: 'beginner' | 'structured' | 'competitive';
+  availability_days_per_week: number;
+  availability_hours_per_week: number;
+  injury_status: 'none' | 'managing' | 'injured';
+  injury_notes?: string;
+}): Promise<{ status: 'ok' }> => {
+  console.log("[API] Updating settings profile");
+  try {
+    const response = await api.put("/api/settings/profile", data);
+    return response as { status: 'ok' };
+  } catch (error) {
+    console.error("[API] Failed to update settings profile:", error);
     throw error;
   }
 };
@@ -909,6 +919,60 @@ export const fetchNotificationPreferences = async (): Promise<{
     };
   } catch (error) {
     console.error("[API] Failed to fetch notification preferences:", error);
+    throw error;
+  }
+};
+
+/**
+ * Fetches settings profile (email, name, role) from the backend.
+ */
+export const fetchSettingsProfile = async (): Promise<{
+  email: string;
+  first_name: string | null;
+  last_name: string | null;
+  role: 'athlete' | 'coach';
+}> => {
+  console.log("[API] Fetching settings profile");
+  try {
+    const response = await api.get("/settings/profile");
+    return response as unknown as {
+      email: string;
+      first_name: string | null;
+      last_name: string | null;
+      role: 'athlete' | 'coach';
+    };
+  } catch (error) {
+    console.error("[API] Failed to fetch settings profile:", error);
+    throw error;
+  }
+};
+
+/**
+ * Updates settings profile (name, role) on the backend.
+ */
+export const updateSettingsProfile = async (
+  profile: {
+    first_name?: string | null;
+    last_name?: string | null;
+    role?: 'athlete' | 'coach';
+  }
+): Promise<{
+  email: string;
+  first_name: string | null;
+  last_name: string | null;
+  role: 'athlete' | 'coach';
+}> => {
+  console.log("[API] Updating settings profile");
+  try {
+    const response = await api.patch("/settings/profile", profile);
+    return response as unknown as {
+      email: string;
+      first_name: string | null;
+      last_name: string | null;
+      role: 'athlete' | 'coach';
+    };
+  } catch (error) {
+    console.error("[API] Failed to update settings profile:", error);
     throw error;
   }
 };
