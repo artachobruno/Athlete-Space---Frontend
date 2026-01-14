@@ -8,7 +8,8 @@ import { useNavigate } from 'react-router-dom';
 import type { PlannedWorkout, CompletedActivity } from '@/types';
 import { useUnitSystem } from '@/hooks/useUnitSystem';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { fetchTrainingLoad, type CalendarSession, type ProposalOnlyResponse, getStructuredWorkout, exportWorkoutToFIT } from '@/lib/api';
+import { fetchTrainingLoad, type CalendarSession, type ProposalOnlyResponse, exportWorkoutToFIT } from '@/lib/api';
+import { fetchStructuredWorkout } from '@/api/workouts';
 import { useMemo, useState } from 'react';
 import { getTssForDate, enrichActivitiesWithTss } from '@/lib/tss-utils';
 import { toast } from '@/hooks/use-toast';
@@ -75,18 +76,19 @@ export function ActivityPopup({
   // FE-3: Remove invalid filters - check if this is a session that can be updated
   const isPlannedSession = session && session.status !== 'completed' && session.status !== 'cancelled' && session.status !== 'skipped' && !activity;
 
-  // Fetch structured workout data if session exists
+  // Fetch structured workout data only if session has a workout_id
+  // Only call /workouts/{id}/structured if workout_id != null
   const { data: structuredWorkout } = useAuthenticatedQuery({
-    queryKey: ['structuredWorkout', session?.id],
+    queryKey: ['structuredWorkout', session?.workout_id],
     queryFn: () => {
-      if (!session?.id) throw new Error('No session ID');
-      return getStructuredWorkout(session.id);
+      if (!session?.workout_id) throw new Error('No workout ID');
+      return fetchStructuredWorkout(session.workout_id);
     },
-    enabled: !!session?.id && open,
+    enabled: !!session?.workout_id && open,
     retry: 1,
   });
 
-  const canExport = structuredWorkout && structuredWorkout.parse_status === 'success' && structuredWorkout.workout;
+  const canExport = structuredWorkout && structuredWorkout.workout?.parse_status === 'parsed' && structuredWorkout.workout;
 
   const handleExportFIT = async () => {
     if (!session?.id || !canExport) return;

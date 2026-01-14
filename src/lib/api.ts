@@ -2874,7 +2874,8 @@ export async function safeApiCall<T>(fn: () => Promise<T>): Promise<T | null> {
 const normalizeError = (error: unknown): ApiError => {
   if (axios.isAxiosError(error)) {
     // Backend error format: {"error": "error_code", "message": "human readable message"}
-    const axiosError = error as AxiosError<{ detail?: string | unknown[]; message?: string | unknown[]; error?: string | unknown[] }>;
+    // Or: {"detail": {"error": "code", "message": "..."}} or {"detail": {"reason": "...", "message": "..."}}
+    const axiosError = error as AxiosError<{ detail?: string | unknown[] | { error?: string; reason?: string; message?: string }; message?: string | unknown[]; error?: string | unknown[] }>;
     const status = axiosError.response?.status;
     const data = axiosError.response?.data;
     
@@ -2900,12 +2901,23 @@ const normalizeError = (error: unknown): ApiError => {
     };
     
     let message = "An unexpected error occurred";
+    let errorDetails: { error?: string; reason?: string; message?: string } | undefined;
     
-    // First, try to extract error message from response data
-    // Backend auth errors use: {"error": "code", "message": "..."}
-    // Prioritize message field (human-readable) over error field (machine-readable code)
+    // Extract structured error details from backend response
+    // Backend auth errors can be in format:
+    // - {"detail": {"error": "code", "message": "..."}}
+    // - {"detail": {"reason": "...", "message": "..."}}
+    // - {"error": "code", "message": "..."}
     if (data?.detail) {
-      message = extractMessage(data.detail);
+      if (typeof data.detail === "object" && data.detail !== null && !Array.isArray(data.detail)) {
+        // Structured error object
+        const detailObj = data.detail as { error?: string; reason?: string; message?: string };
+        errorDetails = detailObj;
+        message = detailObj.message || extractMessage(data.detail);
+      } else {
+        // String or array detail
+        message = extractMessage(data.detail);
+      }
     } else if (data?.message) {
       message = extractMessage(data.message);
     } else if (data?.error) {
@@ -2947,7 +2959,7 @@ const normalizeError = (error: unknown): ApiError => {
       message,
       status,
       code: axiosError.code,
-      details: data,
+      details: errorDetails || data,
     };
   }
   

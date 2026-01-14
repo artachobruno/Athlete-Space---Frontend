@@ -54,14 +54,32 @@ export default function Login() {
       // Otherwise, AuthLanding will redirect to onboarding
       navigate('/dashboard');
     } catch (err: unknown) {
-      const apiError = err as { status?: number; message?: string };
-      if (apiError.status === 404) {
+      const apiError = err as { status?: number; message?: string; details?: { error?: string; reason?: string } | string | unknown };
+      
+      // Extract error details from backend response
+      // Backend returns: {"error": "error_code", "message": "..."} or {"detail": {"error": "...", "message": "..."}}
+      let errorReason: string | undefined;
+      let errorMessage: string | undefined;
+      
+      if (apiError.details) {
+        if (typeof apiError.details === 'object' && apiError.details !== null) {
+          const details = apiError.details as { error?: string; reason?: string; message?: string };
+          errorReason = details.reason || details.error;
+          errorMessage = details.message;
+        }
+      }
+      
+      // Map specific error reasons to user-friendly messages
+      if (apiError.status === 404 || errorReason === "user_not_found") {
         setError('No account found. Please sign up.');
-      } else if (apiError.status === 401) {
-        setError('Incorrect email or password.');
+      } else if (errorReason === "invalid_auth_method") {
+        setError('This account uses Google sign-in. Please sign in with Google instead.');
+      } else if (errorReason === "invalid_credentials" || apiError.status === 401) {
+        // Show backend message if available, otherwise generic message
+        setError(errorMessage || 'Incorrect email or password.');
       } else {
         // Use backend message if available, otherwise generic error
-        setError(apiError.message || 'Something went wrong. Please try again.');
+        setError(errorMessage || apiError.message || 'Something went wrong. Please try again.');
       }
     } finally {
       setIsLoading(false);

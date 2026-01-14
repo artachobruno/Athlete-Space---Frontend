@@ -11,6 +11,7 @@ import { auth } from '@/lib/auth';
 import { saveProfile, saveOnboardingAdditionalData, saveOnboardingPlans, saveSeasonPlan } from '@/lib/storage';
 import { toast } from '@/hooks/use-toast';
 import type { AthleteProfile, Sport } from '@/types';
+import { useAuth } from '@/context/AuthContext';
 
 export interface AthleteOnboardingProfile {
   sports: Sport[];
@@ -46,6 +47,7 @@ interface Message {
 const stepOrder: Step[] = ['welcome', 'sports', 'consistency', 'goals', 'availability', 'injuries', 'strava', 'summary', 'complete'];
 
 export function OnboardingChat({ onComplete, isComplete }: OnboardingChatProps) {
+  const { status } = useAuth();
   const [step, setStep] = useState<Step>('welcome');
   const [messages, setMessages] = useState<Message[]>([]);
   const [isTyping, setIsTyping] = useState(false);
@@ -413,9 +415,8 @@ export function OnboardingChat({ onComplete, isComplete }: OnboardingChatProps) 
     addAthleteMessage('Ready to start');
 
     // Check if user is authenticated - backend submission requires authentication
-    const isAuthenticated = auth.isLoggedIn();
-
-    if (!isAuthenticated) {
+    // Use AuthContext status instead of localStorage token check
+    if (status !== "authenticated") {
       // User must be authenticated to complete onboarding
       addCoachMessage(
         "You need to be logged in to complete onboarding. Please log in first."
