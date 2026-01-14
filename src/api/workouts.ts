@@ -4,6 +4,37 @@ import { mockWorkouts, buildTimelineFromMockWorkout } from "@/mock/workouts.mock
 import type { Workout } from "@/types/workout"
 import type { WorkoutTimeline } from "@/types/workoutTimeline"
 
+export interface StructuredWorkoutStep {
+  id: string
+  order: number
+  step_type: "warmup" | "steady" | "interval" | "cooldown" | "rest"
+  distance_meters: number | null
+  duration_seconds: number | null
+  target_type: "pace" | "hr" | "power" | null
+  target_low?: number
+  target_high?: number
+}
+
+export interface StructuredWorkoutComparison {
+  step_id: string
+  planned_distance: number | null
+  executed_distance: number | null
+  delta_pct: number | null
+  status: "hit" | "short" | "over"
+}
+
+export interface StructuredWorkoutResponse {
+  workout: {
+    id: string
+    sport: "run" | "ride" | "swim"
+    total_distance_meters: number | null
+    total_duration_seconds: number | null
+    parse_status: "pending" | "parsed" | "ambiguous" | "failed"
+  }
+  steps: StructuredWorkoutStep[]
+  comparison?: StructuredWorkoutComparison[]
+}
+
 export async function getWorkout(workoutId: string): Promise<Workout> {
   // Check if we're in preview mode
   if (isPreviewMode()) {
@@ -88,4 +119,12 @@ export async function getWorkoutExportStatus(
     console.error("[API] Failed to fetch workout export status:", error)
     throw error
   }
+}
+
+export async function fetchStructuredWorkout(
+  workoutId: string
+): Promise<StructuredWorkoutResponse> {
+  console.log("[API] Fetching structured workout:", workoutId)
+  const response = await api.get(`/workouts/${workoutId}/structured`)
+  return response as unknown as StructuredWorkoutResponse
 }

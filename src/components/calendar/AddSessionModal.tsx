@@ -14,6 +14,7 @@ import { parseWorkoutNotes, type ParsedWorkout } from '@/lib/api';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { ParsedWorkoutPreview } from './ParsedWorkoutPreview';
 import { FEATURES } from '@/lib/features';
+import { useNavigate } from 'react-router-dom';
 
 interface AddSessionModalProps {
   open: boolean;
@@ -27,6 +28,7 @@ type ParseStatus = 'idle' | 'parsing' | 'unavailable' | 'ambiguous' | 'ok';
 export function AddSessionModal({ open, onOpenChange, initialDate, onSuccess }: AddSessionModalProps) {
   const { unitSystem } = useUnitSystem();
   const createSession = useCreatePlannedSession();
+  const navigate = useNavigate();
   const [date, setDate] = useState(initialDate ? format(initialDate, 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd'));
   const [type, setType] = useState<'easy' | 'workout' | 'long' | 'rest' | ''>('');
   const [distanceInput, setDistanceInput] = useState<string>('');
@@ -149,7 +151,7 @@ export function AddSessionModal({ open, onOpenChange, initialDate, onSuccess }: 
         notes: notes.trim() || null,
       },
       {
-        onSuccess: () => {
+        onSuccess: (session) => {
           toast({
             title: 'Session added',
             description: 'The session has been added to your calendar.',
@@ -168,6 +170,14 @@ export function AddSessionModal({ open, onOpenChange, initialDate, onSuccess }: 
           // Close modal and refresh calendar
           onOpenChange(false);
           onSuccess?.();
+
+          // Redirect to workout detail page if workout_id exists
+          // Note: Parsing happens asynchronously on the backend, so workout_id
+          // may not be available immediately. This is fine - the user can navigate
+          // to the workout page later when parsing completes.
+          if (session.workout_id) {
+            navigate(`/workout/${session.workout_id}`);
+          }
         },
         onError: (err) => {
           console.error('Failed to create session:', err);
