@@ -205,7 +205,7 @@ export function BaseCalendarCardSvg({
 
       {/* WAVY LINE - Speed data for activities or workout steps for planned */}
       {(isActivity || isPlanned) && (
-        <g transform={`translate(28,${isMonthView ? 290 : 380})`}>
+        <g transform={`translate(28,${isMonthView ? 200 : 250})`}>
           <path
             d={generateWavyLinePath(304, 36, isActivity ? 'speed' : 'steps')}
             fill="none"
