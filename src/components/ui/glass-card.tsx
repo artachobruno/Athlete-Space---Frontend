@@ -1,11 +1,13 @@
 import * as React from "react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
+import { intensityToGlow, type Intensity } from "@/lib/intensityGlow"
 
-interface GlassCardProps extends React.ComponentProps<typeof Card> {
+export interface GlassCardProps extends React.ComponentProps<typeof Card> {
   variant?: "default" | "raised" | "blue"
   animated?: boolean
   hover?: boolean
+  glowIntensity?: Intensity
 }
 
 export const GlassCard = React.forwardRef<
@@ -18,6 +20,7 @@ export const GlassCard = React.forwardRef<
       variant = "default",
       animated = true,
       hover = false,
+      glowIntensity,
       ...props
     },
     ref
@@ -31,6 +34,7 @@ export const GlassCard = React.forwardRef<
           hover && "glass-hover",
           variant === "raised" && "glass-card--raised",
           variant === "blue" && "glass-card--blue",
+          glowIntensity && intensityToGlow(glowIntensity),
           className
         )}
         {...props}

@@ -249,10 +249,10 @@ export function StructuredWorkoutEditor({
             </Button>
             <Button onClick={handleSave} disabled={isSaving || hasErrors || draftSteps.length === 0}>
               {isSaving ? 'Saving...' : 'Save Changes'}
-          </Button>
+            </Button>
+          </div>
         </div>
       </GlassCard>
-    </div>
     </div>
   )
 }

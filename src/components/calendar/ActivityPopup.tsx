@@ -2,6 +2,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { GlassCard } from '@/components/ui/glass-card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import type { Intensity } from '@/lib/intensityGlow';
 import { Footprints, Bike, Waves, Clock, Route, Mountain, Heart, Zap, MessageCircle, CheckCircle2, ExternalLink, X, SkipForward, TrendingUp, Info, Download, Loader2, ArrowRight } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
@@ -350,7 +351,11 @@ export function ActivityPopup({
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="p-0 bg-transparent border-none sm:max-w-[500px]">
-        <GlassCard variant="raised" className="rounded-2xl">
+        <GlassCard 
+          variant="raised" 
+          className="rounded-2xl"
+          glowIntensity={workout?.intent as Intensity | undefined}
+        >
           <div className="p-6">
           <DialogHeader className="pb-4">
           <div className="flex items-center gap-3">
