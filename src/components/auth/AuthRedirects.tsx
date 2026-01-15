@@ -42,13 +42,16 @@ export function AuthLanding() {
   }
 
   // CRITICAL: Hard gate - block all routing until auth status is resolved
+  // This prevents redirect loops on refresh/deep-link
   if (status === "bootstrapping" || loading) {
     return <FullPageSkeleton />;
   }
 
   // CRITICAL: Unauthenticated → login (NOT onboarding)
   // 401, no token, or /me failed = unauthenticated → login
-  if (status === "unauthenticated" || !user) {
+  // Only check status, not user - status is the source of truth
+  // Checking !user can cause race conditions during hydration
+  if (status === "unauthenticated") {
     return <Navigate to="/login" replace />;
   }
 

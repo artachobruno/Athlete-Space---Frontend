@@ -35,8 +35,9 @@ export function RequireAuth({ children }: RequireAuthProps) {
 
   console.log("[RequireAuth] Auth state:", { user, loading, status, hasUser: !!user, onboardingComplete: user?.onboarding_complete });
 
-  // CRITICAL: Do NOT redirect while bootstrapping
+  // CRITICAL: Do NOT redirect while bootstrapping or loading
   // Show loading spinner until auth hydration completes
+  // This prevents redirect loops on refresh/deep-link
   if (status === "bootstrapping" || loading) {
     console.log("[RequireAuth] Bootstrapping, showing spinner");
     return (
@@ -50,8 +51,10 @@ export function RequireAuth({ children }: RequireAuthProps) {
     );
   }
 
-  // Only redirect after bootstrapping completes
-  if (status === "unauthenticated" || !user) {
+  // CRITICAL: Only redirect after bootstrapping completes
+  // Only check status, not user - status is the source of truth
+  // Checking !user can cause race conditions during hydration
+  if (status === "unauthenticated") {
     console.log("[RequireAuth] User not authenticated, redirecting to login");
     return <Navigate to="/login" replace />;
   }

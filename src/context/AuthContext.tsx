@@ -103,9 +103,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   // On app boot, hydrate auth BEFORE deciding status
   // CRITICAL: This must run once and block rendering until complete
+  // CRITICAL: Never set status to "unauthenticated" before /me completes
+  // This prevents redirect loops on refresh/deep-link
   useEffect(() => {
     const bootstrapAuth = async () => {
       console.log("[AuthContext] Bootstrapping auth...");
+      
+      // Ensure we start in bootstrapping state (defensive)
+      setStatus("bootstrapping");
+      setLoading(true);
       
       // Call /me to check authentication (HTTP-only cookie handles auth)
       // No need to check for localStorage tokens - cookies are the source of truth
@@ -114,6 +120,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         
         if (!currentUser) {
           console.log("[AuthContext] /me returned null, setting unauthenticated");
+          setUser(null);
           setStatus("unauthenticated");
         } else {
           console.log("[AuthContext] /me succeeded, setting authenticated");
@@ -122,8 +129,12 @@ export function AuthProvider({ children }: AuthProviderProps) {
         }
       } catch (error) {
         console.error("[AuthContext] Bootstrap error:", error);
+        // Any error = unauthenticated (don't assume authenticated)
+        setUser(null);
         setStatus("unauthenticated");
       } finally {
+        // CRITICAL: Only set loading to false AFTER status is determined
+        // This ensures guards never redirect during bootstrap
         setLoading(false);
       }
     };

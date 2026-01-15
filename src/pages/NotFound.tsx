@@ -4,14 +4,21 @@ import { useAuth } from "@/context/AuthContext";
 
 const NotFound = () => {
   const location = useLocation();
-  const { user, status } = useAuth();
+  const { user, status, loading } = useAuth();
 
   useEffect(() => {
     console.error("404 Error: User attempted to access non-existent route:", location.pathname);
   }, [location.pathname]);
 
+  // CRITICAL: Do NOT redirect while bootstrapping or loading
+  // This prevents redirect loops on refresh/deep-link
+  if (status === "bootstrapping" || loading) {
+    return null; // Or show loading spinner
+  }
+
   // If user is not authenticated, redirect to login
-  if (status === "unauthenticated" || !user) {
+  // Only check status, not user - status is the source of truth
+  if (status === "unauthenticated") {
     return <Navigate to="/login" replace />;
   }
 

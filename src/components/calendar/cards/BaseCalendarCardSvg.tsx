@@ -12,6 +12,7 @@ export interface BaseCardProps {
   sparkline?: number[] | null;
   titleClampLines?: number;
   descClampLines?: number;
+  viewVariant?: 'month' | 'week' | 'plan';
 }
 
 export function BaseCalendarCardSvg({
@@ -25,8 +26,10 @@ export function BaseCalendarCardSvg({
   sparkline,
   titleClampLines = 2,
   descClampLines = 3,
+  viewVariant,
 }: BaseCardProps) {
   const theme = CALENDAR_CARD_THEMES[variant] ?? CALENDAR_CARD_THEMES['completed-running'];
+  const isMonthView = viewVariant === 'month';
 
   const showMetrics = Boolean(metricsLabel && metricsValue);
   const showSparkline =
@@ -36,12 +39,20 @@ export function BaseCalendarCardSvg({
   const filterId = `${id}-liquid-glass`;
   const displayTitle = toTitleCase(title);
 
+  // For month view: reduce height (from 460 to 320) and increase fonts
+  const viewBoxHeight = isMonthView ? 320 : 460;
+  const topRowFontSize = isMonthView ? 24 : 20;
+  const metricsLabelFontSize = isMonthView ? 13 : 11;
+  const metricsValueFontSize = isMonthView ? 24 : 20;
+  const titleFontSize = isMonthView ? 36 : 30;
+  const descFontSize = isMonthView ? 18 : 16;
+
   return (
     <svg
       width="100%"
       height="100%"
-      viewBox="0 0 360 460"
-      preserveAspectRatio="xMidYMid meet"
+      viewBox={`0 0 360 ${viewBoxHeight}`}
+      preserveAspectRatio={isMonthView ? 'none' : 'xMidYMid meet'}
       xmlns="http://www.w3.org/2000/svg"
       style={{
         display: 'block',
