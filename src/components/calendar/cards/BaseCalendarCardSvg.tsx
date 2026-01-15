@@ -1,5 +1,5 @@
 import { CALENDAR_CARD_THEMES } from './calendarCardThemes';
-import { generateSparklinePath, toTitleCase } from './cardSvgUtils';
+import { generateSparklinePath, toTitleCase, generateWavyLinePath } from './cardSvgUtils';
 
 export interface BaseCardProps {
   variant: string;
@@ -13,6 +13,8 @@ export interface BaseCardProps {
   titleClampLines?: number;
   descClampLines?: number;
   viewVariant?: 'month' | 'week' | 'plan';
+  isActivity?: boolean;
+  isPlanned?: boolean;
 }
 
 export function BaseCalendarCardSvg({
@@ -27,6 +29,8 @@ export function BaseCalendarCardSvg({
   titleClampLines = 2,
   descClampLines = 3,
   viewVariant,
+  isActivity = false,
+  isPlanned = false,
 }: BaseCardProps) {
   const theme = CALENDAR_CARD_THEMES[variant] ?? CALENDAR_CARD_THEMES['completed-running'];
   const isMonthView = viewVariant === 'month';
@@ -199,11 +203,11 @@ export function BaseCalendarCardSvg({
         </foreignObject>
       )}
 
-      {/* SPARKLINE */}
-      {showSparkline && sparkline && (
+      {/* WAVY LINE - Speed data for activities or workout steps for planned */}
+      {(isActivity || isPlanned) && (
         <g transform={`translate(28,${isMonthView ? 290 : 380})`}>
           <path
-            d={generateSparklinePath(sparkline, 304, 36)}
+            d={generateWavyLinePath(304, 36, isActivity ? 'speed' : 'steps')}
             fill="none"
             stroke={theme.sparkline}
             strokeWidth="2"

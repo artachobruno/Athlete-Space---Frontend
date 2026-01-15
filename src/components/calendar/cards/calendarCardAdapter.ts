@@ -128,6 +128,8 @@ function toSessionCardProps(item: CalendarItem): BaseCardProps {
     title: p.title,
     description: p.description,
     sparkline: p.sparkline,
+    isPlanned: true,
+    isActivity: false,
   };
 }
 
@@ -146,6 +148,8 @@ function toActivityCardProps(item: CalendarItem): BaseCardProps {
     title: p.title,
     description: p.description,
     sparkline: p.sparkline,
+    isActivity: true,
+    isPlanned: false,
   };
 }
 
