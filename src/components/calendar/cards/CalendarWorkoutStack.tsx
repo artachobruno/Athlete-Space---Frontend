@@ -71,12 +71,11 @@ export function CalendarWorkoutStack({
             }}
           >
             <div
-              className="w-full h-full"
+              className="w-full h-full flex items-center justify-center"
               style={{
-                // For month view: card should fill 90-95% of cell height
-                // Preserve aspect ratio (360:460)
                 aspectRatio: '360 / 460',
-                maxHeight: variant === 'month' ? '95%' : '100%',
+                height: variant === 'month' ? '98%' : 'auto',
+                maxHeight: variant === 'month' ? '100%' : '100%',
                 maxWidth: '100%',
               }}
             >
