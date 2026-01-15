@@ -38,6 +38,7 @@ import type { PlannedWorkout, CompletedActivity } from '@/types';
 import type { CalendarSession } from '@/lib/api';
 import { toast } from '@/hooks/use-toast';
 import { toCalendarItem } from '@/adapters/calendarAdapter';
+import { normalizeSportType, mapIntensityToIntent } from '@/lib/session-utils';
 import {
   generateWeeklySummaryText,
   generateWeeklySummaryMarkdown,
@@ -116,6 +117,34 @@ export function WeekView({ currentDate, onActivityClick }: WeekViewProps) {
     return items && items.length > 0 ? groupDuplicateSessions(items) : [];
   };
 
+  const handleCardClick = (item: CalendarItem) => {
+    if (monthData && onActivityClick) {
+      const session = [...monthData.planned_sessions, ...monthData.workouts].find(
+        (s) => s.id === item.id
+      );
+      const activity = monthData.completed_activities.find(
+        (a) => a.id === item.id || a.planned_session_id === item.id
+      );
+
+      onActivityClick(
+        session
+          ? {
+              id: session.id,
+              date: session.date || '',
+              sport: normalizeSportType(session.type),
+              intent: mapIntensityToIntent(session.intensity),
+              title: session.title || '',
+              description: session.notes || '',
+              duration: session.duration_minutes || 0,
+              completed: session.status === 'completed',
+            }
+          : null,
+        activity || null,
+        session
+      );
+    }
+  };
+
   if (selectedDay) {
     const items = dayDataMap.get(format(selectedDay, 'yyyy-MM-dd')) || [];
     return (
@@ -123,7 +152,7 @@ export function WeekView({ currentDate, onActivityClick }: WeekViewProps) {
         date={selectedDay}
         items={items}
         onBack={() => setSelectedDay(null)}
-        onItemClick={() => {}}
+        onItemClick={handleCardClick}
       />
     );
   }
