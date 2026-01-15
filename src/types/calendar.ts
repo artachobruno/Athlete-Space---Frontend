@@ -26,6 +26,7 @@ export interface CalendarItem {
   secondary?: string; // e.g., "Z2", "HR 145", "RPE 7"
   isPaired?: boolean;
   compliance?: CalendarCompliance;
+  description?: string; // Workout description or coach notes
   coachNote?: {
     text: string;
     tone: 'warning' | 'encouragement' | 'neutral';

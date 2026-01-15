@@ -11,31 +11,77 @@ interface Props {
 
 export function CalendarWorkoutStack({
   items,
+  variant,
   maxVisible = 3,
   onClick,
 }: Props) {
   const visible = items.slice(0, maxVisible);
 
+  if (visible.length === 0) {
+    return null;
+  }
+
+  // Calculate scale factors for stacking
+  const getScale = (index: number): number => {
+    if (index === 0) return 1.0;
+    if (index === 1) return 0.97;
+    if (index === 2) return 0.94;
+    return 0.91 - (index - 3) * 0.03;
+  };
+
+  // Calculate offset for stacking (6px per layer)
+  const getOffset = (index: number): { x: number; y: number } => {
+    return {
+      x: index * 6,
+      y: index * 6,
+    };
+  };
+
   return (
-    <div className="relative w-full h-full group">
+    <div className="relative w-full h-full">
       {visible.map((item, i) => {
-        const offset = i * 6;
-        const scale = 1 - i * 0.04;
+        const offset = getOffset(i);
+        const scale = getScale(i);
+        const isTopCard = i === 0;
 
         return (
           <div
             key={item.id}
-            className="absolute inset-0 transition-transform duration-150 ease-out
-                       group-hover:-translate-y-[2px]
-                       group-hover:scale-[1.01]
-                       active:scale-[0.98]"
+            className="absolute inset-0 transition-all duration-[140ms] ease-out"
             style={{
-              transform: `translate(${offset}px, ${offset}px) scale(${scale})`,
+              transform: `translate(${offset.x}px, ${offset.y}px) scale(${scale})`,
+              transformOrigin: 'top left',
               zIndex: visible.length - i,
+              pointerEvents: isTopCard ? 'auto' : 'none',
             }}
-            onClick={() => onClick?.(item)}
+            onMouseEnter={(e) => {
+              if (isTopCard) {
+                e.currentTarget.style.transform = `translate(${offset.x}px, ${offset.y - 2}px) scale(${scale * 1.01})`;
+              }
+            }}
+            onMouseLeave={(e) => {
+              if (isTopCard) {
+                e.currentTarget.style.transform = `translate(${offset.x}px, ${offset.y}px) scale(${scale})`;
+              }
+            }}
+            onClick={() => {
+              if (isTopCard && onClick) {
+                onClick(item);
+              }
+            }}
           >
-            <CalendarWorkoutCard {...toCalendarCardProps(item)} />
+            <div
+              className="w-full h-full"
+              style={{
+                // For month view: card should fill 90-95% of cell height
+                // Preserve aspect ratio (360:460)
+                aspectRatio: '360 / 460',
+                maxHeight: variant === 'month' ? '95%' : '100%',
+                maxWidth: '100%',
+              }}
+            >
+              <CalendarWorkoutCard {...toCalendarCardProps(item)} />
+            </div>
           </div>
         );
       })}

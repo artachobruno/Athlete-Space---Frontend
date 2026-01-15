@@ -7,11 +7,45 @@ export interface CalendarCardProps {
   title: string;
   distance?: string;
   pace?: string;
+  description?: string;
   sparkline?: number[];
-  coachNote?: {
-    text: string;
-    tone: 'warning' | 'encouragement' | 'neutral';
+}
+
+/**
+ * Formats duration in minutes to human-readable string
+ * Examples: 60m, 1h 20m, 2h 15m
+ */
+function formatDuration(minutes: number): string {
+  if (minutes < 60) {
+    return `${minutes}m`;
+  }
+  const hours = Math.floor(minutes / 60);
+  const remainingMinutes = minutes % 60;
+  if (remainingMinutes === 0) {
+    return `${hours}h`;
+  }
+  return `${hours}h ${remainingMinutes}m`;
+}
+
+/**
+ * Maps calendar intent to human-readable workout type
+ */
+function getWorkoutTypeLabel(intent: string): string {
+  const labels: Record<string, string> = {
+    easy: 'Easy',
+    steady: 'Steady',
+    tempo: 'Tempo',
+    intervals: 'Intervals',
+    long: 'Long',
+    rest: 'Rest',
+    // Legacy mappings
+    aerobic: 'Easy',
+    threshold: 'Tempo',
+    vo2: 'Intervals',
+    endurance: 'Long',
+    recovery: 'Easy',
   };
+  return labels[intent] || intent;
 }
 
 export function deriveCardVariant(item: CalendarItem): string {
@@ -35,34 +69,35 @@ export function deriveCardVariant(item: CalendarItem): string {
 export function toCalendarCardProps(item: CalendarItem): CalendarCardProps {
   const variant = deriveCardVariant(item);
 
-  const intentLabels: Record<string, string> = {
-    aerobic: 'Aerobic',
-    threshold: 'Threshold',
-    vo2: 'VO₂',
-    endurance: 'Endurance',
-    recovery: 'Recovery',
-  };
+  // Format duration
+  const duration = formatDuration(item.durationMin);
 
-  const duration = `${item.durationMin}m`;
+  // Get human-readable workout type
+  const workoutType = getWorkoutTypeLabel(item.intent);
 
+  // Extract pace from secondary metric (for completed activities)
   const pace =
     item.kind === 'completed' && item.secondary?.match(/\d+:\d+/)
       ? item.secondary.match(/\d+:\d+/)?.[0]
       : undefined;
 
+  // Sparkline only for completed activities
   const sparkline =
     item.kind === 'completed' && item.compliance === 'complete'
       ? generateMockSparkline()
       : undefined;
 
+  // Description: prioritize coachNote, then description, then empty
+  const description = item.coachNote?.text || item.description || undefined;
+
   return {
     variant,
     duration,
-    workoutType: intentLabels[item.intent] || item.intent,
-    title: item.title || intentLabels[item.intent] || '',
+    workoutType,
+    title: item.title || workoutType,
     pace,
+    description,
     sparkline,
-    coachNote: item.coachNote,
   };
 }
 

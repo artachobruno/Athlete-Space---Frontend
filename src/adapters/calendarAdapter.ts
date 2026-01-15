@@ -79,5 +79,6 @@ export function toCalendarItem(
     secondary,
     isPaired,
     compliance,
+    description: session.notes || undefined,
   };
 }

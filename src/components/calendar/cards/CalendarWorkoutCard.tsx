@@ -6,65 +6,172 @@ export function CalendarWorkoutCard({
   duration,
   workoutType,
   title,
+  distance,
   pace,
+  description,
   sparkline,
-  coachNote,
 }: CalendarCardProps) {
   const theme = CALENDAR_CARD_THEMES[variant];
-  const showSparkline = theme.showSparkline && sparkline?.length;
+  const showSparkline = theme.showSparkline && sparkline && sparkline.length > 0;
 
-  const noteColor =
-    coachNote?.tone === 'warning'
-      ? '#F59E0B'
-      : coachNote?.tone === 'encouragement'
-      ? '#22C55E'
-      : '#93C5FD';
+  // Format secondary metrics
+  const secondaryMetrics = [];
+  if (distance) {
+    secondaryMetrics.push(distance);
+  }
+  if (pace) {
+    secondaryMetrics.push(pace);
+  }
+  const secondaryText = secondaryMetrics.length > 0 ? secondaryMetrics.join(' · ') : undefined;
 
   return (
-    <svg viewBox="0 0 360 460" width="100%" height="100%">
-      <rect width="360" height="460" rx="16" fill={theme.base} />
+    <svg width="360" height="460" viewBox="0 0 360 460" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        {/* Gradient background */}
+        <linearGradient id={`gradient-${variant}`} x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stopColor={theme.base} stopOpacity="1" />
+          <stop offset="100%" stopColor={theme.base} stopOpacity="0.95" />
+        </linearGradient>
 
-      {/* Title */}
-      <text x="18" y="32" fontSize="16" fontWeight="600" fill={theme.text}>
-        {title}
+        {/* Glass overlay gradient */}
+        <linearGradient id={`glass-${variant}`} x1="0%" y1="0%" x2="0%" y2="100%">
+          <stop offset="0%" stopColor="#FFFFFF" stopOpacity="0.1" />
+          <stop offset="100%" stopColor="#FFFFFF" stopOpacity="0.05" />
+        </linearGradient>
+
+        {/* Drop shadow filter */}
+        <filter id={`shadow-${variant}`} x="-50%" y="-50%" width="200%" height="200%">
+          <feGaussianBlur in="SourceAlpha" stdDeviation="8" />
+          <feOffset dx="0" dy="4" result="offsetblur" />
+          <feComponentTransfer>
+            <feFuncA type="linear" slope="0.3" />
+          </feComponentTransfer>
+          <feMerge>
+            <feMergeNode />
+            <feMergeNode in="SourceGraphic" />
+          </feMerge>
+        </filter>
+      </defs>
+
+      {/* Card container with rounded corners */}
+      <rect
+        width="360"
+        height="460"
+        rx="28"
+        fill={`url(#gradient-${variant})`}
+        filter={`url(#shadow-${variant})`}
+      />
+
+      {/* Glass overlay */}
+      <rect
+        width="360"
+        height="460"
+        rx="28"
+        fill={`url(#glass-${variant})`}
+      />
+
+      {/* Top row: Duration (left) and Workout type (right) */}
+      <text
+        x="28"
+        y="40"
+        fontSize="14"
+        fontWeight="600"
+        fill={theme.text}
+        fontFamily="Space Grotesk, Inter, system-ui, -apple-system, sans-serif"
+      >
+        {duration}
       </text>
-
-      {/* Workout type */}
-      <text x="18" y="52" fontSize="12" fill={theme.secondary}>
+      <text
+        x="332"
+        y="40"
+        fontSize="14"
+        fontWeight="600"
+        fill={theme.text}
+        textAnchor="end"
+        fontFamily="Space Grotesk, Inter, system-ui, -apple-system, sans-serif"
+      >
         {workoutType}
       </text>
 
-      {/* Coach note */}
-      {coachNote && (
-        <g transform="translate(18, 70)">
-          <rect width="324" height="22" rx="8" fill={noteColor} opacity="0.18" />
-          <text x="10" y="15" fontSize="12" fill={theme.text}>
-            {coachNote.text}
+      {/* Secondary metrics label */}
+      {secondaryText && (
+        <>
+          <text
+            x="28"
+            y="70"
+            fontSize="10"
+            fontWeight="500"
+            fill={theme.secondary}
+            fontFamily="Space Grotesk, Inter, system-ui, -apple-system, sans-serif"
+            letterSpacing="0.5px"
+          >
+            DISTANCE — AVG PACE
           </text>
-        </g>
+          <text
+            x="28"
+            y="88"
+            fontSize="12"
+            fontWeight="500"
+            fill={theme.text}
+            fontFamily="Space Grotesk, Inter, system-ui, -apple-system, sans-serif"
+          >
+            {secondaryText}
+          </text>
+        </>
       )}
 
-      {/* Metrics */}
-      <text x="18" y="430" fontSize="14" fontWeight="600" fill={theme.text}>
-        {duration}
+      {/* Title - largest text, positioned mid-card */}
+      <text
+        x="28"
+        y="140"
+        fontSize="20"
+        fontWeight="700"
+        fill={theme.text}
+        fontFamily="Space Grotesk, Inter, system-ui, -apple-system, sans-serif"
+      >
+        {title.length > 40 ? `${title.substring(0, 37)}...` : title}
       </text>
 
-      {pace && (
-        <text x="90" y="430" fontSize="13" fill={theme.secondary}>
-          {pace}
-        </text>
+      {/* Description / Coach annotation */}
+      {description && (
+        <foreignObject x="28" y="170" width="304" height="140">
+          <div
+            style={{
+              fontFamily: 'Space Grotesk, Inter, system-ui, -apple-system, sans-serif',
+              fontSize: '12px',
+              lineHeight: '1.5',
+              color: theme.text,
+              maxHeight: '140px',
+              overflow: 'hidden',
+              textOverflow: 'ellipsis',
+              display: '-webkit-box',
+              WebkitLineClamp: 6,
+              WebkitBoxOrient: 'vertical',
+            }}
+          >
+            {description}
+          </div>
+        </foreignObject>
       )}
 
-      {/* Sparkline */}
-      {showSparkline && (
-        <polyline
-          points={sparkline!
-            .map((v, i) => `${18 + i * 16},${440 - v * 24}`)
-            .join(' ')}
-          fill="none"
-          stroke={theme.sparkline}
-          strokeWidth="2"
-        />
+      {/* Sparkline - bottom of card, stroke only, no axes */}
+      {showSparkline && sparkline && (
+        <g transform="translate(28, 400)">
+          <polyline
+            points={sparkline
+              .map((v, i) => {
+                const x = (i / (sparkline.length - 1 || 1)) * 304;
+                const y = 40 - (v * 30);
+                return `${x},${y}`;
+              })
+              .join(' ')}
+            fill="none"
+            stroke={theme.sparkline}
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </g>
       )}
     </svg>
   );
