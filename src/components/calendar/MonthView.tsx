@@ -43,6 +43,7 @@ import type { CalendarItem } from '@/types/calendar';
 import { DroppableDayCell } from './DroppableDayCell';
 import { CalendarWorkoutStack } from './cards/CalendarWorkoutStack';
 import { toCalendarItem } from '@/adapters/calendarAdapter';
+import { sortCalendarItems } from './cards/sortCalendarItems';
 
 interface MonthViewProps {
   currentDate: Date;
@@ -104,7 +105,7 @@ export function MonthView({ currentDate, onActivityClick }: MonthViewProps) {
     ];
 
     return sessions.map((s) =>
-      toCalendarItem(s, dayData.completedActivities)
+      toCalendarItem(s, monthData.completed_activities)
     );
   };
 
@@ -225,7 +226,7 @@ export function MonthView({ currentDate, onActivityClick }: MonthViewProps) {
           items={allPlannedSessionIds}
           strategy={verticalListSortingStrategy}
         >
-          <div className="grid grid-cols-7 grid-rows-6 min-h-[960px]">
+          <div className="grid grid-cols-7 grid-rows-6 min-h-[1080px]">
             {days.map((day, idx) => {
               const isCurrentMonth = isSameMonth(day, currentDate);
               const isCurrentDay = isToday(day);
@@ -236,7 +237,7 @@ export function MonthView({ currentDate, onActivityClick }: MonthViewProps) {
                   key={idx}
                   date={day}
                   className={cn(
-                    'relative min-h-[160px] border-b border-r border-border flex flex-col',
+                    'relative min-h-[180px] border-b border-r border-border flex flex-col',
                     !isCurrentMonth && 'bg-muted/30',
                     idx % 7 === 6 && 'border-r-0'
                   )}
@@ -257,13 +258,15 @@ export function MonthView({ currentDate, onActivityClick }: MonthViewProps) {
 
                   {/* SVG cards */}
                   <div className="relative flex-1">
-                    {items.length > 0 && (
-                      <div className="absolute top-[1%] left-[1%] right-[1%] bottom-[1%]">
-                        <CalendarWorkoutStack
-                          items={items}
-                          variant="month"
-                          maxVisible={3}
-                          onClick={(item) => {
+                    {items.length > 0 && (() => {
+                      const stackItems = sortCalendarItems(items);
+                      return (
+                        <div className="absolute top-[1%] left-[1%] right-[1%] bottom-[1%]">
+                          <CalendarWorkoutStack
+                            items={stackItems}
+                            variant="month"
+                            maxVisible={3}
+                            onClick={(item) => {
                             if (!monthData) return;
 
                             const session =
@@ -282,8 +285,9 @@ export function MonthView({ currentDate, onActivityClick }: MonthViewProps) {
                             onActivityClick?.(null, activity, session ?? undefined);
                           }}
                         />
-                      </div>
-                    )}
+                        </div>
+                      );
+                    })()}
                   </div>
                 </DroppableDayCell>
               );

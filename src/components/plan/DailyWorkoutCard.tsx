@@ -74,7 +74,7 @@ export function DailyWorkoutCard({ date, dateId, workout, completed, status, dai
   // Determine glow intensity for quality workouts (threshold, vo2, hill)
   // Only apply glow to quality days, not rest days or easy workouts
   const glowIntensity = workout 
-    ? getGlowIntensityFromWorkout(workout.intensity, workout.type)
+    ? getGlowIntensityFromWorkout(workout.intent, undefined)
     : undefined
   
   // Only show glow for quality workouts (threshold, vo2, hill)

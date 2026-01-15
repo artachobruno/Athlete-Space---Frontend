@@ -30,6 +30,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import type { CalendarItem, GroupedCalendarItem } from '@/types/calendar';
 import { groupDuplicateSessions } from '@/types/calendar';
+import { sortCalendarItems } from './cards/sortCalendarItems';
 import { fetchCalendarMonth, normalizeCalendarMonth } from '@/lib/calendar-month';
 import { fetchOverview } from '@/lib/api';
 import { useAuthenticatedQuery } from '@/hooks/useAuthenticatedQuery';
@@ -206,13 +207,18 @@ function WeekView({ currentDate, onActivityClick }: WeekViewProps) {
                     <div className="h-full flex items-center justify-center">
                       <p className="text-xs text-muted-foreground/50">Rest day</p>
                     </div>
-                  ) : (
-                    <CalendarWorkoutStack
-                      items={groupedItems[0].items}
-                      variant="week"
-                      maxVisible={1}
-                    />
-                  )}
+                  ) : (() => {
+                    const flatItems = groupedItems.flatMap((g) => g.items);
+                    const stackItems = sortCalendarItems(flatItems);
+                    return (
+                      <CalendarWorkoutStack
+                        items={stackItems}
+                        variant="week"
+                        maxVisible={3}
+                        onClick={handleCardClick}
+                      />
+                    );
+                  })()}
                 </div>
               </div>
             </div>
