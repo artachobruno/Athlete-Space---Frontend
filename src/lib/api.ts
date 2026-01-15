@@ -444,9 +444,25 @@ export const initiateGoogleConnect = async (): Promise<void> => {
   try {
     // Use the same getBaseURL logic as the main API instance
     const API = getBaseURL();
-    // Use the correct endpoint: /auth/google/login?platform=web
+    // CRITICAL: Must use backend URL, not frontend domain
+    // In production: https://virtus-ai.onrender.com/auth/google/login
+    // NOT: /auth/google/login (relative) or https://athletespace.ai/auth/google/login (frontend domain)
     // This endpoint returns a 302 redirect to Google's consent screen
     const url = `${API}/auth/google/login?platform=web`;
+    
+    console.log("[API] Google OAuth redirect URL:", url);
+    console.log("[API] API base URL:", API);
+    
+    // Sanity check: In production, URL must point to backend, not frontend
+    if (import.meta.env.PROD && typeof window !== 'undefined') {
+      const frontendOrigin = window.location.origin;
+      if (url.startsWith(frontendOrigin)) {
+        const errorMsg = `[API] CRITICAL: Google OAuth URL points to frontend domain (${frontendOrigin}) instead of backend! ` +
+                        `This will cause OAuth failures. URL: ${url}`;
+        console.error(errorMsg);
+        throw new Error("Google OAuth URL must point to backend domain, not frontend. Check VITE_API_URL configuration.");
+      }
+    }
     
     console.log("[API] Redirecting to Google OAuth URL:", url);
     window.location.href = url;

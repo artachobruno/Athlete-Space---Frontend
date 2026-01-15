@@ -260,7 +260,24 @@ export async function loginWithGoogle(): Promise<void> {
   };
   
   const API = getBaseURL();
+  // CRITICAL: Must use backend URL, not frontend domain
+  // In production: https://virtus-ai.onrender.com/auth/google/login
+  // NOT: /auth/google/login (relative) or https://athletespace.ai/auth/google/login (frontend domain)
   const url = `${API}/auth/google/login?platform=${isNative ? "mobile" : "web"}`;
+  
+  console.log("[Auth] Google OAuth redirect URL:", url);
+  console.log("[Auth] API base URL:", API);
+  
+  // Sanity check: In production, URL must point to backend, not frontend
+  if (import.meta.env.PROD && typeof window !== 'undefined') {
+    const frontendOrigin = window.location.origin;
+    if (url.startsWith(frontendOrigin)) {
+      const errorMsg = `[Auth] CRITICAL: Google OAuth URL points to frontend domain (${frontendOrigin}) instead of backend! ` +
+                      `This will cause OAuth failures. URL: ${url}`;
+      console.error(errorMsg);
+      throw new Error("Google OAuth URL must point to backend domain, not frontend. Check VITE_API_URL configuration.");
+    }
+  }
 
   if (isNative) {
     // Mobile: Open in-app browser
