@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ChevronLeft, ChevronRight, MessageCircle, Download, Plus } from 'lucide-react';
 import { format, addMonths, subMonths, addWeeks, subWeeks } from 'date-fns';
+
 import { MonthView } from './MonthView';
 import { WeekView } from './WeekView';
 import { SeasonView } from './SeasonView';
@@ -10,105 +11,90 @@ import { CoachDrawer } from './CoachDrawer';
 import { ActivityPopup } from './ActivityPopup';
 import { AddSessionModal } from './AddSessionModal';
 import { AddWeekModal } from './AddWeekModal';
+
 import { fetchCalendarSeason, type CalendarSession } from '@/lib/api';
 import { downloadIcsFile } from '@/lib/ics-export';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAuthenticatedQuery } from '@/hooks/useAuthenticatedQuery';
+
 import type { PlannedWorkout, CompletedActivity } from '@/types';
 
 type ViewType = 'month' | 'week' | 'season';
 
 export function TrainingCalendar() {
   const [currentDate, setCurrentDate] = useState(new Date());
-
-  // FE-1: Check for calendar focus date from plan generation
-  useEffect(() => {
-    const storedDate = localStorage.getItem('calendarFocusDate');
-    if (storedDate) {
-      try {
-        const focusDate = new Date(storedDate);
-        if (!isNaN(focusDate.getTime())) {
-          setCurrentDate(focusDate);
-          localStorage.removeItem('calendarFocusDate'); // Clear after use
-        }
-      } catch (error) {
-        console.error('[TrainingCalendar] Failed to parse calendarFocusDate:', error);
-        localStorage.removeItem('calendarFocusDate');
-      }
-    }
-  }, []);
   const [view, setView] = useState<ViewType>('month');
+
   const [coachOpen, setCoachOpen] = useState(false);
-  const [selectedWorkout, setSelectedWorkout] = useState<string | null>(null);
+
   const [activityPopupOpen, setActivityPopupOpen] = useState(false);
-  const [selectedPlannedWorkout, setSelectedPlannedWorkout] = useState<PlannedWorkout | null>(null);
-  const [selectedCompletedActivity, setSelectedCompletedActivity] = useState<CompletedActivity | null>(null);
-  const [selectedSession, setSelectedSession] = useState<CalendarSession | null>(null);
+  const [selectedPlannedWorkout, setSelectedPlannedWorkout] =
+    useState<PlannedWorkout | null>(null);
+  const [selectedCompletedActivity, setSelectedCompletedActivity] =
+    useState<CompletedActivity | null>(null);
+  const [selectedSession, setSelectedSession] =
+    useState<CalendarSession | null>(null);
+
   const [addSessionOpen, setAddSessionOpen] = useState(false);
   const [addWeekOpen, setAddWeekOpen] = useState(false);
+
   const queryClient = useQueryClient();
 
-  const navigatePrevious = () => {
-    if (view === 'month') {
-      setCurrentDate(subMonths(currentDate, 1));
-    } else if (view === 'week') {
-      setCurrentDate(subWeeks(currentDate, 1));
-    } else {
-      setCurrentDate(subMonths(currentDate, 3));
+  // Restore calendar focus date (from plan generation, etc.)
+  useEffect(() => {
+    const storedDate = localStorage.getItem('calendarFocusDate');
+    if (!storedDate) return;
+
+    const parsed = new Date(storedDate);
+    if (!isNaN(parsed.getTime())) {
+      setCurrentDate(parsed);
     }
+    localStorage.removeItem('calendarFocusDate');
+  }, []);
+
+  const navigatePrevious = () => {
+    if (view === 'month') setCurrentDate(subMonths(currentDate, 1));
+    else if (view === 'week') setCurrentDate(subWeeks(currentDate, 1));
+    else setCurrentDate(subMonths(currentDate, 3));
   };
 
   const navigateNext = () => {
-    if (view === 'month') {
-      setCurrentDate(addMonths(currentDate, 1));
-    } else if (view === 'week') {
-      setCurrentDate(addWeeks(currentDate, 1));
-    } else {
-      setCurrentDate(addMonths(currentDate, 3));
-    }
+    if (view === 'month') setCurrentDate(addMonths(currentDate, 1));
+    else if (view === 'week') setCurrentDate(addWeeks(currentDate, 1));
+    else setCurrentDate(addMonths(currentDate, 3));
   };
 
-  const goToToday = () => {
-    setCurrentDate(new Date());
-  };
+  const goToToday = () => setCurrentDate(new Date());
 
   const getNavigationLabel = () => {
-    if (view === 'month') {
-      return format(currentDate, 'MMMM yyyy');
-    } else if (view === 'week') {
-      return `Week of ${format(currentDate, 'MMM d, yyyy')}`;
-    } else {
-      const quarter = Math.floor(currentDate.getMonth() / 3) + 1;
-      return `Q${quarter} ${format(currentDate, 'yyyy')}`;
-    }
+    if (view === 'month') return format(currentDate, 'MMMM yyyy');
+    if (view === 'week') return `Week of ${format(currentDate, 'MMM d, yyyy')}`;
+    const quarter = Math.floor(currentDate.getMonth() / 3) + 1;
+    return `Q${quarter} ${format(currentDate, 'yyyy')}`;
   };
 
-  const handleAskCoach = (workoutContext?: string) => {
-    setSelectedWorkout(workoutContext || null);
+  const handleAskCoach = () => {
     setCoachOpen(true);
   };
 
-  const handleActivityClick = (planned: PlannedWorkout | null, completed: CompletedActivity | null, session?: CalendarSession | null) => {
+  const handleActivityClick = (
+    planned: PlannedWorkout | null,
+    completed: CompletedActivity | null,
+    session?: CalendarSession | null
+  ) => {
     setSelectedPlannedWorkout(planned);
     setSelectedCompletedActivity(completed);
-    setSelectedSession(session || null);
+    setSelectedSession(session ?? null);
     setActivityPopupOpen(true);
   };
 
-  const handleStatusChange = () => {
-    // Invalidate all calendar queries to refresh calendar data
-    // CRITICAL: Must invalidate all calendar query keys
+  const invalidateCalendar = () => {
     queryClient.invalidateQueries({ queryKey: ['calendar'], exact: false });
     queryClient.invalidateQueries({ queryKey: ['calendarWeek'], exact: false });
     queryClient.invalidateQueries({ queryKey: ['calendarSeason'], exact: false });
     queryClient.invalidateQueries({ queryKey: ['calendarToday'], exact: false });
   };
 
-  const handleSessionAdded = () => {
-    handleStatusChange();
-  };
-
-  // CRITICAL: Use useAuthenticatedQuery to gate behind auth and prevent race conditions
   const { data: seasonData } = useAuthenticatedQuery({
     queryKey: ['calendarSeason'],
     queryFn: () => fetchCalendarSeason(),
@@ -116,7 +102,7 @@ export function TrainingCalendar() {
   });
 
   const handleExportIcs = () => {
-    if (seasonData?.sessions) {
+    if (seasonData?.sessions?.length) {
       downloadIcsFile(seasonData.sessions);
     }
   };
@@ -141,47 +127,38 @@ export function TrainingCalendar() {
           </span>
         </div>
 
-        {/* Right side: Add Session + Add Week + Ask Coach + Export + View Toggle */}
+        {/* Actions */}
         <div className="flex items-center gap-3">
-          <Button
-            variant="default"
-            size="sm"
-            onClick={() => setAddSessionOpen(true)}
-            className="bg-primary hover:bg-primary/90"
-          >
+          <Button size="sm" onClick={() => setAddSessionOpen(true)}>
             <Plus className="h-4 w-4 mr-1.5" />
-            Add Planned Session
+            Add Session
           </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setAddWeekOpen(true)}
-          >
+
+          <Button variant="outline" size="sm" onClick={() => setAddWeekOpen(true)}>
             <Plus className="h-4 w-4 mr-1.5" />
-            Add Planned Week
+            Add Week
           </Button>
-          
+
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => handleAskCoach()}
+            onClick={handleAskCoach}
             className="text-muted-foreground hover:text-foreground"
           >
             <MessageCircle className="h-4 w-4 mr-1.5" />
             Ask Coach
           </Button>
-          
+
           <Button
             variant="ghost"
             size="sm"
             onClick={handleExportIcs}
-            className="text-muted-foreground hover:text-foreground"
-            disabled={!seasonData?.sessions || seasonData.sessions.length === 0}
+            disabled={!seasonData?.sessions?.length}
           >
             <Download className="h-4 w-4 mr-1.5" />
             Export ICS
           </Button>
-          
+
           <Tabs value={view} onValueChange={(v) => setView(v as ViewType)}>
             <TabsList>
               <TabsTrigger value="week">Week</TabsTrigger>
@@ -192,12 +169,19 @@ export function TrainingCalendar() {
         </div>
       </div>
 
-      {/* Calendar Views */}
-      {view === 'month' && <MonthView currentDate={currentDate} onActivityClick={handleActivityClick} />}
-      {view === 'week' && <WeekView currentDate={currentDate} onActivityClick={handleActivityClick} />}
+      {/* Views */}
+      {view === 'month' && (
+        <MonthView
+          currentDate={currentDate}
+          onActivityClick={handleActivityClick}
+        />
+      )}
+
+      {view === 'week' && <WeekView currentDate={currentDate} />}
+
       {view === 'season' && <SeasonView currentDate={currentDate} />}
 
-      {/* Activity Popup */}
+      {/* Activity Popup (Month only) */}
       <ActivityPopup
         open={activityPopupOpen}
         onOpenChange={setActivityPopupOpen}
@@ -205,30 +189,25 @@ export function TrainingCalendar() {
         completedActivity={selectedCompletedActivity}
         session={selectedSession}
         onAskCoach={handleAskCoach}
-        onStatusChange={handleStatusChange}
+        onStatusChange={invalidateCalendar}
       />
 
       {/* Coach Drawer */}
-      <CoachDrawer
-        open={coachOpen}
-        onOpenChange={setCoachOpen}
-        context={selectedWorkout || undefined}
-      />
+      <CoachDrawer open={coachOpen} onOpenChange={setCoachOpen} />
 
-      {/* Add Session Modal */}
+      {/* Modals */}
       <AddSessionModal
         open={addSessionOpen}
         onOpenChange={setAddSessionOpen}
         initialDate={currentDate}
-        onSuccess={handleSessionAdded}
+        onSuccess={invalidateCalendar}
       />
 
-      {/* Add Week Modal */}
       <AddWeekModal
         open={addWeekOpen}
         onOpenChange={setAddWeekOpen}
         initialDate={currentDate}
-        onSuccess={handleSessionAdded}
+        onSuccess={invalidateCalendar}
       />
     </div>
   );

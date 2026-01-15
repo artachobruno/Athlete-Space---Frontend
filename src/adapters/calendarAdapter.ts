@@ -71,7 +71,7 @@ export function toCalendarItem(
     id: session.id,
     kind,
     sport: normalizeCalendarSport(session.type),
-    intent: normalizeCalendarIntent(session.intensity, session.type),
+    intent: normalizeCalendarIntent(session.intensity),
     title: session.title || '',
     startLocal,
     durationMin: session.duration_minutes || 0,

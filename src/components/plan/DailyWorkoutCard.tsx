@@ -11,6 +11,7 @@ import { useUnitSystem } from '@/hooks/useUnitSystem';
 import { CalendarWorkoutStack } from '@/components/calendar/cards/CalendarWorkoutStack';
 import { toCalendarCardProps } from '@/components/calendar/cards/calendarCardAdapter';
 import { normalizeCalendarSport, normalizeCalendarIntent } from '@/types/calendar';
+import { toPlanCalendarItem } from './planCalendarAdapter';
 
 interface DailyWorkoutCardProps {
   date: Date;
@@ -66,19 +67,7 @@ export function DailyWorkoutCard({ date, dateId, workout, completed, status, dai
   const DecisionIcon = decisionInfo?.icon;
 
   // Convert workout/activity to CalendarItem for card display
-  const calendarItem = workout || completed ? {
-    id: workout?.id || completed?.id || '',
-    kind: (completed || workout?.completed) ? 'completed' as const : 'planned' as const,
-    sport: normalizeCalendarSport(workout?.sport || completed?.sport),
-    intent: normalizeCalendarIntent(workout?.intent || 'aerobic'),
-    title: workout?.title || completed?.title || '',
-    startLocal: date.toISOString(),
-    durationMin: workout?.duration || completed?.duration || 0,
-    load: completed?.trainingLoad,
-    secondary: completed?.avgPace,
-    isPaired: false,
-    compliance: completed ? 'complete' as const : undefined,
-  } : null;
+  const calendarItem = toPlanCalendarItem(date, workout, completed);
 
   return (
     <Card 

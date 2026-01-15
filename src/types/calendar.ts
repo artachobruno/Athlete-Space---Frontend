@@ -26,6 +26,10 @@ export interface CalendarItem {
   secondary?: string; // e.g., "Z2", "HR 145", "RPE 7"
   isPaired?: boolean;
   compliance?: CalendarCompliance;
+  coachNote?: {
+    text: string;
+    tone: 'warning' | 'encouragement' | 'neutral';
+  };
 }
 
 /**
