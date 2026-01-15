@@ -1,3 +1,11 @@
+/**
+ * CalendarWorkoutCard
+ *
+ * Pure SVG renderer for calendar workout cards.
+ * RESPONSIVE, CLIPPED, AND STACK-SAFE.
+ * No layout logic, no React state.
+ */
+
 import { CALENDAR_CARD_THEMES } from './calendarCardThemes';
 import type { CalendarCardProps } from './calendarCardAdapter';
 
@@ -12,57 +20,55 @@ export function CalendarWorkoutCard({
   sparkline,
 }: CalendarCardProps) {
   const theme = CALENDAR_CARD_THEMES[variant];
-  const showSparkline = theme.showSparkline && sparkline && sparkline.length > 0;
+  const showSparkline =
+    theme.showSparkline && Array.isArray(sparkline) && sparkline.length > 0;
 
-  // Format secondary metrics
-  const secondaryMetrics = [];
-  if (distance) {
-    secondaryMetrics.push(distance);
-  }
-  if (pace) {
-    secondaryMetrics.push(pace);
-  }
-  const secondaryText = secondaryMetrics.length > 0 ? secondaryMetrics.join(' · ') : undefined;
+  const secondaryText =
+    distance || pace
+      ? [distance, pace].filter(Boolean).join(' · ')
+      : null;
 
   return (
-    <svg width="360" height="460" viewBox="0 0 360 460" xmlns="http://www.w3.org/2000/svg">
+    <svg
+      width="100%"
+      height="100%"
+      viewBox="0 0 360 460"
+      preserveAspectRatio="xMidYMid meet"
+      xmlns="http://www.w3.org/2000/svg"
+      style={{
+        display: 'block',
+        fontFamily:
+          'Space Grotesk, Inter, system-ui, -apple-system, sans-serif',
+      }}
+    >
       <defs>
-        {/* Gradient background */}
-        <linearGradient id={`gradient-${variant}`} x1="0%" y1="0%" x2="0%" y2="100%">
-          <stop offset="0%" stopColor={theme.base} stopOpacity="1" />
-          <stop offset="100%" stopColor={theme.base} stopOpacity="0.95" />
+        {/* Background gradient */}
+        <linearGradient id={`bg-${variant}`} x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stopColor={theme.base} />
+          <stop offset="100%" stopColor={theme.base} />
         </linearGradient>
 
-        {/* Glass overlay gradient */}
-        <linearGradient id={`glass-${variant}`} x1="0%" y1="0%" x2="0%" y2="100%">
-          <stop offset="0%" stopColor="#FFFFFF" stopOpacity="0.1" />
-          <stop offset="100%" stopColor="#FFFFFF" stopOpacity="0.05" />
+        {/* Glass overlay */}
+        <linearGradient id={`glass-${variant}`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="rgba(255,255,255,0.18)" />
+          <stop offset="60%" stopColor="rgba(255,255,255,0.06)" />
+          <stop offset="100%" stopColor="rgba(255,255,255,0.02)" />
         </linearGradient>
 
-        {/* Drop shadow filter */}
-        <filter id={`shadow-${variant}`} x="-50%" y="-50%" width="200%" height="200%">
-          <feGaussianBlur in="SourceAlpha" stdDeviation="8" />
-          <feOffset dx="0" dy="4" result="offsetblur" />
-          <feComponentTransfer>
-            <feFuncA type="linear" slope="0.3" />
-          </feComponentTransfer>
-          <feMerge>
-            <feMergeNode />
-            <feMergeNode in="SourceGraphic" />
-          </feMerge>
+        {/* Shadow */}
+        <filter id={`shadow-${variant}`} x="-20%" y="-20%" width="140%" height="140%">
+          <feDropShadow dx="0" dy="18" stdDeviation="28" floodOpacity="0.35" />
         </filter>
       </defs>
 
-      {/* Card container with rounded corners */}
+      {/* Card base */}
       <rect
         width="360"
         height="460"
         rx="28"
-        fill={`url(#gradient-${variant})`}
+        fill={`url(#bg-${variant})`}
         filter={`url(#shadow-${variant})`}
       />
-
-      {/* Glass overlay */}
       <rect
         width="360"
         height="460"
@@ -70,82 +76,80 @@ export function CalendarWorkoutCard({
         fill={`url(#glass-${variant})`}
       />
 
-      {/* Top row: Duration (left) and Workout type (right) */}
+      {/* TOP ROW */}
       <text
         x="28"
-        y="40"
-        fontSize="14"
-        fontWeight="600"
+        y="56"
         fill={theme.text}
-        fontFamily="Space Grotesk, Inter, system-ui, -apple-system, sans-serif"
+        fontSize="22"
+        fontWeight="600"
+        letterSpacing="-0.01em"
       >
         {duration}
       </text>
+
       <text
         x="332"
-        y="40"
-        fontSize="14"
+        y="56"
+        fill={theme.secondary}
+        fontSize="22"
         fontWeight="600"
-        fill={theme.text}
         textAnchor="end"
-        fontFamily="Space Grotesk, Inter, system-ui, -apple-system, sans-serif"
+        letterSpacing="-0.01em"
       >
         {workoutType}
       </text>
 
-      {/* Secondary metrics label */}
+      {/* SECONDARY METRICS */}
       {secondaryText && (
         <>
           <text
             x="28"
-            y="70"
-            fontSize="10"
-            fontWeight="500"
+            y="90"
             fill={theme.secondary}
-            fontFamily="Space Grotesk, Inter, system-ui, -apple-system, sans-serif"
-            letterSpacing="0.5px"
+            fontSize="12"
+            letterSpacing="0.08em"
           >
             DISTANCE — AVG PACE
           </text>
+
           <text
             x="28"
-            y="88"
-            fontSize="12"
-            fontWeight="500"
+            y="118"
             fill={theme.text}
-            fontFamily="Space Grotesk, Inter, system-ui, -apple-system, sans-serif"
+            fontSize="20"
+            fontWeight="500"
           >
             {secondaryText}
           </text>
         </>
       )}
 
-      {/* Title - largest text, positioned mid-card */}
+      {/* TITLE */}
       <text
         x="28"
-        y="140"
-        fontSize="20"
-        fontWeight="700"
+        y="190"
         fill={theme.text}
-        fontFamily="Space Grotesk, Inter, system-ui, -apple-system, sans-serif"
+        fontSize="34"
+        fontWeight="700"
+        letterSpacing="-0.02em"
       >
-        {title.length > 40 ? `${title.substring(0, 37)}...` : title}
+        {title.length > 28 ? `${title.slice(0, 25)}…` : title}
       </text>
 
-      {/* Description / Coach annotation */}
+      {/* DESCRIPTION / COACH NOTE */}
       {description && (
-        <foreignObject x="28" y="170" width="304" height="140">
+        <foreignObject x="28" y="220" width="304" height="140">
           <div
+            xmlns="http://www.w3.org/1999/xhtml"
             style={{
-              fontFamily: 'Space Grotesk, Inter, system-ui, -apple-system, sans-serif',
-              fontSize: '12px',
-              lineHeight: '1.5',
-              color: theme.text,
-              maxHeight: '140px',
+              color: theme.secondary,
+              fontSize: '17px',
+              lineHeight: '1.45',
+              opacity: 0.95,
               overflow: 'hidden',
-              textOverflow: 'ellipsis',
               display: '-webkit-box',
-              WebkitLineClamp: 6,
+              WebkitLineClamp: 4,
               WebkitBoxOrient: 'vertical',
             }}
           >
@@ -154,17 +158,11 @@ export function CalendarWorkoutCard({
         </foreignObject>
       )}
 
-      {/* Sparkline - bottom of card, stroke only, no axes */}
+      {/* SPARKLINE */}
       {showSparkline && sparkline && (
-        <g transform="translate(28, 400)">
-          <polyline
-            points={sparkline
-              .map((v, i) => {
-                const x = (i / (sparkline.length - 1 || 1)) * 304;
-                const y = 40 - (v * 30);
-                return `${x},${y}`;
-              })
-              .join(' ')}
+        <g transform="translate(28, 380)">
+          <path
+            d={generateSparklinePath(sparkline, 304, 32)}
             fill="none"
             stroke={theme.sparkline}
             strokeWidth="2"
@@ -175,4 +173,25 @@ export function CalendarWorkoutCard({
       )}
     </svg>
   );
+}
+
+/**
+ * Sparkline generator (0–1 normalized values)
+ */
+function generateSparklinePath(
+  data: number[],
+  width: number,
+  height: number
+): string {
+  if (!data.length) return '';
+
+  const step = width / (data.length - 1 || 1);
+
+  return data
+    .map((v, i) => {
+      const x = i * step;
+      const y = height - v * height;
+      return `${i === 0 ? 'M' : 'L'} ${x} ${y}`;
+    })
+    .join(' ');
 }
