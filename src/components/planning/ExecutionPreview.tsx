@@ -7,6 +7,12 @@
 
 import { format, parseISO } from 'date-fns';
 import { GlassCard } from '@/components/ui/GlassCard';
+import {
+  CardHeader,
+  CardContent,
+  CardTitle,
+  CardDescription,
+} from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Clock, Route, FileText } from 'lucide-react';
 import type { WeekPlan } from '@/types/execution';

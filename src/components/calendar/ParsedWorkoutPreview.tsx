@@ -3,6 +3,12 @@ import type { ParsedWorkout } from '@/lib/api';
 import { useUnitSystem } from '@/hooks/useUnitSystem';
 import { Badge } from '@/components/ui/badge';
 import { GlassCard } from '@/components/ui/GlassCard';
+import {
+  CardHeader,
+  CardContent,
+  CardTitle,
+  CardDescription,
+} from '@/components/ui/card';
 
 interface ParsedWorkoutPreviewProps {
   parsedWorkout: ParsedWorkout;

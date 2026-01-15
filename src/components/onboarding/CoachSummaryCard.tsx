@@ -1,5 +1,11 @@
 import { Button } from '@/components/ui/button';
 import { GlassCard } from '@/components/ui/GlassCard';
+import {
+  CardHeader,
+  CardContent,
+  CardTitle,
+  CardDescription,
+} from '@/components/ui/card';
 import { Bot, ArrowRight } from 'lucide-react';
 import type { Sport } from '@/types';
 

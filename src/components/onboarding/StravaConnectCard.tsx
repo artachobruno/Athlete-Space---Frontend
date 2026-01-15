@@ -1,6 +1,12 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { GlassCard } from '@/components/ui/GlassCard';
+import {
+  CardHeader,
+  CardContent,
+  CardTitle,
+  CardDescription,
+} from '@/components/ui/card';
 import { Activity, ExternalLink, Upload } from 'lucide-react';
 import { initiateStravaConnect } from '@/lib/api';
 import { toast } from '@/hooks/use-toast';

@@ -7,6 +7,12 @@
 
 import { format, parseISO } from 'date-fns';
 import { GlassCard } from '@/components/ui/GlassCard';
+import {
+  CardHeader,
+  CardContent,
+  CardTitle,
+  CardDescription,
+} from '@/components/ui/card';
 import type { WeekPlan } from '@/types/execution';
 
 interface PlanOverviewSidebarProps {
