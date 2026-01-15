@@ -132,41 +132,41 @@ export function BaseCalendarCardSvg({
         </filter>
       </defs>
 
-      <rect width="360" height="460" rx="28" fill="transparent" filter={`url(#${id}-shadow)`} />
+      <rect width="360" height={viewBoxHeight} rx="28" fill="transparent" filter={`url(#${id}-shadow)`} />
 
       <g filter={`url(#${filterId})`}>
-        <rect width="360" height="460" rx="28" fill={`url(#${id}-bg)`} />
-        <rect width="360" height="460" rx="28" fill={`url(#${id}-glass)`} />
-        <rect x="1" y="1" width="358" height="458" rx="27" fill="none" stroke={`url(#${id}-inner-edge)`} />
-        <rect x="0.5" y="0.5" width="359" height="459" rx="27.5" fill="none" stroke={`url(#${id}-outer-edge)`} />
+        <rect width="360" height={viewBoxHeight} rx="28" fill={`url(#${id}-bg)`} />
+        <rect width="360" height={viewBoxHeight} rx="28" fill={`url(#${id}-glass)`} />
+        <rect x="1" y="1" width="358" height={viewBoxHeight - 2} rx="27" fill="none" stroke={`url(#${id}-inner-edge)`} />
+        <rect x="0.5" y="0.5" width="359" height={viewBoxHeight - 1} rx="27.5" fill="none" stroke={`url(#${id}-outer-edge)`} />
       </g>
 
       {/* TOP ROW */}
-      <text x="28" y="52" fill={theme.text} fontSize="20" fontWeight="600">
+      <text x="28" y={isMonthView ? 48 : 52} fill={theme.text} fontSize={topRowFontSize} fontWeight="600">
         {topLeft}
       </text>
-      <text x="332" y="52" fill={theme.secondary} fontSize="20" fontWeight="600" textAnchor="end">
+      <text x="332" y={isMonthView ? 48 : 52} fill={theme.secondary} fontSize={topRowFontSize} fontWeight="600" textAnchor="end">
         {topRight}
       </text>
 
       {/* METRICS */}
       {showMetrics && (
         <>
-          <text x="28" y="82" fill={theme.secondary} fontSize="11" letterSpacing="0.08em">
+          <text x="28" y={isMonthView ? 78 : 82} fill={theme.secondary} fontSize={metricsLabelFontSize} letterSpacing="0.08em">
             {metricsLabel}
           </text>
-          <text x="28" y="108" fill={theme.text} fontSize="20" fontWeight="500">
+          <text x="28" y={isMonthView ? 104 : 108} fill={theme.text} fontSize={metricsValueFontSize} fontWeight="500">
             {metricsValue}
           </text>
         </>
       )}
 
       {/* TITLE */}
-      <foreignObject x="28" y="142" width="304" height="88">
+      <foreignObject x="28" y={isMonthView ? 130 : 142} width="304" height={isMonthView ? 70 : 88}>
         <div
           style={{
             color: theme.text,
-            fontSize: '30px',
+            fontSize: `${titleFontSize}px`,
             fontWeight: 700,
             lineHeight: 1.15,
             overflow: 'hidden',
@@ -181,11 +181,11 @@ export function BaseCalendarCardSvg({
 
       {/* DESCRIPTION */}
       {description && (
-        <foreignObject x="28" y="232" width="304" height="120">
+        <foreignObject x="28" y={isMonthView ? 200 : 232} width="304" height={isMonthView ? 90 : 120}>
           <div
             style={{
               color: theme.secondary,
-              fontSize: '16px',
+              fontSize: `${descFontSize}px`,
               lineHeight: 1.45,
               opacity: 0.95,
               overflow: 'hidden',
@@ -201,7 +201,7 @@ export function BaseCalendarCardSvg({
 
       {/* SPARKLINE */}
       {showSparkline && sparkline && (
-        <g transform="translate(28,380)">
+        <g transform={`translate(28,${isMonthView ? 290 : 380})`}>
           <path
             d={generateSparklinePath(sparkline, 304, 36)}
             fill="none"

@@ -89,16 +89,17 @@ export function CalendarWorkoutStack({
             >
               {(() => {
                 const model = toCalendarCardRenderModel(item);
+                const propsWithView = { ...model.props, viewVariant: variant };
 
                 if (model.cardType === 'session') {
-                  return <CalendarWorkoutCard {...model.props} />;
+                  return <CalendarWorkoutCard {...propsWithView} />;
                 }
 
                 if (model.cardType === 'activity') {
-                  return <CalendarActivityCard {...model.props} />;
+                  return <CalendarActivityCard {...propsWithView} />;
                 }
 
-                return <CalendarTrainingDayCard {...model.props} />;
+                return <CalendarTrainingDayCard {...propsWithView} />;
               })()}
             </div>
           </div>
