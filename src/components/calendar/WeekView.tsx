@@ -37,6 +37,7 @@ import { useQuery } from '@tanstack/react-query';
 import type { PlannedWorkout, CompletedActivity } from '@/types';
 import type { CalendarSession } from '@/lib/api';
 import { toast } from '@/hooks/use-toast';
+import { toCalendarItem } from '@/adapters/calendarAdapter';
 import {
   generateWeeklySummaryText,
   generateWeeklySummaryMarkdown,
@@ -87,7 +88,19 @@ export function WeekView({ currentDate, onActivityClick }: WeekViewProps) {
         continue;
       }
 
-      map.set(day.date, [...day.plannedSessions, ...day.workouts] as unknown as CalendarItem[]);
+      const items: CalendarItem[] = [];
+
+      for (const session of day.plannedSessions) {
+        items.push(toCalendarItem(session, monthData.completed_activities));
+      }
+
+      for (const workout of day.workouts) {
+        if (!items.some(i => i.id === workout.id)) {
+          items.push(toCalendarItem(workout, monthData.completed_activities));
+        }
+      }
+
+      map.set(day.date, items);
     }
 
     return map;

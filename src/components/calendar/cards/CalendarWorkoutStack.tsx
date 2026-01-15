@@ -7,6 +7,7 @@ interface Props {
   variant: 'month' | 'week' | 'plan';
   maxVisible?: number;
   onClick?: (item: CalendarItem) => void;
+  className?: string;
 }
 
 export function CalendarWorkoutStack({
@@ -14,6 +15,7 @@ export function CalendarWorkoutStack({
   variant,
   maxVisible = 3,
   onClick,
+  className,
 }: Props) {
   const visible = items.slice(0, maxVisible);
 
@@ -21,7 +23,6 @@ export function CalendarWorkoutStack({
     return null;
   }
 
-  // Calculate scale factors for stacking
   const getScale = (index: number): number => {
     if (index === 0) return 1.0;
     if (index === 1) return 0.97;
@@ -29,16 +30,13 @@ export function CalendarWorkoutStack({
     return 0.91 - (index - 3) * 0.03;
   };
 
-  // Calculate offset for stacking (6px per layer)
-  const getOffset = (index: number): { x: number; y: number } => {
-    return {
-      x: index * 6,
-      y: index * 6,
-    };
-  };
+  const getOffset = (index: number): { x: number; y: number } => ({
+    x: index * 6,
+    y: index * 6,
+  });
 
   return (
-    <div className="relative w-full h-full">
+    <div className={`relative w-full h-full ${className ?? ''}`}>
       {visible.map((item, i) => {
         const offset = getOffset(i);
         const scale = getScale(i);
@@ -56,7 +54,9 @@ export function CalendarWorkoutStack({
             }}
             onMouseEnter={(e) => {
               if (isTopCard) {
-                e.currentTarget.style.transform = `translate(${offset.x}px, ${offset.y - 2}px) scale(${scale * 1.01})`;
+                e.currentTarget.style.transform = `translate(${offset.x}px, ${
+                  offset.y - 2
+                }px) scale(${scale * 1.01})`;
               }
             }}
             onMouseLeave={(e) => {
@@ -71,13 +71,21 @@ export function CalendarWorkoutStack({
             }}
           >
             <div
-              className="w-full h-full flex items-center justify-center"
-              style={{
-                aspectRatio: '360 / 460',
-                height: variant === 'month' ? '98%' : 'auto',
-                maxHeight: variant === 'month' ? '100%' : '100%',
-                maxWidth: '100%',
-              }}
+              className="flex items-center justify-center w-full h-full"
+              style={
+                variant === 'month'
+                  ? {
+                      // let the calendar cell define the height;
+                      // keep subtle inset by scaling the card box
+                      transform: 'scale(0.98)',
+                      transformOrigin: 'top left',
+                    }
+                  : {
+                      aspectRatio: '360 / 460',
+                      maxWidth: '100%',
+                      maxHeight: '100%',
+                    }
+              }
             >
               <CalendarWorkoutCard {...toCalendarCardProps(item)} />
             </div>

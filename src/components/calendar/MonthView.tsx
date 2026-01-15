@@ -256,9 +256,9 @@ export function MonthView({ currentDate, onActivityClick }: MonthViewProps) {
                   </div>
 
                   {/* SVG cards */}
-                  <div className="relative flex-1 px-1 pb-1">
+                  <div className="relative flex-1">
                     {items.length > 0 && (
-                      <div className="absolute inset-[4px]">
+                      <div className="absolute top-[1%] left-[1%] right-[1%] bottom-[1%]">
                         <CalendarWorkoutStack
                           items={items}
                           variant="month"
@@ -276,15 +276,10 @@ export function MonthView({ currentDate, onActivityClick }: MonthViewProps) {
                               monthData.completed_activities.find(
                                 (a) =>
                                   a.planned_session_id === item.id ||
-                                  (session?.workout_id &&
-                                    a.workout_id === session.workout_id)
+                                  (session?.workout_id && a.workout_id === session.workout_id)
                               ) ?? null;
 
-                            onActivityClick?.(
-                              null,
-                              activity,
-                              session ?? undefined
-                            );
+                            onActivityClick?.(null, activity, session ?? undefined);
                           }}
                         />
                       </div>

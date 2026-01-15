@@ -173,18 +173,18 @@ export function MonthCalendar({ currentDate, onActivityClick }: {
 
               {/* Card area */}
               <div className="flex-1 relative">
-                <div className="absolute inset-0 flex items-stretch justify-center">
+                <div className="absolute top-[1%] left-[1%] right-[1%] bottom-[1%]">
                   {groupedItems.length > 0 && (
-                    <div className="w-[98%] h-[98%]">
-                      <CalendarWorkoutStack
-                        items={groupedItems[0].items}
-                        variant="month"
-                        maxVisible={3}
-                      />
-                    </div>
+                    <CalendarWorkoutStack
+                      items={groupedItems[0].items}
+                      variant="month"
+                      maxVisible={3}
+                      className="w-full h-full"
+                    />
                   )}
                 </div>
               </div>
+
 
               {/* Footer */}
               {hasItems && summary && (
