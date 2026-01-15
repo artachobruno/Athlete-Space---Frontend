@@ -42,10 +42,10 @@ export function BaseCalendarCardSvg({
   // For month view: reduce height (from 460 to 320) and increase fonts
   const viewBoxHeight = isMonthView ? 320 : 460;
   const topRowFontSize = 28;
-  const metricsLabelFontSize = isMonthView ? 13 : 11;
-  const metricsValueFontSize = isMonthView ? 24 : 20;
-  const titleFontSize = 36;
-  const descFontSize = 24;
+  const metricsLabelFontSize = isMonthView ? 16 : 14;
+  const metricsValueFontSize = isMonthView ? 28 : 24;
+  const titleFontSize = 40;
+  const descFontSize = 32;
 
   return (
     <svg
@@ -162,7 +162,7 @@ export function BaseCalendarCardSvg({
       )}
 
       {/* TITLE */}
-      <foreignObject x="28" y="115" width="304" height={isMonthView ? 70 : 88}>
+      <foreignObject x="28" y="100" width="304" height={isMonthView ? 70 : 88}>
         <div
           style={{
             color: theme.text,
@@ -181,7 +181,7 @@ export function BaseCalendarCardSvg({
 
       {/* DESCRIPTION */}
       {description && (
-        <foreignObject x="28" y="185" width="304" height={isMonthView ? 90 : 120}>
+        <foreignObject x="28" y="150" width="304" height={isMonthView ? 90 : 120}>
           <div
             style={{
               color: theme.secondary,
