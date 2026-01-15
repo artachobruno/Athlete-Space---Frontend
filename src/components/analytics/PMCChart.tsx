@@ -15,6 +15,12 @@ import {
   Brush,
 } from 'recharts';
 import { GlassCard } from '@/components/ui/GlassCard';
+import {
+  CardHeader,
+  CardContent,
+  CardTitle,
+  CardDescription,
+} from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { format, parseISO, subDays } from 'date-fns';

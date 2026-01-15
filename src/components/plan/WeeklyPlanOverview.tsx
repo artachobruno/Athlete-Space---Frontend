@@ -1,4 +1,10 @@
 import { GlassCard } from '@/components/ui/GlassCard';
+import {
+  CardHeader,
+  CardContent,
+  CardTitle,
+  CardDescription,
+} from '@/components/ui/card';
 import { fetchCalendarWeek } from '@/lib/api';
 import { format, startOfWeek, endOfWeek } from 'date-fns';
 import { Target, TrendingUp, Loader2 } from 'lucide-react';

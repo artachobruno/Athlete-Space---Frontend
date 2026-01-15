@@ -1,5 +1,11 @@
 import { GlassCard } from '@/components/ui/GlassCard';
 import {
+  CardHeader,
+  CardContent,
+  CardTitle,
+  CardDescription,
+} from '@/components/ui/card';
+import {
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,

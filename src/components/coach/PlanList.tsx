@@ -1,4 +1,10 @@
 import { GlassCard } from '@/components/ui/GlassCard';
+import {
+  CardHeader,
+  CardContent,
+  CardTitle,
+  CardDescription,
+} from '@/components/ui/card';
 import { PlanItem } from '@/lib/api';
 import { cn } from '@/lib/utils';
 

@@ -1,6 +1,12 @@
 import { useMemo } from 'react';
 import type { StructuredWorkoutResponse } from '@/lib/api';
 import { GlassCard } from '@/components/ui/GlassCard';
+import {
+  CardHeader,
+  CardContent,
+  CardTitle,
+  CardDescription,
+} from '@/components/ui/card';
 
 interface WorkoutTimeSeriesGraphProps {
   structuredWorkout: StructuredWorkoutResponse;

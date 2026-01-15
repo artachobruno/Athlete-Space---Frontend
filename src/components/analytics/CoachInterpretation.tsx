@@ -1,5 +1,11 @@
 import { useMemo } from 'react';
 import { GlassCard } from '@/components/ui/GlassCard';
+import {
+  CardHeader,
+  CardContent,
+  CardTitle,
+  CardDescription,
+} from '@/components/ui/card';
 import { Brain, TrendingUp, TrendingDown, Minus, AlertTriangle, Zap } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { TrainingLoad } from '@/types';
