@@ -5,7 +5,7 @@ import { ChevronLeft, ChevronRight, MessageCircle, Download, Plus } from 'lucide
 import { format, addMonths, subMonths, addWeeks, subWeeks } from 'date-fns';
 
 import { MonthView } from './MonthView';
-import { WeekView } from './WeekView';
+import { WeekCalendar } from './WeekCalendar';
 import { SeasonView } from './SeasonView';
 import { CoachDrawer } from './CoachDrawer';
 import { ActivityPopup } from './ActivityPopup';
