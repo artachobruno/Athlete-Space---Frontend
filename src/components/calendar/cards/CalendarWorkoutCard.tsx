@@ -2,7 +2,7 @@
  * CalendarWorkoutCard
  *
  * Pure SVG renderer for calendar workout cards.
- * Glassmorphic, clipped, stack-safe.
+ * Glassmorphic with defined edges, clipped, stack-safe.
  * No layout logic, no React state.
  */
 
@@ -45,29 +45,31 @@ export function CalendarWorkoutCard({
       }}
     >
       <defs>
-        {/* Base background tint (very subtle) */}
+        {/* Base background tint */}
         <linearGradient id={`${id}-bg`} x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stopColor={theme.base} stopOpacity="0.55" />
-          <stop offset="100%" stopColor={theme.base} stopOpacity="0.35" />
+          <stop offset="0%" stopColor={theme.base} stopOpacity="0.75" />
+          <stop offset="100%" stopColor={theme.base} stopOpacity="0.55" />
         </linearGradient>
 
-        {/* Glass highlight */}
+        {/* Glass highlight fill */}
         <linearGradient id={`${id}-glass`} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="rgba(255,255,255,0.22)" />
-          <stop offset="60%" stopColor="rgba(255,255,255,0.08)" />
+          <stop offset="0%" stopColor="rgba(255,255,255,0.18)" />
+          <stop offset="60%" stopColor="rgba(255,255,255,0.07)" />
           <stop offset="100%" stopColor="rgba(255,255,255,0.03)" />
         </linearGradient>
 
-        {/* Backdrop blur */}
-        <filter
-          id={`${id}-blur`}
-          x="-20%"
-          y="-20%"
-          width="140%"
-          height="140%"
-        >
-          <feGaussianBlur stdDeviation="14" />
-        </filter>
+        {/* Inner glass edge highlight */}
+        <linearGradient id={`${id}-inner-edge`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="rgba(255,255,255,0.55)" />
+          <stop offset="40%" stopColor="rgba(255,255,255,0.18)" />
+          <stop offset="100%" stopColor="rgba(255,255,255,0.04)" />
+        </linearGradient>
+
+        {/* Outer separation edge */}
+        <linearGradient id={`${id}-outer-edge`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="rgba(0,0,0,0.35)" />
+          <stop offset="100%" stopColor="rgba(0,0,0,0.18)" />
+        </linearGradient>
 
         {/* Soft floating shadow */}
         <filter
@@ -80,7 +82,7 @@ export function CalendarWorkoutCard({
           <feDropShadow
             dx="0"
             dy="18"
-            stdDeviation="30"
+            stdDeviation="28"
             floodColor="#000"
             floodOpacity="0.35"
           />
@@ -96,13 +98,12 @@ export function CalendarWorkoutCard({
         filter={`url(#${id}-shadow)`}
       />
 
-      {/* Card glass base (blurred background) */}
+      {/* Card base tint */}
       <rect
         width="360"
         height="460"
         rx="28"
         fill={`url(#${id}-bg)`}
-        filter={`url(#${id}-blur)`}
       />
 
       {/* Glass highlight overlay */}
@@ -111,6 +112,30 @@ export function CalendarWorkoutCard({
         height="460"
         rx="28"
         fill={`url(#${id}-glass)`}
+      />
+
+      {/* Inner highlight edge */}
+      <rect
+        x="1"
+        y="1"
+        width="358"
+        height="458"
+        rx="27"
+        fill="none"
+        stroke={`url(#${id}-inner-edge)`}
+        strokeWidth="1"
+      />
+
+      {/* Outer separation edge */}
+      <rect
+        x="0.5"
+        y="0.5"
+        width="359"
+        height="459"
+        rx="27.5"
+        fill="none"
+        stroke={`url(#${id}-outer-edge)`}
+        strokeWidth="1"
       />
 
       {/* TOP ROW */}
@@ -178,6 +203,7 @@ export function CalendarWorkoutCard({
       {description && (
         <foreignObject x="28" y="220" width="304" height="140">
           <div
+            xmlns="http://www.w3.org/1999/xhtml"
             style={{
               color: theme.secondary,
               fontSize: '17px',
