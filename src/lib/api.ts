@@ -60,8 +60,7 @@ const getBaseURL = () => {
         console.error("[API] CRITICAL: Running in Capacitor but VITE_API_URL was not set at build time!");
         console.error("[API] VITE_API_URL must be set when running 'npm run build' before syncing to iOS.");
         console.error("[API] Example: VITE_API_URL=https://your-backend.com npm run build");
-        console.error("[API] Falling back to http://localhost:8000 - API calls will likely fail!");
-        return "http://localhost:8000";
+        throw new Error("VITE_API_URL is required in Capacitor production builds. Please set it when building.");
       }
       console.log("[API] Using base URL (Capacitor, detected in PROD path):", apiUrl);
       return apiUrl;
@@ -73,7 +72,7 @@ const getBaseURL = () => {
     if (!apiUrl) {
       const errorMsg = "[API] CRITICAL: VITE_API_URL is required in production but is not set! " +
                       "Please configure VITE_API_URL in your deployment environment (e.g., Render dashboard). " +
-                      "Example: VITE_API_URL=https://virtus-ai.onrender.com";
+                      "Example: VITE_API_URL=https://api.athletespace.ai";
       console.error(errorMsg);
       console.error("[API] Current window.location.origin:", window.location.origin);
       console.error("[API] This will cause API calls to fail. Please set VITE_API_URL environment variable.");
