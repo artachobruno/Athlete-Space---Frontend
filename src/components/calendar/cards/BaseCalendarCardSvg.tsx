@@ -162,7 +162,7 @@ export function BaseCalendarCardSvg({
       )}
 
       {/* TITLE */}
-      <foreignObject x="28" y="100" width="304" height={isMonthView ? 70 : 88}>
+      <foreignObject x="28" y="80" width="315" height={isMonthView ? 70 : 88}>
         <div
           style={{
             color: theme.text,
@@ -181,7 +181,7 @@ export function BaseCalendarCardSvg({
 
       {/* DESCRIPTION */}
       {description && (
-        <foreignObject x="28" y="150" width="304" height={isMonthView ? 90 : 120}>
+        <foreignObject x="28" y="125" width="315" height={isMonthView ? 90 : 120}>
           <div
             style={{
               color: theme.secondary,
