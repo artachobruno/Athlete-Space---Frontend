@@ -1,65 +1,43 @@
 /**
- * WorkoutCard
+ * Calendar Card Adapter
  * 
- * Wrapper component that maps CalendarItem to WorkoutCardData
- * and renders the SVG card.
+ * Converts CalendarItem to card display props.
+ * This is the ONLY place where CalendarItem is accessed.
  */
 
-import { WorkoutCardSVG } from './WorkoutCardSVG';
-import type { WorkoutCardVariant, WorkoutCardData } from './types';
 import type { CalendarItem } from '@/types/calendar';
+import { normalizeCalendarSport, normalizeCalendarIntent } from '@/types/calendar';
 
-interface WorkoutCardProps {
-  item: CalendarItem;
-  onClick?: () => void;
-  width?: number;
-  height?: number;
-}
-
-export function WorkoutCard({ item, onClick, width, height }: WorkoutCardProps) {
-  const variant = deriveVariant(item);
-  const data = deriveCardData(item);
-
-  const cardContent = (
-    <div className="w-full h-full rounded-xl overflow-hidden">
-      <WorkoutCardSVG variant={variant} data={data} width={width} height={height} />
-    </div>
-  );
-
-  if (onClick) {
-    return (
-      <button
-        onClick={onClick}
-        className="w-full h-full rounded-xl overflow-hidden focus:outline-none focus:ring-2 focus:ring-primary/20 transition-transform hover:scale-[1.02]"
-        type="button"
-      >
-        {cardContent}
-      </button>
-    );
-  }
-
-  return cardContent;
+export interface CalendarCardProps {
+  variant: string;
+  duration: string;
+  workoutType: string;
+  title: string;
+  distance?: string;
+  pace?: string;
+  sparkline?: number[];
 }
 
 /**
- * Derives the card variant from a CalendarItem
+ * Derives card variant from CalendarItem
  */
-function deriveVariant(item: CalendarItem): WorkoutCardVariant {
+export function deriveCardVariant(item: CalendarItem): string {
   const isCompleted = item.kind === 'completed';
+  const sport = item.sport;
   
-  if (item.sport === 'strength') {
+  if (sport === 'strength') {
     return 'strength';
   }
   
-  if (item.sport === 'run' || item.sport === 'other') {
+  if (sport === 'run' || sport === 'other') {
     return isCompleted ? 'completed-running' : 'planned-running';
   }
   
-  if (item.sport === 'ride') {
+  if (sport === 'ride') {
     return isCompleted ? 'completed-cycling' : 'planned-cycling';
   }
   
-  if (item.sport === 'swim') {
+  if (sport === 'swim') {
     return isCompleted ? 'completed-swimming' : 'planned-swimming';
   }
   
@@ -68,9 +46,11 @@ function deriveVariant(item: CalendarItem): WorkoutCardVariant {
 }
 
 /**
- * Derives card data from a CalendarItem
+ * Converts CalendarItem to CalendarCardProps
  */
-function deriveCardData(item: CalendarItem): WorkoutCardData {
+export function toCalendarCardProps(item: CalendarItem): CalendarCardProps {
+  const variant = deriveCardVariant(item);
+  
   const intentLabels: Record<string, string> = {
     easy: 'Easy',
     steady: 'Steady',
@@ -81,17 +61,12 @@ function deriveCardData(item: CalendarItem): WorkoutCardData {
   };
 
   const workoutType = intentLabels[item.intent] || item.intent;
-  
-  // Format duration
   const duration = `${item.durationMin}m`;
   
-  // Format distance if available (would need to be added to CalendarItem)
-  const distance = undefined; // TODO: Add distance to CalendarItem if needed
-  
-  // Format pace from secondary metric if available
+  // Extract pace from secondary metric for completed activities
   let pace: string | undefined = undefined;
-  if (item.secondary && item.kind === 'completed') {
-    // Try to extract pace from secondary metric
+  if (item.kind === 'completed' && item.secondary) {
+    // Try to extract pace from secondary metric (e.g., "5:30 min/km")
     const paceMatch = item.secondary.match(/(\d+:\d+)/);
     if (paceMatch) {
       pace = paceMatch[1];
@@ -99,18 +74,18 @@ function deriveCardData(item: CalendarItem): WorkoutCardData {
   }
   
   // Generate mock sparkline for completed activities
-  // In production, this would come from actual activity data
+  // In production, this should come from actual activity data
   const sparkline = item.kind === 'completed' && item.compliance === 'complete'
     ? generateMockSparkline()
     : undefined;
 
   return {
+    variant,
     duration,
     workoutType,
-    distance,
-    pace,
     title: item.title || workoutType,
-    description: undefined,
+    distance: undefined, // TODO: Add distance to CalendarItem if needed
+    pace,
     sparkline,
   };
 }
@@ -124,7 +99,6 @@ function generateMockSparkline(): number[] {
   const data: number[] = [];
   
   for (let i = 0; i < points; i++) {
-    // Simulate a workout with warmup, main effort, cooldown
     const progress = i / (points - 1);
     let value: number;
     

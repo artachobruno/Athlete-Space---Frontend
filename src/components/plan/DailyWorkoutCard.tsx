@@ -8,6 +8,9 @@ import {
   CheckCircle2, XCircle, AlertCircle, Moon, RefreshCw
 } from 'lucide-react';
 import { useUnitSystem } from '@/hooks/useUnitSystem';
+import { CalendarWorkoutStack } from '@/components/calendar/cards/CalendarWorkoutStack';
+import { toCalendarCardProps } from '@/components/calendar/cards/calendarCardAdapter';
+import { normalizeCalendarSport, normalizeCalendarIntent } from '@/types/calendar';
 
 interface DailyWorkoutCardProps {
   date: Date;
@@ -62,6 +65,21 @@ export function DailyWorkoutCard({ date, dateId, workout, completed, status, dai
   const decisionInfo = dailyDecision ? decisionConfig[dailyDecision.decision] : null;
   const DecisionIcon = decisionInfo?.icon;
 
+  // Convert workout/activity to CalendarItem for card display
+  const calendarItem = workout || completed ? {
+    id: workout?.id || completed?.id || '',
+    kind: (completed || workout?.completed) ? 'completed' as const : 'planned' as const,
+    sport: normalizeCalendarSport(workout?.sport || completed?.sport),
+    intent: normalizeCalendarIntent(workout?.intent || 'aerobic'),
+    title: workout?.title || completed?.title || '',
+    startLocal: date.toISOString(),
+    durationMin: workout?.duration || completed?.duration || 0,
+    load: completed?.trainingLoad,
+    secondary: completed?.avgPace,
+    isPaired: false,
+    compliance: completed ? 'complete' as const : undefined,
+  } : null;
+
   return (
     <Card 
       id={dateId}
@@ -74,6 +92,17 @@ export function DailyWorkoutCard({ date, dateId, workout, completed, status, dai
       onClick={onClick}
     >
       <CardContent className="p-4">
+        {/* Calendar Card Preview */}
+        {calendarItem && (
+          <div className="mb-4 w-full max-w-[400px]">
+            <CalendarWorkoutStack
+              items={[calendarItem]}
+              variant="plan"
+              maxVisible={1}
+            />
+          </div>
+        )}
+        
         <div className="flex flex-col lg:flex-row lg:items-start gap-4">
           {/* Left: Day info */}
           <div className="lg:w-24 shrink-0">

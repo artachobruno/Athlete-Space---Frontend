@@ -12,7 +12,7 @@ import {
 } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { Loader2, Zap, Clock, Star } from 'lucide-react';
-import { WorkoutCardStack } from '@/components/workout-cards/WorkoutCardStack';
+import { CalendarWorkoutStack } from './cards/CalendarWorkoutStack';
 import { DayView } from './DayView';
 import type {
   CalendarItem,
@@ -246,7 +246,7 @@ export function MonthCalendar({ currentDate, onActivityClick }: MonthCalendarPro
             <div
               key={idx}
               className={cn(
-                'min-h-[140px] h-[140px] border-b border-r border-border flex flex-col',
+                'min-h-[140px] h-[140px] border-b border-r border-border flex flex-col calendar-day',
                 !isCurrentMonth && 'bg-muted/20',
                 isWeekend && isCurrentMonth && 'bg-muted/10',
                 idx % 7 === 6 && 'border-r-0',
@@ -272,24 +272,27 @@ export function MonthCalendar({ currentDate, onActivityClick }: MonthCalendarPro
               </div>
 
               {/* Workout Cards */}
-              <div className="flex-1 px-1 pb-1 overflow-hidden show-full-card">
-                {groupedItems.length > 0 && (
-                  <WorkoutCardStack
-                    items={groupedItems[0].items}
-                    onClick={handleCardClick}
-                    maxVisible={3}
-                  />
-                )}
-                {groupedItems.length > 1 && (
-                  <div className="mt-1">
-                    <button
-                      onClick={() => setSelectedDay(day)}
-                      className="w-full text-[10px] text-muted-foreground hover:text-foreground text-center py-0.5"
-                    >
-                      +{groupedItems.length - 1} more
-                    </button>
-                  </div>
-                )}
+              <div className="flex-1 calendar-day overflow-hidden">
+                <div className="calendar-card-wrapper">
+                  {groupedItems.length > 0 && (
+                    <CalendarWorkoutStack
+                      items={groupedItems[0].items}
+                      variant="month"
+                      onClick={handleCardClick}
+                      maxVisible={3}
+                    />
+                  )}
+                  {groupedItems.length > 1 && (
+                    <div className="absolute bottom-0 left-0 right-0 text-center">
+                      <button
+                        onClick={() => setSelectedDay(day)}
+                        className="text-[10px] text-white/80 hover:text-white bg-black/20 px-2 py-0.5 rounded backdrop-blur-sm"
+                      >
+                        +{groupedItems.length - 1} more
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
 
               {/* Daily Summary Footer */}

@@ -194,15 +194,21 @@
     }
   }
   
-  /* Workout card sizing - fill ≥90% of container */
-  .show-full-card {
-    display: flex;
-    flex-direction: column;
-    min-height: 0;
+  /* Calendar card layout */
+  .calendar-day {
+    padding: 6px;
   }
   
-  .show-full-card > * {
+  .calendar-card-wrapper {
+    position: relative;
+    width: 100%;
     height: 90%;
-    min-height: 90%;
+    min-height: 96px;
+  }
+  
+  .calendar-card {
+    width: 100%;
+    height: 100%;
+    border-radius: 16px;
   }
 }
