@@ -12,7 +12,7 @@ import {
 } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { Loader2, Zap, Clock, Star } from 'lucide-react';
-import { TrainingCard } from './TrainingCard';
+import { WorkoutCardStack } from '@/components/workout-cards/WorkoutCardStack';
 import { DayView } from './DayView';
 import type {
   CalendarItem,
@@ -45,22 +45,53 @@ function sessionToCalendarItem(session: CalendarSession, activities: CompletedAc
     a.planned_session_id === session.id
   );
   
-  const isCompleted = session.type === 'completed' || !!matchingActivity;
+  const isCompleted = session.type === 'completed' || session.status === 'completed' || !!matchingActivity;
+  
+  // Extract load from activity if available
+  const load = matchingActivity?.trainingLoad;
+  
+  // Extract secondary metric (pace, power, etc.) from activity
+  let secondary: string | undefined = undefined;
+  if (matchingActivity) {
+    if (matchingActivity.avgPace) {
+      secondary = matchingActivity.avgPace;
+    } else if (matchingActivity.avgPower) {
+      secondary = `${Math.round(matchingActivity.avgPower)}W`;
+    } else if (matchingActivity.avgHeartRate) {
+      secondary = `${matchingActivity.avgHeartRate} bpm`;
+    }
+  }
+  
+  // Build startLocal from date + time
+  let startLocal = session.date;
+  if (session.time) {
+    startLocal = `${session.date}T${session.time}:00`;
+  } else {
+    startLocal = `${session.date}T00:00:00`;
+  }
+  
+  // Determine compliance
+  let compliance: 'complete' | 'partial' | 'missed' | undefined = undefined;
+  if (isCompleted) {
+    if (matchingActivity) {
+      compliance = 'complete';
+    } else if (session.status === 'completed') {
+      compliance = 'complete';
+    }
+  }
   
   return {
     id: session.id,
     kind: isCompleted ? 'completed' : 'planned',
-    sport: normalizeCalendarSport(session.sport),
-    intent: normalizeCalendarIntent(session.intent),
+    sport: normalizeCalendarSport(session.type),
+    intent: normalizeCalendarIntent(session.intensity),
     title: session.title || '',
-    startLocal: session.date || new Date().toISOString(),
+    startLocal,
     durationMin: session.duration_minutes || 0,
-    load: session.load,
-    secondary: session.secondary_metric,
+    load,
+    secondary,
     isPaired: !!matchingActivity || !!session.workout_id,
-    compliance: matchingActivity 
-      ? (session.compliance as 'complete' | 'partial' | 'missed') || 'complete'
-      : undefined,
+    compliance,
   };
 }
 
@@ -149,12 +180,12 @@ export function MonthCalendar({ currentDate, onActivityClick }: MonthCalendarPro
         session ? {
           id: session.id,
           date: session.date || '',
-          sport: (session.sport || 'running') as 'running' | 'cycling' | 'swimming' | 'triathlon',
-          intent: (session.intent || 'aerobic') as 'aerobic' | 'threshold' | 'vo2' | 'endurance' | 'recovery',
+          sport: (normalizeCalendarSport(session.type) === 'run' ? 'running' : normalizeCalendarSport(session.type) === 'ride' ? 'cycling' : normalizeCalendarSport(session.type) === 'swim' ? 'swimming' : 'running') as 'running' | 'cycling' | 'swimming' | 'triathlon',
+          intent: (normalizeCalendarIntent(session.intensity) === 'easy' ? 'aerobic' : normalizeCalendarIntent(session.intensity) === 'tempo' ? 'threshold' : normalizeCalendarIntent(session.intensity) === 'intervals' ? 'vo2' : 'aerobic') as 'aerobic' | 'threshold' | 'vo2' | 'endurance' | 'recovery',
           title: session.title || '',
           description: '',
           duration: session.duration_minutes || 0,
-          completed: session.type === 'completed',
+          completed: session.type === 'completed' || session.status === 'completed',
         } : null,
         activity || null,
         session
@@ -215,7 +246,7 @@ export function MonthCalendar({ currentDate, onActivityClick }: MonthCalendarPro
             <div
               key={idx}
               className={cn(
-                'min-h-[140px] border-b border-r border-border flex flex-col',
+                'min-h-[140px] h-[140px] border-b border-r border-border flex flex-col',
                 !isCurrentMonth && 'bg-muted/20',
                 isWeekend && isCurrentMonth && 'bg-muted/10',
                 idx % 7 === 6 && 'border-r-0',
@@ -241,25 +272,24 @@ export function MonthCalendar({ currentDate, onActivityClick }: MonthCalendarPro
               </div>
 
               {/* Workout Cards */}
-              <div className="flex-1 px-1.5 pb-1 overflow-hidden">
-                <div className="space-y-1 max-h-[70px] overflow-hidden">
-                  {groupedItems.slice(0, 2).map((group, gIdx) => (
-                    <TrainingCard
-                      key={gIdx}
-                      group={group}
-                      variant="compact"
-                      onClick={handleCardClick}
-                    />
-                  ))}
-                  {groupedItems.length > 2 && (
+              <div className="flex-1 px-1 pb-1 overflow-hidden show-full-card">
+                {groupedItems.length > 0 && (
+                  <WorkoutCardStack
+                    items={groupedItems[0].items}
+                    onClick={handleCardClick}
+                    maxVisible={3}
+                  />
+                )}
+                {groupedItems.length > 1 && (
+                  <div className="mt-1">
                     <button
                       onClick={() => setSelectedDay(day)}
                       className="w-full text-[10px] text-muted-foreground hover:text-foreground text-center py-0.5"
                     >
-                      +{groupedItems.length - 2} more
+                      +{groupedItems.length - 1} more
                     </button>
-                  )}
-                </div>
+                  </div>
+                )}
               </div>
 
               {/* Daily Summary Footer */}

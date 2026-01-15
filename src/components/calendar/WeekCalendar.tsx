@@ -9,7 +9,7 @@ import {
 } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { Loader2, Zap, Clock, TrendingUp, Share2, Copy, Download, Sparkles } from 'lucide-react';
-import { TrainingCard } from './TrainingCard';
+import { WorkoutCardStack } from '@/components/workout-cards/WorkoutCardStack';
 import { DayView } from './DayView';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -432,12 +432,13 @@ export function WeekCalendar({ currentDate, onActivityClick }: WeekCalendarProps
                 ) : (
                   <div className="space-y-2">
                     {groupedItems.map((group, gIdx) => (
-                      <TrainingCard
-                        key={gIdx}
-                        group={group}
-                        variant="expanded"
-                        onClick={handleCardClick}
-                      />
+                      <div key={gIdx} className="h-[130px]">
+                        <WorkoutCardStack
+                          items={group.items}
+                          onClick={handleCardClick}
+                          maxVisible={1}
+                        />
+                      </div>
                     ))}
                   </div>
                 )}

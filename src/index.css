@@ -193,4 +193,16 @@
       padding-top: 0;
     }
   }
+  
+  /* Workout card sizing - fill ≥90% of container */
+  .show-full-card {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+  }
+  
+  .show-full-card > * {
+    height: 90%;
+    min-height: 90%;
+  }
 }

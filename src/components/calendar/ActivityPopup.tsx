@@ -11,12 +11,39 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { fetchTrainingLoad, type CalendarSession, type ProposalOnlyResponse, exportWorkoutToFIT } from '@/lib/api';
 import { fetchStructuredWorkout } from '@/api/workouts';
 import { useMemo, useState } from 'react';
+
+// Generate mock sparkline for completed activities
+function generateMockSparkline(): number[] {
+  const points = 20;
+  const data: number[] = [];
+  
+  for (let i = 0; i < points; i++) {
+    const progress = i / (points - 1);
+    let value: number;
+    
+    if (progress < 0.2) {
+      value = 0.3 + (progress / 0.2) * 0.2;
+    } else if (progress < 0.8) {
+      value = 0.5 + Math.sin(progress * Math.PI * 4) * 0.3 + 0.2;
+    } else {
+      value = 0.5 - ((progress - 0.8) / 0.2) * 0.3;
+    }
+    
+    value = Math.max(0, Math.min(1, value));
+    data.push(value);
+  }
+  
+  return data;
+}
 import { getTssForDate, enrichActivitiesWithTss } from '@/lib/tss-utils';
 import { toast } from '@/hooks/use-toast';
 import { ConfirmationDialog } from '@/components/confirmation/ConfirmationDialog';
 import { checkForProposalResponse } from '@/lib/confirmation-handler';
 import { useUpdateSessionStatus } from '@/hooks/useCalendarMutations';
 import { useAuthenticatedQuery } from '@/hooks/useAuthenticatedQuery';
+import { WorkoutCardSVG } from '@/components/workout-cards/WorkoutCardSVG';
+import type { WorkoutCardVariant, WorkoutCardData } from '@/components/workout-cards/types';
+import { normalizeCalendarSport, normalizeCalendarIntent } from '@/types/calendar';
 
 interface ActivityPopupProps {
   open: boolean;
@@ -321,6 +348,67 @@ export function ActivityPopup({
   // PHASE F1: Remove defensive checks - assume workout or activity always exists
   // If this breaks, it's a backend bug
 
+  // Convert to card data for visual display
+  const cardData = useMemo((): { variant: WorkoutCardVariant; data: WorkoutCardData } | null => {
+    if (!workout && !activity) return null;
+
+    const isCompleted = !!activity || workout?.completed;
+    const sport = normalizeCalendarSport(workout?.sport || activity?.sport);
+    const intent = normalizeCalendarIntent(workout?.intent || 'aerobic');
+
+    let variant: WorkoutCardVariant;
+    if (sport === 'strength') {
+      variant = 'strength';
+    } else if (sport === 'run' || sport === 'other') {
+      variant = isCompleted ? 'completed-running' : 'planned-running';
+    } else if (sport === 'ride') {
+      variant = isCompleted ? 'completed-cycling' : 'planned-cycling';
+    } else if (sport === 'swim') {
+      variant = isCompleted ? 'completed-swimming' : 'planned-swimming';
+    } else {
+      variant = isCompleted ? 'completed-running' : 'planned-running';
+    }
+
+    const intentLabels: Record<string, string> = {
+      easy: 'Easy',
+      steady: 'Steady',
+      tempo: 'Tempo',
+      intervals: 'Intervals',
+      long: 'Long',
+      rest: 'Rest',
+    };
+
+    const workoutType = intentLabels[intent] || intent;
+    const duration = `${workout?.duration || activity?.duration || 0}m`;
+    
+    let distance: string | undefined = undefined;
+    if (workout?.distance || activity?.distance) {
+      const dist = convertDistance((workout?.distance || activity?.distance) || 0);
+      distance = `${dist.value.toFixed(1)}${dist.unit}`;
+    }
+
+    let pace: string | undefined = undefined;
+    if (activity?.avgPace && isCompleted) {
+      pace = formatPace(activity.avgPace);
+    }
+
+    // Generate sparkline for completed activities
+    const sparkline = isCompleted ? generateMockSparkline() : undefined;
+
+    return {
+      variant,
+      data: {
+        duration,
+        workoutType,
+        distance,
+        pace,
+        title: workout?.title || activity?.title || workoutType,
+        description: workout?.description,
+        sparkline,
+      },
+    };
+  }, [workout, activity, convertDistance, formatPace]);
+
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
@@ -355,6 +443,20 @@ export function ActivityPopup({
             </div>
           </div>
         </DialogHeader>
+
+        {/* Workout Card Visual */}
+        {cardData && (
+          <div className="mt-4 flex justify-center">
+            <div className="w-full max-w-[400px] h-[260px]">
+              <WorkoutCardSVG
+                variant={cardData.variant}
+                data={cardData.data}
+                width={400}
+                height={260}
+              />
+            </div>
+          </div>
+        )}
 
         <div className="space-y-4 mt-4">
           {/* Metrics row */}
