@@ -1,4 +1,5 @@
 import type { CalendarItem } from '@/types/calendar';
+import type { BaseCardProps } from './BaseCalendarCardSvg';
 
 export interface CalendarCardProps {
   variant: string;
@@ -10,6 +11,11 @@ export interface CalendarCardProps {
   description?: string;
   sparkline?: number[];
 }
+
+export type CalendarCardRenderModel =
+  | { cardType: 'session'; props: BaseCardProps }
+  | { cardType: 'activity'; props: BaseCardProps }
+  | { cardType: 'plan_day'; props: BaseCardProps };
 
 /**
  * Formats duration in minutes to human-readable string
@@ -105,4 +111,74 @@ function generateMockSparkline(): number[] {
   return Array.from({ length: 20 }, (_, i) =>
     Math.max(0, Math.min(1, 0.5 + Math.sin(i / 2) * 0.3))
   );
+}
+
+function toSessionCardProps(item: CalendarItem): BaseCardProps {
+  const variant = deriveCardVariant(item);
+  const p = toCalendarCardProps(item);
+  const secondaryText =
+    p.distance || p.pace ? [p.distance, p.pace].filter(Boolean).join(' · ') : undefined;
+
+  return {
+    variant,
+    topLeft: p.duration,
+    topRight: p.workoutType,
+    metricsLabel: secondaryText ? 'DISTANCE · AVG PACE' : undefined,
+    metricsValue: secondaryText,
+    title: p.title,
+    description: p.description,
+    sparkline: p.sparkline,
+  };
+}
+
+function toActivityCardProps(item: CalendarItem): BaseCardProps {
+  const variant = deriveCardVariant(item);
+  const p = toCalendarCardProps(item);
+  const secondaryText =
+    p.distance || p.pace ? [p.distance, p.pace].filter(Boolean).join(' · ') : undefined;
+
+  return {
+    variant,
+    topLeft: p.duration,
+    topRight: p.workoutType,
+    metricsLabel: secondaryText ? 'DISTANCE · AVG PACE' : undefined,
+    metricsValue: secondaryText,
+    title: p.title,
+    description: p.description,
+    sparkline: p.sparkline,
+  };
+}
+
+function toTrainingDayCardProps(item: CalendarItem): BaseCardProps {
+  const variant = deriveCardVariant(item);
+  const p = toCalendarCardProps(item);
+
+  return {
+    variant,
+    topLeft: p.duration,
+    topRight: p.workoutType,
+    metricsLabel: undefined,
+    metricsValue: undefined,
+    title: p.title,
+    description: p.description,
+    sparkline: null,
+    titleClampLines: 2,
+    descClampLines: 4,
+  };
+}
+
+export function toCalendarCardRenderModel(item: CalendarItem): CalendarCardRenderModel {
+  if (item.kind === 'completed') {
+    return {
+      cardType: 'activity',
+      props: toActivityCardProps(item),
+    };
+  }
+
+  // For now, treat all planned items as sessions
+  // TODO: Add plan_day detection when that feature is added
+  return {
+    cardType: 'session',
+    props: toSessionCardProps(item),
+  };
 }

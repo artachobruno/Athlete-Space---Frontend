@@ -111,7 +111,7 @@ export function ConfirmationDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px]">
+      <DialogContent className="glass-card sm:max-w-[600px] rounded-2xl">
         <DialogHeader>
           <DialogTitle>Confirm {actionText.charAt(0).toUpperCase() + actionText.slice(1)} {resourceText}</DialogTitle>
           <DialogDescription>

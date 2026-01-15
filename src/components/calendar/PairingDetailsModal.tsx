@@ -211,7 +211,7 @@ export function PairingDetailsModal({
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="sm:max-w-[500px]">
+        <DialogContent className="glass-card sm:max-w-[500px] rounded-2xl">
           <DialogHeader>
             <div className="flex items-center gap-3">
               <div className={cn(

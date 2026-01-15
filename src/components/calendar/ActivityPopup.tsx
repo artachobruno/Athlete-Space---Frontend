@@ -348,7 +348,7 @@ export function ActivityPopup({
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px] bg-card border-border">
+      <DialogContent className="glass-card sm:max-w-[500px] rounded-2xl">
         <DialogHeader>
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-lg bg-muted">

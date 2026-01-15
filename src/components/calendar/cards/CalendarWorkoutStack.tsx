@@ -1,5 +1,7 @@
 import { CalendarWorkoutCard } from './CalendarWorkoutCard';
-import { toCalendarCardProps } from './calendarCardAdapter';
+import { CalendarActivityCard } from './CalendarActivityCard';
+import { CalendarTrainingDayCard } from './CalendarTrainingDayCard';
+import { toCalendarCardRenderModel } from './calendarCardAdapter';
 import type { CalendarItem } from '@/types/calendar';
 
 interface Props {
@@ -87,7 +89,19 @@ export function CalendarWorkoutStack({
                     }
               }
             >
-              <CalendarWorkoutCard {...toCalendarCardProps(item)} />
+              {(() => {
+                const model = toCalendarCardRenderModel(item);
+
+                if (model.cardType === 'session') {
+                  return <CalendarWorkoutCard {...model.props} />;
+                }
+
+                if (model.cardType === 'activity') {
+                  return <CalendarActivityCard {...model.props} />;
+                }
+
+                return <CalendarTrainingDayCard {...model.props} />;
+              })()}
             </div>
           </div>
         );

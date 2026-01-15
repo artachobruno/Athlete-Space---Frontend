@@ -2,6 +2,9 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Import glass styles */
+@import "./styles/glass.css";
+
 /* AI Training Coach Design System
    Calm, minimalist, performance-focused
    Light-first with optional dark mode

@@ -259,7 +259,7 @@ export function AddSessionModal({ open, onOpenChange, initialDate, onSuccess }: 
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className="glass-card sm:max-w-[500px] rounded-2xl">
         <DialogHeader>
           <DialogTitle>Add Session</DialogTitle>
           <DialogDescription>

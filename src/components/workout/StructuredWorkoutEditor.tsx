@@ -195,7 +195,7 @@ export function StructuredWorkoutEditor({
   const hasErrors = Object.keys(errors).length > 0
 
   return (
-    <div className="space-y-4">
+    <div className="glass-card rounded-xl p-6 space-y-4">
       <Alert>
         <AlertDescription>
           Editing steps directly. Groups are recalculated automatically after saving.
