@@ -277,10 +277,11 @@ function generateMockActivityStreams(activity: CompletedActivity): ActivityStrea
 }
 // Axios instance configured for CORS
 // - withCredentials: true enables sending cookies/credentials with cross-origin requests
-// - Backend CORS is configured to allow requests from https://pace-ai.onrender.com
+// - Backend CORS is configured to allow requests from https://athletespace.ai and other origins
+// - Cookies are sent automatically with withCredentials: true
 export const api = axios.create({
   baseURL: getBaseURL(),
-  withCredentials: true, // Required for CORS with credentials
+  withCredentials: true, // Required for CORS with credentials - sends cookies cross-domain
   timeout: 30000,
 });
 
