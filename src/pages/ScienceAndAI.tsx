@@ -1,5 +1,6 @@
 import { PublicLayout } from '@/components/layout/PublicLayout';
 import { GlassCard } from '@/components/ui/GlassCard';
+import { CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Brain, Activity, LineChart, ShieldCheck } from 'lucide-react';
 
 export default function ScienceAndAI() {
@@ -93,7 +94,7 @@ export default function ScienceAndAI() {
           </GlassCard>
 
           {/* Section 4 */}
-          <Card className="bg-primary/5 border-primary/20">
+          <GlassCard className="bg-primary/5 border-primary/20">
             <CardContent className="pt-6 text-center">
               <p className="font-medium text-primary">
                 Bottom line
