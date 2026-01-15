@@ -74,24 +74,33 @@ export function CalendarWorkoutStack({
           >
             <div
               className="flex items-center justify-center w-full h-full"
-              style={{
-                aspectRatio: '360 / 460',
-                maxWidth: '100%',
-                maxHeight: '100%',
-              }}
+              style={
+                variant === 'month'
+                  ? {
+                      width: '100%',
+                      height: '100%',
+                    }
+                  : {
+                      aspectRatio: '360 / 460',
+                      maxWidth: '100%',
+                      maxHeight: '100%',
+                    }
+              }
             >
               {(() => {
                 const model = toCalendarCardRenderModel(item);
+                const fillMode = variant === 'month' ? 'fill' : 'fit';
+                const propsWithFill = { ...model.props, fillMode };
 
                 if (model.cardType === 'session') {
-                  return <CalendarWorkoutCard {...model.props} />;
+                  return <CalendarWorkoutCard {...propsWithFill} />;
                 }
 
                 if (model.cardType === 'activity') {
-                  return <CalendarActivityCard {...model.props} />;
+                  return <CalendarActivityCard {...propsWithFill} />;
                 }
 
-                return <CalendarTrainingDayCard {...model.props} />;
+                return <CalendarTrainingDayCard {...propsWithFill} />;
               })()}
             </div>
           </div>

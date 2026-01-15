@@ -12,6 +12,7 @@ export interface BaseCardProps {
   sparkline?: number[] | null;
   titleClampLines?: number;
   descClampLines?: number;
+  fillMode?: 'fit' | 'fill';
 }
 
 export function BaseCalendarCardSvg({
@@ -25,6 +26,7 @@ export function BaseCalendarCardSvg({
   sparkline,
   titleClampLines = 2,
   descClampLines = 3,
+  fillMode = 'fit',
 }: BaseCardProps) {
   const theme = CALENDAR_CARD_THEMES[variant] ?? CALENDAR_CARD_THEMES['completed-running'];
 
@@ -35,13 +37,14 @@ export function BaseCalendarCardSvg({
   const id = `calendar-card-${variant}`;
   const filterId = `${id}-liquid-glass`;
   const displayTitle = toTitleCase(title);
+  const preserveAspectRatio = fillMode === 'fill' ? 'xMidYMid slice' : 'xMidYMid meet';
 
   return (
     <svg
       width="100%"
       height="100%"
       viewBox="0 0 360 460"
-      preserveAspectRatio="xMidYMid meet"
+      preserveAspectRatio={preserveAspectRatio}
       xmlns="http://www.w3.org/2000/svg"
       style={{
         display: 'block',
