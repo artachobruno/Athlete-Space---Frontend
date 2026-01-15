@@ -53,16 +53,11 @@ export async function fetchCalendarMonth(month: Date): Promise<MonthCalendarData
   );
   const workouts = monthSessions.filter((s) => s.status === 'completed');
 
-  // Fetch activities for the month
-  // Note: fetchActivities doesn't support date filtering, so we fetch all and filter client-side
-  // In a production app, you'd want a backend endpoint like GET /activities?start=YYYY-MM-DD&end=YYYY-MM-DD
-  const allActivities = await fetchActivities({ limit: 100 });
-  
-  // Filter activities to the month range
-  const monthActivities = (allActivities || []).filter((activity) => {
-    if (!activity.date) return false;
-    const activityDate = parseISO(activity.date);
-    return isWithinInterval(activityDate, { start: monthStart, end: monthEnd });
+  // Fetch activities for the month using date range filtering
+  const monthActivities = await fetchActivities({ 
+    start: monthStartStr,
+    end: monthEndStr,
+    limit: 1000 // High limit to get all activities in month range
   });
 
   return {

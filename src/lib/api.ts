@@ -129,7 +129,7 @@ export interface CalendarSession {
   duration_minutes: number | null;
   distance_km: number | null;
   intensity: string | null;
-  status: "planned" | "completed" | "skipped" | "cancelled";
+  status: "planned" | "completed" | "skipped" | "cancelled" | "missed";
   notes: string | null;
   // PHASE F3: Calendar API should return workout_id
   workout_id?: string | null;
@@ -1140,7 +1140,7 @@ function normalizeActivityDate(dateField: unknown): string {
  * 
  * In preview mode: Returns mock activities data for visualization on Lovable.
  */
-export const fetchActivities = async (params?: { limit?: number; offset?: number }): Promise<import("../types").CompletedActivity[]> => {
+export const fetchActivities = async (params?: { limit?: number; offset?: number; start?: string; end?: string }): Promise<import("../types").CompletedActivity[]> => {
   // Check if we're in preview mode (Lovable preview or VITE_PREVIEW_MODE)
   if (isPreviewMode()) {
     console.log("[API] Preview mode: Returning mock activities");
@@ -1163,10 +1163,10 @@ export const fetchActivities = async (params?: { limit?: number; offset?: number
   
   console.log("[API] Fetching activities with params:", params);
   try {
-    // Ensure limit doesn't exceed backend maximum of 100
+    // Ensure limit doesn't exceed backend maximum of 1000 (increased from 100)
     const safeParams = params ? {
       ...params,
-      limit: params.limit && params.limit > 100 ? 100 : params.limit,
+      limit: params.limit && params.limit > 1000 ? 1000 : params.limit,
     } : params;
     
     const response = await api.get("/activities", { params: safeParams });

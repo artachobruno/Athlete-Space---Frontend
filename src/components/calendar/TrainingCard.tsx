@@ -240,6 +240,13 @@ export function TrainingCard({ group, variant = 'compact', onClick }: TrainingCa
                   ✓ Done
                 </span>
               )}
+              
+              {/* Show MISSED label for planned sessions that are missed (past date, no activity) */}
+              {primaryItem.kind === 'planned' && primaryItem.compliance === 'missed' && (
+                <span className="text-[10px] font-medium text-destructive bg-destructive/10 rounded-full px-2 py-0.5">
+                  MISSED
+                </span>
+              )}
             </div>
             
             {primaryItem.title && primaryItem.title !== intentLabels[primaryItem.intent] && (

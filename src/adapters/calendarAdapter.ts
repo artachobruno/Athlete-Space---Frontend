@@ -44,8 +44,16 @@ export function toCalendarItem(
     (session.workout_id && a.workout_id === session.workout_id)
   );
 
-  // Determine compliance for completed items
-  const compliance: CalendarCompliance | undefined = isCompleted ? 'complete' : undefined;
+  // Determine compliance
+  // If status is 'missed', set compliance='missed' even if kind is 'planned'
+  // This allows UI to show "MISSED" label without changing card base kind
+  let compliance: CalendarCompliance | undefined = undefined;
+  if (session.status === 'missed') {
+    // Status can be 'missed' from reconciliation
+    compliance = 'missed';
+  } else if (isCompleted) {
+    compliance = 'complete';
+  }
 
   // Extract load from activity if available, otherwise undefined
   const load = matchedActivity?.trainingLoad;
