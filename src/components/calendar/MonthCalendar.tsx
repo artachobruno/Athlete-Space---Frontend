@@ -28,6 +28,7 @@ import { fetchCalendarMonth, normalizeCalendarMonth } from '@/lib/calendar-month
 import { useAuthenticatedQuery } from '@/hooks/useAuthenticatedQuery';
 import type { PlannedWorkout, CompletedActivity } from '@/types';
 import type { CalendarSession } from '@/lib/api';
+import { toCalendarItem } from '@/adapters/calendarAdapter';
 
 /**
  * MonthCalendar Component
@@ -64,12 +65,12 @@ export function MonthCalendar({ currentDate, onActivityClick }: {
       const items: CalendarItem[] = [];
 
       for (const session of day.plannedSessions) {
-        items.push(sessionToCalendarItem(session, monthData.completed_activities));
+        items.push(toCalendarItem(session, monthData.completed_activities));
       }
 
       for (const workout of day.workouts) {
         if (!items.some(i => i.id === workout.id)) {
-          items.push(sessionToCalendarItem(workout, monthData.completed_activities));
+          items.push(toCalendarItem(workout, monthData.completed_activities));
         }
       }
 
