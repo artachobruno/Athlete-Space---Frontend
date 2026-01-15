@@ -1,4 +1,4 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { GlassCard } from '@/components/ui/GlassCard';
 import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer, ReferenceLine, Area, AreaChart } from 'recharts';
 
 interface AdherenceChartProps {
@@ -96,6 +96,6 @@ export function AdherenceChart({ data }: AdherenceChartProps) {
           </ResponsiveContainer>
         </div>
       </CardContent>
-    </Card>
+    </GlassCard>
   );
 }

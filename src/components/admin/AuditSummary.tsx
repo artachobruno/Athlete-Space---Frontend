@@ -1,4 +1,5 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { GlassCard } from '@/components/ui/GlassCard';
+import { CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CheckCircle, FileCheck, Wrench } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -37,7 +38,7 @@ export function AuditSummary({ tracedPct, confirmedWritesPct, auditedToolsPct }:
   };
 
   return (
-    <Card>
+    <GlassCard>
       <CardHeader>
         <CardTitle className="text-sm font-medium">Audit & Traceability</CardTitle>
       </CardHeader>
@@ -62,6 +63,6 @@ export function AuditSummary({ tracedPct, confirmedWritesPct, auditedToolsPct }:
           })}
         </div>
       </CardContent>
-    </Card>
+    </GlassCard>
   );
 }

@@ -1,4 +1,4 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { GlassCard } from '@/components/ui/GlassCard';
 import { PlanItem } from '@/lib/api';
 import { cn } from '@/lib/utils';
 
@@ -44,6 +44,6 @@ export function PlanList({ planItems }: PlanListProps) {
           ))}
         </ul>
       </CardContent>
-    </Card>
+    </GlassCard>
   );
 }

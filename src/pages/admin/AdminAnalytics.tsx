@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { AppLayout } from '@/components/layout/AppLayout';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { GlassCard } from '@/components/ui/GlassCard';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
@@ -160,7 +160,7 @@ export default function AdminAnalytics() {
         </div>
 
         {/* SQL Input */}
-        <Card>
+        <GlassCard>
           <CardHeader className="pb-3">
             <CardTitle className="text-base font-medium flex items-center gap-2">
               <Database className="h-4 w-4" />
@@ -199,7 +199,7 @@ export default function AdminAnalytics() {
               </Button>
             </div>
           </CardContent>
-        </Card>
+        </GlassCard>
 
         {/* Error Display */}
         {error && (
@@ -216,7 +216,7 @@ export default function AdminAnalytics() {
 
         {/* Results Table */}
         {result && (
-          <Card>
+          <GlassCard>
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-base font-medium">Results</CardTitle>
@@ -260,7 +260,7 @@ export default function AdminAnalytics() {
                 </div>
               )}
             </CardContent>
-          </Card>
+          </GlassCard>
         )}
       </div>
     </AppLayout>

@@ -1,5 +1,5 @@
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import { GlassCard } from '@/components/ui/GlassCard';
 import { Bot, ArrowRight } from 'lucide-react';
 import type { Sport } from '@/types';
 
@@ -54,7 +54,7 @@ export function CoachSummaryCard({ data, onContinue }: CoachSummaryCardProps) {
             <ArrowRight className="h-4 w-4 ml-2" />
           </Button>
         </CardContent>
-      </Card>
+      </GlassCard>
     </div>
   );
 }

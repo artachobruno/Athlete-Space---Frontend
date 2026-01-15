@@ -1,4 +1,5 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { GlassCard } from '@/components/ui/GlassCard';
+import { CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { PieChart, Pie, Cell, ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, Legend } from "recharts";
 import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "@/components/ui/chart";
 
@@ -63,7 +64,7 @@ export function DecisionAnalytics({ intentDistribution, confidence, outcomes }: 
   return (
     <div className="grid gap-4 md:grid-cols-3">
       {/* Intent Distribution */}
-      <Card>
+      <GlassCard>
         <CardHeader className="pb-2">
           <CardTitle className="text-sm font-medium">Intent Distribution</CardTitle>
         </CardHeader>
@@ -88,10 +89,10 @@ export function DecisionAnalytics({ intentDistribution, confidence, outcomes }: 
             </PieChart>
           </ChartContainer>
         </CardContent>
-      </Card>
+      </GlassCard>
 
       {/* Confidence Buckets */}
-      <Card>
+      <GlassCard>
         <CardHeader className="pb-2">
           <CardTitle className="text-sm font-medium">Confidence Buckets</CardTitle>
         </CardHeader>
@@ -109,10 +110,10 @@ export function DecisionAnalytics({ intentDistribution, confidence, outcomes }: 
             </BarChart>
           </ChartContainer>
         </CardContent>
-      </Card>
+      </GlassCard>
 
       {/* Outcome Summary */}
-      <Card>
+      <GlassCard>
         <CardHeader className="pb-2">
           <CardTitle className="text-sm font-medium">Outcome Summary</CardTitle>
         </CardHeader>
@@ -137,7 +138,7 @@ export function DecisionAnalytics({ intentDistribution, confidence, outcomes }: 
             </PieChart>
           </ChartContainer>
         </CardContent>
-      </Card>
+      </GlassCard>
     </div>
   );
 }

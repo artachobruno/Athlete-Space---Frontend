@@ -1,4 +1,5 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { GlassCard } from '@/components/ui/GlassCard';
+import { CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { MessageSquare, FileText, Minimize2 } from "lucide-react";
 
 interface ConversationHealthPanelProps {
@@ -30,7 +31,7 @@ export function ConversationHealthPanel({ avgTurns, summariesPerConv, compressio
   ];
 
   return (
-    <Card>
+    <GlassCard>
       <CardHeader>
         <CardTitle className="text-sm font-medium">Conversation Health</CardTitle>
       </CardHeader>
@@ -48,6 +49,6 @@ export function ConversationHealthPanel({ avgTurns, summariesPerConv, compressio
           })}
         </div>
       </CardContent>
-    </Card>
+    </GlassCard>
   );
 }

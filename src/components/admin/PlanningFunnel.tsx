@@ -1,4 +1,5 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { GlassCard } from '@/components/ui/GlassCard';
+import { CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowDown } from "lucide-react";
 
 interface PlanningFunnelProps {
@@ -29,7 +30,7 @@ export function PlanningFunnel({ funnel }: PlanningFunnelProps) {
   };
 
   return (
-    <Card>
+    <GlassCard>
       <CardHeader>
         <CardTitle className="text-sm font-medium">Planning Funnel</CardTitle>
       </CardHeader>
@@ -68,6 +69,6 @@ export function PlanningFunnel({ funnel }: PlanningFunnelProps) {
           })}
         </div>
       </CardContent>
-    </Card>
+    </GlassCard>
   );
 }

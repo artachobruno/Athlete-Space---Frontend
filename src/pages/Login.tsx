@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Card, CardContent } from '@/components/ui/card';
+import { GlassCard } from '@/components/ui/GlassCard';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -332,7 +332,7 @@ export default function Login() {
                 </Link>
               </div>
             </CardContent>
-          </Card>
+          </GlassCard>
 
           <p className="text-center text-sm text-muted-foreground">
             Need help?{' '}

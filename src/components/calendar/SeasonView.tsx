@@ -312,7 +312,7 @@ export function SeasonView({ currentDate }: SeasonViewProps) {
               </div>
             )}
           </div>
-        </Card>
+        </GlassCard>
       )}
 
       {/* Legend */}
@@ -450,7 +450,7 @@ export function SeasonView({ currentDate }: SeasonViewProps) {
                   <div className="text-xs text-muted-foreground">CTL</div>
                 </div>
               </div>
-            </Card>
+            </GlassCard>
           );
         })}
       </div>

@@ -1,4 +1,5 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { GlassCard } from '@/components/ui/GlassCard';
+import { CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { TrendingUp, TrendingDown, Minus } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -25,7 +26,7 @@ export function ComplianceOverview({ executedPct, missedReasons, trend }: Compli
   ];
 
   return (
-    <Card>
+    <GlassCard>
       <CardHeader>
         <CardTitle className="text-sm font-medium">Calendar Compliance</CardTitle>
       </CardHeader>
@@ -64,6 +65,6 @@ export function ComplianceOverview({ executedPct, missedReasons, trend }: Compli
           </div>
         </div>
       </CardContent>
-    </Card>
+    </GlassCard>
   );
 }

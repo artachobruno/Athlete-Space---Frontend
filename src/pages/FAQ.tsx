@@ -1,5 +1,5 @@
 import { PublicLayout } from '@/components/layout/PublicLayout';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { GlassCard } from '@/components/ui/GlassCard';
 import { HelpCircle, ChevronDown, ChevronUp } from 'lucide-react';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
@@ -123,7 +123,7 @@ function FAQItemComponent({ item, isOpen, onToggle }: { item: FAQItem; isOpen: b
           </div>
         </CardContent>
       )}
-    </Card>
+    </GlassCard>
   );
 }
 
@@ -174,7 +174,7 @@ export default function FAQ() {
               </p>
             </div>
           </CardContent>
-        </Card>
+        </GlassCard>
       </div>
     </PublicLayout>
   );

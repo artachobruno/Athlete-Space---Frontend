@@ -1,4 +1,4 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { GlassCard } from '@/components/ui/GlassCard';
 import {
   ChartContainer,
   ChartTooltip,
@@ -24,7 +24,7 @@ const chartConfig = {
 
 export function TrafficChart({ data }: TrafficChartProps) {
   return (
-    <Card>
+    <GlassCard>
       <CardHeader className="pb-2">
         <CardTitle className="text-base font-medium">Request Volume</CardTitle>
         <p className="text-xs text-muted-foreground">Requests per minute (last 60 min)</p>
@@ -56,6 +56,6 @@ export function TrafficChart({ data }: TrafficChartProps) {
           </LineChart>
         </ChartContainer>
       </CardContent>
-    </Card>
+    </GlassCard>
   );
 }

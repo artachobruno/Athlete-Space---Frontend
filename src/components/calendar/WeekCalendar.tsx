@@ -12,7 +12,8 @@ import { Loader2, Zap, Clock, TrendingUp, Share2, Copy, Download, Sparkles } fro
 import { CalendarWorkoutStack } from './cards/CalendarWorkoutStack';
 import { DayView } from './DayView';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import { GlassCard } from '@/components/ui/GlassCard';
+import { CardContent } from '@/components/ui/card';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -339,7 +340,7 @@ export function WeekCalendar({ currentDate, onActivityClick }: WeekCalendarProps
   return (
     <div className="space-y-4">
       {/* Weekly Summary Card */}
-      <Card className="border-0 shadow-sm bg-gradient-to-br from-muted/30 to-muted/10">
+      <GlassCard className="border-0 shadow-sm bg-gradient-to-br from-muted/30 to-muted/10">
         <CardContent className="py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-8">
@@ -411,7 +412,7 @@ export function WeekCalendar({ currentDate, onActivityClick }: WeekCalendarProps
             </div>
           </div>
         </CardContent>
-      </Card>
+      </GlassCard>
 
       {/* Week Grid */}
       <div className="grid grid-cols-7 gap-3">

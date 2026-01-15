@@ -1,4 +1,5 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { GlassCard } from '@/components/ui/GlassCard';
+import { CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { fetchActivities, fetchTrainingLoad, syncActivitiesNow } from '@/lib/api';
 import { format, parseISO } from 'date-fns';
 import { Bike, Footprints, Waves, Loader2, RefreshCw } from 'lucide-react';
@@ -119,7 +120,7 @@ export function RecentActivitiesCard() {
   }, [activities, trainingLoadData]);
 
   return (
-    <Card>
+    <GlassCard>
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg">Recent Activities</CardTitle>
@@ -198,6 +199,6 @@ export function RecentActivitiesCard() {
           </div>
         )}
       </CardContent>
-    </Card>
+    </GlassCard>
   );
 }

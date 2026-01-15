@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card; import { CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card' } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
@@ -208,7 +208,7 @@ export function IntegrationsSection() {
   });
 
   return (
-    <Card>
+    <GlassCard>
       <CardHeader>
         <div className="flex items-center gap-3">
           <div className="p-2 bg-accent/10 rounded-lg">
@@ -241,7 +241,7 @@ export function IntegrationsSection() {
           </div>
         )}
       </CardContent>
-    </Card>
+    </GlassCard>
   );
 }
 

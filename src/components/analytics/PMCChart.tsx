@@ -14,7 +14,7 @@ import {
   Legend,
   Brush,
 } from 'recharts';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { GlassCard } from '@/components/ui/GlassCard';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
 import { format, parseISO, subDays } from 'date-fns';
@@ -65,7 +65,7 @@ function SimplePMC({ data }: { data: Array<TrainingLoad & { dateLabel: string; f
     : 0;
 
   return (
-    <Card>
+    <GlassCard>
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg">Fitness Trend</CardTitle>
@@ -115,7 +115,7 @@ function SimplePMC({ data }: { data: Array<TrainingLoad & { dateLabel: string; f
           Your overall fitness trend based on training consistency and recovery
         </p>
       </CardContent>
-    </Card>
+    </GlassCard>
   );
 }
 
@@ -254,7 +254,7 @@ function AdvancedPMC({ data }: { data: Array<TrainingLoad & { dateLabel: string 
   const hasRightAxisSeries = visible.tsb;
 
   return (
-    <Card>
+    <GlassCard>
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg">Performance Management Chart</CardTitle>
@@ -506,7 +506,7 @@ function AdvancedPMC({ data }: { data: Array<TrainingLoad & { dateLabel: string 
           </div>
         </div>
       </CardContent>
-    </Card>
+    </GlassCard>
   );
 }
 

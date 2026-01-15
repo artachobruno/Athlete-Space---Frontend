@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card; import { CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card' } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
@@ -117,7 +117,7 @@ export function NotificationsSection() {
 
   if (isLoading) {
     return (
-      <Card>
+      <GlassCard>
         <CardHeader>
           <div className="flex items-center gap-3">
             <div className="p-2 bg-accent/10 rounded-lg">
@@ -134,12 +134,12 @@ export function NotificationsSection() {
             <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
           </div>
         </CardContent>
-      </Card>
+      </GlassCard>
     );
   }
 
   return (
-    <Card>
+    <GlassCard>
       <CardHeader>
         <div className="flex items-center gap-3">
           <div className="p-2 bg-accent/10 rounded-lg">
@@ -316,7 +316,7 @@ export function NotificationsSection() {
           </Button>
         </div>
       </CardContent>
-    </Card>
+    </GlassCard>
   );
 }
 

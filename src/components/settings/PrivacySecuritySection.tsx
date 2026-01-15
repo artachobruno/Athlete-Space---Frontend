@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card; import { CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card' } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -258,7 +258,7 @@ export function PrivacySecuritySection() {
   };
 
   return (
-    <Card>
+    <GlassCard>
       <CardHeader>
         <div className="flex items-center gap-3">
           <div className="p-2 bg-accent/10 rounded-lg">
@@ -622,7 +622,7 @@ export function PrivacySecuritySection() {
           </AlertDialog>
         </div>
       </CardContent>
-    </Card>
+    </GlassCard>
   );
 }
 

@@ -1,4 +1,4 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { GlassCard } from '@/components/ui/GlassCard';
 import { cn } from '@/lib/utils';
 
 interface WeeklyLoad {
@@ -60,6 +60,6 @@ export function WeeklyLoadChart({ data }: WeeklyLoadChartProps) {
           ))}
         </div>
       </CardContent>
-    </Card>
+    </GlassCard>
   );
 }

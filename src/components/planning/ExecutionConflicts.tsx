@@ -6,7 +6,7 @@
  */
 
 import { format, parseISO } from 'date-fns';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { GlassCard } from '@/components/ui/GlassCard';
 import { AlertTriangle, XCircle } from 'lucide-react';
 import type { ExecutionConflict, WeekPlan } from '@/types/execution';
 import { cn } from '@/lib/utils';
@@ -110,6 +110,6 @@ export function ExecutionConflicts({ conflicts, weekPlans }: ExecutionConflictsP
           })}
         </div>
       </CardContent>
-    </Card>
+    </GlassCard>
   );
 }

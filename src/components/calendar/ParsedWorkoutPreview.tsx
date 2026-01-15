@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import type { ParsedWorkout } from '@/lib/api';
 import { useUnitSystem } from '@/hooks/useUnitSystem';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { GlassCard } from '@/components/ui/GlassCard';
 
 interface ParsedWorkoutPreviewProps {
   parsedWorkout: ParsedWorkout;
@@ -147,6 +147,6 @@ export function ParsedWorkoutPreview({ parsedWorkout }: ParsedWorkoutPreviewProp
           </div>
         )}
       </CardContent>
-    </Card>
+    </GlassCard>
   );
 }

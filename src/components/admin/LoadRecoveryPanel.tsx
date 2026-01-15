@@ -1,4 +1,5 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { GlassCard } from '@/components/ui/GlassCard';
+import { CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Shield, AlertTriangle, XCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -37,7 +38,7 @@ export function LoadRecoveryPanel({ loadRisk, recoveryAligned, summary }: LoadRe
   const RiskIcon = config.icon;
 
   return (
-    <Card>
+    <GlassCard>
       <CardHeader>
         <CardTitle className="text-sm font-medium">Load & Recovery Safety</CardTitle>
       </CardHeader>
@@ -62,6 +63,6 @@ export function LoadRecoveryPanel({ loadRisk, recoveryAligned, summary }: LoadRe
         {/* Summary */}
         <p className="text-sm text-muted-foreground">{summary}</p>
       </CardContent>
-    </Card>
+    </GlassCard>
   );
 }

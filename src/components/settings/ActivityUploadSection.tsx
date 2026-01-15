@@ -1,6 +1,6 @@
 import { useState, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card; import { CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card' } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Upload, Loader2, FileCheck, AlertCircle } from 'lucide-react';
@@ -195,7 +195,7 @@ export function ActivityUploadSection() {
   const isUploadDisabled = !selectedFile || !isAuthenticated || isUploading;
 
   return (
-    <Card>
+    <GlassCard>
       <CardHeader>
         <div className="flex items-center gap-3">
           <div className="p-2 bg-accent/10 rounded-lg">
@@ -294,6 +294,6 @@ export function ActivityUploadSection() {
           </TooltipProvider>
         </div>
       </CardContent>
-    </Card>
+    </GlassCard>
   );
 }

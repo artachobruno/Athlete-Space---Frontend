@@ -1,4 +1,5 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { GlassCard } from '@/components/ui/GlassCard';
+import { CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { fetchActivities, fetchTrainingLoad, fetchCalendarWeek } from '@/lib/api';
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell } from 'recharts';
 import { subDays, format, startOfWeek } from 'date-fns';
@@ -127,7 +128,7 @@ export function WeeklyLoadCard() {
 
   if (isLoading) {
     return (
-      <Card>
+      <GlassCard>
         <CardHeader className="pb-3">
           <CardTitle className="text-lg">Weekly Load</CardTitle>
         </CardHeader>
@@ -136,12 +137,12 @@ export function WeeklyLoadCard() {
             <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
           </div>
         </CardContent>
-      </Card>
+      </GlassCard>
     );
   }
 
   return (
-    <Card>
+    <GlassCard>
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg">Weekly Load</CardTitle>
@@ -187,6 +188,6 @@ export function WeeklyLoadCard() {
           </ResponsiveContainer>
         </div>
       </CardContent>
-    </Card>
+    </GlassCard>
   );
 }

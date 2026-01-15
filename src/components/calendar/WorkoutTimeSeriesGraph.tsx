@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import type { StructuredWorkoutResponse } from '@/lib/api';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { GlassCard } from '@/components/ui/GlassCard';
 
 interface WorkoutTimeSeriesGraphProps {
   structuredWorkout: StructuredWorkoutResponse;
@@ -102,14 +102,14 @@ export function WorkoutTimeSeriesGraph({ structuredWorkout }: WorkoutTimeSeriesG
 
   if (!graphData || !time_series) {
     return (
-      <Card>
+      <GlassCard>
         <CardHeader>
           <CardTitle className="text-sm">Workout Graph</CardTitle>
         </CardHeader>
         <CardContent>
           <p className="text-sm text-muted-foreground">No time series data available</p>
         </CardContent>
-      </Card>
+      </GlassCard>
     );
   }
 
@@ -139,7 +139,7 @@ export function WorkoutTimeSeriesGraph({ structuredWorkout }: WorkoutTimeSeriesG
   }
 
   return (
-    <Card>
+    <GlassCard>
       <CardHeader>
         <CardTitle className="text-sm">Workout Graph</CardTitle>
       </CardHeader>
@@ -291,6 +291,6 @@ export function WorkoutTimeSeriesGraph({ structuredWorkout }: WorkoutTimeSeriesG
           </div>
         )}
       </CardContent>
-    </Card>
+    </GlassCard>
   );
 }

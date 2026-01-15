@@ -1,4 +1,5 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { GlassCard } from '@/components/ui/GlassCard';
+import { CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Database, Target, RotateCcw, ShieldAlert } from "lucide-react";
 
 interface RagHealthPanelProps {
@@ -37,7 +38,7 @@ export function RagHealthPanel({ usagePct, avgConfidence, fallbackRate, safetyBl
   ];
 
   return (
-    <Card>
+    <GlassCard>
       <CardHeader>
         <CardTitle className="text-sm font-medium">RAG Performance Health</CardTitle>
       </CardHeader>
@@ -58,6 +59,6 @@ export function RagHealthPanel({ usagePct, avgConfidence, fallbackRate, safetyBl
           })}
         </div>
       </CardContent>
-    </Card>
+    </GlassCard>
   );
 }

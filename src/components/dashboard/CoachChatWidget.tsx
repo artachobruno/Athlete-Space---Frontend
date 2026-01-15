@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { GlassCard } from '@/components/ui/GlassCard';
+import { CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Send, Brain, User, Maximize2 } from 'lucide-react';
@@ -120,7 +121,7 @@ export function CoachChatWidget() {
   }, []);
 
   return (
-    <Card className="flex flex-col h-full min-h-[200px]">
+    <GlassCard className="flex flex-col h-full min-h-[200px]">
       <CardHeader className="pb-2 flex-row items-center justify-between space-y-0">
         <div className="flex items-center gap-2">
           <Brain className="h-4 w-4 text-coach" />
@@ -222,6 +223,6 @@ export function CoachChatWidget() {
           </Button>
         </form>
       </CardContent>
-    </Card>
+    </GlassCard>
   );
 }

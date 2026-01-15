@@ -1,4 +1,4 @@
-import { Card, CardContent } from '@/components/ui/card';
+import { GlassCard } from '@/components/ui/GlassCard';
 import { cn } from '@/lib/utils';
 
 interface CoachKpiCardProps {
@@ -27,6 +27,6 @@ export function CoachKpiCard({ label, value, subtext, variant = 'default' }: Coa
         <p className={cn('text-2xl sm:text-3xl font-bold', valueColorClass)}>{value}</p>
         <p className="text-xs text-muted-foreground mt-1">{subtext}</p>
       </CardContent>
-    </Card>
+    </GlassCard>
   );
 }

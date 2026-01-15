@@ -1,4 +1,4 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { GlassCard } from '@/components/ui/GlassCard';
 import { CheckCircle2, AlertTriangle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -18,7 +18,7 @@ interface ServiceHealthListProps {
  */
 export function ServiceHealthList({ services }: ServiceHealthListProps) {
   return (
-    <Card>
+    <GlassCard>
       <CardHeader className="pb-2">
         <CardTitle className="text-base font-medium">Service Breakdown</CardTitle>
       </CardHeader>
@@ -57,6 +57,6 @@ export function ServiceHealthList({ services }: ServiceHealthListProps) {
           ))}
         </div>
       </CardContent>
-    </Card>
+    </GlassCard>
   );
 }

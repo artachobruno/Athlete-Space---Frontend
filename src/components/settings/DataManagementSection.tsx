@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card; import { CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card' } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import {
@@ -156,7 +156,7 @@ export function DataManagementSection() {
       <ActivityUploadSection />
       
       {/* Import Season */}
-      <Card>
+      <GlassCard>
         <CardHeader>
           <div className="flex items-center gap-3">
             <div className="p-2 bg-accent/10 rounded-lg">
@@ -182,10 +182,10 @@ export function DataManagementSection() {
             </Button>
           </div>
         </CardContent>
-      </Card>
+      </GlassCard>
       
       {/* Data Export & Delete */}
-      <Card>
+      <GlassCard>
         <CardHeader>
           <div className="flex items-center gap-3">
             <div className="p-2 bg-accent/10 rounded-lg">
@@ -313,7 +313,7 @@ export function DataManagementSection() {
           </AlertDialog>
         </div>
       </CardContent>
-    </Card>
+    </GlassCard>
 
       {/* Import Season Modal */}
       <ImportSeasonModal

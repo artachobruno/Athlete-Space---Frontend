@@ -1,5 +1,5 @@
 import { PublicLayout } from '@/components/layout/PublicLayout';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { GlassCard } from '@/components/ui/GlassCard';
 import { Brain, Activity, LineChart, ShieldCheck } from 'lucide-react';
 
 export default function ScienceAndAI() {
@@ -23,7 +23,7 @@ export default function ScienceAndAI() {
 
         <div className="space-y-6">
           {/* Section 1 */}
-          <Card>
+          <GlassCard>
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-primary">
                 <Activity className="h-5 w-5" />
@@ -44,10 +44,10 @@ export default function ScienceAndAI() {
                 exertion models.
               </p>
             </CardContent>
-          </Card>
+          </GlassCard>
 
           {/* Section 2 */}
-          <Card>
+          <GlassCard>
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-primary">
                 <LineChart className="h-5 w-5" />
@@ -67,10 +67,10 @@ export default function ScienceAndAI() {
                 <li>Translate complex metrics into clear, actionable guidance</li>
               </ul>
             </CardContent>
-          </Card>
+          </GlassCard>
 
           {/* Section 3 */}
-          <Card>
+          <GlassCard>
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-primary">
                 <ShieldCheck className="h-5 w-5" />
@@ -90,7 +90,7 @@ export default function ScienceAndAI() {
                 advice.
               </p>
             </CardContent>
-          </Card>
+          </GlassCard>
 
           {/* Section 4 */}
           <Card className="bg-primary/5 border-primary/20">
@@ -104,7 +104,7 @@ export default function ScienceAndAI() {
                 responsibly.
               </p>
             </CardContent>
-          </Card>
+          </GlassCard>
         </div>
       </div>
     </PublicLayout>

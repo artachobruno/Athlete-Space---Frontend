@@ -1,5 +1,6 @@
 import { format } from 'date-fns';
-import { Card, CardContent } from '@/components/ui/card';
+import { GlassCard } from '@/components/ui/GlassCard';
+import { CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import type { PlannedWorkout, CompletedActivity, DailyDecision } from '@/types';
@@ -70,7 +71,7 @@ export function DailyWorkoutCard({ date, dateId, workout, completed, status, dai
   const calendarItem = toPlanCalendarItem(date, workout, completed);
 
   return (
-    <Card 
+    <GlassCard 
       id={dateId}
       className={cn(
         'transition-all scroll-mt-4',
@@ -304,6 +305,6 @@ export function DailyWorkoutCard({ date, dateId, workout, completed, status, dai
           </div>
         </div>
       </CardContent>
-    </Card>
+    </GlassCard>
   );
 }

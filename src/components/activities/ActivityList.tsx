@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { format, parseISO } from 'date-fns';
-import { Card, CardContent } from '@/components/ui/card';
+import { GlassCard } from '@/components/ui/GlassCard';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
@@ -309,7 +309,7 @@ export function ActivityList({ activities, initialExpandedId = null }: ActivityL
               <CollapsibleContent>
                 <ActivityExpandedContent activity={activity} />
               </CollapsibleContent>
-            </Card>
+            </GlassCard>
           </Collapsible>
         </div>
         );

@@ -1,5 +1,5 @@
 import { PublicLayout } from '@/components/layout/PublicLayout';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { GlassCard } from '@/components/ui/GlassCard';
 
 export default function Privacy() {
   return (
@@ -12,7 +12,7 @@ export default function Privacy() {
         </div>
 
         {/* Privacy Policy Content */}
-        <Card>
+        <GlassCard>
           <CardHeader>
             <CardTitle>Privacy Policy – AthleteSpace (Pre-Launch)</CardTitle>
             <p className="text-sm text-muted-foreground mt-2">Last updated: January 2026</p>
@@ -100,7 +100,7 @@ export default function Privacy() {
               </section>
             </div>
           </CardContent>
-        </Card>
+        </GlassCard>
       </div>
     </PublicLayout>
   );

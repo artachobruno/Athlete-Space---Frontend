@@ -1,5 +1,5 @@
 import { Component, ReactNode } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { GlassCard } from '@/components/ui/GlassCard';
 import { Button } from '@/components/ui/button';
 import { AlertTriangle } from 'lucide-react';
 
@@ -71,7 +71,7 @@ export class ErrorBoundary extends Component<Props, State> {
                 </Button>
               </div>
             </CardContent>
-          </Card>
+          </GlassCard>
         </div>
       );
     }

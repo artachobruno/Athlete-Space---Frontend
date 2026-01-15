@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
+import { GlassCard } from '@/components/ui/GlassCard';
 import { Brain, TrendingUp, TrendingDown, Minus, AlertTriangle, Zap } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { TrainingLoad } from '@/types';
@@ -96,7 +96,7 @@ export function CoachInterpretation({ data, isAdvanced }: CoachInterpretationPro
   const StateIcon = analysis.stateIcon;
 
   return (
-    <Card>
+    <GlassCard>
       <CardContent className="p-5">
         <div className="flex items-start gap-4">
           <div className="p-2.5 rounded-lg bg-coach text-coach-foreground">
@@ -145,6 +145,6 @@ export function CoachInterpretation({ data, isAdvanced }: CoachInterpretationPro
           </div>
         </div>
       </CardContent>
-    </Card>
+    </GlassCard>
   );
 }

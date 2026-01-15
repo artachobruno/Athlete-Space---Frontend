@@ -5,7 +5,7 @@ import { SlaBar } from '@/components/admin/SlaBar';
 import { ServiceHealthList } from '@/components/admin/ServiceHealthList';
 import { TrafficChart } from '@/components/admin/TrafficChart';
 import { Badge } from '@/components/ui/badge';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { GlassCard } from '@/components/ui/GlassCard';
 import { CheckCircle2, AlertTriangle, Info } from 'lucide-react';
 import { useOpsSummary } from '@/hooks/useOpsSummary';
 
@@ -263,7 +263,7 @@ export default function AdminDashboard() {
         </div>
 
         {/* Activity Signals */}
-        <Card>
+        <GlassCard>
           <CardHeader className="pb-3">
             <CardTitle className="text-base font-medium">Activity Signals</CardTitle>
           </CardHeader>
@@ -286,7 +286,7 @@ export default function AdminDashboard() {
               </div>
             ))}
           </CardContent>
-        </Card>
+        </GlassCard>
 
         {/* Latency & SLA Section */}
         <div className="space-y-4">
@@ -301,7 +301,7 @@ export default function AdminDashboard() {
         </div>
 
         {/* Reliability Signals */}
-        <Card>
+        <GlassCard>
           <CardHeader className="pb-3">
             <CardTitle className="text-base font-medium">Reliability Signals</CardTitle>
           </CardHeader>
@@ -324,7 +324,7 @@ export default function AdminDashboard() {
               </div>
             ))}
           </CardContent>
-        </Card>
+        </GlassCard>
       </div>
     </AppLayout>
   );

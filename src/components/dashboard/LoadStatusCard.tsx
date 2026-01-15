@@ -1,4 +1,5 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { GlassCard } from '@/components/ui/GlassCard';
+import { CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { fetchOverview } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import { TrendingUp, TrendingDown, Minus, Loader2 } from 'lucide-react';
@@ -34,7 +35,7 @@ export function LoadStatusCard() {
 
   if (isLoading) {
     return (
-      <Card>
+      <GlassCard>
         <CardHeader className="pb-3">
           <CardTitle className="text-lg">Training Load</CardTitle>
         </CardHeader>
@@ -43,13 +44,13 @@ export function LoadStatusCard() {
             <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
           </div>
         </CardContent>
-      </Card>
+      </GlassCard>
     );
   }
 
   if (error || !overview) {
     return (
-      <Card>
+      <GlassCard>
         <CardHeader className="pb-3">
           <CardTitle className="text-lg">Training Load</CardTitle>
         </CardHeader>
@@ -58,7 +59,7 @@ export function LoadStatusCard() {
             Unable to load training data
           </div>
         </CardContent>
-      </Card>
+      </GlassCard>
     );
   }
 
@@ -83,7 +84,7 @@ export function LoadStatusCard() {
   const TrendIcon = ctlTrend > 2 ? TrendingUp : ctlTrend < -2 ? TrendingDown : Minus;
 
   return (
-    <Card>
+    <GlassCard>
       <CardHeader className="pb-3">
         <CardTitle className="text-lg">Training Load</CardTitle>
       </CardHeader>
@@ -125,6 +126,6 @@ export function LoadStatusCard() {
           </div>
         </div>
       </CardContent>
-    </Card>
+    </GlassCard>
   );
 }

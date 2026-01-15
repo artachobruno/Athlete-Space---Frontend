@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import { GlassCard } from '@/components/ui/GlassCard';
 import { Activity, ExternalLink, Upload } from 'lucide-react';
 import { initiateStravaConnect } from '@/lib/api';
 import { toast } from '@/hooks/use-toast';
@@ -80,7 +80,7 @@ export function StravaConnectCard({ onConnect, onSkip }: StravaConnectCardProps)
             </div>
           </div>
         </CardContent>
-      </Card>
+      </GlassCard>
 
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="sm" onClick={onSkip} className="text-muted-foreground">

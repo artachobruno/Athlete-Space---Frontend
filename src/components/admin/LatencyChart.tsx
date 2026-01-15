@@ -1,4 +1,4 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { GlassCard } from '@/components/ui/GlassCard';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 
 interface LatencyDataPoint {
@@ -23,7 +23,7 @@ interface LatencyChartProps {
  */
 export function LatencyChart({ data, currentMetrics }: LatencyChartProps) {
   return (
-    <Card>
+    <GlassCard>
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
           <CardTitle className="text-base font-medium">API Latency</CardTitle>
@@ -102,6 +102,6 @@ export function LatencyChart({ data, currentMetrics }: LatencyChartProps) {
           </ResponsiveContainer>
         </div>
       </CardContent>
-    </Card>
+    </GlassCard>
   );
 }

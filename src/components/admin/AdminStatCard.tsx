@@ -1,4 +1,5 @@
-import { Card, CardContent } from '@/components/ui/card';
+import { GlassCard } from '@/components/ui/GlassCard';
+import { CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 
 interface AdminStatCardProps {
@@ -26,7 +27,7 @@ export function AdminStatCard({ label, value, subtext, status }: AdminStatCardPr
   };
 
   return (
-    <Card>
+    <GlassCard>
       <CardContent className="pt-4 pb-4">
         <div className="flex items-start justify-between">
           <div className="space-y-1">
@@ -41,6 +42,6 @@ export function AdminStatCard({ label, value, subtext, status }: AdminStatCardPr
           <div className={cn('h-2.5 w-2.5 rounded-full mt-1', statusBg[status])} />
         </div>
       </CardContent>
-    </Card>
+    </GlassCard>
   );
 }

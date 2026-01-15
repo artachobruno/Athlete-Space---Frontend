@@ -1,4 +1,4 @@
-import { Card, CardContent } from '@/components/ui/card';
+import { GlassCard } from '@/components/ui/GlassCard';
 import { fetchCalendarWeek } from '@/lib/api';
 import { format, startOfWeek, endOfWeek } from 'date-fns';
 import { Target, TrendingUp, Loader2 } from 'lucide-react';
@@ -22,25 +22,25 @@ export function WeeklyPlanOverview({ currentDate }: WeeklyPlanOverviewProps) {
 
   if (isLoading) {
     return (
-      <Card>
+      <GlassCard>
         <CardContent className="p-6">
           <div className="flex items-center justify-center py-8">
             <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
           </div>
         </CardContent>
-      </Card>
+      </GlassCard>
     );
   }
 
   if (!weekData) {
     return (
-      <Card>
+      <GlassCard>
         <CardContent className="p-6">
           <div className="text-center py-8 text-muted-foreground text-sm">
             Unable to load weekly plan
           </div>
         </CardContent>
-      </Card>
+      </GlassCard>
     );
   }
 
@@ -53,7 +53,7 @@ export function WeeklyPlanOverview({ currentDate }: WeeklyPlanOverviewProps) {
   const progress = plannedLoad > 0 ? (actualLoad / plannedLoad) * 100 : 0;
 
   return (
-    <Card>
+    <GlassCard>
       <CardContent className="p-6">
         <div className="flex flex-col lg:flex-row lg:items-start gap-6">
           {/* Left: Week info */}
@@ -103,6 +103,6 @@ export function WeeklyPlanOverview({ currentDate }: WeeklyPlanOverviewProps) {
           </div>
         </div>
       </CardContent>
-    </Card>
+    </GlassCard>
   );
 }

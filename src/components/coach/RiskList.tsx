@@ -1,4 +1,4 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { GlassCard } from '@/components/ui/GlassCard';
 import { CheckCircle2, AlertTriangle, Info } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -62,6 +62,6 @@ export function RiskList({ risks }: RiskListProps) {
           ))}
         </ul>
       </CardContent>
-    </Card>
+    </GlassCard>
   );
 }

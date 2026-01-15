@@ -6,7 +6,7 @@
  */
 
 import { format, parseISO } from 'date-fns';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { GlassCard } from '@/components/ui/GlassCard';
 import type { WeekPlan } from '@/types/execution';
 
 interface PlanOverviewSidebarProps {
@@ -95,6 +95,6 @@ export function PlanOverviewSidebar({
           </div>
         )}
       </CardContent>
-    </Card>
+    </GlassCard>
   );
 }

@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { GlassCard } from '@/components/ui/GlassCard';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { useQuery } from '@tanstack/react-query';
@@ -133,20 +133,20 @@ export function ComplianceDashboard({
 
   if (!weeklyStats && !seasonStats) {
     return (
-      <Card>
+      <GlassCard>
         <CardContent className="p-6">
           <div className="text-center text-muted-foreground text-sm">
             No compliance data available
           </div>
         </CardContent>
-      </Card>
+      </GlassCard>
     );
   }
 
   return (
     <div className="space-y-4">
       {showWeekly && weeklyStats && (
-        <Card>
+        <GlassCard>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Target className="h-5 w-5" />
@@ -203,11 +203,11 @@ export function ComplianceDashboard({
               </div>
             </div>
           </CardContent>
-        </Card>
+        </GlassCard>
       )}
 
       {showSeason && seasonStats && (
-        <Card>
+        <GlassCard>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <TrendingUp className="h-5 w-5" />
@@ -273,7 +273,7 @@ export function ComplianceDashboard({
               </div>
             )}
           </CardContent>
-        </Card>
+        </GlassCard>
       )}
     </div>
   );

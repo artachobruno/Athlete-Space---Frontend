@@ -1,4 +1,5 @@
-import { Card, CardContent } from '@/components/ui/card';
+import { GlassCard } from '@/components/ui/GlassCard';
+import { CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { getTodayIntelligence } from '@/lib/intelligence';
 import { cn } from '@/lib/utils';
@@ -50,13 +51,13 @@ export function DailyDecisionCard() {
 
   if (isLoading) {
     return (
-      <Card className={cn('border-2 h-full')}>
+      <GlassCard className={cn('border-2 h-full')}>
         <CardContent className="p-6">
           <div className="flex items-center justify-center py-8">
             <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
           </div>
         </CardContent>
-      </Card>
+      </GlassCard>
     );
   }
 
@@ -65,26 +66,26 @@ export function DailyDecisionCard() {
   
   if (isServiceUnavailable) {
     return (
-      <Card className={cn('border-2 h-full')}>
+      <GlassCard className={cn('border-2 h-full')}>
         <CardContent className="p-6">
           <div className="text-center py-8 text-muted-foreground">
             <p className="text-sm">Today&apos;s decision is being generated</p>
             <p className="text-xs mt-2 opacity-70">The coach will have your recommendation ready soon</p>
           </div>
         </CardContent>
-      </Card>
+      </GlassCard>
     );
   }
 
   if (error || !data) {
     return (
-      <Card className={cn('border-2 h-full')}>
+      <GlassCard className={cn('border-2 h-full')}>
         <CardContent className="p-6">
           <div className="text-center py-8 text-muted-foreground">
             <p className="text-sm">Unable to load today&apos;s decision</p>
           </div>
         </CardContent>
-      </Card>
+      </GlassCard>
     );
   }
 
@@ -142,6 +143,6 @@ export function DailyDecisionCard() {
           </div>
         </div>
       </CardContent>
-    </Card>
+    </GlassCard>
   );
 }

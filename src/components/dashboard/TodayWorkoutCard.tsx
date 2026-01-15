@@ -1,4 +1,5 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { GlassCard } from '@/components/ui/GlassCard';
+import { CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { fetchCalendarToday, fetchTrainingLoad, fetchActivities } from '@/lib/api';
 import { getTodayIntelligence } from '@/lib/intelligence';
@@ -99,7 +100,7 @@ export function TodayWorkoutCard() {
 
   if (isLoading) {
     return (
-      <Card>
+      <GlassCard>
         <CardHeader>
           <CardTitle className="text-lg">Today's Workout</CardTitle>
         </CardHeader>
@@ -108,13 +109,13 @@ export function TodayWorkoutCard() {
             <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
           </div>
         </CardContent>
-      </Card>
+      </GlassCard>
     );
   }
 
   if (error || !todayWorkout) {
     return (
-      <Card>
+      <GlassCard>
         <CardHeader>
           <CardTitle className="text-lg">Today's Workout</CardTitle>
         </CardHeader>
@@ -123,7 +124,7 @@ export function TodayWorkoutCard() {
             <p>{error ? 'Unable to load workout' : 'Rest day - no workout scheduled'}</p>
           </div>
         </CardContent>
-      </Card>
+      </GlassCard>
     );
   }
 
@@ -131,7 +132,7 @@ export function TodayWorkoutCard() {
   const workoutIntent = mapTypeToIntent(workoutType);
 
   return (
-    <Card>
+    <GlassCard>
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg">Today's Workout</CardTitle>
@@ -193,6 +194,6 @@ export function TodayWorkoutCard() {
           )}
         </div>
       </CardContent>
-    </Card>
+    </GlassCard>
   );
 }

@@ -6,7 +6,7 @@
  */
 
 import { format, parseISO } from 'date-fns';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { GlassCard } from '@/components/ui/GlassCard';
 import { Badge } from '@/components/ui/badge';
 import { Clock, Route, FileText } from 'lucide-react';
 import type { WeekPlan } from '@/types/execution';
@@ -74,18 +74,18 @@ export function ExecutionPreview({ weekPlans, startDate, timezone }: ExecutionPr
 
   if (sortedSessions.length === 0) {
     return (
-      <Card>
+      <GlassCard>
         <CardContent className="p-6">
           <div className="text-center text-muted-foreground text-sm">
             No sessions to preview
           </div>
         </CardContent>
-      </Card>
+      </GlassCard>
     );
   }
 
   return (
-    <Card>
+    <GlassCard>
       <CardHeader>
         <CardTitle className="text-lg">Execution Preview</CardTitle>
         <p className="text-sm text-muted-foreground">
@@ -180,6 +180,6 @@ export function ExecutionPreview({ weekPlans, startDate, timezone }: ExecutionPr
           </div>
         </div>
       </CardContent>
-    </Card>
+    </GlassCard>
   );
 }

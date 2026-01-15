@@ -21,7 +21,7 @@ import {
 import { CalendarWorkoutStack } from './cards/CalendarWorkoutStack';
 import { DayView } from './DayView';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import { GlassCard } from '@/components/ui/GlassCard';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -56,7 +56,7 @@ interface WeekViewProps {
   ) => void;
 }
 
-export function WeekView({ currentDate, onActivityClick }: WeekViewProps) {
+function WeekView({ currentDate, onActivityClick }: WeekViewProps) {
   const [selectedDay, setSelectedDay] = useState<Date | null>(null);
   const [isSharing, setIsSharing] = useState(false);
 
@@ -222,3 +222,6 @@ export function WeekView({ currentDate, onActivityClick }: WeekViewProps) {
     </div>
   );
 }
+
+export { WeekView };
+export default WeekView;
