@@ -246,7 +246,7 @@ export function MonthCalendar({ currentDate, onActivityClick }: MonthCalendarPro
             <div
               key={idx}
               className={cn(
-                'min-h-[140px] h-[140px] border-b border-r border-border flex flex-col calendar-day',
+                'min-h-[160px] relative flex flex-col calendar-day border-b border-r border-border',
                 !isCurrentMonth && 'bg-muted/20',
                 isWeekend && isCurrentMonth && 'bg-muted/10',
                 idx % 7 === 6 && 'border-r-0',
@@ -273,7 +273,7 @@ export function MonthCalendar({ currentDate, onActivityClick }: MonthCalendarPro
 
               {/* Workout Cards */}
               <div className="flex-1 calendar-day overflow-hidden">
-                <div className="calendar-card-wrapper">
+                <div className="calendar-card-wrapper flex-1 relative px-1 pb-1">
                   {groupedItems.length > 0 && (
                     <CalendarWorkoutStack
                       items={groupedItems[0].items}

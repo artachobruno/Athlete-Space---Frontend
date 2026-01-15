@@ -23,10 +23,6 @@ export function CalendarWorkoutStack({
   onClick,
 }: CalendarWorkoutStackProps) {
   const visibleItems = items.slice(0, maxVisible);
-  
-  // Card dimensions based on variant
-  const cardHeight = variant === 'week' ? 180 : variant === 'plan' ? 150 : 130;
-  const cardWidth = variant === 'week' ? 300 : 200;
 
   if (visibleItems.length === 0) {
     return null;
@@ -38,14 +34,12 @@ export function CalendarWorkoutStack({
     const cardContent = (
       <CalendarWorkoutCard
         {...cardProps}
-        width={cardWidth}
-        height={cardHeight}
       />
     );
 
     if (onClick) {
       return (
-        <div className="relative w-full" style={{ height: `${cardHeight}px` }}>
+        <div className="relative w-full h-full">
           <button
             onClick={() => onClick(visibleItems[0])}
             className="w-full h-full rounded-2xl overflow-hidden focus:outline-none focus:ring-2 focus:ring-primary/20 transition-transform hover:scale-[1.02]"
@@ -58,27 +52,28 @@ export function CalendarWorkoutStack({
     }
 
     return (
-      <div className="relative w-full" style={{ height: `${cardHeight}px` }}>
+      <div className="relative w-full h-full">
         {cardContent}
       </div>
     );
   }
 
   // Multiple cards - stack with offsets
+  const CARD_OFFSET = 6;
+  const SCALE_STEP = 0.04;
+  
   return (
-    <div className="relative w-full" style={{ height: `${cardHeight}px` }}>
+    <div className="relative w-full h-full">
       {visibleItems.map((item, idx) => {
         const cardProps = toCalendarCardProps(item);
-        const offsetX = idx * 6;
-        const offsetY = idx * 6;
-        const scale = 1 - idx * 0.03; // 0.97, 0.94, 0.91
+        const offsetX = idx * CARD_OFFSET;
+        const offsetY = idx * CARD_OFFSET;
+        const scale = 1 - idx * SCALE_STEP;
         const zIndex = 10 - idx;
 
         const cardContent = (
           <CalendarWorkoutCard
             {...cardProps}
-            width={cardWidth}
-            height={cardHeight}
           />
         );
 
@@ -102,7 +97,7 @@ export function CalendarWorkoutStack({
             style={{
               transform: `translate(${offsetX}px, ${offsetY}px) scale(${scale})`,
               zIndex,
-              transformOrigin: 'top left',
+              transformOrigin: 'top right',
             }}
           >
             {cardElement}

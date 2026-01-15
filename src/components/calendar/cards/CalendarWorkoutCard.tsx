@@ -9,11 +9,6 @@
 import { CALENDAR_CARD_THEMES } from './calendarCardThemes';
 import type { CalendarCardProps } from './calendarCardAdapter';
 
-interface CalendarWorkoutCardProps extends CalendarCardProps {
-  width?: number;
-  height?: number;
-}
-
 export function CalendarWorkoutCard({
   variant,
   duration,
@@ -22,17 +17,15 @@ export function CalendarWorkoutCard({
   distance,
   pace,
   sparkline,
-  width = 200,
-  height = 130,
-}: CalendarWorkoutCardProps) {
+}: CalendarCardProps) {
   const theme = CALENDAR_CARD_THEMES[variant] || CALENDAR_CARD_THEMES['planned-running'];
   const showSparkline = theme.showSparkline && sparkline && sparkline.length > 0;
   
-  // Sparkline dimensions
-  const sparklineWidth = width - 24;
-  const sparklineHeight = 20;
-  const sparklineX = 12;
-  const sparklineY = height - 32;
+  // Sparkline dimensions (in viewBox coordinates)
+  const sparklineWidth = 324; // 360 - 36 (18px padding on each side)
+  const sparklineHeight = 24;
+  const sparklineX = 18;
+  const sparklineY = 428; // 460 - 32
   
   // Generate sparkline path
   const sparklinePath = showSparkline && sparkline
@@ -41,9 +34,10 @@ export function CalendarWorkoutCard({
 
   return (
     <svg
-      width={width}
-      height={height}
-      viewBox={`0 0 ${width} ${height}`}
+      width="100%"
+      height="100%"
+      viewBox="0 0 360 460"
+      preserveAspectRatio="xMidYMid meet"
       className="w-full h-full"
       xmlns="http://www.w3.org/2000/svg"
     >
@@ -64,8 +58,8 @@ export function CalendarWorkoutCard({
       
       {/* Background */}
       <rect
-        width={width}
-        height={height}
+        width="360"
+        height="460"
         rx="16"
         fill={theme.base}
         filter="url(#cardShadow)"
@@ -75,21 +69,21 @@ export function CalendarWorkoutCard({
       <g>
         {/* Title - Large, high contrast */}
         <text
-          x={12}
-          y={22}
-          fontSize="13"
+          x="18"
+          y="32"
+          fontSize="16"
           fontWeight="600"
           fill={theme.text}
           fontFamily="system-ui, -apple-system, sans-serif"
         >
-          {truncateText(title, width - 24, 13)}
+          {truncateText(title, 324, 16)}
         </text>
         
         {/* Workout Type */}
         <text
-          x={12}
-          y={40}
-          fontSize="10"
+          x="18"
+          y="52"
+          fontSize="12"
           fill={theme.secondary}
           opacity={0.9}
           fontFamily="system-ui, -apple-system, sans-serif"
@@ -98,11 +92,11 @@ export function CalendarWorkoutCard({
         </text>
         
         {/* Metrics Row - Clear hierarchy */}
-        <g transform={`translate(12, ${height - 50})`}>
+        <g transform="translate(18, 410)">
           <text
-            x={0}
-            y={0}
-            fontSize="12"
+            x="0"
+            y="0"
+            fontSize="14"
             fontWeight="600"
             fill={theme.text}
             fontFamily="system-ui, -apple-system, sans-serif"
@@ -112,9 +106,9 @@ export function CalendarWorkoutCard({
           
           {distance && (
             <text
-              x={50}
-              y={0}
-              fontSize="11"
+              x="60"
+              y="0"
+              fontSize="13"
               fill={theme.secondary}
               fontFamily="system-ui, -apple-system, sans-serif"
             >
@@ -124,9 +118,9 @@ export function CalendarWorkoutCard({
           
           {theme.showPace && pace && (
             <text
-              x={distance ? 110 : 50}
-              y={0}
-              fontSize="11"
+              x={distance ? 130 : 60}
+              y="0"
+              fontSize="13"
               fill={theme.secondary}
               fontFamily="system-ui, -apple-system, sans-serif"
             >
@@ -169,9 +163,10 @@ function generateSparklinePath(data: number[], width: number, height: number): s
   const points: string[] = [];
   
   for (let i = 0; i < data.length; i++) {
-    const x = 12 + i * stepX;
+    const x = 18 + i * stepX; // 18px padding from left
     // Invert Y (SVG Y increases downward, but we want higher values at top)
-    const y = height - 32 - (data[i] * height);
+    // Sparkline is at y=428, with height=24, so we map data[i] (0-1) to y range [428-24, 428]
+    const y = 428 - (data[i] * height);
     if (i === 0) {
       points.push(`M ${x},${y}`);
     } else {
