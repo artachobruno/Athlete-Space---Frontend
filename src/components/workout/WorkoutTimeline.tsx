@@ -52,66 +52,74 @@ export function WorkoutTimeline({
   }, [totalDistanceMeters, totalDurationSeconds])
 
   // Calculate intensity multipliers for proportional heights
+  // These represent relative intensity, with more differentiation between zones
   const intensityMultipliers = useMemo(() => {
     const multipliers: Record<string, number> = {
-      rest: 0.3,
-      recovery: 0.4,
-      easy: 0.5,
-      flow: 0.6,
-      warmup: 0.6,
-      steady: 0.7,
-      tempo: 0.8,
-      cooldown: 0.5,
-      lt2: 0.9,
-      threshold: 1.0,
-      interval: 0.95,
+      rest: 0.25,
+      recovery: 0.35,
+      easy: 0.45,
+      flow: 0.55,
+      warmup: 0.50,
+      steady: 0.65,
+      tempo: 0.75,
+      cooldown: 0.40,
+      lt2: 0.85,
+      threshold: 0.95,
+      interval: 0.90,
       vo2: 1.0,
-      long: 0.7,
-      repeat_block: 0.85,
+      long: 0.60,
+      repeat_block: 0.80,
     }
     return multipliers
   }, [])
 
   // Calculate target-based height multipliers
   const getHeightMultiplier = (step: StructuredWorkoutStep): number => {
+    // Check both nested target object and direct fields
+    const targetType = step.target?.type || step.target_metric
+    const targetValue = step.target?.value ?? step.target_value
+    const targetMin = step.target?.min ?? step.target_min
+    const targetMax = step.target?.max ?? step.target_max
+
     // If target value exists, use it to calculate relative intensity
-    if (step.target?.value !== null && step.target?.value !== undefined) {
-      // Normalize target value based on target type
-      const targetValue = step.target.value
-      if (step.target.type === 'pace') {
-        // For pace, lower is faster/harder - inverse relationship
-        // Use a reference pace (e.g., 4 min/km = 240s/km = 0.24 m/s)
-        // This is a simplified calculation
-        return Math.min(1.0, Math.max(0.3, 1.0 - (targetValue - 2.0) / 4.0))
+    if (targetValue !== null && targetValue !== undefined) {
+      if (targetType === 'pace') {
+        // For pace (in m/s), faster pace = lower value = higher intensity
+        // Typical threshold pace: 3.33 m/s (5:00/km), easy: 2.5 m/s (6:40/km)
+        // Invert: higher intensity = lower pace value
+        // Normalize: 2.0 m/s (8:20/km) = 0.3, 4.0 m/s (4:10/km) = 1.0
+        const normalized = 1.0 - ((targetValue - 2.0) / 2.0)
+        return Math.min(1.0, Math.max(0.3, normalized))
       }
-      if (step.target.type === 'power') {
+      if (targetType === 'power') {
         // For power, higher is harder
-        // Assume FTP around 250W, normalize to 0.3-1.0 range
-        return Math.min(1.0, Math.max(0.3, targetValue / 300.0))
+        // Normalize: 100W = 0.3, 300W = 1.0
+        return Math.min(1.0, Math.max(0.3, (targetValue - 100) / 200))
       }
-      if (step.target.type === 'hr') {
+      if (targetType === 'hr') {
         // For HR, higher is harder
-        // Assume threshold HR around 170, normalize to 0.3-1.0 range
-        return Math.min(1.0, Math.max(0.3, targetValue / 200.0))
+        // Normalize: 120 bpm = 0.3, 200 bpm = 1.0
+        return Math.min(1.0, Math.max(0.3, (targetValue - 120) / 80))
       }
     }
 
     // If target range exists, use the midpoint
     if (
-      step.target?.min !== null &&
-      step.target?.min !== undefined &&
-      step.target?.max !== null &&
-      step.target?.max !== undefined
+      targetMin !== null &&
+      targetMin !== undefined &&
+      targetMax !== null &&
+      targetMax !== undefined
     ) {
-      const midpoint = (step.target.min + step.target.max) / 2
-      if (step.target.type === 'pace') {
-        return Math.min(1.0, Math.max(0.3, 1.0 - (midpoint - 2.0) / 4.0))
+      const midpoint = (targetMin + targetMax) / 2
+      if (targetType === 'pace') {
+        const normalized = 1.0 - ((midpoint - 2.0) / 2.0)
+        return Math.min(1.0, Math.max(0.3, normalized))
       }
-      if (step.target.type === 'power') {
-        return Math.min(1.0, Math.max(0.3, midpoint / 300.0))
+      if (targetType === 'power') {
+        return Math.min(1.0, Math.max(0.3, (midpoint - 100) / 200))
       }
-      if (step.target.type === 'hr') {
-        return Math.min(1.0, Math.max(0.3, midpoint / 200.0))
+      if (targetType === 'hr') {
+        return Math.min(1.0, Math.max(0.3, (midpoint - 120) / 80))
       }
     }
 
@@ -120,10 +128,14 @@ export function WorkoutTimeline({
     return intensityMultipliers[intensity] || 0.7
   }
 
-  // Calculate max multiplier for normalization
-  const maxMultiplier = useMemo(() => {
-    if (sortedSteps.length === 0) return 1.0
-    return Math.max(...sortedSteps.map(step => getHeightMultiplier(step)), 0.3)
+  // Calculate min and max multipliers for better height differentiation
+  const { minMultiplier, maxMultiplier } = useMemo(() => {
+    if (sortedSteps.length === 0) return { minMultiplier: 0.3, maxMultiplier: 1.0 }
+    const multipliers = sortedSteps.map(step => getHeightMultiplier(step))
+    return {
+      minMultiplier: Math.min(...multipliers, 0.3),
+      maxMultiplier: Math.max(...multipliers, 1.0),
+    }
   }, [sortedSteps])
 
   if (!totalValue || sortedSteps.length === 0) {
@@ -155,8 +167,13 @@ export function WorkoutTimeline({
           
           // Calculate proportional height based on target/intensity
           const multiplier = getHeightMultiplier(step)
-          const normalizedHeight = maxMultiplier > 0 ? (multiplier / maxMultiplier) : 1.0
-          const heightPercent = Math.max(30, normalizedHeight * 100) // Minimum 30% height
+          // Normalize to full range (min to max) for better visual differentiation
+          const range = maxMultiplier - minMultiplier
+          const normalizedHeight = range > 0 
+            ? ((multiplier - minMultiplier) / range) 
+            : 1.0
+          // Map to 40-100% height range for better visibility
+          const heightPercent = 40 + (normalizedHeight * 60) // 40% to 100%
 
           return (
             <div
