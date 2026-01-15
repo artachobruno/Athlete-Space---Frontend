@@ -177,7 +177,12 @@ export function TrainingCalendar() {
         />
       )}
 
-      {view === 'week' && <WeekView currentDate={currentDate} />}
+      {view === 'week' && (
+        <WeekCalendar
+          currentDate={currentDate}
+          onActivityClick={handleActivityClick}
+        />
+      )}
 
       {view === 'season' && <SeasonView currentDate={currentDate} />}
 
