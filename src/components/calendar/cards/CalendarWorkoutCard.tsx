@@ -2,7 +2,7 @@
  * CalendarWorkoutCard
  *
  * Pure SVG renderer for calendar workout cards.
- * RESPONSIVE, CLIPPED, AND STACK-SAFE.
+ * Glassmorphic, clipped, stack-safe.
  * No layout logic, no React state.
  */
 
@@ -20,13 +20,16 @@ export function CalendarWorkoutCard({
   sparkline,
 }: CalendarCardProps) {
   const theme = CALENDAR_CARD_THEMES[variant];
-  const showSparkline =
-    theme.showSparkline && Array.isArray(sparkline) && sparkline.length > 0;
 
   const secondaryText =
     distance || pace
       ? [distance, pace].filter(Boolean).join(' · ')
       : null;
+
+  const showSparkline =
+    theme.showSparkline && Array.isArray(sparkline) && sparkline.length > 0;
+
+  const id = `calendar-card-${variant}`;
 
   return (
     <svg
@@ -42,38 +45,72 @@ export function CalendarWorkoutCard({
       }}
     >
       <defs>
-        {/* Background gradient */}
-        <linearGradient id={`bg-${variant}`} x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stopColor={theme.base} />
-          <stop offset="100%" stopColor={theme.base} />
+        {/* Base background tint (very subtle) */}
+        <linearGradient id={`${id}-bg`} x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stopColor={theme.base} stopOpacity="0.55" />
+          <stop offset="100%" stopColor={theme.base} stopOpacity="0.35" />
         </linearGradient>
 
-        {/* Glass overlay */}
-        <linearGradient id={`glass-${variant}`} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="rgba(255,255,255,0.18)" />
-          <stop offset="60%" stopColor="rgba(255,255,255,0.06)" />
-          <stop offset="100%" stopColor="rgba(255,255,255,0.02)" />
+        {/* Glass highlight */}
+        <linearGradient id={`${id}-glass`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="rgba(255,255,255,0.22)" />
+          <stop offset="60%" stopColor="rgba(255,255,255,0.08)" />
+          <stop offset="100%" stopColor="rgba(255,255,255,0.03)" />
         </linearGradient>
 
-        {/* Shadow */}
-        <filter id={`shadow-${variant}`} x="-20%" y="-20%" width="140%" height="140%">
-          <feDropShadow dx="0" dy="18" stdDeviation="28" floodOpacity="0.35" />
+        {/* Backdrop blur */}
+        <filter
+          id={`${id}-blur`}
+          x="-20%"
+          y="-20%"
+          width="140%"
+          height="140%"
+        >
+          <feGaussianBlur stdDeviation="14" />
+        </filter>
+
+        {/* Soft floating shadow */}
+        <filter
+          id={`${id}-shadow`}
+          x="-30%"
+          y="-30%"
+          width="160%"
+          height="160%"
+        >
+          <feDropShadow
+            dx="0"
+            dy="18"
+            stdDeviation="30"
+            floodColor="#000"
+            floodOpacity="0.35"
+          />
         </filter>
       </defs>
 
-      {/* Card base */}
+      {/* Card shadow */}
       <rect
         width="360"
         height="460"
         rx="28"
-        fill={`url(#bg-${variant})`}
-        filter={`url(#shadow-${variant})`}
+        fill="transparent"
+        filter={`url(#${id}-shadow)`}
       />
+
+      {/* Card glass base (blurred background) */}
       <rect
         width="360"
         height="460"
         rx="28"
-        fill={`url(#glass-${variant})`}
+        fill={`url(#${id}-bg)`}
+        filter={`url(#${id}-blur)`}
+      />
+
+      {/* Glass highlight overlay */}
+      <rect
+        width="360"
+        height="460"
+        rx="28"
+        fill={`url(#${id}-glass)`}
       />
 
       {/* TOP ROW */}
@@ -137,11 +174,10 @@ export function CalendarWorkoutCard({
         {title.length > 28 ? `${title.slice(0, 25)}…` : title}
       </text>
 
-      {/* DESCRIPTION / COACH NOTE */}
+      {/* DESCRIPTION */}
       {description && (
         <foreignObject x="28" y="220" width="304" height="140">
           <div
-            xmlns="http://www.w3.org/1999/xhtml"
             style={{
               color: theme.secondary,
               fontSize: '17px',
@@ -160,11 +196,11 @@ export function CalendarWorkoutCard({
 
       {/* SPARKLINE */}
       {showSparkline && sparkline && (
-        <g transform="translate(28, 380)">
+        <g transform="translate(28,380)">
           <path
             d={generateSparklinePath(sparkline, 304, 32)}
             fill="none"
-            stroke={theme.sparkline}
+            stroke="rgba(230,238,255,0.9)"
             strokeWidth="2"
             strokeLinecap="round"
             strokeLinejoin="round"
