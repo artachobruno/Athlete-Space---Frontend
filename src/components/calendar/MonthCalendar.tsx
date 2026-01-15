@@ -174,20 +174,18 @@ export function MonthCalendar({ currentDate, onActivityClick }: {
 
               {/* Card area */}
               <div className="flex-1 relative">
-                <div className="absolute top-[1%] left-[1%] right-[1%] bottom-[1%]">
-                  {groupedItems.length > 0 && (() => {
-                    const flatItems = groupedItems.flatMap((g) => g.items);
-                    const stackItems = sortCalendarItems(flatItems);
-                    return (
-                      <CalendarWorkoutStack
-                        items={stackItems}
-                        variant="month"
-                        maxVisible={3}
-                        className="w-full h-full"
-                      />
-                    );
-                  })()}
-                </div>
+                {groupedItems.length > 0 && (() => {
+                  const flatItems = groupedItems.flatMap((g) => g.items);
+                  const stackItems = sortCalendarItems(flatItems);
+                  return (
+                    <CalendarWorkoutStack
+                      items={stackItems}
+                      variant="month"
+                      maxVisible={3}
+                      className="w-full h-full"
+                    />
+                  );
+                })()}
               </div>
 
 
