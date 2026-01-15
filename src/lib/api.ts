@@ -50,7 +50,7 @@ const getBaseURL = () => {
     return apiUrl;
   }
   
-  // For production web builds, use VITE_API_URL if set, otherwise use origin
+  // For production web builds, VITE_API_URL is REQUIRED (no fallback to origin)
   if (import.meta.env.PROD) {
     // Safety check: if origin is capacitor://localhost, we're definitely in Capacitor
     // even if the detection above failed
@@ -67,13 +67,21 @@ const getBaseURL = () => {
       return apiUrl;
     }
     
-    const apiUrl = import.meta.env.VITE_API_URL || window.location.origin;
-    // Only log if we're using window.location.origin (which might be wrong)
-    if (!import.meta.env.VITE_API_URL) {
-      console.warn("[API] VITE_API_URL not set in production, using window.location.origin:", apiUrl);
-    } else {
-      console.log("[API] Using base URL:", apiUrl);
+    // CRITICAL: In production, VITE_API_URL is REQUIRED
+    // Never fall back to window.location.origin - frontend and backend are on different domains
+    const apiUrl = import.meta.env.VITE_API_URL;
+    if (!apiUrl) {
+      const errorMsg = "[API] CRITICAL: VITE_API_URL is required in production but is not set! " +
+                      "Please configure VITE_API_URL in your deployment environment (e.g., Render dashboard). " +
+                      "Example: VITE_API_URL=https://virtus-ai.onrender.com";
+      console.error(errorMsg);
+      console.error("[API] Current window.location.origin:", window.location.origin);
+      console.error("[API] This will cause API calls to fail. Please set VITE_API_URL environment variable.");
+      // Throw error to fail fast - prevents app from running with wrong API URL
+      // This forces deployment to be configured correctly before the app can start
+      throw new Error("VITE_API_URL environment variable is required in production. Please configure it in your deployment settings.");
     }
+    console.log("[API] Using base URL:", apiUrl);
     return apiUrl;
   }
   return "http://localhost:8000";
