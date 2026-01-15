@@ -89,18 +89,24 @@ window.onerror = (message, source, lineno, colno, error) => {
 
 // Wait for DOM and stylesheets to be ready before rendering to prevent FOUC
 function initializeApp(): void {
-  // If DOM is already loaded, render immediately
-  if (document.readyState === 'complete' || document.readyState === 'interactive') {
+  const renderApp = () => {
     // Use requestAnimationFrame to ensure stylesheets have been processed
     requestAnimationFrame(() => {
       createRoot(document.getElementById("root")!).render(<App />);
     });
+  };
+
+  // If DOM is already complete, render immediately
+  if (document.readyState === 'complete') {
+    renderApp();
+  } else if (document.readyState === 'interactive') {
+    // DOM is ready but resources might still be loading
+    // Wait for load event to ensure stylesheets are loaded
+    window.addEventListener('load', renderApp, { once: true });
   } else {
-    // Wait for DOMContentLoaded, then render
+    // Wait for DOMContentLoaded, then wait for load event
     document.addEventListener('DOMContentLoaded', () => {
-      requestAnimationFrame(() => {
-        createRoot(document.getElementById("root")!).render(<App />);
-      });
+      window.addEventListener('load', renderApp, { once: true });
     });
   }
 }
