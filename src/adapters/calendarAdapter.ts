@@ -21,32 +21,36 @@ export function toCalendarItem(
   session: CalendarSession,
   activities: CompletedActivity[]
 ): CalendarItem {
-  // Find matching activity for compliance
+  // CRITICAL: Determine completion based on planned_sessions fields ONLY
+  // Check all completion indicators to be robust to inconsistent data:
+  // - status === 'completed' (authoritative)
+  // - completed === true (boolean flag)
+  // - completed_at !== null (timestamp set)
+  // - completed_activity_id !== null (external activity linked)
+  // Note: completed_activity_id is an external ID (likely Strava activity ID) and may not match
+  // anything in the completed_activities array. We must rely on session fields only.
+  const isCompleted =
+    session.status === 'completed' ||
+    session.completed === true ||
+    !!session.completed_at ||
+    !!session.completed_activity_id;
+  const kind = isCompleted ? 'completed' : 'planned';
+  const isPaired = !!session.completed_activity_id;
+
+  // Try to find matching activity for metrics (pace, power, HR, load) if available
+  // But don't rely on this for determining completion status
   const matchedActivity = activities.find(a => 
     a.planned_session_id === session.id ||
     (session.workout_id && a.workout_id === session.workout_id)
   );
 
-  const kind = (matchedActivity || session.status === 'completed') ? 'completed' : 'planned';
-  const isPaired = !!matchedActivity || !!session.completed_activity_id;
-
   // Determine compliance for completed items
-  let compliance: CalendarCompliance | undefined = undefined;
-  if (kind === 'completed') {
-    if (matchedActivity) {
-      // If we have a matched activity, assume complete
-      // In a real app, you might check activity metrics vs planned metrics
-      compliance = 'complete';
-    } else if (session.status === 'completed') {
-      // Session marked as completed but no matching activity = partial or complete
-      compliance = 'complete';
-    }
-  }
+  const compliance: CalendarCompliance | undefined = isCompleted ? 'complete' : undefined;
 
-  // Extract load from activity if available
+  // Extract load from activity if available, otherwise undefined
   const load = matchedActivity?.trainingLoad;
 
-  // Extract secondary metric (pace, power, etc.) from activity
+  // Extract secondary metric (pace, power, etc.) from activity if available
   let secondary: string | undefined = undefined;
   if (matchedActivity) {
     if (matchedActivity.avgPace) {

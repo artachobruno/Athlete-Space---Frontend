@@ -135,6 +135,9 @@ export interface CalendarSession {
   workout_id?: string | null;
   // Pairing: session is paired if this is non-null
   completed_activity_id?: string | null;
+  // Completion tracking fields (robust to inconsistent data)
+  completed?: boolean;
+  completed_at?: string | null;
   // CRITICAL: Only planned_sessions.id may be mutated. Calendar sessions, workouts, and activities are READ-ONLY views.
   planned_session_id?: string | null;
 }

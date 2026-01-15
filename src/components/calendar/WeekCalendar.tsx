@@ -37,6 +37,7 @@ import type { PlannedWorkout, CompletedActivity, TrainingLoad } from '@/types';
 import type { CalendarSession } from '@/lib/api';
 import { toast } from '@/hooks/use-toast';
 import { normalizeSportType, mapIntensityToIntent } from '@/lib/session-utils';
+import { toCalendarItem } from '@/adapters/calendarAdapter';
 import {
   generateWeeklySummaryText,
   generateWeeklySummaryMarkdown,
@@ -48,67 +49,6 @@ import {
 interface WeekCalendarProps {
   currentDate: Date;
   onActivityClick?: (planned: PlannedWorkout | null, completed: CompletedActivity | null, session?: CalendarSession | null) => void;
-}
-
-/**
- * Converts backend session data to CalendarItem format
- */
-function sessionToCalendarItem(session: CalendarSession, activities: CompletedActivity[]): CalendarItem {
-  // Find matching activity for compliance
-  const matchingActivity = activities.find(a =>
-    (session.workout_id && a.workout_id === session.workout_id) ||
-    a.planned_session_id === session.id
-  );
-
-  const isCompleted = session.status === 'completed' || !!matchingActivity;
-
-  // Extract load from activity if available
-  const load = matchingActivity?.trainingLoad;
-
-  // Extract secondary metric (pace, power, etc.) from activity
-  let secondary: string | undefined = undefined;
-  if (matchingActivity) {
-    if (matchingActivity.avgPace) {
-      secondary = matchingActivity.avgPace;
-    } else if (matchingActivity.avgPower) {
-      secondary = `${Math.round(matchingActivity.avgPower)}W`;
-    } else if (matchingActivity.avgHeartRate) {
-      secondary = `${matchingActivity.avgHeartRate} bpm`;
-    }
-  }
-
-  // Build startLocal from date + time
-  let startLocal = session.date;
-  if (session.time) {
-    startLocal = `${session.date}T${session.time}:00`;
-  } else {
-    startLocal = `${session.date}T00:00:00`;
-  }
-
-  // Determine compliance
-  let compliance: 'complete' | 'partial' | 'missed' | undefined = undefined;
-  if (isCompleted) {
-    if (matchingActivity) {
-      compliance = 'complete';
-    } else if (session.status === 'completed') {
-      compliance = 'complete';
-    }
-  }
-
-  return {
-    id: session.id,
-    kind: isCompleted ? 'completed' : 'planned',
-    sport: normalizeCalendarSport(session.type),
-    intent: normalizeCalendarIntent(session.intensity),
-    title: session.title || '',
-    startLocal,
-    durationMin: session.duration_minutes || 0,
-    load,
-    secondary,
-    isPaired: !!matchingActivity || !!session.workout_id,
-    compliance,
-    description: session.notes || undefined,
-  };
 }
 
 /**
@@ -154,12 +94,12 @@ export function WeekCalendar({ currentDate, onActivityClick }: WeekCalendarProps
       const items: CalendarItem[] = [];
 
       for (const session of day.plannedSessions) {
-        items.push(sessionToCalendarItem(session, monthData.completed_activities));
+        items.push(toCalendarItem(session, monthData.completed_activities || []));
       }
 
       for (const workout of day.workouts) {
         if (!items.some(i => i.id === workout.id)) {
-          items.push(sessionToCalendarItem(workout, monthData.completed_activities));
+          items.push(toCalendarItem(workout, monthData.completed_activities || []));
         }
       }
 

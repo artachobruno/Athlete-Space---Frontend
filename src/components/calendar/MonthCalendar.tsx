@@ -66,12 +66,12 @@ export function MonthCalendar({ currentDate, onActivityClick }: {
       const items: CalendarItem[] = [];
 
       for (const session of day.plannedSessions) {
-        items.push(toCalendarItem(session, monthData.completed_activities));
+        items.push(toCalendarItem(session, monthData.completed_activities || []));
       }
 
       for (const workout of day.workouts) {
         if (!items.some(i => i.id === workout.id)) {
-          items.push(toCalendarItem(workout, monthData.completed_activities));
+          items.push(toCalendarItem(workout, monthData.completed_activities || []));
         }
       }
 
