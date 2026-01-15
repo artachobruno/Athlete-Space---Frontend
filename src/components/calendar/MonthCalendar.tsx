@@ -152,26 +152,10 @@ export function MonthCalendar({ currentDate, onActivityClick }: {
             <div
               key={idx}
               className={cn(
-                'min-h-[260px] relative flex flex-col border-b border-r border-border bg-muted/40',
+                'min-h-[260px] relative flex flex-col border-b border-r border-border bg-muted/40 overflow-hidden',
                 idx % 7 === 6 && 'border-r-0'
               )}
             >
-              {/* Workout card - covers entire day block */}
-              {groupedItems.length > 0 && (() => {
-                const flatItems = groupedItems.flatMap((g) => g.items);
-                const stackItems = sortCalendarItems(flatItems);
-                return (
-                  <div className="absolute inset-0 z-0">
-                    <CalendarWorkoutStack
-                      items={stackItems}
-                      variant="month"
-                      maxVisible={3}
-                      className="w-full h-full"
-                    />
-                  </div>
-                );
-              })()}
-
               {/* Day header */}
               <div
                 className="px-2 pt-2 pb-1 cursor-pointer relative z-10"
@@ -188,8 +172,21 @@ export function MonthCalendar({ currentDate, onActivityClick }: {
                 </span>
               </div>
 
-              {/* Spacer to push footer down */}
-              <div className="flex-1" />
+              {/* Workout card - fills content area */}
+              <div className="flex-1 relative overflow-hidden">
+                {groupedItems.length > 0 && (() => {
+                  const flatItems = groupedItems.flatMap((g) => g.items);
+                  const stackItems = sortCalendarItems(flatItems);
+                  return (
+                    <CalendarWorkoutStack
+                      items={stackItems}
+                      variant="month"
+                      maxVisible={3}
+                      className="w-full h-full"
+                    />
+                  );
+                })()}
+              </div>
 
               {/* Footer */}
               {hasItems && summary && (

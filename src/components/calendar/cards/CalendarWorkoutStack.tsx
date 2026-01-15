@@ -89,7 +89,7 @@ export function CalendarWorkoutStack({
             >
               {(() => {
                 const model = toCalendarCardRenderModel(item);
-                const fillMode = variant === 'month' ? 'fill' : 'fit';
+                const fillMode: 'fill' | 'fit' = variant === 'month' ? 'fill' : 'fit';
                 const propsWithFill = { ...model.props, fillMode };
 
                 if (model.cardType === 'session') {

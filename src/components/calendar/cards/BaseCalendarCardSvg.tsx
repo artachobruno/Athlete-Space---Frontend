@@ -37,7 +37,7 @@ export function BaseCalendarCardSvg({
   const id = `calendar-card-${variant}`;
   const filterId = `${id}-liquid-glass`;
   const displayTitle = toTitleCase(title);
-  const preserveAspectRatio = fillMode === 'fill' ? 'xMidYMid slice' : 'xMidYMid meet';
+  const preserveAspectRatio = fillMode === 'fill' ? 'xMidYMid meet' : 'xMidYMid meet';
 
   return (
     <svg
@@ -49,6 +49,8 @@ export function BaseCalendarCardSvg({
       style={{
         display: 'block',
         fontFamily: 'Space Grotesk, Inter, system-ui, -apple-system, sans-serif',
+        maxWidth: '100%',
+        maxHeight: '100%',
       }}
     >
       <defs>
