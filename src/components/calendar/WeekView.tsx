@@ -170,9 +170,9 @@ export function WeekView({ currentDate, onActivityClick }: WeekViewProps) {
                 </p>
               </div>
 
-              {/* Card Area — FIXED */}
+              {/* Card Area — 98% FILL */}
               <div className="flex-1 relative">
-                <div className="absolute inset-0 p-2 backdrop-blur-xl backdrop-saturate-150">
+                <div className="absolute top-[1%] left-[1%] right-[1%] bottom-[1%]">
                   {groupedItems.length === 0 ? (
                     <div className="h-full flex items-center justify-center">
                       <p className="text-xs text-muted-foreground/50">Rest day</p>
