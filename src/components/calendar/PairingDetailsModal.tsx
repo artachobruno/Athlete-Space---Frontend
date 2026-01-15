@@ -7,6 +7,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { GlassCard } from '@/components/ui/glass-card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Clock, Calendar, Link2, CheckCircle2, Loader2 } from 'lucide-react';
@@ -211,8 +212,10 @@ export function PairingDetailsModal({
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="glass-card sm:max-w-[500px] rounded-2xl">
-          <DialogHeader>
+        <DialogContent className="p-0 bg-transparent border-none sm:max-w-[500px]">
+          <GlassCard variant="raised" className="rounded-2xl">
+            <div className="p-6">
+            <DialogHeader>
             <div className="flex items-center gap-3">
               <div className={cn(
                 "p-2 rounded-lg",
@@ -347,6 +350,8 @@ export function PairingDetailsModal({
               )}
             </div>
           </DialogFooter>
+            </div>
+          </GlassCard>
         </DialogContent>
       </Dialog>
 

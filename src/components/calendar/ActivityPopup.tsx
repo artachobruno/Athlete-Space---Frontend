@@ -1,4 +1,5 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { GlassCard } from '@/components/ui/glass-card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Footprints, Bike, Waves, Clock, Route, Mountain, Heart, Zap, MessageCircle, CheckCircle2, ExternalLink, X, SkipForward, TrendingUp, Info, Download, Loader2, ArrowRight } from 'lucide-react';
@@ -348,8 +349,10 @@ export function ActivityPopup({
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="glass-card sm:max-w-[500px] rounded-2xl">
-        <DialogHeader>
+      <DialogContent className="p-0 bg-transparent border-none sm:max-w-[500px]">
+        <GlassCard variant="raised" className="rounded-2xl">
+          <div className="p-6">
+          <DialogHeader className="pb-4">
           <div className="flex items-center gap-3">
             <div className="p-2 rounded-lg bg-muted">
               <SportIcon className="h-5 w-5 text-foreground" />
@@ -699,6 +702,8 @@ export function ActivityPopup({
             </div>
           </div>
         </div>
+          </div>
+        </GlassCard>
       </DialogContent>
     </Dialog>
 

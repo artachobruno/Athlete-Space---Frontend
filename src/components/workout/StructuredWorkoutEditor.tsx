@@ -20,6 +20,7 @@ import { GripVertical } from 'lucide-react'
 import { StepEditorRow } from './StepEditorRow'
 import { Button } from '@/components/ui/button'
 import { Alert, AlertDescription } from '@/components/ui/alert'
+import { GlassCard } from '@/components/ui/glass-card'
 import type { StructuredWorkoutStep } from '@/api/workouts'
 
 interface StructuredWorkoutEditorProps {
@@ -195,61 +196,63 @@ export function StructuredWorkoutEditor({
   const hasErrors = Object.keys(errors).length > 0
 
   return (
-    <div className="glass-card rounded-xl p-6 space-y-4">
-      <Alert>
-        <AlertDescription>
-          Editing steps directly. Groups are recalculated automatically after saving.
-        </AlertDescription>
-      </Alert>
-
-      <DndContext
-        sensors={sensors}
-        collisionDetection={closestCenter}
-        onDragEnd={handleDragEnd}
-      >
-        <SortableContext
-          items={draftSteps.map((step) => step.id)}
-          strategy={verticalListSortingStrategy}
-        >
-          <div className="space-y-4">
-            {draftSteps.map((step) => (
-              <SortableStepRow
-                key={step.id}
-                step={step}
-                onUpdate={handleStepUpdate}
-                onDelete={() => handleStepDelete(step.id)}
-                errors={errors[step.id]}
-              />
-            ))}
-          </div>
-        </SortableContext>
-      </DndContext>
-
-      {draftSteps.length === 0 && (
+    <div className="space-y-4">
+      <GlassCard variant="blue" className="rounded-xl p-6 space-y-4">
         <Alert>
           <AlertDescription>
-            No steps remaining. Add steps or cancel to restore.
+            Editing steps directly. Groups are recalculated automatically after saving.
           </AlertDescription>
         </Alert>
-      )}
 
-      <div className="flex items-center justify-between pt-4 border-t">
-        <div className="text-sm text-muted-foreground">
-          {hasErrors && (
-            <span className="text-destructive">
-              Please fix errors before saving
-            </span>
-          )}
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" onClick={onCancel} disabled={isSaving}>
-            Cancel
+        <DndContext
+          sensors={sensors}
+          collisionDetection={closestCenter}
+          onDragEnd={handleDragEnd}
+        >
+          <SortableContext
+            items={draftSteps.map((step) => step.id)}
+            strategy={verticalListSortingStrategy}
+          >
+            <div className="space-y-4">
+              {draftSteps.map((step) => (
+                <SortableStepRow
+                  key={step.id}
+                  step={step}
+                  onUpdate={handleStepUpdate}
+                  onDelete={() => handleStepDelete(step.id)}
+                  errors={errors[step.id]}
+                />
+              ))}
+            </div>
+          </SortableContext>
+        </DndContext>
+
+        {draftSteps.length === 0 && (
+          <Alert>
+            <AlertDescription>
+              No steps remaining. Add steps or cancel to restore.
+            </AlertDescription>
+          </Alert>
+        )}
+
+        <div className="flex items-center justify-between pt-4 border-t">
+          <div className="text-sm text-muted-foreground">
+            {hasErrors && (
+              <span className="text-destructive">
+                Please fix errors before saving
+              </span>
+            )}
+          </div>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={onCancel} disabled={isSaving}>
+              Cancel
+            </Button>
+            <Button onClick={handleSave} disabled={isSaving || hasErrors || draftSteps.length === 0}>
+              {isSaving ? 'Saving...' : 'Save Changes'}
           </Button>
-          <Button onClick={handleSave} disabled={isSaving || hasErrors || draftSteps.length === 0}>
-            {isSaving ? 'Saving...' : 'Save Changes'}
-          </Button>
         </div>
-      </div>
+      </GlassCard>
+    </div>
     </div>
   )
 }

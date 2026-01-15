@@ -74,20 +74,11 @@ export function CalendarWorkoutStack({
           >
             <div
               className="flex items-center justify-center w-full h-full"
-              style={
-                variant === 'month'
-                  ? {
-                      // let the calendar cell define the height;
-                      // keep subtle inset by scaling the card box
-                      transform: 'scale(0.98)',
-                      transformOrigin: 'top left',
-                    }
-                  : {
-                      aspectRatio: '360 / 460',
-                      maxWidth: '100%',
-                      maxHeight: '100%',
-                    }
-              }
+              style={{
+                aspectRatio: '360 / 460',
+                maxWidth: '100%',
+                maxHeight: '100%',
+              }}
             >
               {(() => {
                 const model = toCalendarCardRenderModel(item);

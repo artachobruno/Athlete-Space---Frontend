@@ -1,18 +1,2 @@
-import React from "react";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
-import { glass } from "@/styles/designTokens";
-import { cn } from "@/lib/utils";
-
-interface GlassCardProps extends React.HTMLAttributes<HTMLDivElement> {
-  children: React.ReactNode;
-}
-
-export function GlassCard({ children, className, ...props }: GlassCardProps) {
-  return (
-    <Card className={cn(glass.card, className)} {...props}>
-      {children}
-    </Card>
-  );
-}
-
-export { CardContent, CardHeader, CardTitle, CardDescription, CardFooter };
+// Backward compatibility wrapper - re-export from new glass-card
+export { GlassCard, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from './glass-card';

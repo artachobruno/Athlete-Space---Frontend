@@ -8,6 +8,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { GlassCard } from "@/components/ui/glass-card";
 import { type ProposalOnlyResponse } from "@/lib/api";
 
 interface ConfirmationDialogProps {
@@ -111,7 +112,9 @@ export function ConfirmationDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="glass-card sm:max-w-[600px] rounded-2xl">
+      <DialogContent className="p-0 bg-transparent border-none sm:max-w-[600px]">
+        <GlassCard variant="raised" className="rounded-2xl">
+          <div className="p-6">
         <DialogHeader>
           <DialogTitle>Confirm {actionText.charAt(0).toUpperCase() + actionText.slice(1)} {resourceText}</DialogTitle>
           <DialogDescription>
@@ -150,6 +153,8 @@ export function ConfirmationDialog({
             {isSubmitting || isLoading ? "Confirming..." : "Confirm & Proceed"}
           </Button>
         </DialogFooter>
+          </div>
+        </GlassCard>
       </DialogContent>
     </Dialog>
   );

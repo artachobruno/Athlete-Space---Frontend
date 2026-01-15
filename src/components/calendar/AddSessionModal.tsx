@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { GlassCard } from '@/components/ui/glass-card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -259,8 +260,10 @@ export function AddSessionModal({ open, onOpenChange, initialDate, onSuccess }: 
 
   return (
     <Dialog open={open} onOpenChange={handleClose}>
-      <DialogContent className="glass-card sm:max-w-[500px] rounded-2xl">
-        <DialogHeader>
+      <DialogContent className="p-0 bg-transparent border-none sm:max-w-[500px]">
+        <GlassCard variant="raised" className="rounded-2xl">
+          <div className="p-6">
+          <DialogHeader>
           <DialogTitle>Add Session</DialogTitle>
           <DialogDescription>
             Create a new training session for your calendar.
@@ -422,6 +425,8 @@ export function AddSessionModal({ open, onOpenChange, initialDate, onSuccess }: 
             </Button>
           </DialogFooter>
         </form>
+          </div>
+        </GlassCard>
       </DialogContent>
     </Dialog>
   );

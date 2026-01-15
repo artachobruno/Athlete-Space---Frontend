@@ -1,30 +1,28 @@
-/* Glassmorphism utility for AthleteSpace */
+/* ===============================
+   AthleteSpace Glass System
+   OLED-optimized, dark-first
+   =============================== */
 
 .glass-card {
-  background: rgba(20, 24, 32, 0.55);
-  backdrop-filter: blur(14px) saturate(120%);
-  -webkit-backdrop-filter: blur(14px) saturate(120%);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(12, 14, 20, 0.62); /* near-black for OLED */
+  backdrop-filter: blur(16px) saturate(120%);
+  -webkit-backdrop-filter: blur(16px) saturate(120%);
+  border: 1px solid rgba(255, 255, 255, 0.06);
   box-shadow:
-    0 10px 30px rgba(0, 0, 0, 0.35),
+    0 12px 36px rgba(0, 0, 0, 0.55),
     inset 0 1px 0 rgba(255, 255, 255, 0.03);
 }
 
-/* Blue-tinted variant (optional) */
-.glass-card--blue {
-  background: rgba(16, 24, 40, 0.6);
-}
-
-/* Hover polish */
-.glass-card:hover {
-  border-color: rgba(255, 255, 255, 0.14);
-}
-
-/* Elevation tiers */
+/* Elevated variant (modals, focus panels) */
 .glass-card--raised {
   box-shadow:
-    0 20px 40px rgba(0, 0, 0, 0.45),
+    0 20px 50px rgba(0, 0, 0, 0.65),
     inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+/* Blue athletic tint (optional) */
+.glass-card--blue {
+  background: rgba(10, 18, 32, 0.65);
 }
 
 /* Accessibility fallback */
@@ -37,5 +35,41 @@
   
   .glass-card--blue {
     background: hsl(var(--card));
+  }
+}
+
+/* ===============================
+   Animated Glass Transitions
+   =============================== */
+
+.glass-animate {
+  transition:
+    background-color 200ms ease,
+    border-color 200ms ease,
+    box-shadow 200ms ease,
+    backdrop-filter 200ms ease;
+}
+
+/* Hover lift */
+.glass-hover:hover {
+  border-color: rgba(255, 255, 255, 0.12);
+  box-shadow:
+    0 24px 60px rgba(0, 0, 0, 0.7),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+/* Focus state (dialogs) */
+.glass-focus {
+  animation: glassFadeIn 180ms ease-out;
+}
+
+@keyframes glassFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }

@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import type { ParsedWorkout } from '@/lib/api';
 import { useUnitSystem } from '@/hooks/useUnitSystem';
 import { Badge } from '@/components/ui/badge';
-import { GlassCard } from '@/components/ui/GlassCard';
+import { GlassCard } from '@/components/ui/glass-card';
 import {
   CardHeader,
   CardContent,
@@ -88,7 +88,7 @@ export function ParsedWorkoutPreview({ parsedWorkout }: ParsedWorkoutPreviewProp
   };
 
   return (
-    <GlassCard className="mt-4">
+    <GlassCard hover className="mt-4">
       <CardHeader>
         <CardTitle className="text-sm">Structured Workout Preview</CardTitle>
         <p className="text-xs text-muted-foreground mt-1">
