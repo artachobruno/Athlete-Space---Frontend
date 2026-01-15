@@ -179,31 +179,55 @@ export function ActivityPopup({
     }
 
     const sortedSteps = [...structuredWorkout.steps].sort((a, b) => a.order - b.order);
+    const groups = structuredWorkout.groups || [];
     
-    // Generate step type chips (categorical only, no details)
-    const stepTypes = sortedSteps.map((step) => {
-      const typeLabels: Record<string, string> = {
-        warmup: 'WU',
-        steady: 'Steady',
-        interval: 'Interval',
-        cooldown: 'CD',
-        rest: 'Rest',
-        tempo: 'Tempo',
-        threshold: 'Threshold',
-        recovery: 'Recovery',
-        easy: 'Easy',
-        long: 'Long',
-        repeat_block: 'Repeat',
-      };
-      return typeLabels[step.step_type] || (step.step_type ? step.step_type.charAt(0).toUpperCase() + step.step_type.slice(1) : 'Step');
-    });
-
-    // Generate compact summary (1-2 lines max)
-    const summary = stepTypes.join(' → ');
+    // Build a map of step IDs to group info
+    const stepToGroup: Map<string, { groupId: string; repeat: number; stepIds: string[] }> = new Map();
+    for (const group of groups) {
+      for (const stepId of group.step_ids) {
+        stepToGroup.set(stepId, group);
+      }
+    }
+    
+    // Generate compact summary with grouping support
+    const summaryParts: string[] = [];
+    const processedStepIds = new Set<string>();
+    
+    for (const step of sortedSteps) {
+      if (processedStepIds.has(step.id)) continue;
+      
+      const group = stepToGroup.get(step.id);
+      if (group) {
+        // This step is part of a group
+        const groupSteps = group.step_ids
+          .map(id => sortedSteps.find(s => s.id === id))
+          .filter((s): s is typeof step => s !== undefined)
+          .sort((a, b) => a.order - b.order);
+        
+        if (groupSteps.length > 0) {
+          const groupNames = groupSteps.map(s => s.name || s.step_type || 'Step');
+          summaryParts.push(`${group.repeat}× (${groupNames.join(' + ')})`);
+          groupSteps.forEach(s => processedStepIds.add(s.id));
+        }
+      } else {
+        // Single step
+        summaryParts.push(step.name || step.step_type || 'Step');
+        processedStepIds.add(step.id);
+      }
+    }
+    
+    // Limit to ~6 items then add "+N"
+    const maxItems = 6;
+    let summary: string;
+    if (summaryParts.length > maxItems) {
+      summary = summaryParts.slice(0, maxItems).join(' → ') + ` +${summaryParts.length - maxItems}`;
+    } else {
+      summary = summaryParts.join(' → ');
+    }
 
     return {
       summary,
-      stepTypes: sortedSteps.map((step) => step.step_type),
+      stepTypes: sortedSteps.map((step) => step.step_type || step.type),
       stepCount: sortedSteps.length,
     };
   }, [structuredWorkout]);

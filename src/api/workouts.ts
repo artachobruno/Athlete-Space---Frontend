@@ -4,16 +4,42 @@ import { mockWorkouts, buildTimelineFromMockWorkout } from "@/mock/workouts.mock
 import type { Workout } from "@/types/workout"
 import type { WorkoutTimeline } from "@/types/workoutTimeline"
 
+export interface WorkoutTarget {
+  type: string | null
+  min: number | null
+  max: number | null
+  value: number | null
+  unit: string | null
+}
+
 export interface StructuredWorkoutStep {
   id: string
   order: number
   name: string
-  step_type: string // Allow any string - backend can produce new types
+  type: string
+  step_type: string // Keep for backward compatibility
+  kind: string | null
+  intensity: string | null
   distance_meters: number | null
   duration_seconds: number | null
-  target_type: "pace" | "hr" | "power" | null
-  target_low?: number
-  target_high?: number
+  target: WorkoutTarget | null
+  target_type: "pace" | "hr" | "power" | null // Keep for backward compatibility
+  target_low?: number // Keep for backward compatibility
+  target_high?: number // Keep for backward compatibility
+  target_metric?: string | null
+  target_min?: number | null
+  target_max?: number | null
+  target_value?: number | null
+  repeat_group_id: string | null
+  instructions?: string | null
+  purpose?: string | null
+  inferred: boolean
+}
+
+export interface WorkoutStepGroup {
+  group_id: string
+  repeat: number
+  step_ids: string[]
 }
 
 export interface StructuredWorkoutComparison {
@@ -33,6 +59,7 @@ export interface StructuredWorkoutResponse {
     parse_status: "pending" | "parsed" | "ambiguous" | "failed"
   }
   steps: StructuredWorkoutStep[]
+  groups: WorkoutStepGroup[]
   structured_available: boolean
   comparison?: StructuredWorkoutComparison[]
 }
@@ -128,5 +155,14 @@ export async function fetchStructuredWorkout(
 ): Promise<StructuredWorkoutResponse> {
   console.log("[API] Fetching structured workout:", workoutId)
   const response = await api.get(`/workouts/${workoutId}/structured`)
+  return response as unknown as StructuredWorkoutResponse
+}
+
+export async function updateWorkoutSteps(
+  workoutId: string,
+  steps: StructuredWorkoutStep[]
+): Promise<StructuredWorkoutResponse> {
+  console.log("[API] Updating workout steps:", workoutId, steps.length)
+  const response = await api.put(`/workouts/${workoutId}/steps`, { steps })
   return response as unknown as StructuredWorkoutResponse
 }
