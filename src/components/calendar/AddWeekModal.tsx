@@ -10,9 +10,11 @@ import { toast } from '@/hooks/use-toast';
 import { format, startOfWeek, addDays, eachDayOfInterval } from 'date-fns';
 import { useCreatePlannedWeek } from '@/hooks/useCalendarMutations';
 
+type UnitSystem = 'imperial' | 'metric';
+
 interface SessionFormData {
   type: 'easy' | 'workout' | 'long' | 'rest' | '';
-  distance_km: string;
+  distance: string;
   duration_minutes: string;
   notes: string;
 }
@@ -47,6 +49,8 @@ export function AddWeekModal({ open, onOpenChange, initialDate, onSuccess }: Add
     });
   }, [weekStart]);
 
+  const [unitSystem, setUnitSystem] = useState<UnitSystem>('imperial');
+
   const [daySessions, setDaySessions] = useState<DaySession[]>(() => {
     return weekDates.map((date) => ({
       date: format(date, 'yyyy-MM-dd'),
@@ -66,7 +70,7 @@ export function AddWeekModal({ open, onOpenChange, initialDate, onSuccess }: Add
               ...day.sessions,
               {
                 type: '',
-                distance_km: '',
+                distance: '',
                 duration_minutes: '',
                 notes: '',
               },
@@ -134,12 +138,12 @@ export function AddWeekModal({ open, onOpenChange, initialDate, onSuccess }: Add
         }
 
         // Validate: either distance or duration must be provided (except for rest)
-        if (session.type !== 'rest' && !session.distance_km && !session.duration_minutes) {
+        if (session.type !== 'rest' && !session.distance && !session.duration_minutes) {
           throw new Error(`Session on ${format(new Date(day.date), 'MMM d')} is missing distance or duration`);
         }
 
         // Validate distance if provided
-        if (session.distance_km && (isNaN(parseFloat(session.distance_km)) || parseFloat(session.distance_km) <= 0)) {
+        if (session.distance && (isNaN(parseFloat(session.distance)) || parseFloat(session.distance) <= 0)) {
           throw new Error(`Invalid distance on ${format(new Date(day.date), 'MMM d')}`);
         }
 
@@ -148,10 +152,23 @@ export function AddWeekModal({ open, onOpenChange, initialDate, onSuccess }: Add
           throw new Error(`Invalid duration on ${format(new Date(day.date), 'MMM d')}`);
         }
 
+        // Convert distance to km for API
+        let distance_km: number | null = null;
+        if (session.distance) {
+          const distanceValue = parseFloat(session.distance);
+          if (unitSystem === 'imperial') {
+            // Convert miles to km (1 mile = 1.60934 km)
+            distance_km = distanceValue * 1.60934;
+          } else {
+            // Already in km
+            distance_km = distanceValue;
+          }
+        }
+
         sessions.push({
           date: day.date,
           type: session.type,
-          distance_km: session.distance_km ? parseFloat(session.distance_km) : null,
+          distance_km: distance_km,
           duration_minutes: session.duration_minutes ? parseInt(session.duration_minutes, 10) : null,
           notes: session.notes.trim() || null,
         });
@@ -264,6 +281,24 @@ export function AddWeekModal({ open, onOpenChange, initialDate, onSuccess }: Add
         </DialogHeader>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="flex items-center justify-between pb-2 border-b">
+            <Label htmlFor="unit-select" className="text-sm font-medium">
+              Unit System
+            </Label>
+            <Select
+              value={unitSystem}
+              onValueChange={(value: UnitSystem) => setUnitSystem(value)}
+              disabled={createWeek.isPending}
+            >
+              <SelectTrigger id="unit-select" className="w-[180px]">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="imperial">Imperial (miles)</SelectItem>
+                <SelectItem value="metric">Metric (km)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
           <div className="space-y-4">
             {weekDates.map((date, dayIndex) => {
               const dateStr = format(date, 'yyyy-MM-dd');
@@ -317,13 +352,15 @@ export function AddWeekModal({ open, onOpenChange, initialDate, onSuccess }: Add
                           </div>
 
                           <div className="space-y-1">
-                            <Label className="text-xs">Distance (km)</Label>
+                            <Label className="text-xs">
+                              Distance ({unitSystem === 'imperial' ? 'miles' : 'km'})
+                            </Label>
                             <Input
                               type="number"
                               step="0.1"
                               min="0"
-                              value={session.distance_km}
-                              onChange={(e) => updateSession(dateStr, sessionIndex, 'distance_km', e.target.value)}
+                              value={session.distance}
+                              onChange={(e) => updateSession(dateStr, sessionIndex, 'distance', e.target.value)}
                               disabled={createWeek.isPending || session.type === 'rest'}
                               placeholder="Optional"
                             />
