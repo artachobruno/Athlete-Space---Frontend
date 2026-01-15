@@ -31,6 +31,8 @@ export function CalendarWorkoutCard({
 
   const id = `calendar-card-${variant}`;
 
+  const displayTitle = toTitleCase(title);
+
   return (
     <svg
       width="100%"
@@ -51,27 +53,27 @@ export function CalendarWorkoutCard({
           <stop offset="100%" stopColor={theme.base} stopOpacity="0.55" />
         </linearGradient>
 
-        {/* Glass highlight fill */}
+        {/* Glass highlight */}
         <linearGradient id={`${id}-glass`} x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stopColor="rgba(255,255,255,0.18)" />
           <stop offset="60%" stopColor="rgba(255,255,255,0.07)" />
           <stop offset="100%" stopColor="rgba(255,255,255,0.03)" />
         </linearGradient>
 
-        {/* Inner glass edge highlight */}
+        {/* Inner glass edge */}
         <linearGradient id={`${id}-inner-edge`} x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stopColor="rgba(255,255,255,0.55)" />
           <stop offset="40%" stopColor="rgba(255,255,255,0.18)" />
           <stop offset="100%" stopColor="rgba(255,255,255,0.04)" />
         </linearGradient>
 
-        {/* Outer separation edge */}
+        {/* Outer edge */}
         <linearGradient id={`${id}-outer-edge`} x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stopColor="rgba(0,0,0,0.35)" />
           <stop offset="100%" stopColor="rgba(0,0,0,0.18)" />
         </linearGradient>
 
-        {/* Soft floating shadow */}
+        {/* Shadow */}
         <filter
           id={`${id}-shadow`}
           x="-30%"
@@ -89,129 +91,77 @@ export function CalendarWorkoutCard({
         </filter>
       </defs>
 
-      {/* Card shadow */}
-      <rect
-        width="360"
-        height="460"
-        rx="28"
-        fill="transparent"
-        filter={`url(#${id}-shadow)`}
-      />
+      {/* Shadow */}
+      <rect width="360" height="460" rx="28" fill="transparent" filter={`url(#${id}-shadow)`} />
 
-      {/* Card base tint */}
-      <rect
-        width="360"
-        height="460"
-        rx="28"
-        fill={`url(#${id}-bg)`}
-      />
+      {/* Base */}
+      <rect width="360" height="460" rx="28" fill={`url(#${id}-bg)`} />
 
-      {/* Glass highlight overlay */}
-      <rect
-        width="360"
-        height="460"
-        rx="28"
-        fill={`url(#${id}-glass)`}
-      />
+      {/* Glass */}
+      <rect width="360" height="460" rx="28" fill={`url(#${id}-glass)`} />
 
-      {/* Inner highlight edge */}
-      <rect
-        x="1"
-        y="1"
-        width="358"
-        height="458"
-        rx="27"
-        fill="none"
-        stroke={`url(#${id}-inner-edge)`}
-        strokeWidth="1"
-      />
-
-      {/* Outer separation edge */}
-      <rect
-        x="0.5"
-        y="0.5"
-        width="359"
-        height="459"
-        rx="27.5"
-        fill="none"
-        stroke={`url(#${id}-outer-edge)`}
-        strokeWidth="1"
-      />
+      {/* Edges */}
+      <rect x="1" y="1" width="358" height="458" rx="27" fill="none" stroke={`url(#${id}-inner-edge)`} />
+      <rect x="0.5" y="0.5" width="359" height="459" rx="27.5" fill="none" stroke={`url(#${id}-outer-edge)`} />
 
       {/* TOP ROW */}
-      <text
-        x="28"
-        y="56"
-        fill={theme.text}
-        fontSize="22"
-        fontWeight="600"
-        letterSpacing="-0.01em"
-      >
+      <text x="28" y="52" fill={theme.text} fontSize="20" fontWeight="600">
         {duration}
       </text>
 
       <text
         x="332"
-        y="56"
+        y="52"
         fill={theme.secondary}
-        fontSize="22"
+        fontSize="20"
         fontWeight="600"
         textAnchor="end"
-        letterSpacing="-0.01em"
       >
         {workoutType}
       </text>
 
-      {/* SECONDARY METRICS */}
+      {/* METRICS */}
       {secondaryText && (
         <>
-          <text
-            x="28"
-            y="90"
-            fill={theme.secondary}
-            fontSize="12"
-            letterSpacing="0.08em"
-          >
-            DISTANCE — AVG PACE
+          <text x="28" y="82" fill={theme.secondary} fontSize="11" letterSpacing="0.08em">
+            DISTANCE · AVG PACE
           </text>
-
-          <text
-            x="28"
-            y="118"
-            fill={theme.text}
-            fontSize="20"
-            fontWeight="500"
-          >
+          <text x="28" y="108" fill={theme.text} fontSize="20" fontWeight="500">
             {secondaryText}
           </text>
         </>
       )}
 
-      {/* TITLE */}
-      <text
-        x="28"
-        y="190"
-        fill={theme.text}
-        fontSize="34"
-        fontWeight="700"
-        letterSpacing="-0.02em"
-      >
-        {title.length > 28 ? `${title.slice(0, 25)}…` : title}
-      </text>
+      {/* TITLE (never overlaps) */}
+      <foreignObject x="28" y="142" width="304" height="88">
+        <div
+          style={{
+            color: theme.text,
+            fontSize: '30px',
+            fontWeight: 700,
+            lineHeight: 1.15,
+            overflow: 'hidden',
+            display: '-webkit-box',
+            WebkitLineClamp: 2,
+            WebkitBoxOrient: 'vertical',
+          }}
+        >
+          {displayTitle}
+        </div>
+      </foreignObject>
 
       {/* DESCRIPTION */}
       {description && (
-        <foreignObject x="28" y="220" width="304" height="140">
+        <foreignObject x="28" y="232" width="304" height="120">
           <div
-            xmlns="http://www.w3.org/1999/xhtml"
             style={{
               color: theme.secondary,
-              fontSize: '17px',
-              lineHeight: '1.45',
+              fontSize: '16px',
+              lineHeight: 1.45,
               opacity: 0.95,
               overflow: 'hidden',
               display: '-webkit-box',
-              WebkitLineClamp: 4,
+              WebkitLineClamp: 3,
               WebkitBoxOrient: 'vertical',
             }}
           >
@@ -220,11 +170,11 @@ export function CalendarWorkoutCard({
         </foreignObject>
       )}
 
-      {/* SPARKLINE */}
+      {/* PACE GRAPH */}
       {showSparkline && sparkline && (
         <g transform="translate(28,380)">
           <path
-            d={generateSparklinePath(sparkline, 304, 32)}
+            d={generateSparklinePath(sparkline, 304, 36)}
             fill="none"
             stroke="rgba(230,238,255,0.9)"
             strokeWidth="2"
@@ -237,8 +187,17 @@ export function CalendarWorkoutCard({
   );
 }
 
+/* ---------------- Utils ---------------- */
+
+function toTitleCase(input: string): string {
+  return input
+    .toLowerCase()
+    .replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
 /**
  * Sparkline generator (0–1 normalized values)
+ * NOTE: For pace graphs, adapter should invert/normalize.
  */
 function generateSparklinePath(
   data: number[],
