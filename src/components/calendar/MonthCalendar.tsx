@@ -8,7 +8,6 @@ import {
   format,
   isSameMonth,
   isToday,
-  parseISO,
 } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { Loader2, Zap, Clock, Star } from 'lucide-react';
@@ -30,180 +29,87 @@ import { useAuthenticatedQuery } from '@/hooks/useAuthenticatedQuery';
 import type { PlannedWorkout, CompletedActivity } from '@/types';
 import type { CalendarSession } from '@/lib/api';
 
-interface MonthCalendarProps {
-  currentDate: Date;
-  onActivityClick?: (planned: PlannedWorkout | null, completed: CompletedActivity | null, session?: CalendarSession | null) => void;
-}
-
-/**
- * Converts backend session data to CalendarItem format
- */
-function sessionToCalendarItem(session: CalendarSession, activities: CompletedActivity[]): CalendarItem {
-  // Find matching activity for compliance
-  const matchingActivity = activities.find(a => 
-    (session.workout_id && a.workout_id === session.workout_id) ||
-    a.planned_session_id === session.id
-  );
-  
-  const isCompleted = session.type === 'completed' || session.status === 'completed' || !!matchingActivity;
-  
-  // Extract load from activity if available
-  const load = matchingActivity?.trainingLoad;
-  
-  // Extract secondary metric (pace, power, etc.) from activity
-  let secondary: string | undefined = undefined;
-  if (matchingActivity) {
-    if (matchingActivity.avgPace) {
-      secondary = matchingActivity.avgPace;
-    } else if (matchingActivity.avgPower) {
-      secondary = `${Math.round(matchingActivity.avgPower)}W`;
-    } else if (matchingActivity.avgHeartRate) {
-      secondary = `${matchingActivity.avgHeartRate} bpm`;
-    }
-  }
-  
-  // Build startLocal from date + time
-  let startLocal = session.date;
-  if (session.time) {
-    startLocal = `${session.date}T${session.time}:00`;
-  } else {
-    startLocal = `${session.date}T00:00:00`;
-  }
-  
-  // Determine compliance
-  let compliance: 'complete' | 'partial' | 'missed' | undefined = undefined;
-  if (isCompleted) {
-    if (matchingActivity) {
-      compliance = 'complete';
-    } else if (session.status === 'completed') {
-      compliance = 'complete';
-    }
-  }
-  
-  return {
-    id: session.id,
-    kind: isCompleted ? 'completed' : 'planned',
-    sport: normalizeCalendarSport(session.type),
-    intent: normalizeCalendarIntent(session.intensity),
-    title: session.title || '',
-    startLocal,
-    durationMin: session.duration_minutes || 0,
-    load,
-    secondary,
-    isPaired: !!matchingActivity || !!session.workout_id,
-    compliance,
-  };
-}
-
 /**
  * MonthCalendar Component
- * 
- * Strava-clean month view with compact cards and daily summary footer.
+ *
+ * Strava-clean month view with glass cards.
  */
-export function MonthCalendar({ currentDate, onActivityClick }: MonthCalendarProps) {
+export function MonthCalendar({ currentDate, onActivityClick }: {
+  currentDate: Date;
+  onActivityClick?: (
+    planned: PlannedWorkout | null,
+    completed: CompletedActivity | null,
+    session?: CalendarSession | null
+  ) => void;
+}) {
   const [selectedDay, setSelectedDay] = useState<Date | null>(null);
-  
+
   const monthStart = startOfMonth(currentDate);
   const monthEnd = endOfMonth(currentDate);
   const monthKey = format(monthStart, 'yyyy-MM');
-  
+
   const { data: monthData, isLoading } = useAuthenticatedQuery({
     queryKey: ['calendar', 'month', monthKey],
     queryFn: () => fetchCalendarMonth(currentDate),
     retry: 1,
   });
 
-  // Convert to CalendarItems grouped by day
   const dayDataMap = useMemo(() => {
     if (!monthData) return new Map<string, { items: CalendarItem[]; summary: DaySummary }>();
-    
+
     const normalizedDays = normalizeCalendarMonth(monthData);
     const map = new Map<string, { items: CalendarItem[]; summary: DaySummary }>();
-    
+
     for (const day of normalizedDays) {
       const items: CalendarItem[] = [];
-      
-      // Add planned sessions
+
       for (const session of day.plannedSessions) {
         items.push(sessionToCalendarItem(session, monthData.completed_activities));
       }
-      
-      // Add workouts that aren't already represented
+
       for (const workout of day.workouts) {
         if (!items.some(i => i.id === workout.id)) {
           items.push(sessionToCalendarItem(workout, monthData.completed_activities));
         }
       }
-      
-      // Calculate summary
+
       const summary: DaySummary = {
         date: day.date,
-        totalDuration: items.reduce((sum, i) => sum + i.durationMin, 0),
-        totalLoad: items.reduce((sum, i) => sum + (i.load || 0), 0),
+        totalDuration: items.reduce((s, i) => s + i.durationMin, 0),
+        totalLoad: items.reduce((s, i) => s + (i.load || 0), 0),
         qualitySessions: items.filter(i => isQualitySession(i.intent)).length,
         items,
       };
-      
+
       map.set(day.date, { items, summary });
     }
-    
+
     return map;
   }, [monthData]);
 
   const days = useMemo(() => {
-    const calendarStart = startOfWeek(monthStart, { weekStartsOn: 1 });
-    const calendarEnd = endOfWeek(monthEnd, { weekStartsOn: 1 });
-    return eachDayOfInterval({ start: calendarStart, end: calendarEnd });
+    const start = startOfWeek(monthStart, { weekStartsOn: 1 });
+    const end = endOfWeek(monthEnd, { weekStartsOn: 1 });
+    return eachDayOfInterval({ start, end });
   }, [monthStart, monthEnd]);
 
   const getGroupedItemsForDay = (date: Date): GroupedCalendarItem[] => {
-    const dateStr = format(date, 'yyyy-MM-dd');
-    const dayData = dayDataMap.get(dateStr);
-    if (!dayData || dayData.items.length === 0) return [];
-    return groupDuplicateSessions(dayData.items);
+    const key = format(date, 'yyyy-MM-dd');
+    const day = dayDataMap.get(key);
+    return day ? groupDuplicateSessions(day.items) : [];
   };
 
   const getSummaryForDay = (date: Date): DaySummary | null => {
-    const dateStr = format(date, 'yyyy-MM-dd');
-    return dayDataMap.get(dateStr)?.summary || null;
+    return dayDataMap.get(format(date, 'yyyy-MM-dd'))?.summary || null;
   };
 
-  const handleCardClick = (item: CalendarItem) => {
-    // Find original session/activity data for the popup
-    if (monthData && onActivityClick) {
-      const session = [...monthData.planned_sessions, ...monthData.workouts]
-        .find(s => s.id === item.id);
-      const activity = monthData.completed_activities
-        .find(a => a.id === item.id || a.planned_session_id === item.id);
-      
-      onActivityClick(
-        session ? {
-          id: session.id,
-          date: session.date || '',
-          sport: (normalizeCalendarSport(session.type) === 'run' ? 'running' : normalizeCalendarSport(session.type) === 'ride' ? 'cycling' : normalizeCalendarSport(session.type) === 'swim' ? 'swimming' : 'running') as 'running' | 'cycling' | 'swimming' | 'triathlon',
-          intent: (normalizeCalendarIntent(session.intensity) === 'easy' ? 'aerobic' : normalizeCalendarIntent(session.intensity) === 'tempo' ? 'threshold' : normalizeCalendarIntent(session.intensity) === 'intervals' ? 'vo2' : 'aerobic') as 'aerobic' | 'threshold' | 'vo2' | 'endurance' | 'recovery',
-          title: session.title || '',
-          description: '',
-          duration: session.duration_minutes || 0,
-          completed: session.type === 'completed' || session.status === 'completed',
-        } : null,
-        activity || null,
-        session
-      );
-    }
-  };
-
-  // Show day view if a day is selected
   if (selectedDay) {
-    const dateStr = format(selectedDay, 'yyyy-MM-dd');
-    const dayData = dayDataMap.get(dateStr);
-    
+    const dayData = dayDataMap.get(format(selectedDay, 'yyyy-MM-dd'));
     return (
       <DayView
         date={selectedDay}
         items={dayData?.items || []}
         onBack={() => setSelectedDay(null)}
-        onItemClick={handleCardClick}
       />
     );
   }
@@ -222,7 +128,7 @@ export function MonthCalendar({ currentDate, onActivityClick }: MonthCalendarPro
     <div className="bg-card rounded-xl border border-border overflow-hidden shadow-sm">
       {/* Header */}
       <div className="grid grid-cols-7 border-b border-border bg-muted/30">
-        {weekDays.map((day) => (
+        {weekDays.map(day => (
           <div
             key={day}
             className="py-3 text-center text-xs font-semibold text-muted-foreground uppercase tracking-wider"
@@ -232,77 +138,56 @@ export function MonthCalendar({ currentDate, onActivityClick }: MonthCalendarPro
         ))}
       </div>
 
-      {/* Days Grid */}
+      {/* Days */}
       <div className="grid grid-cols-7">
         {days.map((day, idx) => {
           const groupedItems = getGroupedItemsForDay(day);
           const summary = getSummaryForDay(day);
-          const isCurrentMonth = isSameMonth(day, currentDate);
-          const isCurrentDay = isToday(day);
           const hasItems = groupedItems.length > 0;
-          const isWeekend = idx % 7 >= 5;
+          const isCurrentDay = isToday(day);
 
           return (
             <div
               key={idx}
               className={cn(
-                'min-h-[190px] relative flex flex-col calendar-day border-b border-r border-border bg-muted/40',
-                idx % 7 === 6 && 'border-r-0',
-                'last:border-b-0',
+                'min-h-[260px] relative flex flex-col border-b border-r border-border bg-muted/40',
+                idx % 7 === 6 && 'border-r-0'
               )}
             >
-              {/* Day Header */}
+              {/* Day header */}
               <div
-                className={cn(
-                  'p-2 flex items-center justify-between cursor-pointer hover:bg-muted/30 transition-colors',
-                )}
+                className="px-2 pt-2 pb-1 cursor-pointer"
                 onClick={() => setSelectedDay(day)}
               >
                 <span
                   className={cn(
                     'text-sm font-medium',
-                    !isCurrentMonth && 'text-muted-foreground/50',
-                    isCurrentDay && 'bg-primary text-primary-foreground w-7 h-7 rounded-full flex items-center justify-center font-bold',
+                    isCurrentDay &&
+                      'bg-primary text-primary-foreground w-7 h-7 rounded-full inline-flex items-center justify-center font-bold'
                   )}
                 >
                   {format(day, 'd')}
                 </span>
               </div>
 
-              {/* Workout Cards */}
-              <div className="flex-1 calendar-day overflow-hidden">
-                <div
-                  className={cn(
-                    'calendar-card-wrapper flex-1 relative px-0.5 pb-0.5',
-                    'backdrop-blur-xl backdrop-saturate-150'
-                  )}
-                >
+              {/* Card area */}
+              <div className="flex-1 relative">
+                <div className="absolute inset-0 px-0.5 pb-0 backdrop-blur-xl backdrop-saturate-150">
                   {groupedItems.length > 0 && (
                     <CalendarWorkoutStack
                       items={groupedItems[0].items}
                       variant="month"
-                      onClick={handleCardClick}
                       maxVisible={3}
                     />
-                  )}
-                  {groupedItems.length > 1 && (
-                    <div className="absolute bottom-0 left-0 right-0 text-center">
-                      <button
-                        onClick={() => setSelectedDay(day)}
-                        className="text-[10px] text-white/80 hover:text-white bg-black/20 px-2 py-0.5 rounded backdrop-blur-sm"
-                      >
-                        +{groupedItems.length - 1} more
-                      </button>
-                    </div>
                   )}
                 </div>
               </div>
 
-              {/* Daily Summary Footer */}
+              {/* Footer */}
               {hasItems && summary && (
-                <div className="px-2 py-1.5 border-t border-border/50 bg-muted/20">
-                  <div className="flex items-center justify-between text-[10px] text-muted-foreground">
-                    <div className="flex items-center gap-2">
+                <div className="px-2 py-1 border-t border-border/50 bg-muted/20">
+                  <div className="flex justify-between text-[10px] text-muted-foreground">
+                    <div className="flex gap-2">
                       <div className="flex items-center gap-0.5">
                         <Clock className="h-3 w-3" />
                         <span>{summary.totalDuration}m</span>
