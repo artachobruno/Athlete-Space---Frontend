@@ -295,7 +295,7 @@ export function SeasonView({ currentDate }: SeasonViewProps) {
     <div className="space-y-4">
       {/* Season Intelligence Summary */}
       {seasonIntelligence && (
-        <Card className="bg-accent/5 border-accent/20">
+        <GlassCard className="bg-accent/5 border-accent/20">
           <div className="p-4 space-y-3">
             {seasonIntelligence.explanation && (
               <p className="text-sm text-foreground leading-relaxed">
@@ -362,7 +362,7 @@ export function SeasonView({ currentDate }: SeasonViewProps) {
           const raceMarkers = getWeekRaceMarkers(weekNumber);
 
           return (
-            <Card
+            <GlassCard
               key={weekStart.toString()}
               className={cn(
                 'p-4',

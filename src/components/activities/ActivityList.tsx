@@ -145,7 +145,7 @@ export function ActivityList({ activities, initialExpandedId = null }: ActivityL
                 open={isExpanded}
                 onOpenChange={() => toggleExpand(activity.id)}
               >
-                <Card 
+                <GlassCard 
                   className={cn(
                     'transition-all',
                     isExpanded && 'ring-2 ring-accent'

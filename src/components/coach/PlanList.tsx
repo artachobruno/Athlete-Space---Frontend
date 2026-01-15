@@ -12,7 +12,7 @@ export function PlanList({ planItems }: PlanListProps) {
   }
 
   return (
-    <Card className="mt-4 border-accent/20 bg-accent/5">
+    <GlassCard className="mt-4 border-accent/20 bg-accent/5">
       <CardHeader className="pb-3">
         <CardTitle className="text-base font-semibold">Training Plan</CardTitle>
       </CardHeader>

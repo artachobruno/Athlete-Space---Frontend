@@ -21,7 +21,7 @@ export function CoachSummaryCard({ data, onContinue }: CoachSummaryCardProps) {
 
   return (
     <div className="ml-12 mt-4">
-      <Card className="border-accent/30">
+      <GlassCard className="border-accent/30">
         <CardContent className="p-5">
           <div className="flex items-center gap-2 mb-4">
             <Bot className="h-5 w-5 text-accent" />

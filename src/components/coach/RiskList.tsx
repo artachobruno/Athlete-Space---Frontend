@@ -39,7 +39,7 @@ export function RiskList({ risks }: RiskListProps) {
   };
 
   return (
-    <Card className="bg-card border-border">
+    <GlassCard className="bg-card border-border">
       <CardHeader className="pb-2">
         <CardTitle className="text-base font-semibold">Risk Signals</CardTitle>
         <p className="text-xs text-muted-foreground">Awareness items for coach review</p>

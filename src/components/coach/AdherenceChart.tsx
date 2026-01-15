@@ -19,7 +19,7 @@ export function AdherenceChart({ data }: AdherenceChartProps) {
   }));
 
   return (
-    <Card className="bg-card border-border">
+    <GlassCard className="bg-card border-border">
       <CardHeader className="pb-2">
         <CardTitle className="text-base font-semibold">Adherence Trend</CardTitle>
         <p className="text-xs text-muted-foreground">Daily completion rate (last 14 days)</p>

@@ -82,7 +82,7 @@ export function ParsedWorkoutPreview({ parsedWorkout }: ParsedWorkoutPreviewProp
   };
 
   return (
-    <Card className="mt-4">
+    <GlassCard className="mt-4">
       <CardHeader>
         <CardTitle className="text-sm">Structured Workout Preview</CardTitle>
         <p className="text-xs text-muted-foreground mt-1">

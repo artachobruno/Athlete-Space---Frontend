@@ -48,7 +48,7 @@ export function PlanOverviewSidebar({
   );
 
   return (
-    <Card className="sticky top-4">
+    <GlassCard className="sticky top-4">
       <CardHeader>
         <CardTitle className="text-lg">Plan Overview</CardTitle>
       </CardHeader>

@@ -1,5 +1,6 @@
 import { PublicLayout } from '@/components/layout/PublicLayout';
 import { GlassCard } from '@/components/ui/GlassCard';
+import { CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { HelpCircle, ChevronDown, ChevronUp } from 'lucide-react';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
@@ -100,7 +101,7 @@ const faqItems: FAQItem[] = [
 
 function FAQItemComponent({ item, isOpen, onToggle }: { item: FAQItem; isOpen: boolean; onToggle: () => void }) {
   return (
-    <Card className="border-border">
+    <GlassCard className="border-border">
       <CardHeader
         className="cursor-pointer hover:bg-muted/50 transition-colors"
         onClick={onToggle}
@@ -165,7 +166,7 @@ export default function FAQ() {
         </div>
 
         {/* Contact Section */}
-        <Card className="mt-8 border-accent/20 bg-accent/5">
+        <GlassCard className="mt-8 border-accent/20 bg-accent/5">
           <CardContent className="pt-6">
             <div className="text-center">
               <h3 className="text-lg font-semibold text-foreground mb-2">Still have questions?</h3>

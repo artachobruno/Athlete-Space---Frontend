@@ -1,5 +1,6 @@
 import { Component, ReactNode } from 'react';
 import { GlassCard } from '@/components/ui/GlassCard';
+import { CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { AlertTriangle } from 'lucide-react';
 
@@ -30,7 +31,7 @@ export class ErrorBoundary extends Component<Props, State> {
     if (this.state.hasError) {
       return (
         <div className="min-h-screen flex items-center justify-center p-4 bg-background">
-          <Card className="max-w-md w-full">
+          <GlassCard className="max-w-md w-full">
             <CardHeader>
               <div className="flex items-center gap-2">
                 <AlertTriangle className="h-5 w-5 text-destructive" />

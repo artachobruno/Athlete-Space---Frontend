@@ -1,4 +1,5 @@
 import { GlassCard } from '@/components/ui/GlassCard';
+import { CardContent } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 
 interface CoachKpiCardProps {
@@ -21,7 +22,7 @@ export function CoachKpiCard({ label, value, subtext, variant = 'default' }: Coa
   }[variant];
 
   return (
-    <Card className="bg-card border-border">
+    <GlassCard className="bg-card border-border">
       <CardContent className="p-4 sm:p-6">
         <p className="text-sm font-medium text-muted-foreground mb-1">{label}</p>
         <p className={cn('text-2xl sm:text-3xl font-bold', valueColorClass)}>{value}</p>

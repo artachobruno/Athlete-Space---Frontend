@@ -52,7 +52,7 @@ export function StravaConnectCard({ onConnect, onSkip }: StravaConnectCardProps)
 
   return (
     <div className="ml-12 mt-4 space-y-3">
-      <Card className="border-accent/30 bg-accent/5">
+      <GlassCard className="border-accent/30 bg-accent/5">
         <CardContent className="p-4">
           <div className="flex items-start gap-4">
             <div className="w-12 h-12 rounded-lg bg-[#FC4C02]/10 flex items-center justify-center shrink-0">

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { GlassCard } from '@/components/ui/GlassCard';
+import { CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -142,7 +143,7 @@ export default function Signup() {
             </p>
           </div>
 
-          <Card className="border-border/50 shadow-lg">
+          <GlassCard className="border-border/50 shadow-lg">
             <CardContent className="space-y-4 pt-6">
               {/* Strava - Primary CTA */}
               <Button

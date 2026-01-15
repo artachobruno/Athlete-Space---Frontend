@@ -110,7 +110,7 @@ export function DailyDecisionCard() {
   };
 
   return (
-    <Card className={cn('border-2 h-full', config.className)}>
+    <GlassCard className={cn('border-2 h-full', config.className)}>
       <CardContent className="p-6">
         <div className="flex items-start gap-4">
           <div className={cn('p-4 rounded-xl', config.className)}>

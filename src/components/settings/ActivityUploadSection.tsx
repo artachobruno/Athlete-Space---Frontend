@@ -1,6 +1,7 @@
 import { useState, useRef } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { Card; import { CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card' } from '@/components/ui/card';
+import { CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { GlassCard } from '@/components/ui/GlassCard';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Upload, Loader2, FileCheck, AlertCircle } from 'lucide-react';

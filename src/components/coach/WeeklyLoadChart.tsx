@@ -34,7 +34,7 @@ export function WeeklyLoadChart({ data }: WeeklyLoadChartProps) {
   const maxValue = Math.max(...data.map((d) => d.value));
 
   return (
-    <Card className="bg-card border-border">
+    <GlassCard className="bg-card border-border">
       <CardHeader className="pb-2">
         <CardTitle className="text-base font-semibold">Weekly Training Load</CardTitle>
         <p className="text-xs text-muted-foreground">Relative load comparison</p>
