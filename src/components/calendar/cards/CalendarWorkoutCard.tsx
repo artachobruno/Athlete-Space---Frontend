@@ -2,7 +2,7 @@
  * CalendarWorkoutCard
  *
  * Pure SVG renderer for calendar workout cards.
- * Glassmorphic with defined edges, clipped, stack-safe.
+ * Liquid-glass / glassmorphic with defined edges, clipped, stack-safe.
  * No layout logic, no React state.
  */
 
@@ -30,7 +30,7 @@ export function CalendarWorkoutCard({
     theme.showSparkline && Array.isArray(sparkline) && sparkline.length > 0;
 
   const id = `calendar-card-${variant}`;
-
+  const filterId = `${id}-liquid-glass`;
   const displayTitle = toTitleCase(title);
 
   return (
@@ -49,29 +49,83 @@ export function CalendarWorkoutCard({
       <defs>
         {/* Base background tint */}
         <linearGradient id={`${id}-bg`} x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stopColor={theme.base} stopOpacity="0.75" />
+          <stop offset="0%" stopColor={theme.base} stopOpacity="0.85" />
           <stop offset="100%" stopColor={theme.base} stopOpacity="0.55" />
         </linearGradient>
 
         {/* Glass highlight */}
         <linearGradient id={`${id}-glass`} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="rgba(255,255,255,0.18)" />
-          <stop offset="60%" stopColor="rgba(255,255,255,0.07)" />
-          <stop offset="100%" stopColor="rgba(255,255,255,0.03)" />
+          <stop offset="0%" stopColor="rgba(255,255,255,0.22)" />
+          <stop offset="55%" stopColor="rgba(255,255,255,0.09)" />
+          <stop offset="100%" stopColor="rgba(255,255,255,0.04)" />
         </linearGradient>
 
         {/* Inner glass edge */}
         <linearGradient id={`${id}-inner-edge`} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="rgba(255,255,255,0.55)" />
-          <stop offset="40%" stopColor="rgba(255,255,255,0.18)" />
-          <stop offset="100%" stopColor="rgba(255,255,255,0.04)" />
+          <stop offset="0%" stopColor="rgba(255,255,255,0.65)" />
+          <stop offset="40%" stopColor="rgba(255,255,255,0.22)" />
+          <stop offset="100%" stopColor="rgba(255,255,255,0.05)" />
         </linearGradient>
 
         {/* Outer edge */}
         <linearGradient id={`${id}-outer-edge`} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="rgba(0,0,0,0.35)" />
+          <stop offset="0%" stopColor="rgba(0,0,0,0.40)" />
           <stop offset="100%" stopColor="rgba(0,0,0,0.18)" />
         </linearGradient>
+
+        {/* Liquid-glass refraction filter */}
+        <filter
+          id={filterId}
+          x="-20%"
+          y="-20%"
+          width="140%"
+          height="140%"
+          colorInterpolationFilters="sRGB"
+        >
+          {/* Base blur for softness */}
+          <feGaussianBlur in="SourceGraphic" stdDeviation="1.4" result="blurred" />
+
+          {/* Noise for subtle liquid warping */}
+          <feTurbulence
+            type="fractalNoise"
+            baseFrequency="0.012"
+            numOctaves="2"
+            seed="3"
+            stitchTiles="noStitch"
+            result="noise"
+          />
+
+          {/* Displace the blurred content with noise to get “liquid” edges */}
+          <feDisplacementMap
+            in="blurred"
+            in2="noise"
+            scale="12"
+            xChannelSelector="R"
+            yChannelSelector="G"
+            result="displaced"
+          />
+
+          {/* Slight saturation/contrast tweak */}
+          <feColorMatrix
+            in="displaced"
+            type="matrix"
+            values="
+              1.05 0    0    0   0
+              0    1.05 0    0   0
+              0    0    1.08 0   0
+              0    0    0    1   0
+            "
+            result="adjusted"
+          />
+
+          {/* Blend with original for crisp text/edges */}
+          <feBlend
+            in="adjusted"
+            in2="SourceGraphic"
+            mode="normal"
+            result="liquidGlass"
+          />
+        </filter>
 
         {/* Shadow */}
         <filter
@@ -92,20 +146,51 @@ export function CalendarWorkoutCard({
       </defs>
 
       {/* Shadow */}
-      <rect width="360" height="460" rx="28" fill="transparent" filter={`url(#${id}-shadow)`} />
+      <rect
+        width="360"
+        height="460"
+        rx="28"
+        fill="transparent"
+        filter={`url(#${id}-shadow)`}
+      />
 
-      {/* Base */}
-      <rect width="360" height="460" rx="28" fill={`url(#${id}-bg)`} />
+      {/* Card group with liquid-glass filter */}
+      <g filter={`url(#${filterId})`}>
+        {/* Base */}
+        <rect width="360" height="460" rx="28" fill={`url(#${id}-bg)`} />
 
-      {/* Glass */}
-      <rect width="360" height="460" rx="28" fill={`url(#${id}-glass)`} />
+        {/* Glass overlay */}
+        <rect width="360" height="460" rx="28" fill={`url(#${id}-glass)`} />
 
-      {/* Edges */}
-      <rect x="1" y="1" width="358" height="458" rx="27" fill="none" stroke={`url(#${id}-inner-edge)`} />
-      <rect x="0.5" y="0.5" width="359" height="459" rx="27.5" fill="none" stroke={`url(#${id}-outer-edge)`} />
+        {/* Edges */}
+        <rect
+          x="1"
+          y="1"
+          width="358"
+          height="458"
+          rx="27"
+          fill="none"
+          stroke={`url(#${id}-inner-edge)`}
+        />
+        <rect
+          x="0.5"
+          y="0.5"
+          width="359"
+          height="459"
+          rx="27.5"
+          fill="none"
+          stroke={`url(#${id}-outer-edge)`}
+        />
+      </g>
 
       {/* TOP ROW */}
-      <text x="28" y="52" fill={theme.text} fontSize="20" fontWeight="600">
+      <text
+        x="28"
+        y="52"
+        fill={theme.text}
+        fontSize="20"
+        fontWeight="600"
+      >
         {duration}
       </text>
 
@@ -123,16 +208,28 @@ export function CalendarWorkoutCard({
       {/* METRICS */}
       {secondaryText && (
         <>
-          <text x="28" y="82" fill={theme.secondary} fontSize="11" letterSpacing="0.08em">
+          <text
+            x="28"
+            y="82"
+            fill={theme.secondary}
+            fontSize="11"
+            letterSpacing="0.08em"
+          >
             DISTANCE · AVG PACE
           </text>
-          <text x="28" y="108" fill={theme.text} fontSize="20" fontWeight="500">
+          <text
+            x="28"
+            y="108"
+            fill={theme.text}
+            fontSize="20"
+            fontWeight="500"
+          >
             {secondaryText}
           </text>
         </>
       )}
 
-      {/* TITLE (never overlaps) */}
+      {/* TITLE */}
       <foreignObject x="28" y="142" width="304" height="88">
         <div
           style={{
@@ -190,9 +287,7 @@ export function CalendarWorkoutCard({
 /* ---------------- Utils ---------------- */
 
 function toTitleCase(input: string): string {
-  return input
-    .toLowerCase()
-    .replace(/\b\w/g, (c) => c.toUpperCase());
+  return input.toLowerCase().replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
 /**
