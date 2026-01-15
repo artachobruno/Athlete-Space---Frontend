@@ -459,23 +459,19 @@ export function WeekCalendar({ currentDate, onActivityClick }: WeekCalendarProps
               </div>
 
               {/* Workout Cards */}
-              <div className="flex-1 p-2 overflow-y-auto">
+              <div className="flex-1 relative">
                 {groupedItems.length === 0 ? (
-                  <div className="h-full flex items-center justify-center">
+                  <div className="absolute inset-0 flex items-center justify-center">
                     <p className="text-xs text-muted-foreground/50">Rest day</p>
                   </div>
                 ) : (
-                  <div className="space-y-2">
-                    {groupedItems.map((group, gIdx) => (
-                      <div key={gIdx} className="w-full">
-                        <CalendarWorkoutStack
-                          items={group.items}
-                          variant="week"
-                          onClick={handleCardClick}
-                          maxVisible={1}
-                        />
-                      </div>
-                    ))}
+                  <div className="absolute top-[1%] left-[1%] right-[1%] bottom-[1%]">
+                    <CalendarWorkoutStack
+                      items={groupedItems.flatMap((group) => group.items)}
+                      variant="week"
+                      onClick={handleCardClick}
+                      maxVisible={3}
+                    />
                   </div>
                 )}
               </div>
