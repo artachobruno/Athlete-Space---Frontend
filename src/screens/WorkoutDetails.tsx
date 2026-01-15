@@ -16,6 +16,9 @@ import { Button } from '@/components/ui/button'
 import { updateWorkoutSteps } from '@/api/workouts'
 import { toast } from '@/hooks/use-toast'
 import type { StructuredWorkoutStep } from '@/api/workouts'
+import { GlassCardMotion } from '@/components/ui/glass-card-motion'
+import { CardHeader } from '@/components/ui/card'
+import { getGlowIntensityFromWorkout } from '@/lib/intensityGlow'
 
 export default function WorkoutDetails() {
   const { workoutId } = useParams<{ workoutId: string }>()
@@ -47,6 +50,36 @@ export default function WorkoutDetails() {
 
   const { data } = state
   const { workout, steps, groups = [], structured_available, comparison } = data
+
+  // Determine glow intensity from steps (for quality workouts)
+  const glowIntensity = (() => {
+    if (!steps || steps.length === 0) return undefined
+    
+    // Check if any step has quality intensity (threshold, vo2, hill)
+    const hasQualityIntensity = steps.some(step => {
+      const intensity = step.intensity?.toLowerCase() || ''
+      return intensity.includes('threshold') || 
+             intensity.includes('vo2') || 
+             intensity.includes('hill') ||
+             intensity.includes('interval')
+    })
+    
+    if (hasQualityIntensity) {
+      // Find the highest intensity step
+      const intensities = steps
+        .map(s => s.intensity?.toLowerCase())
+        .filter(Boolean) as string[]
+      
+      if (intensities.some(i => i.includes('vo2') || i.includes('hill'))) {
+        return 'vo2' as const
+      }
+      if (intensities.some(i => i.includes('threshold'))) {
+        return 'threshold' as const
+      }
+    }
+    
+    return undefined
+  })()
 
   const handleSave = async (updatedSteps: StructuredWorkoutStep[]) => {
     if (!workoutId) return
@@ -90,9 +123,11 @@ export default function WorkoutDetails() {
   return (
     <AppLayout>
       <div className="space-y-6">
-        <div className="flex items-start justify-between">
-          <WorkoutHeader workout={workout} />
-          <div className="flex items-center gap-2">
+        <GlassCardMotion variant="raised" glowIntensity={glowIntensity}>
+          <CardHeader>
+            <div className="flex items-start justify-between">
+              <WorkoutHeader workout={workout} />
+              <div className="flex items-center gap-2">
             {structured_available && steps.length > 0 && !editMode && (
               <Button
                 variant="outline"
@@ -114,9 +149,11 @@ export default function WorkoutDetails() {
                 Cancel
               </Button>
             )}
-            <WorkoutExport workoutId={workout.id} />
-          </div>
-        </div>
+                <WorkoutExport workoutId={workout.id} />
+              </div>
+            </div>
+          </CardHeader>
+        </GlassCardMotion>
 
         {!structured_available && steps.length === 0 && (
           <ParseStatusBanner parseStatus={workout.parse_status} />

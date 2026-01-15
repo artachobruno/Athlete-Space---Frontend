@@ -1,7 +1,5 @@
-import * as React from "react"
 import { motion, useReducedMotion } from "framer-motion"
-import { GlassCard } from "./glass-card"
-import type { GlassCardProps } from "./glass-card"
+import { GlassCard, type GlassCardProps } from "./glass-card"
 
 export const GlassCardMotion = ({
   children,

@@ -13,6 +13,7 @@ import { CalendarWorkoutStack } from '@/components/calendar/cards/CalendarWorkou
 import { toCalendarCardProps } from '@/components/calendar/cards/calendarCardAdapter';
 import { normalizeCalendarSport, normalizeCalendarIntent } from '@/types/calendar';
 import { toPlanCalendarItem } from './planCalendarAdapter';
+import { getGlowIntensityFromWorkout } from '@/lib/intensityGlow';
 
 interface DailyWorkoutCardProps {
   date: Date;
@@ -70,9 +71,20 @@ export function DailyWorkoutCard({ date, dateId, workout, completed, status, dai
   // Convert workout/activity to CalendarItem for card display
   const calendarItem = toPlanCalendarItem(date, workout, completed);
 
+  // Determine glow intensity for quality workouts (threshold, vo2, hill)
+  // Only apply glow to quality days, not rest days or easy workouts
+  const glowIntensity = workout 
+    ? getGlowIntensityFromWorkout(workout.intensity, workout.type)
+    : undefined
+  
+  // Only show glow for quality workouts (threshold, vo2, hill)
+  const isQualityWorkout = glowIntensity === 'threshold' || glowIntensity === 'vo2' || glowIntensity === 'hill'
+  const finalGlowIntensity = isQualityWorkout ? glowIntensity : undefined
+
   return (
     <GlassCard 
       id={dateId}
+      glowIntensity={finalGlowIntensity}
       className={cn(
         'transition-all scroll-mt-4',
         status === 'today' && 'ring-2 ring-accent',

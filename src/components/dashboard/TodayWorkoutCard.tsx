@@ -1,4 +1,4 @@
-import { GlassCard } from '@/components/ui/GlassCard';
+import { GlassCardMotion } from '@/components/ui/glass-card-motion';
 import { CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { fetchCalendarToday, fetchTrainingLoad, fetchActivities } from '@/lib/api';
@@ -11,6 +11,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useUnitSystem } from '@/hooks/useUnitSystem';
 import { useMemo } from 'react';
 import { getTssForDate, enrichActivitiesWithTss, type TrainingLoadData } from '@/lib/tss-utils';
+import { getGlowIntensityFromWorkout } from '@/lib/intensityGlow';
 
 const intentColors = {
   aerobic: 'bg-training-aerobic/15 text-training-aerobic border-training-aerobic/30',
@@ -100,7 +101,7 @@ export function TodayWorkoutCard() {
 
   if (isLoading) {
     return (
-      <GlassCard>
+      <GlassCardMotion>
         <CardHeader>
           <CardTitle className="text-lg">Today's Workout</CardTitle>
         </CardHeader>
@@ -109,13 +110,13 @@ export function TodayWorkoutCard() {
             <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
           </div>
         </CardContent>
-      </GlassCard>
+      </GlassCardMotion>
     );
   }
 
   if (error || !todayWorkout) {
     return (
-      <GlassCard>
+      <GlassCardMotion>
         <CardHeader>
           <CardTitle className="text-lg">Today's Workout</CardTitle>
         </CardHeader>
@@ -124,15 +125,16 @@ export function TodayWorkoutCard() {
             <p>{error ? 'Unable to load workout' : 'Rest day - no workout scheduled'}</p>
           </div>
         </CardContent>
-      </GlassCard>
+      </GlassCardMotion>
     );
   }
 
   const workoutType = todayWorkout.type || '';
   const workoutIntent = mapTypeToIntent(workoutType);
+  const glowIntensity = getGlowIntensityFromWorkout(todayWorkout.intensity, workoutType);
 
   return (
-    <GlassCard>
+    <GlassCardMotion glowIntensity={glowIntensity} variant="raised" hover>
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg">Today's Workout</CardTitle>
@@ -194,6 +196,6 @@ export function TodayWorkoutCard() {
           )}
         </div>
       </CardContent>
-    </GlassCard>
+    </GlassCardMotion>
   );
 }
