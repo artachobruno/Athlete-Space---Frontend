@@ -10,7 +10,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Play, AlertCircle, Database } from 'lucide-react';
+import { Loader2, Play, AlertCircle, Database, ChevronLeft, ChevronRight } from 'lucide-react';
 import {
   Table,
   TableBody,
@@ -32,6 +32,9 @@ interface QueryError {
   detail?: string;
 }
 
+type DbTable = { schema: string; name: string };
+type DbColumn = { name: string; type: string };
+
 /**
  * Admin SQL Analytics Page
  * Allows admin users to run SQL queries against the backend database
@@ -41,6 +44,13 @@ export default function AdminAnalytics() {
   const [isLoading, setIsLoading] = useState(false);
   const [result, setResult] = useState<QueryResult | null>(null);
   const [error, setError] = useState<QueryError | null>(null);
+  
+  // Table browser state
+  const [tables, setTables] = useState<DbTable[]>([]);
+  const [selected, setSelected] = useState<DbTable | null>(null);
+  const [columns, setColumns] = useState<DbColumn[]>([]);
+  const [previewLimit, setPreviewLimit] = useState(50);
+  const [previewOffset, setPreviewOffset] = useState(0);
 
   const getBaseURL = useCallback(() => {
     const isCapacitor = typeof window !== 'undefined' && (
@@ -63,6 +73,120 @@ export default function AdminAnalytics() {
     }
     return "http://localhost:8000";
   }, []);
+
+  const apiFetch = useCallback(async (path: string, init?: RequestInit) => {
+    const baseURL = getBaseURL();
+    const res = await fetch(`${baseURL}${path}`, {
+      credentials: 'include',
+      headers: { 'Content-Type': 'application/json', ...(init?.headers || {}) },
+      ...init,
+    });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({})) as Record<string, unknown>;
+      const msg = typeof data.detail === 'string' ? data.detail : `${res.status} ${res.statusText}`;
+      throw new Error(msg);
+    }
+    return res.json();
+  }, [getBaseURL]);
+
+  const loadTables = useCallback(async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const data = await apiFetch('/admin/sql/tables') as DbTable[];
+      setTables(data);
+    } catch (e) {
+      setError({ 
+        error: 'Failed to load tables', 
+        detail: e instanceof Error ? e.message : String(e) 
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  }, [apiFetch]);
+
+  const selectTable = useCallback(async (t: DbTable) => {
+    setSelected(t);
+    setPreviewOffset(0);
+    setIsLoading(true);
+    setError(null);
+    try {
+      const cols = await apiFetch(
+        `/admin/sql/tables/${encodeURIComponent(t.schema)}/${encodeURIComponent(t.name)}/columns`
+      ) as DbColumn[];
+      setColumns(cols);
+
+      const preview = await apiFetch('/admin/sql/table-preview', {
+        method: 'POST',
+        body: JSON.stringify({ 
+          schema: t.schema, 
+          table: t.name, 
+          limit: previewLimit, 
+          offset: 0 
+        }),
+      }) as QueryResult;
+      setResult(preview);
+    } catch (e) {
+      setError({ 
+        error: 'Failed to load table', 
+        detail: e instanceof Error ? e.message : String(e) 
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  }, [apiFetch, previewLimit]);
+
+  const nextPage = useCallback(async () => {
+    if (!selected) return;
+    const next = previewOffset + previewLimit;
+    setPreviewOffset(next);
+    setIsLoading(true);
+    try {
+      const preview = await apiFetch('/admin/sql/table-preview', {
+        method: 'POST',
+        body: JSON.stringify({ 
+          schema: selected.schema, 
+          table: selected.name, 
+          limit: previewLimit, 
+          offset: next 
+        }),
+      }) as QueryResult;
+      setResult(preview);
+    } catch (e) {
+      setError({ 
+        error: 'Failed to load next page', 
+        detail: e instanceof Error ? e.message : String(e) 
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  }, [apiFetch, selected, previewLimit, previewOffset]);
+
+  const prevPage = useCallback(async () => {
+    if (!selected) return;
+    const prev = Math.max(0, previewOffset - previewLimit);
+    setPreviewOffset(prev);
+    setIsLoading(true);
+    try {
+      const preview = await apiFetch('/admin/sql/table-preview', {
+        method: 'POST',
+        body: JSON.stringify({ 
+          schema: selected.schema, 
+          table: selected.name, 
+          limit: previewLimit, 
+          offset: prev 
+        }),
+      }) as QueryResult;
+      setResult(preview);
+    } catch (e) {
+      setError({ 
+        error: 'Failed to load previous page', 
+        detail: e instanceof Error ? e.message : String(e) 
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  }, [apiFetch, selected, previewLimit, previewOffset]);
 
   const runQuery = useCallback(async () => {
     if (!sql.trim()) {
@@ -165,8 +289,91 @@ export default function AdminAnalytics() {
           </Badge>
         </div>
 
-        {/* SQL Input */}
-        <GlassCard>
+        {/* Two-column layout: Tables sidebar + SQL editor */}
+        <div className="grid grid-cols-1 lg:grid-cols-[320px_1fr] gap-6">
+          {/* Tables Sidebar */}
+          <GlassCard>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base font-medium">Tables</CardTitle>
+              <CardDescription>Browse schema</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <Button 
+                onClick={loadTables} 
+                disabled={isLoading} 
+                className="w-full"
+                variant="outline"
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Loading...
+                  </>
+                ) : (
+                  'Load tables'
+                )}
+              </Button>
+              
+              {tables.length > 0 && (
+                <div className="max-h-[520px] overflow-auto border rounded-md">
+                  {tables.map(t => {
+                    const active = selected?.schema === t.schema && selected?.name === t.name;
+                    return (
+                      <button
+                        key={`${t.schema}.${t.name}`}
+                        onClick={() => selectTable(t)}
+                        className={`w-full text-left px-3 py-2 text-sm font-mono border-b last:border-b-0 hover:bg-muted/40 transition-colors ${
+                          active ? 'bg-muted' : ''
+                        }`}
+                      >
+                        {t.schema}.{t.name}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+
+              {selected && (
+                <div className="space-y-2 pt-2 border-t">
+                  <div className="flex items-center justify-between gap-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={prevPage} 
+                      disabled={isLoading || previewOffset === 0}
+                      className="flex-1"
+                    >
+                      <ChevronLeft className="h-4 w-4 mr-1" />
+                      Prev
+                    </Button>
+                    <span className="text-xs text-muted-foreground font-mono px-2">
+                      {previewOffset}+
+                    </span>
+                    <Button 
+                      variant="outline" 
+                      size="sm"
+                      onClick={nextPage} 
+                      disabled={isLoading}
+                      className="flex-1"
+                    >
+                      Next
+                      <ChevronRight className="h-4 w-4 ml-1" />
+                    </Button>
+                  </div>
+                  {columns.length > 0 && (
+                    <div className="text-xs text-muted-foreground">
+                      {columns.length} {columns.length === 1 ? 'column' : 'columns'}
+                    </div>
+                  )}
+                </div>
+              )}
+            </CardContent>
+          </GlassCard>
+
+          {/* SQL Editor + Results */}
+          <div className="space-y-6">
+            {/* SQL Input */}
+            <GlassCard>
           <CardHeader className="pb-3">
             <CardTitle className="text-base font-medium flex items-center gap-2">
               <Database className="h-4 w-4" />
@@ -267,7 +474,9 @@ export default function AdminAnalytics() {
               )}
             </CardContent>
           </GlassCard>
-        )}
+          )}
+          </div>
+        </div>
       </div>
     </AppLayout>
   );
