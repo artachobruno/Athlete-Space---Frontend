@@ -156,9 +156,25 @@ export function MonthCalendar({ currentDate, onActivityClick }: {
                 idx % 7 === 6 && 'border-r-0'
               )}
             >
+              {/* Workout card - covers entire day block */}
+              {groupedItems.length > 0 && (() => {
+                const flatItems = groupedItems.flatMap((g) => g.items);
+                const stackItems = sortCalendarItems(flatItems);
+                return (
+                  <div className="absolute inset-0 z-0">
+                    <CalendarWorkoutStack
+                      items={stackItems}
+                      variant="month"
+                      maxVisible={3}
+                      className="w-full h-full"
+                    />
+                  </div>
+                );
+              })()}
+
               {/* Day header */}
               <div
-                className="px-2 pt-2 pb-1 cursor-pointer"
+                className="px-2 pt-2 pb-1 cursor-pointer relative z-10"
                 onClick={() => setSelectedDay(day)}
               >
                 <span
@@ -172,26 +188,12 @@ export function MonthCalendar({ currentDate, onActivityClick }: {
                 </span>
               </div>
 
-              {/* Card area */}
-              <div className="flex-1 relative">
-                {groupedItems.length > 0 && (() => {
-                  const flatItems = groupedItems.flatMap((g) => g.items);
-                  const stackItems = sortCalendarItems(flatItems);
-                  return (
-                    <CalendarWorkoutStack
-                      items={stackItems}
-                      variant="month"
-                      maxVisible={3}
-                      className="w-full h-full"
-                    />
-                  );
-                })()}
-              </div>
-
+              {/* Spacer to push footer down */}
+              <div className="flex-1" />
 
               {/* Footer */}
               {hasItems && summary && (
-                <div className="px-2 py-1 border-t border-border/50 bg-muted/20">
+                <div className="px-2 py-1 border-t border-border/50 bg-muted/20 relative z-10">
                   <div className="flex justify-between text-[10px] text-muted-foreground">
                     <div className="flex gap-2">
                       <div className="flex items-center gap-0.5">
