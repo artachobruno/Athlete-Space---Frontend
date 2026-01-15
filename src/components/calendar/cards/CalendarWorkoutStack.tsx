@@ -89,18 +89,16 @@ export function CalendarWorkoutStack({
             >
               {(() => {
                 const model = toCalendarCardRenderModel(item);
-                const fillMode: 'fill' | 'fit' = variant === 'month' ? 'fill' : 'fit';
-                const propsWithFill = { ...model.props, fillMode };
 
                 if (model.cardType === 'session') {
-                  return <CalendarWorkoutCard {...propsWithFill} />;
+                  return <CalendarWorkoutCard {...model.props} />;
                 }
 
                 if (model.cardType === 'activity') {
-                  return <CalendarActivityCard {...propsWithFill} />;
+                  return <CalendarActivityCard {...model.props} />;
                 }
 
-                return <CalendarTrainingDayCard {...propsWithFill} />;
+                return <CalendarTrainingDayCard {...model.props} />;
               })()}
             </div>
           </div>
