@@ -88,7 +88,7 @@ export function WorkoutComparison({
           return (
             <div key={step.id} className="space-y-1">
               <div className="flex items-center justify-between text-xs">
-                <span className="text-muted-foreground">Step {step.order}</span>
+                <span className="text-muted-foreground">{step.name || `Step ${step.order}`}</span>
                 <Badge variant="outline" className="gap-1">
                   <StatusIcon className={cn('h-3 w-3', statusColor.replace('bg-', 'text-'))} />
                   {comp.status === 'hit' && 'Hit'}

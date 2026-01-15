@@ -76,7 +76,7 @@ export function WorkoutStepsTable({ steps }: WorkoutStepsTableProps) {
               <TableCell className="font-medium">{step.order}</TableCell>
               <TableCell>
                 <Badge variant="outline">
-                  {STEP_TYPE_LABELS[step.step_type] || (step.step_type ? step.step_type.charAt(0).toUpperCase() + step.step_type.slice(1) : 'Step')}
+                  {step.name || STEP_TYPE_LABELS[step.step_type] || (step.step_type ? step.step_type.charAt(0).toUpperCase() + step.step_type.slice(1) : 'Step')}
                 </Badge>
               </TableCell>
               <TableCell>

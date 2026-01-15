@@ -87,7 +87,7 @@ export function WorkoutTimeline({
                 backgroundColor: color,
                 minWidth: widthPercent > 0 ? '2px' : '0',
               }}
-              title={`${step.step_type} - Step ${step.order}`}
+              title={`${step.name || step.step_type} - Step ${step.order}`}
             />
           )
         })}

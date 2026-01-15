@@ -7,6 +7,7 @@ import type { WorkoutTimeline } from "@/types/workoutTimeline"
 export interface StructuredWorkoutStep {
   id: string
   order: number
+  name: string
   step_type: string // Allow any string - backend can produce new types
   distance_meters: number | null
   duration_seconds: number | null
@@ -32,6 +33,7 @@ export interface StructuredWorkoutResponse {
     parse_status: "pending" | "parsed" | "ambiguous" | "failed"
   }
   steps: StructuredWorkoutStep[]
+  structured_available: boolean
   comparison?: StructuredWorkoutComparison[]
 }
 

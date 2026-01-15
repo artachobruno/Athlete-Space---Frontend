@@ -36,7 +36,7 @@ export default function WorkoutDetails() {
   }
 
   const { data } = state
-  const { workout, steps, comparison } = data
+  const { workout, steps, structured_available, comparison } = data
 
   return (
     <AppLayout>
@@ -46,9 +46,11 @@ export default function WorkoutDetails() {
           <WorkoutExport workoutId={workout.id} />
         </div>
 
-        <ParseStatusBanner parseStatus={workout.parse_status} />
+        {!structured_available && (
+          <ParseStatusBanner parseStatus={workout.parse_status} />
+        )}
 
-        {steps.length > 0 && (
+        {structured_available && steps.length > 0 && (
           <>
             <Card>
               <CardContent className="pt-6">
@@ -81,7 +83,7 @@ export default function WorkoutDetails() {
           </>
         )}
 
-        {steps.length === 0 && (
+        {!structured_available && (
           <Card>
             <CardContent className="pt-6">
               <div className="text-center py-8 text-muted-foreground">
