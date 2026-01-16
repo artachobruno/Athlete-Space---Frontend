@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { GlassCard } from '@/components/ui/GlassCard';
 import {
@@ -10,7 +10,8 @@ import {
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Play, AlertCircle, Database, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Loader2, Play, AlertCircle, Database, ChevronLeft, ChevronRight, ArrowUpDown, ArrowUp, ArrowDown, Filter } from 'lucide-react';
 import {
   Table,
   TableBody,
@@ -51,6 +52,11 @@ export default function AdminAnalytics() {
   const [columns, setColumns] = useState<DbColumn[]>([]);
   const [previewLimit, setPreviewLimit] = useState(50);
   const [previewOffset, setPreviewOffset] = useState(0);
+  
+  // Sort and filter state
+  const [sortColumn, setSortColumn] = useState<string | null>(null);
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('asc');
+  const [columnFilters, setColumnFilters] = useState<Record<string, string>>({});
 
   const getBaseURL = useCallback(() => {
     const isCapacitor = typeof window !== 'undefined' && (
@@ -110,6 +116,9 @@ export default function AdminAnalytics() {
     setPreviewOffset(0);
     setIsLoading(true);
     setError(null);
+    setSortColumn(null);
+    setSortDirection('asc');
+    setColumnFilters({});
     try {
       const cols = await apiFetch(
         `/admin/sql/tables/${encodeURIComponent(t.schema)}/${encodeURIComponent(t.name)}/columns`
@@ -197,6 +206,9 @@ export default function AdminAnalytics() {
     setIsLoading(true);
     setError(null);
     setResult(null);
+    setSortColumn(null);
+    setSortDirection('asc');
+    setColumnFilters({});
 
     try {
       const baseURL = getBaseURL();
@@ -272,6 +284,88 @@ export default function AdminAnalytics() {
     if (typeof value === 'object') return JSON.stringify(value);
     return String(value);
   };
+
+  // Filter and sort the result rows
+  const filteredAndSortedRows = useMemo(() => {
+    if (!result || !result.rows || result.rows.length === 0) {
+      return [];
+    }
+
+    let filtered = result.rows;
+
+    // Apply column filters
+    const activeFilters = Object.entries(columnFilters).filter(([_, value]) => value.trim() !== '');
+    if (activeFilters.length > 0) {
+      filtered = filtered.filter((row) => {
+        return activeFilters.every(([columnName, filterValue]) => {
+          const columnIndex = result.columns.indexOf(columnName);
+          if (columnIndex === -1) return true;
+          
+          const cellValue = formatCellValue(row[columnIndex]);
+          return cellValue.toLowerCase().includes(filterValue.toLowerCase());
+        });
+      });
+    }
+
+    // Apply sorting
+    if (sortColumn) {
+      const columnIndex = result.columns.indexOf(sortColumn);
+      if (columnIndex !== -1) {
+        filtered = [...filtered].sort((a, b) => {
+          const aValue = a[columnIndex];
+          const bValue = b[columnIndex];
+          
+          // Handle null values
+          if (aValue === null && bValue === null) return 0;
+          if (aValue === null) return 1;
+          if (bValue === null) return -1;
+          
+          // Compare values
+          let comparison = 0;
+          if (typeof aValue === 'number' && typeof bValue === 'number') {
+            comparison = aValue - bValue;
+          } else {
+            const aStr = formatCellValue(aValue);
+            const bStr = formatCellValue(bValue);
+            comparison = aStr.localeCompare(bStr);
+          }
+          
+          return sortDirection === 'asc' ? comparison : -comparison;
+        });
+      }
+    }
+
+    return filtered;
+  }, [result, columnFilters, sortColumn, sortDirection]);
+
+  const handleSort = useCallback((column: string) => {
+    if (sortColumn === column) {
+      // Toggle direction if same column
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      // Set new column with ascending direction
+      setSortColumn(column);
+      setSortDirection('asc');
+    }
+  }, [sortColumn, sortDirection]);
+
+  const handleFilterChange = useCallback((column: string, value: string) => {
+    setColumnFilters((prev) => {
+      const updated = { ...prev };
+      if (value.trim() === '') {
+        delete updated[column];
+      } else {
+        updated[column] = value;
+      }
+      return updated;
+    });
+  }, []);
+
+  const clearFilters = useCallback(() => {
+    setColumnFilters({});
+    setSortColumn(null);
+    setSortDirection('asc');
+  }, []);
 
   return (
     <AppLayout>
@@ -433,9 +527,21 @@ export default function AdminAnalytics() {
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-base font-medium">Results</CardTitle>
-                <Badge variant="secondary">
-                  {result.row_count} {result.row_count === 1 ? 'row' : 'rows'}
-                </Badge>
+                <div className="flex items-center gap-2">
+                  {(Object.keys(columnFilters).length > 0 || sortColumn) && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={clearFilters}
+                      className="h-7 text-xs"
+                    >
+                      Clear Filters
+                    </Button>
+                  )}
+                  <Badge variant="secondary">
+                    {filteredAndSortedRows.length} / {result.row_count} {result.row_count === 1 ? 'row' : 'rows'}
+                  </Badge>
+                </div>
               </div>
             </CardHeader>
             <CardContent>
@@ -447,27 +553,78 @@ export default function AdminAnalytics() {
                 <div className="overflow-x-auto border rounded-md">
                   <Table>
                     <TableHeader>
+                      {/* Column Headers with Sort */}
+                      <TableRow>
+                        {result.columns.map((column, idx) => {
+                          const isSorted = sortColumn === column;
+                          return (
+                            <TableHead 
+                              key={idx} 
+                              className="font-mono text-xs whitespace-nowrap bg-muted/50"
+                            >
+                              <button
+                                onClick={() => handleSort(column)}
+                                className="flex items-center gap-1 hover:text-primary transition-colors w-full text-left"
+                              >
+                                {column}
+                                {isSorted ? (
+                                  sortDirection === 'asc' ? (
+                                    <ArrowUp className="h-3 w-3" />
+                                  ) : (
+                                    <ArrowDown className="h-3 w-3" />
+                                  )
+                                ) : (
+                                  <ArrowUpDown className="h-3 w-3 opacity-30" />
+                                )}
+                              </button>
+                            </TableHead>
+                          );
+                        })}
+                      </TableRow>
+                      {/* Filter Inputs Row */}
                       <TableRow>
                         {result.columns.map((column, idx) => (
-                          <TableHead key={idx} className="font-mono text-xs whitespace-nowrap">
-                            {column}
+                          <TableHead key={idx} className="p-1 bg-muted/30">
+                            <div className="relative">
+                              <Input
+                                type="text"
+                                placeholder={`Filter ${column}`}
+                                value={columnFilters[column] || ''}
+                                onChange={(e) => handleFilterChange(column, e.target.value)}
+                                className="h-7 text-xs font-mono"
+                              />
+                              {columnFilters[column] && (
+                                <Filter className="absolute right-2 top-1/2 -translate-y-1/2 h-3 w-3 text-primary" />
+                              )}
+                            </div>
                           </TableHead>
                         ))}
                       </TableRow>
                     </TableHeader>
                     <TableBody>
-                      {result.rows.map((row, rowIdx) => (
-                        <TableRow key={rowIdx}>
-                          {row.map((cell, cellIdx) => (
-                            <TableCell 
-                              key={cellIdx} 
-                              className={`font-mono text-xs whitespace-nowrap ${cell === null ? 'text-muted-foreground italic' : ''}`}
-                            >
-                              {formatCellValue(cell)}
-                            </TableCell>
-                          ))}
+                      {filteredAndSortedRows.length === 0 ? (
+                        <TableRow>
+                          <TableCell 
+                            colSpan={result.columns.length}
+                            className="text-center py-8 text-muted-foreground"
+                          >
+                            No rows match the current filters.
+                          </TableCell>
                         </TableRow>
-                      ))}
+                      ) : (
+                        filteredAndSortedRows.map((row, rowIdx) => (
+                          <TableRow key={rowIdx}>
+                            {row.map((cell, cellIdx) => (
+                              <TableCell 
+                                key={cellIdx} 
+                                className={`font-mono text-xs whitespace-nowrap ${cell === null ? 'text-muted-foreground italic' : ''}`}
+                              >
+                                {formatCellValue(cell)}
+                              </TableCell>
+                            ))}
+                          </TableRow>
+                        ))
+                      )}
                     </TableBody>
                   </Table>
                 </div>
