@@ -2116,6 +2116,7 @@ export const fetchCalendarSessions = async (params?: { limit?: number; offset?: 
  */
 export const createManualSession = async (session: {
   date: string;
+  sport: 'Run' | 'Bike' | 'Swim' | 'Triathlon' | 'Crossfit' | 'Strength' | 'Walk';
   type: 'easy' | 'workout' | 'long' | 'rest';
   distance_km?: number | null;
   duration_minutes?: number | null;
@@ -2139,6 +2140,7 @@ export const createManualSession = async (session: {
  */
 export const createManualWeek = async (weekStart: string, sessions: Array<{
   date: string;
+  sport: 'Run' | 'Bike' | 'Swim' | 'Triathlon' | 'Crossfit' | 'Strength' | 'Walk';
   type: 'easy' | 'workout' | 'long' | 'rest';
   distance_km?: number | null;
   duration_minutes?: number | null;

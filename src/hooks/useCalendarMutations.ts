@@ -73,6 +73,7 @@ export function useCreatePlannedWeek() {
   return useMutation({
     mutationFn: ({ weekStart, sessions }: { weekStart: string; sessions: Array<{
       date: string;
+      sport: 'Run' | 'Bike' | 'Swim' | 'Triathlon' | 'Crossfit' | 'Strength' | 'Walk';
       type: 'easy' | 'workout' | 'long' | 'rest';
       distance_km?: number | null;
       duration_minutes?: number | null;

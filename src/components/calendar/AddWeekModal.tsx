@@ -13,6 +13,7 @@ import { useCreatePlannedWeek } from '@/hooks/useCalendarMutations';
 type UnitSystem = 'imperial' | 'metric';
 
 interface SessionFormData {
+  sport: 'Run' | 'Bike' | 'Swim' | 'Triathlon' | 'Crossfit' | 'Strength' | 'Walk' | '';
   type: 'easy' | 'workout' | 'long' | 'rest' | '';
   distance: string;
   duration_minutes: string;
@@ -69,6 +70,7 @@ export function AddWeekModal({ open, onOpenChange, initialDate, onSuccess }: Add
             sessions: [
               ...day.sessions,
               {
+                sport: '',
                 type: '',
                 distance: '',
                 duration_minutes: '',
@@ -117,6 +119,7 @@ export function AddWeekModal({ open, onOpenChange, initialDate, onSuccess }: Add
 
   const validateAndPrepareSessions = (): Array<{
     date: string;
+    sport: 'Run' | 'Bike' | 'Swim' | 'Triathlon' | 'Crossfit' | 'Strength' | 'Walk';
     type: 'easy' | 'workout' | 'long' | 'rest';
     distance_km?: number | null;
     duration_minutes?: number | null;
@@ -124,6 +127,7 @@ export function AddWeekModal({ open, onOpenChange, initialDate, onSuccess }: Add
   }> => {
     const sessions: Array<{
       date: string;
+      sport: 'Run' | 'Bike' | 'Swim' | 'Triathlon' | 'Crossfit' | 'Strength' | 'Walk';
       type: 'easy' | 'workout' | 'long' | 'rest';
       distance_km?: number | null;
       duration_minutes?: number | null;
@@ -132,8 +136,8 @@ export function AddWeekModal({ open, onOpenChange, initialDate, onSuccess }: Add
 
     for (const day of daySessions) {
       for (const session of day.sessions) {
-        // Skip empty sessions (type is required)
-        if (!session.type) {
+        // Skip empty sessions (sport and type are required)
+        if (!session.sport || !session.type) {
           continue;
         }
 
@@ -167,6 +171,7 @@ export function AddWeekModal({ open, onOpenChange, initialDate, onSuccess }: Add
 
         sessions.push({
           date: day.date,
+          sport: session.sport as 'Run' | 'Bike' | 'Swim' | 'Triathlon' | 'Crossfit' | 'Strength' | 'Walk',
           type: session.type,
           distance_km: distance_km,
           duration_minutes: session.duration_minutes ? parseInt(session.duration_minutes, 10) : null,
@@ -331,7 +336,29 @@ export function AddWeekModal({ open, onOpenChange, initialDate, onSuccess }: Add
                   {sessions.map((session, sessionIndex) => (
                     <div key={sessionIndex} className="bg-muted/50 rounded-lg p-3 space-y-3">
                       <div className="flex items-start justify-between gap-2">
-                        <div className="flex-1 grid grid-cols-1 md:grid-cols-4 gap-3">
+                        <div className="flex-1 grid grid-cols-1 md:grid-cols-5 gap-3">
+                          <div className="space-y-1">
+                            <Label className="text-xs">Sport *</Label>
+                            <Select
+                              value={session.sport}
+                              onValueChange={(value) => updateSession(dateStr, sessionIndex, 'sport', value)}
+                              disabled={createWeek.isPending}
+                            >
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select sport" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                <SelectItem value="Run">Run</SelectItem>
+                                <SelectItem value="Bike">Bike</SelectItem>
+                                <SelectItem value="Swim">Swim</SelectItem>
+                                <SelectItem value="Triathlon">Triathlon</SelectItem>
+                                <SelectItem value="Crossfit">Crossfit</SelectItem>
+                                <SelectItem value="Strength">Strength</SelectItem>
+                                <SelectItem value="Walk">Walk</SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </div>
+
                           <div className="space-y-1">
                             <Label className="text-xs">Type *</Label>
                             <Select

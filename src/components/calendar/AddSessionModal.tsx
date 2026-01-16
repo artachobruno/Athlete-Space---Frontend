@@ -31,6 +31,7 @@ export function AddSessionModal({ open, onOpenChange, initialDate, onSuccess }: 
   const createSession = useCreatePlannedSession();
   const navigate = useNavigate();
   const [date, setDate] = useState(initialDate ? format(initialDate, 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd'));
+  const [sport, setSport] = useState<'Run' | 'Bike' | 'Swim' | 'Triathlon' | 'Crossfit' | 'Strength' | 'Walk' | ''>('');
   const [type, setType] = useState<'easy' | 'workout' | 'long' | 'rest' | ''>('');
   const [distanceInput, setDistanceInput] = useState<string>('');
   const [durationMinutes, setDurationMinutes] = useState<string>('');
@@ -106,6 +107,12 @@ export function AddSessionModal({ open, onOpenChange, initialDate, onSuccess }: 
     e.preventDefault();
     setError(null);
 
+    // Validation: sport is required
+    if (!sport) {
+      setError('Sport type is required');
+      return;
+    }
+
     // Validation: type is required
     if (!type) {
       setError('Session type is required');
@@ -146,6 +153,7 @@ export function AddSessionModal({ open, onOpenChange, initialDate, onSuccess }: 
     createSession.mutate(
       {
         date,
+        sport,
         type,
         distance_km: distanceKm,
         duration_minutes: durationMinutes ? parseInt(durationMinutes, 10) : null,
@@ -159,6 +167,7 @@ export function AddSessionModal({ open, onOpenChange, initialDate, onSuccess }: 
           });
 
           // Reset form
+          setSport('');
           setType('');
           setDistanceInput('');
           setDurationMinutes('');
@@ -281,6 +290,24 @@ export function AddSessionModal({ open, onOpenChange, initialDate, onSuccess }: 
               required
               disabled={createSession.isPending}
             />
+          </div>
+
+          <div className="space-y-2">
+            <Label htmlFor="sport">Sport *</Label>
+            <Select value={sport} onValueChange={(value) => setSport(value as 'Run' | 'Bike' | 'Swim' | 'Triathlon' | 'Crossfit' | 'Strength' | 'Walk')} disabled={createSession.isPending}>
+              <SelectTrigger id="sport">
+                <SelectValue placeholder="Select sport" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Run">Run</SelectItem>
+                <SelectItem value="Bike">Bike</SelectItem>
+                <SelectItem value="Swim">Swim</SelectItem>
+                <SelectItem value="Triathlon">Triathlon</SelectItem>
+                <SelectItem value="Crossfit">Crossfit</SelectItem>
+                <SelectItem value="Strength">Strength</SelectItem>
+                <SelectItem value="Walk">Walk</SelectItem>
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="space-y-2">
