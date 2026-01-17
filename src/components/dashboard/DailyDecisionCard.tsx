@@ -89,6 +89,27 @@ export function DailyDecisionCard() {
     );
   }
 
+  // Check if this is a placeholder decision (not yet generated)
+  const isPlaceholder = 
+    (data.confidence?.score === 0.0 && 
+     (data.confidence?.explanation === "Decision not yet generated" || 
+      data.explanation === "The coach is still analyzing your training data. Recommendations will be available soon.")) ||
+    (data.explanation === "The coach is still analyzing your training data. Recommendations will be available soon.") ||
+    (data.confidence?.explanation === "Decision not yet generated");
+
+  if (isPlaceholder) {
+    return (
+      <GlassCard className={cn('border-2 h-full')}>
+        <CardContent className="p-6">
+          <div className="text-center py-8 text-muted-foreground">
+            <p className="text-sm">Today&apos;s decision is being generated</p>
+            <p className="text-xs mt-2 opacity-70">The coach will have your recommendation ready soon</p>
+          </div>
+        </CardContent>
+      </GlassCard>
+    );
+  }
+
   const decision = mapRecommendationToDecision(data.recommendation);
   const reason = data.explanation || data.recommendation;
   const confidence = data.confidence;

@@ -183,21 +183,39 @@ export function TodayWorkoutCard(props?: TodayWorkoutCardProps) {
         </div>
 
         {/* Coach Explanation */}
-        {finalTodayIntelligence && 'explanation' in finalTodayIntelligence && finalTodayIntelligence.explanation && (
-          <div className="bg-accent/5 border border-accent/20 rounded-lg p-3">
-            <div className="flex items-start gap-2">
-              <MessageSquare className="h-4 w-4 text-accent mt-0.5 shrink-0" />
-              <div className="flex-1">
-                <div className="text-xs font-semibold text-muted-foreground mb-1 uppercase tracking-wider">
-                  Coach&apos;s Explanation
+        {(() => {
+          const explanation = finalTodayIntelligence && 'explanation' in finalTodayIntelligence 
+            ? finalTodayIntelligence.explanation 
+            : null;
+          const confidence = finalTodayIntelligence && 'confidence' in finalTodayIntelligence && finalTodayIntelligence.confidence
+            ? typeof finalTodayIntelligence.confidence === 'object' && 'score' in finalTodayIntelligence.confidence
+              ? finalTodayIntelligence.confidence.score
+              : null
+            : null;
+          
+          // Don't show placeholder message if there's a workout available
+          const isPlaceholder = explanation === "The coach is still analyzing your training data. Recommendations will be available soon." 
+            || confidence === 0.0 
+            || explanation === "Decision not yet generated";
+          
+          const shouldShowExplanation = explanation && !isPlaceholder;
+          
+          return shouldShowExplanation ? (
+            <div className="bg-accent/5 border border-accent/20 rounded-lg p-3">
+              <div className="flex items-start gap-2">
+                <MessageSquare className="h-4 w-4 text-accent mt-0.5 shrink-0" />
+                <div className="flex-1">
+                  <div className="text-xs font-semibold text-muted-foreground mb-1 uppercase tracking-wider">
+                    Coach&apos;s Explanation
+                  </div>
+                  <p className="text-sm text-foreground leading-relaxed">
+                    {explanation}
+                  </p>
                 </div>
-                <p className="text-sm text-foreground leading-relaxed">
-                  {finalTodayIntelligence.explanation}
-                </p>
               </div>
             </div>
-          </div>
-        )}
+          ) : null;
+        })()}
 
         <div className="flex items-center gap-6 text-sm">
           {todayWorkout.duration_minutes && (
