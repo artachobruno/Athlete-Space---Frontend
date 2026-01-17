@@ -1111,15 +1111,19 @@ function normalizeActivityDate(dateField: unknown): string {
   
   let date: Date;
   if (typeof dateField === 'string') {
+    // Normalize timezone offsets: +00:00 -> Z, -00:00 -> Z
+    let normalizedStr = dateField.replace(/\+00:00$/, 'Z').replace(/-00:00$/, 'Z');
     // If string doesn't end with Z, assume UTC and append Z
-    const normalizedStr = dateField.endsWith('Z') ? dateField : dateField + 'Z';
+    normalizedStr = normalizedStr.endsWith('Z') ? normalizedStr : normalizedStr + 'Z';
     date = new Date(normalizedStr);
   } else if (dateField instanceof Date) {
     date = dateField;
   } else {
     // Try to parse as string
     const str = String(dateField);
-    const normalizedStr = str.endsWith('Z') ? str : str + 'Z';
+    // Normalize timezone offsets: +00:00 -> Z, -00:00 -> Z
+    let normalizedStr = str.replace(/\+00:00$/, 'Z').replace(/-00:00$/, 'Z');
+    normalizedStr = normalizedStr.endsWith('Z') ? normalizedStr : normalizedStr + 'Z';
     date = new Date(normalizedStr);
   }
   
