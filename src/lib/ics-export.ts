@@ -1,5 +1,6 @@
 import { format } from 'date-fns';
 import type { CalendarSession } from './api';
+import { capitalizeTitle } from '@/adapters/calendarAdapter';
 
 /**
  * Escapes special characters in ICS format
@@ -70,7 +71,7 @@ export function generateIcsFile(sessions: CalendarSession[]): string {
       endDateTime = startDate;
     }
     
-    const title = escapeIcsText(session.title || 'Training Session');
+    const title = escapeIcsText(capitalizeTitle(session.title || 'Training Session'));
     const description = session.notes 
       ? escapeIcsText(session.notes)
       : escapeIcsText(`${session.type || 'Training'} session`);

@@ -11,6 +11,19 @@ import { CalendarSession } from '@/lib/api';
 import { CompletedActivity } from '@/types';
 
 /**
+ * Capitalizes all words in a title (title case).
+ * Example: "long run" -> "Long Run", "TEMPO RUN" -> "Tempo Run"
+ */
+export function capitalizeTitle(title: string): string {
+  if (!title) return '';
+  return title
+    .toLowerCase()
+    .split(' ')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+}
+
+/**
  * Converts a CalendarSession to a CalendarItem.
  * 
  * @param session - Backend calendar session
@@ -84,7 +97,7 @@ export function toCalendarItem(
     kind,
     sport: normalizeCalendarSport(session.type),
     intent: normalizeCalendarIntent(session.intensity),
-    title: session.title || '',
+    title: capitalizeTitle(session.title || ''),
     startLocal,
     durationMin: session.duration_minutes || 0,
     load,

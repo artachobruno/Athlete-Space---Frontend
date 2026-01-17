@@ -15,6 +15,7 @@ import { format, parseISO, startOfWeek, endOfWeek } from 'date-fns';
 import { cn } from '@/lib/utils';
 import type { CompletedActivity } from '@/types';
 import type { CalendarSession } from '@/lib/api';
+import { capitalizeTitle } from '@/adapters/calendarAdapter';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -269,7 +270,7 @@ export function PairingDetailsModal({
               <div className="space-y-2">
                 <h4 className="text-sm font-semibold text-foreground">Paired Session</h4>
                 <div className="p-3 rounded-lg bg-muted/50">
-                  <div className="font-medium text-foreground">{session.title || 'Untitled Session'}</div>
+                  <div className="font-medium text-foreground">{capitalizeTitle(session.title || 'Untitled Session')}</div>
                   <div className="flex items-center gap-3 text-sm text-muted-foreground mt-2">
                     <span className="flex items-center gap-1">
                       <Calendar className="h-3.5 w-3.5" />

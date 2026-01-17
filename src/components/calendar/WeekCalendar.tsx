@@ -37,7 +37,7 @@ import type { PlannedWorkout, CompletedActivity, TrainingLoad } from '@/types';
 import type { CalendarSession } from '@/lib/api';
 import { toast } from '@/hooks/use-toast';
 import { normalizeSportType, mapIntensityToIntent } from '@/lib/session-utils';
-import { toCalendarItem } from '@/adapters/calendarAdapter';
+import { toCalendarItem, capitalizeTitle } from '@/adapters/calendarAdapter';
 import {
   generateWeeklySummaryText,
   generateWeeklySummaryMarkdown,
@@ -190,7 +190,7 @@ export function WeekCalendar({ currentDate, onActivityClick }: WeekCalendarProps
               date: session.date || '',
               sport: normalizeSportType(session.type),
               intent: mapIntensityToIntent(session.intensity),
-              title: session.title || '',
+              title: capitalizeTitle(session.title || ''),
               description: session.notes || '',
               duration: session.duration_minutes || 0,
               completed: session.status === 'completed',

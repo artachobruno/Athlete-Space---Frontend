@@ -1,5 +1,6 @@
 import React from "react";
 import { PlanDiff, SessionDiff, SessionFieldDiff } from "../../types/revisionDiff";
+import { capitalizeTitle } from "@/adapters/calendarAdapter";
 
 const styles = {
   added: "border-l-4 border-green-400 bg-green-50 dark:bg-green-900/20",
@@ -33,7 +34,7 @@ export function AddedSession({ session }: AddedSessionProps) {
       <div className="flex items-center gap-2">
         <span className="text-green-600 dark:text-green-400 font-semibold">+ Added</span>
         <span className="text-sm text-gray-600 dark:text-gray-400">
-          {session.type} - {session.title || "Untitled"}
+          {session.type} - {capitalizeTitle(session.title || "Untitled")}
         </span>
         <span className="text-xs text-gray-500 dark:text-gray-500">
           {new Date(session.date).toLocaleDateString()}
@@ -53,7 +54,7 @@ export function RemovedSession({ session }: RemovedSessionProps) {
       <div className="flex items-center gap-2">
         <span className="text-red-600 dark:text-red-400 font-semibold">- Removed</span>
         <span className="text-sm text-gray-600 dark:text-gray-400">
-          {session.type} - {session.title || "Untitled"}
+          {session.type} - {capitalizeTitle(session.title || "Untitled")}
         </span>
         <span className="text-xs text-gray-500 dark:text-gray-500">
           {new Date(session.date).toLocaleDateString()}

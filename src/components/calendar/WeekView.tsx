@@ -38,7 +38,7 @@ import { useQuery } from '@tanstack/react-query';
 import type { PlannedWorkout, CompletedActivity } from '@/types';
 import type { CalendarSession } from '@/lib/api';
 import { toast } from '@/hooks/use-toast';
-import { toCalendarItem } from '@/adapters/calendarAdapter';
+import { toCalendarItem, capitalizeTitle } from '@/adapters/calendarAdapter';
 import { normalizeSportType, mapIntensityToIntent } from '@/lib/session-utils';
 import {
   generateWeeklySummaryText,
@@ -134,7 +134,7 @@ function WeekView({ currentDate, onActivityClick }: WeekViewProps) {
               date: session.date || '',
               sport: normalizeSportType(session.type),
               intent: mapIntensityToIntent(session.intensity),
-              title: session.title || '',
+              title: capitalizeTitle(session.title || ''),
               description: session.notes || '',
               duration: session.duration_minutes || 0,
               completed: session.status === 'completed',

@@ -1,5 +1,6 @@
 import type { WorkoutIntent, Sport } from '@/types';
 import type { CalendarSession } from './api';
+import { capitalizeTitle } from '@/adapters/calendarAdapter';
 
 /**
  * Normalizes sport type from backend format to frontend format.
@@ -110,7 +111,7 @@ export function mapSessionToWorkout(session: CalendarSession): import('@/types')
     date: session.date,
     sport: normalizeSportType(session.type ?? 'Run'),
     intent: mapIntensityToIntent(session.intensity),
-    title: session.title ?? 'Run',
+    title: capitalizeTitle(session.title ?? 'Run'),
     description: session.notes ?? '',
     duration: session.duration_minutes ?? 0,
     distance: session.distance_km ?? undefined,

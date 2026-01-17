@@ -42,7 +42,7 @@ import type { CalendarItem } from '@/types/calendar';
 
 import { DroppableDayCell } from './DroppableDayCell';
 import { CalendarWorkoutStack } from './cards/CalendarWorkoutStack';
-import { toCalendarItem } from '@/adapters/calendarAdapter';
+import { toCalendarItem, capitalizeTitle } from '@/adapters/calendarAdapter';
 import { sortCalendarItems } from './cards/sortCalendarItems';
 
 interface MonthViewProps {
@@ -298,7 +298,7 @@ export function MonthView({ currentDate, onActivityClick }: MonthViewProps) {
         <DragOverlay>
           {activeId && draggedSession && (
             <div className="px-2 py-1 text-xs rounded bg-muted shadow">
-              {draggedSession.title || 'Workout'}
+              {capitalizeTitle(draggedSession.title || 'Workout')}
             </div>
           )}
         </DragOverlay>
