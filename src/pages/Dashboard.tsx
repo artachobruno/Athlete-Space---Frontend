@@ -22,6 +22,7 @@ import { RecentActivitiesCard } from '@/components/dashboard/RecentActivitiesCar
 import { LoadStatusCard } from '@/components/dashboard/LoadStatusCard';
 import { CoachChatWidget } from '@/components/dashboard/CoachChatWidget';
 import { useSyncTodayWorkout } from '@/hooks/useSyncTodayWorkout';
+import { useDashboardData } from '@/hooks/useDashboardData';
 
 // Coach Dashboard Components
 import { useCoachDashboardData, useAthleteSelection, IS_PREVIEW } from '@/hooks/useCoachDashboardData';
@@ -36,9 +37,14 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 
 /**
  * Athlete Dashboard - Default view for athlete users
+ * 
+ * Fetches all dashboard data centrally to prevent duplicate requests.
+ * Data is passed as props to components.
  */
 function AthleteDashboard() {
   useSyncTodayWorkout();
+  const dashboardData = useDashboardData();
+
   return (
     <AppLayout>
       <div className="space-y-6">
@@ -61,20 +67,43 @@ function AthleteDashboard() {
         {/* Today's Workout + Load Status */}
         <div className="grid grid-cols-12 gap-6">
           <div className="col-span-12 lg:col-span-8">
-            <TodayWorkoutCard />
+            <TodayWorkoutCard
+              todayData={dashboardData.todayData}
+              isLoading={dashboardData.todayDataLoading}
+              error={dashboardData.todayDataError}
+              trainingLoad7d={dashboardData.trainingLoad7d}
+              activities10={dashboardData.activities10}
+              todayIntelligence={dashboardData.todayIntelligence}
+            />
           </div>
           <div className="col-span-12 lg:col-span-4">
-            <LoadStatusCard />
+            <LoadStatusCard
+              overview60d={dashboardData.overview60d}
+              isLoading={dashboardData.overview60dLoading}
+              error={dashboardData.overview60dError}
+            />
           </div>
         </div>
 
         {/* Weekly Load + Recent Activities */}
         <div className="grid grid-cols-12 gap-6">
           <div className="col-span-12 lg:col-span-6">
-            <WeeklyLoadCard />
+            <WeeklyLoadCard
+              activities100={dashboardData.activities100}
+              activities100Loading={dashboardData.activities100Loading}
+              trainingLoad7d={dashboardData.trainingLoad7d}
+              trainingLoad7dLoading={dashboardData.trainingLoad7dLoading}
+              weekData={dashboardData.weekData}
+              weekDataLoading={dashboardData.weekDataLoading}
+            />
           </div>
           <div className="col-span-12 lg:col-span-6">
-            <RecentActivitiesCard />
+            <RecentActivitiesCard
+              activities10={dashboardData.activities10}
+              activities10Loading={dashboardData.activities10Loading}
+              activities10Error={dashboardData.activities10Error}
+              trainingLoad60d={dashboardData.trainingLoad60d}
+            />
           </div>
         </div>
       </div>

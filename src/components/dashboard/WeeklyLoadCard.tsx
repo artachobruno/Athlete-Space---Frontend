@@ -6,34 +6,51 @@ import { subDays, format, startOfWeek } from 'date-fns';
 import { useAuthenticatedQuery } from '@/hooks/useAuthenticatedQuery';
 import { Loader2 } from 'lucide-react';
 import { useMemo } from 'react';
-import { enrichActivitiesWithTss } from '@/lib/tss-utils';
+import { enrichActivitiesWithTss, type TrainingLoadData } from '@/lib/tss-utils';
 import type { CompletedActivity } from '@/types';
+import type { WeekResponse } from '@/lib/api';
 
-export function WeeklyLoadCard() {
+interface WeeklyLoadCardProps {
+  activities100?: CompletedActivity[] | null;
+  activities100Loading?: boolean;
+  trainingLoad7d?: TrainingLoadData | null;
+  trainingLoad7dLoading?: boolean;
+  weekData?: WeekResponse | null;
+  weekDataLoading?: boolean;
+}
+
+export function WeeklyLoadCard(props?: WeeklyLoadCardProps) {
   const today = new Date();
   const weekStart = startOfWeek(today, { weekStartsOn: 1 });
   const weekStartStr = format(weekStart, 'yyyy-MM-dd');
+
+  // Use props if provided, otherwise fetch (backward compatibility)
+  const propsActivities100 = props?.activities100;
+  const propsActivities100Loading = props?.activities100Loading;
+  const propsTrainingLoad7d = props?.trainingLoad7d;
+  const propsTrainingLoad7dLoading = props?.trainingLoad7dLoading;
+  const propsWeekData = props?.weekData;
+  const propsWeekDataLoading = props?.weekDataLoading;
 
   // Fetch activities the same way as Calendar and Activities pages
   const { data: activities, isLoading: activitiesLoading } = useAuthenticatedQuery({
     queryKey: ['activities', 'limit', 100],
     queryFn: () => fetchActivities({ limit: 100 }),
     retry: 1,
-    staleTime: 5 * 60 * 1000, // 5 minutes - activities don't change that frequently
-    gcTime: 30 * 60 * 1000, // Keep in cache for 30 minutes
+    enabled: propsActivities100 === undefined, // Only fetch if props not provided
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 30 * 60 * 1000,
     refetchOnWindowFocus: true,
-    refetchInterval: false,
   });
 
   // Fetch training load for TSS enrichment
-  const { data: trainingLoadData, isLoading: trainingLoadLoading } = useAuthenticatedQuery({
+  const { data: trainingLoadData, isLoading: trainingLoadLoading } = useAuthenticatedQuery<TrainingLoadData>({
     queryKey: ['trainingLoad', 7],
     queryFn: () => {
       console.log('[WeeklyLoadCard] Fetching training load for 7 days');
       return fetchTrainingLoad(7);
     },
     retry: (failureCount, error) => {
-      // Don't retry on timeout errors or 500 errors (fetchTrainingLoad returns empty response for 500s)
       if (error && typeof error === 'object') {
         const apiError = error as { code?: string; message?: string; status?: number };
         if (apiError.status === 500 || apiError.status === 503 ||
@@ -44,10 +61,10 @@ export function WeeklyLoadCard() {
       }
       return failureCount < 1;
     },
-    staleTime: 0, // Always refetch - training load changes frequently
-    refetchOnMount: true, // Force fresh data on page load
-    refetchOnWindowFocus: true, // Refetch when window regains focus
-    gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes after unmount
+    enabled: propsTrainingLoad7d === undefined, // Only fetch if props not provided
+    staleTime: 2 * 60 * 1000, // 2 minutes
+    gcTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: true,
   });
 
   // Fetch calendar week for planned load calculation
@@ -55,15 +72,25 @@ export function WeeklyLoadCard() {
     queryKey: ['calendarWeek', weekStartStr],
     queryFn: () => fetchCalendarWeek(weekStartStr),
     retry: 1,
+    enabled: propsWeekData === undefined, // Only fetch if props not provided
+    staleTime: 2 * 60 * 1000, // 2 minutes
+    gcTime: 10 * 60 * 1000,
   });
 
-  const isLoading = activitiesLoading || trainingLoadLoading || weekLoading;
+  // Use props if provided, otherwise use fetched data
+  const finalActivities = propsActivities100 !== undefined ? propsActivities100 : activities;
+  const finalTrainingLoadData = propsTrainingLoad7d !== undefined ? propsTrainingLoad7d : trainingLoadData;
+  const finalWeekData = propsWeekData !== undefined ? propsWeekData : weekData;
+  
+  const isLoading = (propsActivities100Loading !== undefined ? propsActivities100Loading : activitiesLoading) ||
+                    (propsTrainingLoad7dLoading !== undefined ? propsTrainingLoad7dLoading : trainingLoadLoading) ||
+                    (propsWeekDataLoading !== undefined ? propsWeekDataLoading : weekLoading);
 
   // Enrich activities with TSS data
   const enrichedActivities = useMemo(() => {
-    if (!activities) return [];
-    return enrichActivitiesWithTss(activities, trainingLoadData);
-  }, [activities, trainingLoadData]);
+    if (!finalActivities) return [];
+    return enrichActivitiesWithTss(finalActivities, finalTrainingLoadData);
+  }, [finalActivities, finalTrainingLoadData]);
 
   // Build chart data for past 7 days from activities (same as Calendar and Activities)
   const weekChartData = useMemo(() => {
@@ -109,7 +136,7 @@ export function WeeklyLoadCard() {
     actualLoad = weekChartData.reduce((sum, day) => sum + day.load, 0);
 
     // Estimate planned load from calendar sessions for the week
-    const sessions = Array.isArray(weekData?.sessions) ? weekData.sessions : [];
+    const sessions = Array.isArray(finalWeekData?.sessions) ? finalWeekData.sessions : [];
     const plannedSessions = sessions.filter(s => s?.status === 'planned' || s?.status === 'completed');
     // Estimate TSS based on session duration (rough estimate: 1 hour = ~50 TSS)
     plannedLoad = plannedSessions.reduce((sum, session) => {
@@ -124,7 +151,7 @@ export function WeeklyLoadCard() {
 
     const progress = plannedLoad > 0 ? (actualLoad / plannedLoad) * 100 : 0;
     return { actualLoad: Math.round(actualLoad), plannedLoad: Math.round(plannedLoad), progress };
-  }, [weekChartData, weekData]);
+  }, [weekChartData, finalWeekData]);
 
   if (isLoading) {
     return (

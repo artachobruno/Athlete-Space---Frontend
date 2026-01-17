@@ -5,6 +5,19 @@ import { cn } from '@/lib/utils';
 import { TrendingUp, TrendingDown, Minus, Loader2 } from 'lucide-react';
 import { useAuthenticatedQuery } from '@/hooks/useAuthenticatedQuery';
 
+interface LoadStatusCardProps {
+  overview60d?: {
+    today: { ctl: number; atl: number; tsb: number };
+    metrics: {
+      ctl?: [string, number][];
+      atl?: [string, number][];
+      tsb?: [string, number][];
+    };
+  } | null;
+  isLoading?: boolean;
+  error?: unknown;
+}
+
 const statusStyles = {
   fresh: 'text-load-fresh',
   optimal: 'text-load-optimal',
@@ -19,19 +32,29 @@ const getLoadStatus = (tsb: number): { status: keyof typeof statusStyles; descri
   return { status: 'overtraining', description: 'Overtraining - Rest required' };
 };
 
-export function LoadStatusCard() {
-  const { data: overview, isLoading, error } = useAuthenticatedQuery({
+export function LoadStatusCard(props?: LoadStatusCardProps) {
+  // Use props if provided, otherwise fetch (backward compatibility)
+  const propsOverview = props?.overview60d;
+  const propsIsLoading = props?.isLoading;
+  const propsError = props?.error;
+
+  const { data: overview, isLoading: overviewLoading, error: overviewError } = useAuthenticatedQuery({
     queryKey: ['overview', 60],
     queryFn: () => {
       console.log('[LoadStatusCard] Fetching overview for 60 days');
       return fetchOverview(60);
     },
     retry: 1,
-    staleTime: 0, // Always refetch - training load changes frequently
-    refetchOnMount: true, // Force fresh data on page load
-    refetchOnWindowFocus: true, // Refetch when window regains focus
-    gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes after unmount
+    enabled: propsOverview === undefined, // Only fetch if props not provided
+    staleTime: 2 * 60 * 1000, // 2 minutes
+    gcTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: true,
   });
+
+  // Use props if provided, otherwise use fetched data
+  const finalOverview = propsOverview !== undefined ? propsOverview : overview;
+  const isLoading = propsIsLoading !== undefined ? propsIsLoading : overviewLoading;
+  const error = propsError !== undefined ? propsError : overviewError;
 
   if (isLoading) {
     return (
@@ -48,7 +71,7 @@ export function LoadStatusCard() {
     );
   }
 
-  if (error || !overview) {
+  if (error || !finalOverview) {
     return (
       <GlassCard>
         <CardHeader className="pb-3">
@@ -64,7 +87,7 @@ export function LoadStatusCard() {
   }
 
   // Safely extract today's values with fallbacks
-  const today = overview?.today as { ctl?: number; atl?: number; tsb?: number } || {};
+  const today = finalOverview?.today as { ctl?: number; atl?: number; tsb?: number } || {};
   const ctl = typeof today.ctl === 'number' ? today.ctl : 0;
   const atl = typeof today.atl === 'number' ? today.atl : 0;
   const tsb = typeof today.tsb === 'number' ? today.tsb : 0;
@@ -74,7 +97,7 @@ export function LoadStatusCard() {
   const loadStatus = getLoadStatus(tsb);
   
   // Calculate CTL trend from metrics
-  const metrics = overview?.metrics || {};
+  const metrics = finalOverview?.metrics || {};
   const ctlData = Array.isArray(metrics.ctl) ? metrics.ctl : [];
   const latestCtl = ctl;
   const previousCtl = ctlData.length >= 7 && ctlData[ctlData.length - 7]?.[1] !== undefined

@@ -4,13 +4,21 @@ import { fetchActivities, fetchTrainingLoad, syncActivitiesNow } from '@/lib/api
 import { format, parseISO } from 'date-fns';
 import { Bike, Footprints, Waves, Loader2, RefreshCw } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
 import { useAuthenticatedQuery } from '@/hooks/useAuthenticatedQuery';
 import { useUnitSystem } from '@/hooks/useUnitSystem';
 import { useMemo, useState } from 'react';
-import { enrichActivitiesWithTss } from '@/lib/tss-utils';
+import { enrichActivitiesWithTss, type TrainingLoadData } from '@/lib/tss-utils';
 import { Button } from '@/components/ui/button';
 import { toast } from '@/hooks/use-toast';
+import type { CompletedActivity } from '@/types';
+
+interface RecentActivitiesCardProps {
+  activities10?: CompletedActivity[] | null;
+  activities10Loading?: boolean;
+  activities10Error?: unknown;
+  trainingLoad60d?: TrainingLoadData | null;
+}
 
 const sportIcons = {
   running: Footprints,
@@ -19,20 +27,26 @@ const sportIcons = {
   triathlon: Footprints,
 };
 
-export function RecentActivitiesCard() {
+export function RecentActivitiesCard(props?: RecentActivitiesCardProps) {
   const { convertDistance } = useUnitSystem();
   const queryClient = useQueryClient();
   const [isSyncing, setIsSyncing] = useState(false);
   
+  // Use props if provided, otherwise fetch (backward compatibility)
+  const propsActivities10 = props?.activities10;
+  const propsActivities10Loading = props?.activities10Loading;
+  const propsActivities10Error = props?.activities10Error;
+  const propsTrainingLoad60d = props?.trainingLoad60d;
+
   // Use same query key structure as main activities page to share cache
-  const { data: activities, isLoading, error, refetch } = useAuthenticatedQuery({
+  const { data: activities, isLoading: activitiesLoading, error: activitiesError, refetch } = useAuthenticatedQuery({
     queryKey: ['activities', 'limit', 10],
     queryFn: () => fetchActivities({ limit: 10 }),
     retry: 1,
-    staleTime: 2 * 60 * 1000, // 2 minutes - recent activities can change
-    gcTime: 10 * 60 * 1000, // Keep in cache for 10 minutes
+    enabled: propsActivities10 === undefined, // Only fetch if props not provided
+    staleTime: 2 * 60 * 1000, // 2 minutes
+    gcTime: 10 * 60 * 1000,
     refetchOnWindowFocus: true,
-    refetchInterval: false, // Don't auto-refetch in background
   });
 
   const handleSync = async () => {
@@ -61,14 +75,13 @@ export function RecentActivitiesCard() {
     }
   };
 
-  const { data: trainingLoadData } = useAuthenticatedQuery({
+  const { data: trainingLoadData } = useAuthenticatedQuery<TrainingLoadData>({
     queryKey: ['trainingLoad', 60],
     queryFn: () => {
       console.log('[RecentActivitiesCard] Fetching training load for 60 days');
       return fetchTrainingLoad(60);
     },
     retry: (failureCount, error) => {
-      // Don't retry on timeout errors or 500 errors (fetchTrainingLoad returns empty response for 500s)
       if (error && typeof error === 'object') {
         const apiError = error as { code?: string; message?: string; status?: number };
         if (apiError.status === 500 || apiError.status === 503 ||
@@ -79,24 +92,30 @@ export function RecentActivitiesCard() {
       }
       return failureCount < 1;
     },
-    staleTime: 0, // Always refetch - training load changes frequently
-    refetchOnMount: true, // Force fresh data on page load
-    refetchOnWindowFocus: true, // Refetch when window regains focus
-    gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes after unmount
+    enabled: propsTrainingLoad60d === undefined, // Only fetch if props not provided
+    staleTime: 2 * 60 * 1000, // 2 minutes
+    gcTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: true,
   });
+
+  // Use props if provided, otherwise use fetched data
+  const finalActivities = propsActivities10 !== undefined ? propsActivities10 : activities;
+  const isLoading = propsActivities10Loading !== undefined ? propsActivities10Loading : activitiesLoading;
+  const error = propsActivities10Error !== undefined ? propsActivities10Error : activitiesError;
+  const finalTrainingLoadData = propsTrainingLoad60d !== undefined ? propsTrainingLoad60d : trainingLoadData;
 
   const recentActivities = useMemo(() => {
     // Defensive: ensure activities is always an array
-    let activitiesArray: typeof activities = [];
-    if (Array.isArray(activities)) {
-      activitiesArray = activities;
-    } else if (activities && typeof activities === 'object' && 'activities' in activities) {
+    let activitiesArray: typeof finalActivities = [];
+    if (Array.isArray(finalActivities)) {
+      activitiesArray = finalActivities;
+    } else if (finalActivities && typeof finalActivities === 'object' && 'activities' in finalActivities) {
       // Handle case where API returns { activities: [...] }
-      const nested = (activities as { activities?: unknown }).activities;
+      const nested = (finalActivities as { activities?: unknown }).activities;
       activitiesArray = Array.isArray(nested) ? nested : [];
     }
     
-    const enriched = enrichActivitiesWithTss(activitiesArray, trainingLoadData);
+    const enriched = enrichActivitiesWithTss(activitiesArray, finalTrainingLoadData);
     
     // Ensure enriched is an array before sorting
     if (!Array.isArray(enriched)) {
@@ -117,7 +136,7 @@ export function RecentActivitiesCard() {
     
     // Ensure we return an array
     return Array.isArray(sorted) ? sorted.slice(0, 4) : []; // Return only 4 most recent
-  }, [activities, trainingLoadData]);
+  }, [finalActivities, finalTrainingLoadData]);
 
   return (
     <GlassCard>

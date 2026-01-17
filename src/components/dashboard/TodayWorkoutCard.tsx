@@ -7,11 +7,12 @@ import { format } from 'date-fns';
 import { Clock, Route, Zap, Loader2, MessageSquare } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuthenticatedQuery } from '@/hooks/useAuthenticatedQuery';
-import { useQuery } from '@tanstack/react-query';
 import { useUnitSystem } from '@/hooks/useUnitSystem';
 import { useMemo } from 'react';
 import { getTssForDate, enrichActivitiesWithTss, type TrainingLoadData } from '@/lib/tss-utils';
 import { getGlowIntensityFromWorkout } from '@/lib/intensityGlow';
+import type { CompletedActivity } from '@/types';
+import type { TodayResponse } from '@/lib/api';
 
 const intentColors = {
   aerobic: 'bg-training-aerobic/15 text-training-aerobic border-training-aerobic/30',
@@ -33,13 +34,32 @@ const mapTypeToIntent = (type: string | null | undefined): 'aerobic' | 'threshol
   return 'aerobic';
 };
 
-export function TodayWorkoutCard() {
+interface TodayWorkoutCardProps {
+  todayData?: TodayResponse | null;
+  isLoading?: boolean;
+  error?: unknown;
+  trainingLoad7d?: TrainingLoadData | null;
+  activities10?: CompletedActivity[] | null;
+  todayIntelligence?: unknown;
+}
+
+export function TodayWorkoutCard(props?: TodayWorkoutCardProps) {
   const { convertDistance } = useUnitSystem();
   const today = format(new Date(), 'yyyy-MM-dd');
-  const { data: todayData, isLoading, error } = useAuthenticatedQuery({
+
+  // Use props if provided, otherwise fetch (backward compatibility)
+  const propsTodayData = props?.todayData;
+  const propsIsLoading = props?.isLoading;
+  const propsError = props?.error;
+  const propsTrainingLoad7d = props?.trainingLoad7d;
+  const propsActivities10 = props?.activities10;
+  const propsTodayIntelligence = props?.todayIntelligence;
+
+  const { data: todayData, isLoading: todayDataLoading, error: todayDataError } = useAuthenticatedQuery({
     queryKey: ['calendarToday', today],
     queryFn: () => fetchCalendarToday(today),
     retry: 1,
+    enabled: propsTodayData === undefined, // Only fetch if props not provided
   });
 
   const { data: trainingLoadData } = useAuthenticatedQuery<TrainingLoadData>({
@@ -49,7 +69,6 @@ export function TodayWorkoutCard() {
       return fetchTrainingLoad(7);
     },
     retry: (failureCount, error) => {
-      // Don't retry on timeout errors or 500 errors (fetchTrainingLoad returns empty response for 500s)
       if (error && typeof error === 'object') {
         const apiError = error as { code?: string; message?: string; status?: number };
         if (apiError.status === 500 || apiError.status === 503 ||
@@ -60,33 +79,45 @@ export function TodayWorkoutCard() {
       }
       return failureCount < 1;
     },
-    staleTime: 0, // Always refetch - training load changes frequently
-    refetchOnMount: true, // Force fresh data on page load
-    refetchOnWindowFocus: true, // Refetch when window regains focus
-    gcTime: 5 * 60 * 1000, // Keep in cache for 5 minutes after unmount
+    enabled: propsTrainingLoad7d === undefined, // Only fetch if props not provided
+    staleTime: 2 * 60 * 1000, // 2 minutes
+    gcTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: true,
   });
 
   const { data: activities } = useAuthenticatedQuery({
-    queryKey: ['activities', 'today'],
+    queryKey: ['activities', 'limit', 10],
     queryFn: () => fetchActivities({ limit: 10 }),
     retry: 1,
+    enabled: propsActivities10 === undefined, // Only fetch if props not provided
+    staleTime: 2 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
   });
 
   const { data: todayIntelligence } = useAuthenticatedQuery({
     queryKey: ['intelligence', 'today', 'current'],
     queryFn: () => getTodayIntelligence(),
     retry: 1,
-    staleTime: 30 * 60 * 1000, // 30 minutes - intelligence is expensive LLM call
-    gcTime: 60 * 60 * 1000, // Keep in cache for 1 hour
+    enabled: propsTodayIntelligence === undefined, // Only fetch if props not provided
+    staleTime: 30 * 60 * 1000,
+    gcTime: 60 * 60 * 1000,
   });
 
-  const todayWorkout = todayData?.sessions?.find(s => s.status === 'planned' || s.status === 'completed') || null;
+  // Use props if provided, otherwise use fetched data
+  const finalTodayData = propsTodayData !== undefined ? propsTodayData : todayData;
+  const isLoading = propsIsLoading !== undefined ? propsIsLoading : todayDataLoading;
+  const error = propsError !== undefined ? propsError : todayDataError;
+  const finalTrainingLoadData = propsTrainingLoad7d !== undefined ? propsTrainingLoad7d : trainingLoadData;
+  const finalActivities = propsActivities10 !== undefined ? propsActivities10 : activities;
+  const finalTodayIntelligence = propsTodayIntelligence !== undefined ? propsTodayIntelligence : todayIntelligence;
+
+  const todayWorkout = finalTodayData?.sessions?.find(s => s.status === 'planned' || s.status === 'completed') || null;
   
   // Get TSS for today from training load or completed activity
   const todayTss = useMemo(() => {
     if (todayWorkout?.status === 'completed') {
       // Try to find matching completed activity
-      const enrichedActivities = enrichActivitiesWithTss(activities || [], trainingLoadData);
+      const enrichedActivities = enrichActivitiesWithTss(finalActivities || [], finalTrainingLoadData);
       const matchingActivity = enrichedActivities.find(a => {
         const activityDate = a.date?.split('T')[0] || a.date;
         return activityDate === today;
@@ -96,8 +127,8 @@ export function TodayWorkoutCard() {
       }
     }
     // Fallback to training load data
-    return getTssForDate(today, trainingLoadData);
-  }, [todayWorkout, today, activities, trainingLoadData]);
+    return getTssForDate(today, finalTrainingLoadData);
+  }, [todayWorkout, today, finalActivities, finalTrainingLoadData]);
 
   if (isLoading) {
     return (
@@ -152,7 +183,7 @@ export function TodayWorkoutCard() {
         </div>
 
         {/* Coach Explanation */}
-        {todayIntelligence && 'explanation' in todayIntelligence && todayIntelligence.explanation && (
+        {finalTodayIntelligence && 'explanation' in finalTodayIntelligence && finalTodayIntelligence.explanation && (
           <div className="bg-accent/5 border border-accent/20 rounded-lg p-3">
             <div className="flex items-start gap-2">
               <MessageSquare className="h-4 w-4 text-accent mt-0.5 shrink-0" />
@@ -161,7 +192,7 @@ export function TodayWorkoutCard() {
                   Coach&apos;s Explanation
                 </div>
                 <p className="text-sm text-foreground leading-relaxed">
-                  {todayIntelligence.explanation}
+                  {finalTodayIntelligence.explanation}
                 </p>
               </div>
             </div>
