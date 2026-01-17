@@ -121,7 +121,7 @@ export function CoachChatWidget() {
   }, []);
 
   return (
-    <GlassCard className="flex flex-col h-full min-h-[200px]">
+    <GlassCard className="flex flex-col h-full min-h-[220px]">
       <CardHeader className="pb-2 flex-row items-center justify-between space-y-0">
         <div className="flex items-center gap-2">
           <Brain className="h-4 w-4 text-coach" />

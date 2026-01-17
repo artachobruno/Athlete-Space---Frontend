@@ -43,38 +43,39 @@ function AthleteDashboard() {
     <AppLayout>
       <div className="space-y-6">
         {/* Header */}
-        <div>
+        <div className="col-span-12">
           <h1 className="text-2xl font-semibold text-primary">Dashboard</h1>
           <p className="text-muted-foreground mt-1">Your training at a glance</p>
         </div>
 
         {/* Decision + Coach row */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Daily Decision - Primary emphasis */}
-          <div className="lg:col-span-2">
+        <div className="grid grid-cols-12 gap-6">
+          <div className="col-span-12 lg:col-span-8">
             <DailyDecisionCard />
           </div>
-
-          {/* Coach Chat Widget - Secondary */}
-          <div>
+          <div className="col-span-12 lg:col-span-4">
             <CoachChatWidget />
           </div>
         </div>
 
         {/* Today's Workout + Load Status */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2">
+        <div className="grid grid-cols-12 gap-6">
+          <div className="col-span-12 lg:col-span-8">
             <TodayWorkoutCard />
           </div>
-          <div>
+          <div className="col-span-12 lg:col-span-4">
             <LoadStatusCard />
           </div>
         </div>
 
         {/* Weekly Load + Recent Activities */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <WeeklyLoadCard />
-          <RecentActivitiesCard />
+        <div className="grid grid-cols-12 gap-6">
+          <div className="col-span-12 lg:col-span-6">
+            <WeeklyLoadCard />
+          </div>
+          <div className="col-span-12 lg:col-span-6">
+            <RecentActivitiesCard />
+          </div>
         </div>
       </div>
     </AppLayout>
@@ -225,31 +226,41 @@ function CoachDashboard() {
         {!isLoadingDashboard && !hasError && (
           <>
             {/* KPI Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <CoachKpiCard
-                label="Adherence"
-                value={`${data.adherence_pct}%`}
-                subtext="Last 14 days"
-                variant={getAdherenceVariant(data.adherence_pct)}
-              />
-              <CoachKpiCard
-                label="Training Load"
-                value={loadTrend.value}
-                subtext="CTL trend (14 days)"
-                variant="default"
-              />
-              <CoachKpiCard
-                label="Risk"
-                value={data.risk_level.charAt(0).toUpperCase() + data.risk_level.slice(1)}
-                subtext="No active alerts"
-                variant={getRiskVariant(data.risk_level)}
-              />
+            <div className="grid grid-cols-12 gap-6">
+              <div className="col-span-12 lg:col-span-4">
+                <CoachKpiCard
+                  label="Adherence"
+                  value={`${data.adherence_pct}%`}
+                  subtext="Last 14 days"
+                  variant={getAdherenceVariant(data.adherence_pct)}
+                />
+              </div>
+              <div className="col-span-12 lg:col-span-4">
+                <CoachKpiCard
+                  label="Training Load"
+                  value={loadTrend.value}
+                  subtext="CTL trend (14 days)"
+                  variant="default"
+                />
+              </div>
+              <div className="col-span-12 lg:col-span-4">
+                <CoachKpiCard
+                  label="Risk"
+                  value={data.risk_level.charAt(0).toUpperCase() + data.risk_level.slice(1)}
+                  subtext="No active alerts"
+                  variant={getRiskVariant(data.risk_level)}
+                />
+              </div>
             </div>
 
             {/* Charts Row */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-              <AdherenceChart data={data.adherence_trend} />
-              <WeeklyLoadChart data={data.weekly_loads} />
+            <div className="grid grid-cols-12 gap-6">
+              <div className="col-span-12 lg:col-span-6">
+                <AdherenceChart data={data.adherence_trend} />
+              </div>
+              <div className="col-span-12 lg:col-span-6">
+                <WeeklyLoadChart data={data.weekly_loads} />
+              </div>
             </div>
 
             {/* Risk Signals */}

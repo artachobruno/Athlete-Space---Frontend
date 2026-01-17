@@ -84,7 +84,7 @@ export function LoadStatusCard() {
   const TrendIcon = ctlTrend > 2 ? TrendingUp : ctlTrend < -2 ? TrendingDown : Minus;
 
   return (
-    <GlassCard>
+    <GlassCard className="h-full min-h-[220px]">
       <CardHeader className="pb-3">
         <CardTitle className="text-lg">Training Load</CardTitle>
       </CardHeader>

@@ -165,7 +165,7 @@ export function AppLayout({ children }: AppLayoutProps) {
       <main className={cn(
         'min-h-screen pt-safe-area lg:pt-0 lg:pl-64 transition-all duration-200'
       )}>
-        <div className="p-4 lg:p-8">
+        <div className="mx-auto max-w-[1400px] px-6 py-6">
           {children}
         </div>
       </main>
