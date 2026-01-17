@@ -188,7 +188,8 @@ export const getTodayIntelligence = async (decisionDate?: string): Promise<Daily
       decision?: {
         date?: string;
         recommendation?: string;
-        rationale?: string;
+        explanation?: string;
+        confidence?: { score?: number; explanation?: string };
         session?: unknown;
       };
       version?: number;
@@ -217,7 +218,7 @@ export const getTodayIntelligence = async (decisionDate?: string): Promise<Daily
       
       return {
         recommendation: data.decision.recommendation || '',
-        explanation: data.decision.rationale || data.decision.recommendation || '',
+        explanation: data.decision.explanation || data.decision.recommendation || '',
         confidence,
       };
     }
