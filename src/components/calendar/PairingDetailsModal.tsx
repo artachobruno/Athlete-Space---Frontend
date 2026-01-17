@@ -246,7 +246,7 @@ export function PairingDetailsModal({
             <div className="space-y-2">
               <h4 className="text-sm font-semibold text-foreground">Activity</h4>
               <div className="p-3 rounded-lg bg-muted/50">
-                <div className="font-medium text-foreground">{activity.title || 'Untitled Activity'}</div>
+                <div className="font-medium text-foreground">{capitalizeTitle(activity.title || 'Untitled Activity')}</div>
                 <div className="flex items-center gap-3 text-sm text-muted-foreground mt-2">
                   <span className="flex items-center gap-1">
                     <Calendar className="h-3.5 w-3.5" />

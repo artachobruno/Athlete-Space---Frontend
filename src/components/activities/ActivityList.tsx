@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { cn } from '@/lib/utils';
 import type { CompletedActivity } from '@/types';
+import { capitalizeTitle } from '@/adapters/calendarAdapter';
 import {
   Footprints, Bike, Waves, Clock, Route, Heart, Zap,
   Bot, ChevronDown, ChevronUp, Info, TrendingUp
@@ -165,7 +166,7 @@ export function ActivityList({ activities, initialExpandedId = null }: ActivityL
                         <Icon className="h-5 w-5 text-foreground" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <h3 className="font-semibold text-foreground truncate">{activity.title || 'Untitled Activity'}</h3>
+                        <h3 className="font-semibold text-foreground truncate">{capitalizeTitle(activity.title || 'Untitled Activity')}</h3>
                         <p className="text-sm text-muted-foreground">
                           {dateStr}
                         </p>

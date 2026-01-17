@@ -222,9 +222,10 @@ export function AddWeekModal({ open, onOpenChange, initialDate, onSuccess }: Add
             );
             setError(null);
 
-            // Close modal and refresh calendar
+            // Close modal
+            // Note: Query invalidation is handled by useCreatePlannedWeek hook
             onOpenChange(false);
-            onSuccess?.();
+            onSuccess?.(); // Call for any additional side effects (if needed)
           },
           onError: (err) => {
             console.error('Failed to create week:', err);

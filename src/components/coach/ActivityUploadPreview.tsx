@@ -9,6 +9,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
 import { Calendar, Clock, MapPin, TrendingUp } from "lucide-react";
+import { capitalizeTitle } from "@/adapters/calendarAdapter";
 
 interface ParsedActivity {
   date: string;
@@ -64,7 +65,9 @@ export function ActivityUploadPreview({
               <div className="flex items-start justify-between">
                 <div className="flex-1">
                   <div className="font-medium text-sm">
-                    {activity.title || `${activity.sport || "Activity"} on ${activity.date}`}
+                    {activity.title 
+                      ? capitalizeTitle(activity.title)
+                      : `${activity.sport || "Activity"} on ${activity.date}`}
                   </div>
                   <div className="flex flex-wrap gap-3 mt-2 text-xs text-muted-foreground">
                     {activity.date && (

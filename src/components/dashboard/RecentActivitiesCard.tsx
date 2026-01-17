@@ -12,6 +12,7 @@ import { enrichActivitiesWithTss, type TrainingLoadData } from '@/lib/tss-utils'
 import { Button } from '@/components/ui/button';
 import { toast } from '@/hooks/use-toast';
 import type { CompletedActivity } from '@/types';
+import { capitalizeTitle } from '@/adapters/calendarAdapter';
 
 interface RecentActivitiesCardProps {
   activities10?: CompletedActivity[] | null;
@@ -197,7 +198,7 @@ export function RecentActivitiesCard(props?: RecentActivitiesCardProps) {
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="font-medium text-sm text-foreground truncate">
-                        {activity.title || 'Untitled Activity'}
+                        {capitalizeTitle(activity.title || 'Untitled Activity')}
                       </div>
                       <div className="text-xs text-muted-foreground">
                         {dateStr} · {(() => {

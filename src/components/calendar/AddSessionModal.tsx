@@ -177,9 +177,10 @@ export function AddSessionModal({ open, onOpenChange, initialDate, onSuccess }: 
           setParsedWorkout(null);
           setWarnings([]);
 
-          // Close modal and refresh calendar
+          // Close modal
+          // Note: Query invalidation is handled by useCreatePlannedSession hook
           onOpenChange(false);
-          onSuccess?.();
+          onSuccess?.(); // Call for any additional side effects (if needed)
 
           // Redirect to workout detail page if workout_id exists
           // Note: Parsing happens asynchronously on the backend, so workout_id

@@ -205,14 +205,14 @@ export function TrainingCalendar() {
         open={addSessionOpen}
         onOpenChange={setAddSessionOpen}
         initialDate={currentDate}
-        onSuccess={invalidateCalendar}
+        // Note: Query invalidation is handled by useCreatePlannedSession hook
       />
 
       <AddWeekModal
         open={addWeekOpen}
         onOpenChange={setAddWeekOpen}
         initialDate={currentDate}
-        onSuccess={invalidateCalendar}
+        // Note: Query invalidation is handled by useCreatePlannedWeek hook
       />
     </div>
   );
