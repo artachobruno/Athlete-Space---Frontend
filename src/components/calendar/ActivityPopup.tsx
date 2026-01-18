@@ -734,11 +734,7 @@ export function ActivityPopup({
                         <SelectValue placeholder="Select an activity to link" />
                       </SelectTrigger>
                       <SelectContent>
-                        {matchingActivities.length === 0 ? (
-                          <SelectItem value="" disabled>
-                            No unpaired activities found for {sessionDateStr}
-                          </SelectItem>
-                        ) : (
+                        {matchingActivities.length === 0 ? null : (
                           matchingActivities.map((act) => (
                             <SelectItem key={act.id} value={act.id}>
                               {act.title || 'Untitled'} - {act.duration ? `${Math.round(act.duration / 60)}min` : 'No duration'}

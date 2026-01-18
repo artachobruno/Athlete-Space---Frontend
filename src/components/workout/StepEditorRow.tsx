@@ -72,16 +72,17 @@ export function StepEditorRow({ step, onUpdate, onDelete, errors }: StepEditorRo
   }
 
   const handleTargetTypeChange = (type: string) => {
-    const unit = type === 'pace' ? 'min/km' : type === 'hr' ? 'bpm' : type === 'power' ? 'W' : 'RPE'
+    const normalizedType = type === '__none__' ? '' : type
+    const unit = normalizedType === 'pace' ? 'min/km' : normalizedType === 'hr' ? 'bpm' : normalizedType === 'power' ? 'W' : 'RPE'
     onUpdate({
       ...step,
       target: {
         ...step.target,
-        type,
-        unit,
+        type: normalizedType || undefined,
+        unit: normalizedType ? unit : undefined,
       },
-      target_type: type as 'pace' | 'hr' | 'power' | null,
-      target_metric: type,
+      target_type: (normalizedType || null) as 'pace' | 'hr' | 'power' | null,
+      target_metric: normalizedType || undefined,
     })
   }
 
@@ -111,7 +112,8 @@ export function StepEditorRow({ step, onUpdate, onDelete, errors }: StepEditorRo
 
   const durationMinutes = step.duration_seconds ? Math.round(step.duration_seconds / 60) : ''
   const distanceKm = step.distance_meters ? (step.distance_meters / 1000).toFixed(2) : ''
-  const targetType = step.target?.type || step.target_type || ''
+  const rawTargetType = step.target?.type || step.target_type || ''
+  const targetType = rawTargetType || '__none__'
   const targetMin = step.target?.min ?? step.target_min ?? ''
   const targetMax = step.target?.max ?? step.target_max ?? ''
 
@@ -219,7 +221,7 @@ export function StepEditorRow({ step, onUpdate, onDelete, errors }: StepEditorRo
                 <SelectValue placeholder="None" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">None</SelectItem>
+                <SelectItem value="__none__">None</SelectItem>
                 {TARGET_TYPES.map((type) => (
                   <SelectItem key={type.value} value={type.value}>
                     {type.label}
@@ -229,7 +231,7 @@ export function StepEditorRow({ step, onUpdate, onDelete, errors }: StepEditorRo
             </Select>
           </div>
 
-          {targetType && (
+          {targetType && targetType !== '__none__' && (
             <>
               <div>
                 <Label htmlFor={`step-${step.id}-target-min`} className="text-xs">Min</Label>
