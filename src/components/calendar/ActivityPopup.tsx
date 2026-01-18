@@ -2,15 +2,16 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { GlassCard } from '@/components/ui/glass-card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import type { Intensity } from '@/lib/intensityGlow';
-import { Footprints, Bike, Waves, Clock, Route, Mountain, Heart, Zap, MessageCircle, CheckCircle2, ExternalLink, X, SkipForward, TrendingUp, Info, Download, Loader2, ArrowRight } from 'lucide-react';
+import { Footprints, Bike, Waves, Clock, Route, Mountain, Heart, Zap, MessageCircle, CheckCircle2, ExternalLink, X, SkipForward, TrendingUp, Info, Download, Loader2, ArrowRight, Link2 } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import { useNavigate } from 'react-router-dom';
 import type { PlannedWorkout, CompletedActivity } from '@/types';
 import { useUnitSystem } from '@/hooks/useUnitSystem';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { fetchTrainingLoad, type CalendarSession, type ProposalOnlyResponse, exportWorkoutToFIT } from '@/lib/api';
+import { fetchTrainingLoad, type CalendarSession, type ProposalOnlyResponse, exportWorkoutToFIT, fetchActivities } from '@/lib/api';
 import { fetchStructuredWorkout } from '@/api/workouts';
 import { useMemo, useState } from 'react';
 import { getTssForDate, enrichActivitiesWithTss } from '@/lib/tss-utils';
@@ -19,6 +20,8 @@ import { ConfirmationDialog } from '@/components/confirmation/ConfirmationDialog
 import { checkForProposalResponse } from '@/lib/confirmation-handler';
 import { useUpdateSessionStatus } from '@/hooks/useCalendarMutations';
 import { useAuthenticatedQuery } from '@/hooks/useAuthenticatedQuery';
+import { parseISO, format } from 'date-fns';
+import { normalizeSportType } from '@/lib/session-utils';
 
 interface ActivityPopupProps {
   open: boolean;
@@ -74,9 +77,39 @@ export function ActivityPopup({
   const activity = completedActivity;
   const SportIcon = sportIcons[workout?.sport || activity?.sport || 'running'];
   const [isExporting, setIsExporting] = useState(false);
+  const [showLinkActivity, setShowLinkActivity] = useState(false);
+  const [selectedActivityId, setSelectedActivityId] = useState<string | null>(null);
   
   // FE-3: Remove invalid filters - check if this is a session that can be updated
   const isPlannedSession = session && session.status !== 'completed' && session.status !== 'cancelled' && session.status !== 'skipped' && !activity;
+  
+  // Check if session is completed but has no linked activity
+  const isCompletedWithoutActivity = session && session.status === 'completed' && !session.completed_activity_id && !activity;
+  
+  // Fetch activities for the same date when showing link selector
+  const sessionDate = session?.date ? parseISO(session.date) : null;
+  const sessionDateStr = sessionDate ? format(sessionDate, 'yyyy-MM-dd') : null;
+  const sessionSport = session?.type ? normalizeSportType(session.type) : null;
+  
+  const { data: activitiesForLinking } = useAuthenticatedQuery({
+    queryKey: ['activities', 'link', sessionDateStr],
+    queryFn: () => sessionDateStr ? fetchActivities({ 
+      start: sessionDateStr, 
+      end: sessionDateStr,
+      limit: 100 
+    }) : Promise.resolve([]),
+    enabled: isCompletedWithoutActivity && showLinkActivity && !!sessionDateStr,
+    retry: 1,
+  });
+  
+  // Filter activities by sport type
+  const matchingActivities = useMemo(() => {
+    if (!activitiesForLinking || !sessionSport) return [];
+    return activitiesForLinking.filter(a => {
+      const activitySport = normalizeSportType(a.sport);
+      return activitySport === sessionSport && !a.planned_session_id; // Only unpaired activities
+    });
+  }, [activitiesForLinking, sessionSport]);
 
   // Fetch structured workout data only if session has a workout_id
   // Only call /workouts/{id}/structured if workout_id != null
@@ -248,6 +281,37 @@ export function ActivityPopup({
       onOpenChange(false);
       navigate(`/workout/${session.workout_id}`);
     }
+  };
+
+  const handleLinkActivity = async () => {
+    if (!session || !selectedActivityId) return;
+    
+    updateStatus.mutate(
+      {
+        sessionId: session.id,
+        status: 'completed', // Ensure status is completed
+        completedActivityId: selectedActivityId,
+      },
+      {
+        onSuccess: () => {
+          toast({
+            title: 'Activity linked',
+            description: 'The activity has been linked to this session.',
+          });
+          setShowLinkActivity(false);
+          setSelectedActivityId(null);
+          onStatusChange?.();
+        },
+        onError: (error) => {
+          console.error('Failed to link activity:', error);
+          toast({
+            title: 'Link failed',
+            description: 'Failed to link the activity. Please try again.',
+            variant: 'destructive',
+          });
+        },
+      }
+    );
   };
 
   const handleStatusUpdate = (newStatus: 'completed' | 'skipped' | 'cancelled') => {
@@ -650,6 +714,71 @@ export function ActivityPopup({
                   <X className="h-4 w-4 mr-2" />
                   Cancel
                 </Button>
+              </div>
+            )}
+            {isCompletedWithoutActivity && (
+              <div className="flex gap-2 flex-col">
+                {!showLinkActivity ? (
+                  <Button
+                    variant="outline"
+                    className="w-full"
+                    onClick={() => setShowLinkActivity(true)}
+                  >
+                    <Link2 className="h-4 w-4 mr-2" />
+                    Link Activity
+                  </Button>
+                ) : (
+                  <div className="space-y-2">
+                    <Select value={selectedActivityId || ''} onValueChange={setSelectedActivityId}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select an activity to link" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {matchingActivities.length === 0 ? (
+                          <SelectItem value="" disabled>
+                            No unpaired activities found for {sessionDateStr}
+                          </SelectItem>
+                        ) : (
+                          matchingActivities.map((act) => (
+                            <SelectItem key={act.id} value={act.id}>
+                              {act.title || 'Untitled'} - {act.duration ? `${Math.round(act.duration / 60)}min` : 'No duration'}
+                              {act.distance ? ` - ${(act.distance).toFixed(1)}km` : ''}
+                            </SelectItem>
+                          ))
+                        )}
+                      </SelectContent>
+                    </Select>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="default"
+                        className="flex-1"
+                        onClick={handleLinkActivity}
+                        disabled={!selectedActivityId || updateStatus.isPending}
+                      >
+                        {updateStatus.isPending ? (
+                          <>
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                            Linking...
+                          </>
+                        ) : (
+                          <>
+                            <Link2 className="h-4 w-4 mr-2" />
+                            Link Activity
+                          </>
+                        )}
+                      </Button>
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          setShowLinkActivity(false);
+                          setSelectedActivityId(null);
+                        }}
+                      >
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
             <div className="flex gap-2">
