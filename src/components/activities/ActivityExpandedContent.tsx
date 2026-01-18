@@ -10,7 +10,8 @@ import { ActivityCharts } from './ActivityCharts';
 import { ActivityMap } from './ActivityMap';
 import { useUnitSystem } from '@/hooks/useUnitSystem';
 import { useQuery } from '@tanstack/react-query';
-import { fetchActivityStreams, fetchWorkout, fetchWorkoutExecution, fetchWorkoutCompliance } from '@/lib/api';
+import { fetchActivityStreams, fetchWorkoutExecution } from '@/lib/api';
+import { useStructuredWorkout } from '@/hooks/useStructuredWorkout';
 import { useMemo } from 'react';
 import { normalizeRoutePointsFromStreams } from '@/lib/route-utils';
 import { useAuthenticatedQuery } from '@/hooks/useAuthenticatedQuery';
@@ -27,14 +28,11 @@ export function ActivityExpandedContent({ activity }: ActivityExpandedContentPro
   // PHASE F2: Always fetch workout data for Activities page
   const workoutId = activity.workout_id;
   
-  // Fetch workout data
-  const { data: workout, isLoading: workoutLoading } = useAuthenticatedQuery({
-    queryKey: ['workout', workoutId],
-    queryFn: () => fetchWorkout(workoutId!),
-    retry: 1,
-    enabled: !!workoutId,
-    staleTime: 5 * 60 * 1000, // 5 minutes
-  });
+  // Fetch structured workout data (includes steps and comparison/compliance)
+  const structuredWorkoutState = useStructuredWorkout(workoutId);
+  const structuredWorkout = structuredWorkoutState.status === 'ready' ? structuredWorkoutState.data : null;
+  const workoutLoading = structuredWorkoutState.status === 'loading';
+  const workoutError = structuredWorkoutState.status === 'error' ? structuredWorkoutState.error : null;
   
   // Fetch workout execution data (endpoint may not exist - handle gracefully)
   const { data: execution, isLoading: executionLoading, error: executionError } = useAuthenticatedQuery({
@@ -45,26 +43,18 @@ export function ActivityExpandedContent({ activity }: ActivityExpandedContentPro
     staleTime: 5 * 60 * 1000,
   });
   
-  // Fetch workout compliance data
-  const { data: compliance, isLoading: complianceLoading } = useAuthenticatedQuery({
-    queryKey: ['workout', workoutId, 'compliance'],
-    queryFn: () => fetchWorkoutCompliance(workoutId!),
-    retry: 1,
-    enabled: !!workoutId,
-    staleTime: 5 * 60 * 1000,
-  });
-  
-  // Extract planned data from workout
+  // Extract planned data from structured workout
   const plannedData = useMemo(() => {
-    if (!workout) {
+    if (!structuredWorkout?.workout) {
       return null;
     }
     
+    const workout = structuredWorkout.workout;
     return {
-      duration: workout.duration || 0,
-      distance: workout.distance,
+      duration: workout.total_duration_seconds ? Math.round(workout.total_duration_seconds / 60) : 0,
+      distance: workout.total_distance_meters ? workout.total_distance_meters / 1000 : undefined,
     };
-  }, [workout]);
+  }, [structuredWorkout]);
   
   // Fetch activity streams for route data
   // Note: retry is set to false to avoid retrying on CORS errors
@@ -330,9 +320,14 @@ export function ActivityExpandedContent({ activity }: ActivityExpandedContentPro
             <div className="flex items-center justify-center h-64 text-muted-foreground">
               <Loader2 className="h-6 w-6 animate-spin" />
             </div>
-          ) : workout?.steps && workout.steps.length > 0 ? (
+          ) : workoutError ? (
+            <div className="text-center py-12 text-muted-foreground">
+              <ListChecks className="h-8 w-8 mx-auto mb-2 opacity-50" />
+              <p className="text-sm">Error loading workout: {typeof workoutError === 'string' ? workoutError : 'Unknown error'}</p>
+            </div>
+          ) : structuredWorkout?.steps && structuredWorkout.steps.length > 0 ? (
             <div className="space-y-3">
-              {workout.steps.map((step) => (
+              {structuredWorkout.steps.map((step) => (
                 <div key={step.id} className="p-4 bg-muted/50 rounded-lg">
                   <div className="flex items-center gap-2 mb-2">
                     <span className="text-sm font-semibold text-foreground capitalize">{step.type}</span>
@@ -341,7 +336,7 @@ export function ActivityExpandedContent({ activity }: ActivityExpandedContentPro
                     )}
                     {step.distance_meters && (
                       <span className="text-xs text-muted-foreground">
-                        {convertDistance(step.distance_meters / 1000).value.toFixed(1)} {convertDistance(step.distance_meters / 1000).unit}
+                        {convertDistance((step.distance_meters as number) / 1000).value.toFixed(1)} {convertDistance((step.distance_meters as number) / 1000).unit}
                       </span>
                     )}
                   </div>
@@ -370,7 +365,8 @@ export function ActivityExpandedContent({ activity }: ActivityExpandedContentPro
           ) : (
             <div className="text-center py-12 text-muted-foreground">
               <ListChecks className="h-8 w-8 mx-auto mb-2 opacity-50" />
-              <p className="text-sm">No workout structure available</p>
+              <p className="text-sm">No workout steps available</p>
+              <p className="text-xs mt-1 text-muted-foreground">This workout doesn't have structured steps yet.</p>
             </div>
           )}
         </TabsContent>
@@ -465,11 +461,11 @@ export function ActivityExpandedContent({ activity }: ActivityExpandedContentPro
         </TabsContent>
         
         <TabsContent value="compliance" className="mt-4">
-          {complianceLoading ? (
+          {workoutLoading ? (
             <div className="flex items-center justify-center h-64 text-muted-foreground">
               <Loader2 className="h-6 w-6 animate-spin" />
             </div>
-          ) : compliance ? (
+          ) : structuredWorkout?.comparison && (Array.isArray(structuredWorkout.comparison) ? structuredWorkout.comparison.length > 0 : true) ? (
             <div className="space-y-4">
               <div className="p-4 bg-muted/50 rounded-lg">
                 <div className="flex items-center gap-2 mb-3">
@@ -478,46 +474,53 @@ export function ActivityExpandedContent({ activity }: ActivityExpandedContentPro
                 </div>
                 <div className="space-y-3">
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">Adherence</span>
+                    <span className="text-sm text-muted-foreground">Score</span>
                     <span className={cn(
                       "text-sm font-semibold",
-                      compliance.overall_compliance_pct >= 80 ? "text-load-fresh" :
-                      compliance.overall_compliance_pct >= 60 ? "text-load-optimal" :
-                      "text-load-overreaching"
+                      (() => {
+                        const comp = Array.isArray(structuredWorkout.comparison) ? structuredWorkout.comparison[0] : structuredWorkout.comparison;
+                        const score = (comp as { score?: number })?.score ?? 0;
+                        return score >= 80 ? "text-load-fresh" : score >= 60 ? "text-load-optimal" : "text-load-overreaching";
+                      })()
                     )}>
-                      {compliance.overall_compliance_pct.toFixed(0)}%
+                      {(() => {
+                        const comp = Array.isArray(structuredWorkout.comparison) ? structuredWorkout.comparison[0] : structuredWorkout.comparison;
+                        const score = (comp as { score?: number })?.score ?? 0;
+                        return score.toFixed(0);
+                      })()}%
                     </span>
                   </div>
                   <div className="flex items-center justify-between">
                     <span className="text-sm text-muted-foreground">Completed</span>
                     <span className={cn(
                       "text-sm font-medium",
-                      compliance.completed ? "text-load-fresh" : "text-muted-foreground"
+                      (() => {
+                        const comp = Array.isArray(structuredWorkout.comparison) ? structuredWorkout.comparison[0] : structuredWorkout.comparison;
+                        return (comp as { completed?: boolean })?.completed ? "text-load-fresh" : "text-muted-foreground";
+                      })()
                     )}>
-                      {compliance.completed ? "Yes" : "No"}
+                      {(() => {
+                        const comp = Array.isArray(structuredWorkout.comparison) ? structuredWorkout.comparison[0] : structuredWorkout.comparison;
+                        return (comp as { completed?: boolean })?.completed ? "Yes" : "No";
+                      })()}
                     </span>
                   </div>
-                  {compliance.steps && compliance.steps.length > 0 && (
-                    <div className="mt-4 space-y-3 pt-4 border-t border-border">
-                      <h5 className="text-sm font-semibold text-foreground">Step Compliance</h5>
-                      {compliance.steps.map((step) => (
-                        <div key={step.order} className="space-y-1">
-                          <div className="flex items-center justify-between text-sm">
-                            <span className="text-muted-foreground">Step {step.order + 1}</span>
-                            <span className={cn(
-                              "text-sm font-medium",
-                              step.compliance_pct >= 80 ? "text-load-fresh" :
-                              step.compliance_pct >= 60 ? "text-load-optimal" :
-                              "text-load-overreaching"
-                            )}>
-                              {step.compliance_pct.toFixed(0)}%
-                            </span>
-                          </div>
-                          <div className="text-xs text-muted-foreground">
-                            In range: {Math.round(step.time_in_range_seconds / 60)} min
-                            {step.overshoot_seconds > 0 && ` | Over: ${Math.round(step.overshoot_seconds / 60)} min`}
-                            {step.undershoot_seconds > 0 && ` | Under: ${Math.round(step.undershoot_seconds / 60)} min`}
-                          </div>
+                  {(() => {
+                    const comp = Array.isArray(structuredWorkout.comparison) ? structuredWorkout.comparison[0] : structuredWorkout.comparison;
+                    const summary = (comp as { summary_json?: Record<string, number | boolean> })?.summary_json;
+                    return summary && Object.keys(summary).length > 0;
+                  })() && (
+                    <div className="mt-4 space-y-2 pt-4 border-t border-border">
+                      <h5 className="text-sm font-semibold text-foreground">Summary</h5>
+                      {Object.entries((() => {
+                        const comp = Array.isArray(structuredWorkout.comparison) ? structuredWorkout.comparison[0] : structuredWorkout.comparison;
+                        return (comp as { summary_json?: Record<string, number | boolean> })?.summary_json ?? {};
+                      })()).map(([key, value]) => (
+                        <div key={key} className="flex items-center justify-between text-sm">
+                          <span className="text-muted-foreground capitalize">{key.replace(/_/g, ' ')}</span>
+                          <span className="text-foreground">
+                            {typeof value === 'number' ? value.toFixed(value % 1 === 0 ? 0 : 1) : String(value)}
+                          </span>
                         </div>
                       ))}
                     </div>
