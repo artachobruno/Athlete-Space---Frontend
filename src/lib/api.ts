@@ -3258,11 +3258,37 @@ api.interceptors.response.use(
  * @param workoutId - The ID of the workout to fetch
  * @returns Workout data
  */
-export const fetchWorkout = async (workoutId: string): Promise<PlannedWorkout> => {
+export const fetchWorkout = async (workoutId: string): Promise<PlannedWorkout & { steps?: Array<{
+  id: string;
+  order: number;
+  name: string;
+  type: string;
+  duration_seconds?: number | null;
+  distance_meters?: number | null;
+  purpose?: string | null;
+  instructions?: string | null;
+  intensity?: string | null;
+  target_metric?: string | null;
+  target_min?: number | null;
+  target_max?: number | null;
+}> }> => {
   console.log("[API] Fetching workout:", workoutId);
   try {
     const response = await api.get(`/workouts/${workoutId}`);
-    return response as unknown as PlannedWorkout;
+    return response as unknown as PlannedWorkout & { steps?: Array<{
+      id: string;
+      order: number;
+      name: string;
+      type: string;
+      duration_seconds?: number | null;
+      distance_meters?: number | null;
+      purpose?: string | null;
+      instructions?: string | null;
+      intensity?: string | null;
+      target_metric?: string | null;
+      target_min?: number | null;
+      target_max?: number | null;
+    }> };
   } catch (error) {
     console.error("[API] Failed to fetch workout:", error);
     throw error;
@@ -3315,25 +3341,33 @@ export const fetchWorkoutExecution = async (workoutId: string): Promise<{
  * @returns Compliance data
  */
 export const fetchWorkoutCompliance = async (workoutId: string): Promise<{
-  adherence: number; // 0-100 percentage
-  metrics: {
-    duration?: { planned: number; actual: number; diff: number };
-    distance?: { planned: number; actual: number; diff: number };
-    intensity?: { planned: string; actual: string; match: boolean };
-  };
-  status: 'on_target' | 'over' | 'under' | 'no_data';
+  overall_compliance_pct: number;
+  completed: boolean;
+  total_pause_seconds: number;
+  steps?: Array<{
+    order: number;
+    compliance_pct: number;
+    time_in_range_seconds: number;
+    overshoot_seconds: number;
+    undershoot_seconds: number;
+    pause_seconds: number;
+  }>;
 }> => {
   console.log("[API] Fetching workout compliance:", workoutId);
   try {
     const response = await api.get(`/workouts/${workoutId}/compliance`);
     return response as unknown as {
-      adherence: number;
-      metrics: {
-        duration?: { planned: number; actual: number; diff: number };
-        distance?: { planned: number; actual: number; diff: number };
-        intensity?: { planned: string; actual: string; match: boolean };
-      };
-      status: 'on_target' | 'over' | 'under' | 'no_data';
+      overall_compliance_pct: number;
+      completed: boolean;
+      total_pause_seconds: number;
+      steps?: Array<{
+        order: number;
+        compliance_pct: number;
+        time_in_range_seconds: number;
+        overshoot_seconds: number;
+        undershoot_seconds: number;
+        pause_seconds: number;
+      }>;
     };
   } catch (error) {
     console.error("[API] Failed to fetch workout compliance:", error);

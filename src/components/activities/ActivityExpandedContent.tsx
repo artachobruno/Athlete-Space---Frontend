@@ -36,11 +36,11 @@ export function ActivityExpandedContent({ activity }: ActivityExpandedContentPro
     staleTime: 5 * 60 * 1000, // 5 minutes
   });
   
-  // Fetch workout execution data
-  const { data: execution, isLoading: executionLoading } = useAuthenticatedQuery({
+  // Fetch workout execution data (endpoint may not exist - handle gracefully)
+  const { data: execution, isLoading: executionLoading, error: executionError } = useAuthenticatedQuery({
     queryKey: ['workout', workoutId, 'execution'],
     queryFn: () => fetchWorkoutExecution(workoutId!),
-    retry: 1,
+    retry: false, // Don't retry - endpoint may not exist
     enabled: !!workoutId,
     staleTime: 5 * 60 * 1000,
   });
@@ -330,26 +330,39 @@ export function ActivityExpandedContent({ activity }: ActivityExpandedContentPro
             <div className="flex items-center justify-center h-64 text-muted-foreground">
               <Loader2 className="h-6 w-6 animate-spin" />
             </div>
-          ) : workout?.structure && workout.structure.length > 0 ? (
+          ) : workout?.steps && workout.steps.length > 0 ? (
             <div className="space-y-3">
-              {workout.structure.map((step, idx) => (
-                <div key={idx} className="p-4 bg-muted/50 rounded-lg">
+              {workout.steps.map((step) => (
+                <div key={step.id} className="p-4 bg-muted/50 rounded-lg">
                   <div className="flex items-center gap-2 mb-2">
                     <span className="text-sm font-semibold text-foreground capitalize">{step.type}</span>
-                    {step.duration && (
-                      <span className="text-xs text-muted-foreground">{step.duration} min</span>
+                    {step.duration_seconds && (
+                      <span className="text-xs text-muted-foreground">{Math.round(step.duration_seconds / 60)} min</span>
                     )}
-                    {step.distance && (
+                    {step.distance_meters && (
                       <span className="text-xs text-muted-foreground">
-                        {convertDistance(step.distance).value.toFixed(1)} {convertDistance(step.distance).unit}
+                        {convertDistance(step.distance_meters / 1000).value.toFixed(1)} {convertDistance(step.distance_meters / 1000).unit}
                       </span>
                     )}
                   </div>
-                  {step.intensity && (
-                    <p className="text-sm text-muted-foreground">{step.intensity}</p>
+                  {step.purpose && (
+                    <p className="text-sm font-medium text-foreground">{step.purpose}</p>
                   )}
-                  {step.notes && (
-                    <p className="text-sm text-foreground mt-2">{step.notes}</p>
+                  {step.intensity && (
+                    <p className="text-sm text-muted-foreground mt-1">{step.intensity}</p>
+                  )}
+                  {step.instructions && (
+                    <p className="text-sm text-foreground mt-2">{step.instructions}</p>
+                  )}
+                  {(step.target_min !== null || step.target_max !== null) && (
+                    <div className="text-xs text-muted-foreground mt-2">
+                      Target: {step.target_min !== null && step.target_max !== null 
+                        ? `${step.target_min}-${step.target_max} ${step.target_metric || ''}`
+                        : step.target_min !== null 
+                        ? `≥${step.target_min} ${step.target_metric || ''}`
+                        : `≤${step.target_max} ${step.target_metric || ''}`
+                      }
+                    </div>
                   )}
                 </div>
               ))}
@@ -367,7 +380,7 @@ export function ActivityExpandedContent({ activity }: ActivityExpandedContentPro
             <div className="flex items-center justify-center h-64 text-muted-foreground">
               <Loader2 className="h-6 w-6 animate-spin" />
             </div>
-          ) : execution ? (
+          ) : (
             <div className="space-y-4">
               <div className="p-4 bg-muted/50 rounded-lg">
                 <div className="flex items-center gap-2 mb-3">
@@ -379,61 +392,74 @@ export function ActivityExpandedContent({ activity }: ActivityExpandedContentPro
                     <span className="text-sm text-muted-foreground">Completed</span>
                     <span className={cn(
                       "text-sm font-medium",
-                      execution.completed ? "text-load-fresh" : "text-muted-foreground"
+                      (execution?.completed ?? true) ? "text-load-fresh" : "text-muted-foreground"
                     )}>
-                      {execution.completed ? "Yes" : "No"}
+                      {(execution?.completed ?? true) ? "Yes" : "No"}
                     </span>
                   </div>
-                  {execution.executionDate && (
+                  {(execution?.executionDate || activity.date) && (
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-muted-foreground">Execution Date</span>
-                      <span className="text-sm text-foreground">{execution.executionDate}</span>
+                      <span className="text-sm text-foreground">{execution?.executionDate || activity.date}</span>
                     </div>
                   )}
-                  {execution.metrics && (
-                    <div className="mt-4 space-y-2 pt-4 border-t border-border">
-                      <h5 className="text-sm font-semibold text-foreground">Metrics</h5>
-                      {execution.metrics.duration && (
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm text-muted-foreground">Duration</span>
-                          <span className="text-sm text-foreground">{execution.metrics.duration} min</span>
-                        </div>
-                      )}
-                      {execution.metrics.distance && (
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm text-muted-foreground">Distance</span>
-                          <span className="text-sm text-foreground">
-                            {convertDistance(execution.metrics.distance).value.toFixed(1)} {convertDistance(execution.metrics.distance).unit}
-                          </span>
-                        </div>
-                      )}
-                      {execution.metrics.avgHeartRate && (
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm text-muted-foreground">Avg HR</span>
-                          <span className="text-sm text-foreground">{execution.metrics.avgHeartRate} bpm</span>
-                        </div>
-                      )}
-                      {execution.metrics.avgPower && (
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm text-muted-foreground">Avg Power</span>
-                          <span className="text-sm text-foreground">{execution.metrics.avgPower} W</span>
-                        </div>
-                      )}
-                      {execution.metrics.trainingLoad && (
-                        <div className="flex items-center justify-between">
-                          <span className="text-sm text-muted-foreground">TSS</span>
-                          <span className="text-sm text-foreground">{Math.round(execution.metrics.trainingLoad)}</span>
-                        </div>
-                      )}
+                  {execution?.actualActivityId && (
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm text-muted-foreground">Activity ID</span>
+                      <span className="text-sm text-foreground font-mono text-xs">{execution.actualActivityId}</span>
                     </div>
                   )}
+                  <div className="mt-4 space-y-2 pt-4 border-t border-border">
+                    <h5 className="text-sm font-semibold text-foreground">Metrics</h5>
+                    {(execution?.metrics?.duration ?? activity.duration) ? (
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-muted-foreground">Duration</span>
+                        <span className="text-sm text-foreground">{execution?.metrics?.duration ?? activity.duration} min</span>
+                      </div>
+                    ) : null}
+                    {(execution?.metrics?.distance ?? activity.distance) ? (
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-muted-foreground">Distance</span>
+                        <span className="text-sm text-foreground">
+                          {(() => {
+                            // execution distance is in meters, activity distance is in km
+                            const distanceKm = execution?.metrics?.distance 
+                              ? (execution.metrics.distance / 1000) 
+                              : (activity.distance || 0);
+                            const converted = convertDistance(distanceKm);
+                            return `${converted.value.toFixed(1)} ${converted.unit}`;
+                          })()}
+                        </span>
+                      </div>
+                    ) : null}
+                    {(execution?.metrics?.avgHeartRate ?? activity.avgHeartRate) ? (
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-muted-foreground">Avg HR</span>
+                        <span className="text-sm text-foreground">{execution?.metrics?.avgHeartRate ?? activity.avgHeartRate} bpm</span>
+                      </div>
+                    ) : null}
+                    {(execution?.metrics?.avgPower ?? activity.avgPower) ? (
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-muted-foreground">Avg Power</span>
+                        <span className="text-sm text-foreground">{execution?.metrics?.avgPower ?? activity.avgPower} W</span>
+                      </div>
+                    ) : null}
+                    {(execution?.metrics?.trainingLoad ?? activity.trainingLoad) ? (
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-muted-foreground">TSS</span>
+                        <span className="text-sm text-foreground">{Math.round((execution?.metrics?.trainingLoad ?? activity.trainingLoad) || 0)}</span>
+                      </div>
+                    ) : null}
+                  </div>
                 </div>
               </div>
-            </div>
-          ) : (
-            <div className="text-center py-12 text-muted-foreground">
-              <PlayCircle className="h-8 w-8 mx-auto mb-2 opacity-50" />
-              <p className="text-sm">No execution data available</p>
+              {executionError && !execution && (
+                <div className="p-3 bg-muted/30 rounded-lg border border-border">
+                  <p className="text-xs text-muted-foreground">
+                    Execution endpoint not available. Showing activity data.
+                  </p>
+                </div>
+              )}
             </div>
           )}
         </TabsContent>
@@ -455,67 +481,45 @@ export function ActivityExpandedContent({ activity }: ActivityExpandedContentPro
                     <span className="text-sm text-muted-foreground">Adherence</span>
                     <span className={cn(
                       "text-sm font-semibold",
-                      compliance.adherence >= 80 ? "text-load-fresh" :
-                      compliance.adherence >= 60 ? "text-load-optimal" :
+                      compliance.overall_compliance_pct >= 80 ? "text-load-fresh" :
+                      compliance.overall_compliance_pct >= 60 ? "text-load-optimal" :
                       "text-load-overreaching"
                     )}>
-                      {compliance.adherence.toFixed(0)}%
+                      {compliance.overall_compliance_pct.toFixed(0)}%
                     </span>
                   </div>
                   <div className="flex items-center justify-between">
-                    <span className="text-sm text-muted-foreground">Status</span>
+                    <span className="text-sm text-muted-foreground">Completed</span>
                     <span className={cn(
-                      "text-sm font-medium capitalize",
-                      compliance.status === 'on_target' ? "text-load-fresh" :
-                      compliance.status === 'over' ? "text-load-overreaching" :
-                      compliance.status === 'under' ? "text-load-optimal" :
-                      "text-muted-foreground"
+                      "text-sm font-medium",
+                      compliance.completed ? "text-load-fresh" : "text-muted-foreground"
                     )}>
-                      {compliance.status.replace('_', ' ')}
+                      {compliance.completed ? "Yes" : "No"}
                     </span>
                   </div>
-                  {compliance.metrics && (
+                  {compliance.steps && compliance.steps.length > 0 && (
                     <div className="mt-4 space-y-3 pt-4 border-t border-border">
-                      <h5 className="text-sm font-semibold text-foreground">Metric Comparison</h5>
-                      {compliance.metrics.duration && (
-                        <div className="space-y-1">
+                      <h5 className="text-sm font-semibold text-foreground">Step Compliance</h5>
+                      {compliance.steps.map((step) => (
+                        <div key={step.order} className="space-y-1">
                           <div className="flex items-center justify-between text-sm">
-                            <span className="text-muted-foreground">Duration</span>
-                            <span className="text-foreground">
-                              {compliance.metrics.duration.actual} / {compliance.metrics.duration.planned} min
+                            <span className="text-muted-foreground">Step {step.order + 1}</span>
+                            <span className={cn(
+                              "text-sm font-medium",
+                              step.compliance_pct >= 80 ? "text-load-fresh" :
+                              step.compliance_pct >= 60 ? "text-load-optimal" :
+                              "text-load-overreaching"
+                            )}>
+                              {step.compliance_pct.toFixed(0)}%
                             </span>
                           </div>
                           <div className="text-xs text-muted-foreground">
-                            Diff: {compliance.metrics.duration.diff > 0 ? '+' : ''}{compliance.metrics.duration.diff.toFixed(0)}%
+                            In range: {Math.round(step.time_in_range_seconds / 60)} min
+                            {step.overshoot_seconds > 0 && ` | Over: ${Math.round(step.overshoot_seconds / 60)} min`}
+                            {step.undershoot_seconds > 0 && ` | Under: ${Math.round(step.undershoot_seconds / 60)} min`}
                           </div>
                         </div>
-                      )}
-                      {compliance.metrics.distance && (
-                        <div className="space-y-1">
-                          <div className="flex items-center justify-between text-sm">
-                            <span className="text-muted-foreground">Distance</span>
-                            <span className="text-foreground">
-                              {convertDistance(compliance.metrics.distance.actual).value.toFixed(1)} / {convertDistance(compliance.metrics.distance.planned).value.toFixed(1)} {convertDistance(compliance.metrics.distance.actual).unit}
-                            </span>
-                          </div>
-                          <div className="text-xs text-muted-foreground">
-                            Diff: {compliance.metrics.distance.diff > 0 ? '+' : ''}{compliance.metrics.distance.diff.toFixed(0)}%
-                          </div>
-                        </div>
-                      )}
-                      {compliance.metrics.intensity && (
-                        <div className="space-y-1">
-                          <div className="flex items-center justify-between text-sm">
-                            <span className="text-muted-foreground">Intensity</span>
-                            <span className="text-foreground">
-                              {compliance.metrics.intensity.actual} / {compliance.metrics.intensity.planned}
-                            </span>
-                          </div>
-                          <div className="text-xs text-muted-foreground">
-                            Match: {compliance.metrics.intensity.match ? 'Yes' : 'No'}
-                          </div>
-                        </div>
-                      )}
+                      ))}
                     </div>
                   )}
                 </div>
