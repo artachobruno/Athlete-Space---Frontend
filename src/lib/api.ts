@@ -1811,6 +1811,39 @@ export interface CoachChatResponse {
 }
 
 /**
+ * Converts string-based plan_items from orchestrator to PlanItem objects for frontend display
+ * FE-2: Handles conversion from backend list[str] to frontend PlanItem[] format
+ */
+function mapStringPlanItemsToPlanItems(
+  planItems: string[] | PlanItem[] | undefined
+): PlanItem[] | undefined {
+  if (!planItems || planItems.length === 0) {
+    return undefined;
+  }
+
+  // Check if first item is a string (backend format) or already a PlanItem object
+  const firstItem = planItems[0];
+  if (typeof firstItem === 'string') {
+    // Convert string[] to PlanItem[]
+    return (planItems as string[]).map((item, index) => ({
+      id: `plan-item-${index}`,
+      title: item,
+      description: undefined,
+      date: undefined,
+      sport: undefined,
+    }));
+  }
+
+  // Already PlanItem[] objects, return as-is
+  if (typeof firstItem === 'object' && firstItem !== null && 'id' in firstItem && 'title' in firstItem) {
+    return planItems as PlanItem[];
+  }
+
+  // Fallback: try to convert anyway
+  return undefined;
+}
+
+/**
  * Maps planned_weeks from backend to plan_items format for frontend display
  * FE-1: Converts backend planned_weeks structure to frontend plan_items format
  */
@@ -1870,9 +1903,14 @@ export const sendCoachChat = async (
     // No retry/resend logic should trigger on success
     // Axios doesn't retry by default, so this is just for clarity
     
-    // FE-1: Map planned_weeks to plan_items if present
+    // FE-1: Map planned_weeks to plan_items if present (takes priority)
     if (response.planned_weeks && (!response.plan_items || response.plan_items.length === 0)) {
       response.plan_items = mapPlannedWeeksToPlanItems(response.planned_weeks);
+    }
+    
+    // FE-2: Convert string-based plan_items from orchestrator to PlanItem[] format
+    if (response.plan_items && response.plan_items.length > 0) {
+      response.plan_items = mapStringPlanItemsToPlanItems(response.plan_items);
     }
     
     return response;
