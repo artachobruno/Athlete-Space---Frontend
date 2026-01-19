@@ -33,6 +33,7 @@ const sportIcons: Record<CalendarSport, typeof Footprints> = {
   ride: Bike,
   swim: Waves,
   strength: Dumbbell,
+  race: Activity,
   other: Activity,
 };
 
@@ -41,6 +42,7 @@ const sportLabels: Record<CalendarSport, string> = {
   ride: 'Ride',
   swim: 'Swim',
   strength: 'Strength',
+  race: 'Race',
   other: 'Activity',
 };
 

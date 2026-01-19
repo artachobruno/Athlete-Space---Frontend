@@ -207,13 +207,13 @@ export function TodayWorkoutCard(props?: TodayWorkoutCardProps) {
 
         {/* Coach Explanation */}
         {(() => {
-          const explanation = finalTodayIntelligence && 'explanation' in finalTodayIntelligence 
-            ? finalTodayIntelligence.explanation 
+          const intel = finalTodayIntelligence as Record<string, unknown> | null | undefined;
+          const explanation = intel && typeof intel === 'object' && 'explanation' in intel 
+            ? String(intel.explanation) 
             : null;
-          const confidence = finalTodayIntelligence && 'confidence' in finalTodayIntelligence && finalTodayIntelligence.confidence
-            ? typeof finalTodayIntelligence.confidence === 'object' && 'score' in finalTodayIntelligence.confidence
-              ? finalTodayIntelligence.confidence.score
-              : null
+          const confidenceObj = intel && typeof intel === 'object' && 'confidence' in intel ? intel.confidence : null;
+          const confidence = confidenceObj && typeof confidenceObj === 'object' && confidenceObj !== null && 'score' in (confidenceObj as Record<string, unknown>)
+            ? (confidenceObj as Record<string, unknown>).score
             : null;
           
           // Don't show placeholder message if there's a workout available

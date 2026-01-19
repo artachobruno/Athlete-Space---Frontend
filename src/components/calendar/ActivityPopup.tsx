@@ -220,7 +220,7 @@ export function ActivityPopup({
     const stepToGroup: Map<string, { groupId: string; repeat: number; stepIds: string[] }> = new Map();
     for (const group of groups) {
       for (const stepId of group.step_ids) {
-        stepToGroup.set(stepId, group);
+        stepToGroup.set(stepId, { groupId: group.group_id, repeat: group.repeat, stepIds: group.step_ids });
       }
     }
     
@@ -234,7 +234,7 @@ export function ActivityPopup({
       const group = stepToGroup.get(step.id);
       if (group) {
         // This step is part of a group
-        const groupSteps = group.step_ids
+        const groupSteps = group.stepIds
           .map(id => sortedSteps.find(s => s.id === id))
           .filter((s): s is typeof step => s !== undefined)
           .sort((a, b) => a.order - b.order);

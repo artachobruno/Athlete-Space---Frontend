@@ -209,7 +209,7 @@ export default function WorkoutShare() {
           pace={cardData.pace}
           typeLabel={cardData.typeLabel}
           tss={cardData.tss}
-          routePoints={activityStreams?.route_points ?? null}
+          routePoints={activityStreams?.route_points as [number, number][] | null ?? null}
           paceStream={activityStreams?.pace ?? null}
           elevationStream={activityStreams?.elevation ?? null}
           variant="share"

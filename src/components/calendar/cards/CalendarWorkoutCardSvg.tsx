@@ -27,7 +27,7 @@ export function CalendarWorkoutCardSvg({ item, viewVariant, streams, className }
       pace={props.pace ?? null}
       typeLabel={props.workoutType}
       tss={tss}
-      routePoints={streams?.route_points ?? null}
+      routePoints={streams?.route_points as [number, number][] | null ?? null}
       paceStream={streams?.pace ?? null}
       elevationStream={streams?.elevation ?? null}
       variant={variant}
