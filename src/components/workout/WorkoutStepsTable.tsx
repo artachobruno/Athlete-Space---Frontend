@@ -145,14 +145,14 @@ export function WorkoutStepsTable({ steps, groups = [] }: WorkoutStepsTableProps
           <h3 className="text-lg font-semibold">Workout Steps</h3>
           <div className="flex gap-2">
             <Button
-              variant={viewMode === 'grouped' ? 'default' : 'outline'}
+              variant="default"
               size="sm"
               onClick={() => setViewMode('grouped')}
             >
               Grouped
             </Button>
             <Button
-              variant={viewMode === 'flat' ? 'default' : 'outline'}
+              variant="outline"
               size="sm"
               onClick={() => setViewMode('flat')}
             >

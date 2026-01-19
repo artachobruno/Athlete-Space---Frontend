@@ -77,7 +77,7 @@ export function WorkoutCard({
         pace={paceLabel}
         typeLabel={typeLabel}
         tss={tss ?? activity?.trainingLoad ?? null}
-        routePoints={streams?.route_points ?? null}
+        routePoints={streams?.route_points as [number, number][] | null ?? null}
         paceStream={streams?.pace ?? null}
         elevationStream={streams?.elevation ?? null}
         variant={variant}
