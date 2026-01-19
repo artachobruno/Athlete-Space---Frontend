@@ -8,7 +8,7 @@ import { mockActivities } from "@/mock/activities.mock";
 import { mockCalendarSessions, getMockWeekSessions, getMockTodaySessions } from "@/mock/calendarSessions.mock";
 import type { CompletedActivity, PlannedWorkout } from "@/types";
 
-const getBaseURL = () => {
+export const getBaseURL = () => {
   // Check if we're in Capacitor (native app)
   // Capacitor uses capacitor:// protocol, and origin is typically capacitor://localhost
   const isCapacitor = typeof window !== 'undefined' && (
