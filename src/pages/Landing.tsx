@@ -1,10 +1,11 @@
 import { useEffect } from 'react';
-import { LandingNav } from '@/components/landing/LandingNav';
-import { HeroSection } from '@/components/landing/HeroSection';
-import { HowItWorksSection } from '@/components/landing/HowItWorksSection';
-import { WhySection } from '@/components/landing/WhySection';
-import { AthletesSection } from '@/components/landing/AthletesSection';
-import { FooterSection } from '@/components/landing/FooterSection';
+import { TelemetryNav } from '@/components/landing/TelemetryNav';
+import { TelemetryHero } from '@/components/landing/TelemetryHero';
+import { TelemetryStrip } from '@/components/landing/TelemetryStatusBand';
+import { MentalModelSection } from '@/components/landing/MentalModelSection';
+import { SystemExplanation } from '@/components/landing/SystemExplanation';
+import { AthletesExplanation } from '@/components/landing/AthletesExplanation';
+import { TelemetryFooter } from '@/components/landing/TelemetryFooter';
 
 const Landing = () => {
   useEffect(() => {
@@ -17,13 +18,27 @@ const Landing = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-background text-foreground overflow-x-hidden">
-      <LandingNav />
-      <HeroSection />
-      <HowItWorksSection />
-      <WhySection />
-      <AthletesSection />
-      <FooterSection />
+    <div className="min-h-screen bg-slate-950 text-slate-200 overflow-x-hidden">
+      <TelemetryNav />
+      <TelemetryHero />
+      
+      {/* Telemetry strip breaks scroll flow */}
+      <TelemetryStrip variant="default" />
+      
+      {/* Mental model - how the system thinks */}
+      <MentalModelSection />
+      
+      {/* Second telemetry strip */}
+      <TelemetryStrip variant="alt" />
+      
+      {/* System explanation with load management */}
+      <SystemExplanation />
+      
+      {/* Athletes section with video */}
+      <AthletesExplanation />
+      
+      {/* Minimal footer */}
+      <TelemetryFooter />
     </div>
   );
 };
