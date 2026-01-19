@@ -253,7 +253,7 @@ export function MonthView({ currentDate, onActivityClick }: MonthViewProps) {
                   key={idx}
                   date={day}
                   className={cn(
-                    'relative min-h-[270px] border-b border-r border-border flex flex-col',
+                    'relative min-h-[220px] border-b border-r border-border flex flex-col',
                     !isCurrentMonth && 'bg-muted/30',
                     idx % 7 === 6 && 'border-r-0'
                   )}
@@ -277,7 +277,7 @@ export function MonthView({ currentDate, onActivityClick }: MonthViewProps) {
                     {items.length > 0 && (() => {
                       const stackItems = sortCalendarItems(items);
                       return (
-                        <div className="absolute top-[1%] left-[1%] right-[1%] bottom-[1%]">
+                        <div className="absolute top-0 left-0 right-0 bottom-0">
                           <CalendarWorkoutStack
                             items={stackItems}
                             variant="month"

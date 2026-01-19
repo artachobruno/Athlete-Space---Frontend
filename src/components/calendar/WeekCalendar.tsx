@@ -382,7 +382,7 @@ export function WeekCalendar({ currentDate, onActivityClick }: WeekCalendarProps
             <div
               key={idx}
               className={cn(
-                'rounded-xl border border-border bg-card overflow-hidden min-h-[560px] flex flex-col',
+                'rounded-xl border border-border bg-card overflow-hidden min-h-[340px] flex flex-col',
                 isCurrentDay && 'ring-2 ring-primary/50',
               )}
             >
@@ -421,7 +421,7 @@ export function WeekCalendar({ currentDate, onActivityClick }: WeekCalendarProps
                     <p className="text-xs text-muted-foreground/50">Rest day</p>
                   </div>
                 ) : (
-                  <div className="absolute top-[1%] left-[1%] right-[1%] bottom-[1%]">
+                  <div className="absolute top-0 left-0 right-0 bottom-0">
                     <CalendarWorkoutStack
                       items={groupedItems.flatMap((group) => group.items)}
                       variant="week"

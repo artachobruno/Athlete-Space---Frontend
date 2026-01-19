@@ -194,7 +194,7 @@ function WeekView({ currentDate, onActivityClick }: WeekViewProps) {
             <div
               key={idx}
               className={cn(
-                'rounded-xl border border-border bg-card min-h-[640px] flex flex-col',
+                'rounded-xl border border-border bg-card min-h-[380px] flex flex-col',
                 isCurrentDay && 'ring-2 ring-primary/50'
               )}
             >
@@ -218,7 +218,7 @@ function WeekView({ currentDate, onActivityClick }: WeekViewProps) {
 
               {/* Card Area — 98% FILL */}
               <div className="flex-1 relative">
-                <div className="absolute top-[1%] left-[1%] right-[1%] bottom-[1%]">
+                <div className="absolute top-0 left-0 right-0 bottom-0">
                   {groupedItems.length === 0 ? (
                     <div className="h-full flex items-center justify-center">
                       <p className="text-xs text-muted-foreground/50">Rest day</p>
