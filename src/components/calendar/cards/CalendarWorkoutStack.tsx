@@ -1,7 +1,4 @@
-import { CalendarWorkoutCard } from './CalendarWorkoutCard';
-import { CalendarActivityCard } from './CalendarActivityCard';
-import { CalendarTrainingDayCard } from './CalendarTrainingDayCard';
-import { toCalendarCardRenderModel } from './calendarCardAdapter';
+import { CalendarWorkoutCardSvg } from './CalendarWorkoutCardSvg';
 import type { CalendarItem } from '@/types/calendar';
 
 interface Props {
@@ -74,33 +71,13 @@ export function CalendarWorkoutStack({
           >
             <div
               className="flex items-center justify-center w-full h-full"
-              style={
-                variant === 'month'
-                  ? {
-                      width: '100%',
-                      height: '100%',
-                    }
-                  : {
-                      aspectRatio: '360 / 460',
-                      maxWidth: '100%',
-                      maxHeight: '100%',
-                    }
-              }
+              style={{
+                aspectRatio: variant === 'month' ? '320 / 220' : '600 / 360',
+                maxWidth: '100%',
+                maxHeight: '100%',
+              }}
             >
-              {(() => {
-                const model = toCalendarCardRenderModel(item);
-                const propsWithView = { ...model.props, viewVariant: variant };
-
-                if (model.cardType === 'session') {
-                  return <CalendarWorkoutCard {...propsWithView} />;
-                }
-
-                if (model.cardType === 'activity') {
-                  return <CalendarActivityCard {...propsWithView} />;
-                }
-
-                return <CalendarTrainingDayCard {...propsWithView} />;
-              })()}
+              <CalendarWorkoutCardSvg item={item} viewVariant={variant} />
             </div>
           </div>
         );

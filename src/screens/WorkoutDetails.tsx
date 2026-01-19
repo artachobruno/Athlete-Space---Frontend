@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { AppLayout } from '@/components/layout/AppLayout'
 import { useParams } from 'react-router-dom'
-import { Loader2, Edit2, X } from 'lucide-react'
+import { Loader2, Edit2, X, Share2 } from 'lucide-react'
 import { useStructuredWorkout } from '@/hooks/useStructuredWorkout'
 import { useQueryClient } from '@tanstack/react-query'
 import { WorkoutHeader } from '@/components/workout/WorkoutHeader'
@@ -19,11 +19,13 @@ import type { StructuredWorkoutStep } from '@/api/workouts'
 import { GlassCardMotion } from '@/components/ui/glass-card-motion'
 import { CardHeader } from '@/components/ui/card'
 import { getGlowIntensityFromWorkout } from '@/lib/intensityGlow'
+import { useNavigate } from 'react-router-dom'
 
 export default function WorkoutDetails() {
   const { workoutId } = useParams<{ workoutId: string }>()
   const state = useStructuredWorkout(workoutId)
   const queryClient = useQueryClient()
+  const navigate = useNavigate()
   const [editMode, setEditMode] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
 
@@ -128,27 +130,35 @@ export default function WorkoutDetails() {
             <div className="flex items-start justify-between">
               <WorkoutHeader workout={workout} />
               <div className="flex items-center gap-2">
-            {structured_available && steps.length > 0 && !editMode && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => setEditMode(true)}
-              >
-                <Edit2 className="h-4 w-4 mr-2" />
-                Edit Steps
-              </Button>
-            )}
-            {editMode && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleCancel}
-                disabled={isSaving}
-              >
-                <X className="h-4 w-4 mr-2" />
-                Cancel
-              </Button>
-            )}
+                {structured_available && steps.length > 0 && !editMode && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setEditMode(true)}
+                  >
+                    <Edit2 className="h-4 w-4 mr-2" />
+                    Edit Steps
+                  </Button>
+                )}
+                {editMode && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={handleCancel}
+                    disabled={isSaving}
+                  >
+                    <X className="h-4 w-4 mr-2" />
+                    Cancel
+                  </Button>
+                )}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => navigate(`/workout/${workout.id}/share`)}
+                >
+                  <Share2 className="h-4 w-4 mr-2" />
+                  Share Card
+                </Button>
                 <WorkoutExport workoutId={workout.id} />
               </div>
             </div>

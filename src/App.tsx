@@ -36,6 +36,7 @@ import AdminDashboard from "./pages/admin/AdminDashboard";
 import AiDashboard from "./pages/admin/AiDashboard";
 import AdminAnalytics from "./pages/admin/AdminAnalytics";
 import WorkoutDetails from "./screens/WorkoutDetails";
+import WorkoutShare from "./pages/WorkoutShare";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -345,6 +346,14 @@ const AppContent = () => {
           element={
             <RequireAuth>
               <WorkoutDetails />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/workout/:workoutId/share"
+          element={
+            <RequireAuth>
+              <WorkoutShare />
             </RequireAuth>
           }
         />

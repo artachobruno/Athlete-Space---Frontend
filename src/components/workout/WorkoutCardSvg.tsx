@@ -1,4 +1,5 @@
 import { useId, useMemo } from 'react';
+import type { Ref } from 'react';
 import { normalizeRoutePoints } from '@/lib/route-utils';
 
 export type WorkoutCardVariant = 'feed' | 'mobile' | 'share';
@@ -26,6 +27,7 @@ export interface WorkoutCardSvgProps {
   elevationStream?: number[] | null;
   variant?: WorkoutCardVariant;
   className?: string;
+  svgRef?: Ref<SVGSVGElement>;
 }
 
 const toTitleCase = (value: string) =>
@@ -147,6 +149,7 @@ export function WorkoutCardSvg({
   elevationStream,
   variant = 'feed',
   className,
+  svgRef,
 }: WorkoutCardSvgProps) {
   const { width, height } = VARIANT_SIZES[variant];
   const scale = Math.min(width / BASE_WIDTH, height / BASE_HEIGHT);
@@ -232,6 +235,7 @@ export function WorkoutCardSvg({
       preserveAspectRatio="xMidYMid meet"
       xmlns="http://www.w3.org/2000/svg"
       className={className}
+      ref={svgRef}
       style={{ display: 'block' }}
     >
       <defs>
