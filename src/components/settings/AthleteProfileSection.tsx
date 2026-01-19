@@ -13,6 +13,9 @@ import { fetchUserProfile, updateUserProfile, fetchSettingsProfile, updateSettin
 import { toast } from '@/hooks/use-toast';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/context/AuthContext';
+import { useAthleteProfile } from '@/hooks/useAthleteProfile';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { format } from 'date-fns';
 
 interface ProfileState {
   name: string;
@@ -34,6 +37,7 @@ const format1Decimal = (value: number): number => {
 export function AthleteProfileSection() {
   const queryClient = useQueryClient();
   const { user } = useAuth();
+  const { profile: athleteProfile, bioSource, isBioStale } = useAthleteProfile();
   const [profile, setProfile] = useState<ProfileState>({
     name: '',
     email: user?.email || '',
@@ -362,16 +366,64 @@ export function AthleteProfileSection() {
     );
   }
 
+  // Build badge text based on bio source
+  const getBadgeText = () => {
+    if (!bioSource) {
+      return null;
+    }
+    
+    if (bioSource === 'ai_generated') {
+      // Check if we can get last updated date from profile
+      if (isBioStale) {
+        return 'AI-derived profile · Update available';
+      }
+      // For now, just show base text (we can add date later if available in API response)
+      return 'AI-derived profile';
+    }
+    
+    if (bioSource === 'user_edited') {
+      return 'Profile customized by you';
+    }
+    
+    if (isBioStale) {
+      return 'AI-derived profile · Update available';
+    }
+    
+    return null;
+  };
+
+  const badgeText = getBadgeText();
+
   return (
     <GlassCard>
       <CardHeader>
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-accent/10 rounded-lg">
-            <User className="h-5 w-5 text-accent" />
-          </div>
-          <div>
-            <CardTitle className="text-lg">Athlete Profile</CardTitle>
-            <CardDescription>Your personal information and physical attributes</CardDescription>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-accent/10 rounded-lg">
+              <User className="h-5 w-5 text-accent" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <CardTitle className="text-lg">Athlete Profile</CardTitle>
+                {badgeText && (
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Badge variant="outline" className="text-xs">
+                          {badgeText}
+                        </Badge>
+                      </TooltipTrigger>
+                      <TooltipContent>
+                        <p className="max-w-xs">
+                          This profile is generated from your training data and settings. You can edit or regenerate it anytime.
+                        </p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                )}
+              </div>
+              <CardDescription>Your personal information and physical attributes</CardDescription>
+            </div>
           </div>
         </div>
       </CardHeader>
