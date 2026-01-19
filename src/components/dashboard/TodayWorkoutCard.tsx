@@ -1,16 +1,16 @@
 import { GlassCardMotion } from '@/components/ui/glass-card-motion';
 import { CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { fetchCalendarToday, fetchTrainingLoad, fetchActivities } from '@/lib/api';
+import { fetchCalendarToday, fetchTrainingLoad, fetchActivities, fetchActivityStreams } from '@/lib/api';
 import { getTodayIntelligence } from '@/lib/intelligence';
 import { format } from 'date-fns';
-import { Clock, Route, Zap, Loader2, MessageSquare } from 'lucide-react';
+import { Loader2, MessageSquare } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuthenticatedQuery } from '@/hooks/useAuthenticatedQuery';
-import { useUnitSystem } from '@/hooks/useUnitSystem';
 import { useMemo } from 'react';
 import { getTssForDate, enrichActivitiesWithTss, type TrainingLoadData } from '@/lib/tss-utils';
 import { getGlowIntensityFromWorkout } from '@/lib/intensityGlow';
+import { WorkoutCard } from '@/components/workout/WorkoutCard';
 import type { CompletedActivity } from '@/types';
 import type { TodayResponse } from '@/lib/api';
 
@@ -44,7 +44,6 @@ interface TodayWorkoutCardProps {
 }
 
 export function TodayWorkoutCard(props?: TodayWorkoutCardProps) {
-  const { convertDistance } = useUnitSystem();
   const today = format(new Date(), 'yyyy-MM-dd');
 
   // Use props if provided, otherwise fetch (backward compatibility)
@@ -112,18 +111,41 @@ export function TodayWorkoutCard(props?: TodayWorkoutCardProps) {
   const finalTodayIntelligence = propsTodayIntelligence !== undefined ? propsTodayIntelligence : todayIntelligence;
 
   const todayWorkout = finalTodayData?.sessions?.find(s => s.status === 'planned' || s.status === 'completed') || null;
+
+  const matchingActivity = useMemo(() => {
+    if (!todayWorkout || !finalActivities) return null;
+    if (todayWorkout.completed_activity_id) {
+      return finalActivities.find(activity => activity.id === todayWorkout.completed_activity_id) || null;
+    }
+    const byDate = finalActivities.find(activity => {
+      const activityDate = activity.date?.split('T')[0] || activity.date;
+      return activityDate === today;
+    });
+    return byDate || null;
+  }, [finalActivities, today, todayWorkout]);
+
+  const activityId = todayWorkout?.completed_activity_id || matchingActivity?.id || null;
+
+  const { data: activityStreams } = useAuthenticatedQuery({
+    queryKey: ['activityStreams', activityId],
+    queryFn: () => fetchActivityStreams(activityId as string),
+    retry: 1,
+    enabled: Boolean(activityId),
+    staleTime: 15 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
+  });
   
   // Get TSS for today from training load or completed activity
   const todayTss = useMemo(() => {
     if (todayWorkout?.status === 'completed') {
       // Try to find matching completed activity
       const enrichedActivities = enrichActivitiesWithTss(finalActivities || [], finalTrainingLoadData);
-      const matchingActivity = enrichedActivities.find(a => {
+      const activity = enrichedActivities.find(a => {
         const activityDate = a.date?.split('T')[0] || a.date;
         return activityDate === today;
       });
-      if (matchingActivity?.trainingLoad) {
-        return matchingActivity.trainingLoad;
+      if (activity?.trainingLoad) {
+        return activity.trainingLoad;
       }
     }
     // Fallback to training load data
@@ -175,12 +197,13 @@ export function TodayWorkoutCard(props?: TodayWorkoutCardProps) {
         </div>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div>
-          <h3 className="font-semibold text-foreground">{todayWorkout.title}</h3>
-          {todayWorkout.notes && (
-            <p className="text-sm text-muted-foreground mt-1">{todayWorkout.notes}</p>
-          )}
-        </div>
+        <WorkoutCard
+          session={todayWorkout}
+          activity={matchingActivity}
+          streams={activityStreams ?? null}
+          tss={todayTss}
+          variant="feed"
+        />
 
         {/* Coach Explanation */}
         {(() => {
@@ -217,33 +240,9 @@ export function TodayWorkoutCard(props?: TodayWorkoutCardProps) {
           ) : null;
         })()}
 
-        <div className="flex items-center gap-6 text-sm">
-          {todayWorkout.duration_minutes && (
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <Clock className="h-4 w-4" />
-              <span>{todayWorkout.duration_minutes} min</span>
-            </div>
-          )}
-          {todayWorkout.distance_km && (
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <Route className="h-4 w-4" />
-              <span>{(() => {
-                const dist = convertDistance(todayWorkout.distance_km);
-                return `${dist.value.toFixed(1)} ${dist.unit}`;
-              })()}</span>
-            </div>
-          )}
-          <div className="flex items-center gap-2 text-muted-foreground">
-            <Zap className="h-4 w-4" />
-            <span className="capitalize">{workoutType || 'Workout'}</span>
-          </div>
-          {todayTss !== null && todayTss > 0 && (
-            <div className="flex items-center gap-2 text-muted-foreground">
-              <span className="font-medium text-foreground">{Math.round(todayTss)}</span>
-              <span className="text-xs">TSS</span>
-            </div>
-          )}
-        </div>
+        {todayWorkout.notes && (
+          <p className="text-sm text-muted-foreground">{todayWorkout.notes}</p>
+        )}
       </CardContent>
     </GlassCardMotion>
   );
