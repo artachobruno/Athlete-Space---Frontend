@@ -3,6 +3,7 @@ import { Navigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { Skeleton } from "@/components/ui/skeleton";
 import { isPreviewMode } from "@/lib/preview";
+import Landing from "@/pages/Landing";
 
 function FullPageSkeleton() {
   return (
@@ -19,7 +20,7 @@ function FullPageSkeleton() {
 /**
  * Root route handler ("/").
  * - Loading → show loading (block routing until auth resolves)
- * - Unauthenticated → /login
+ * - Unauthenticated → show Landing page
  * - Authenticated but onboarding incomplete → /onboarding
  * - Authenticated + onboarding complete → /dashboard
  * 
@@ -47,12 +48,12 @@ export function AuthLanding() {
     return <FullPageSkeleton />;
   }
 
-  // CRITICAL: Unauthenticated → login (NOT onboarding)
-  // 401, no token, or /me failed = unauthenticated → login
+  // CRITICAL: Unauthenticated → show Landing page (NOT redirect to login)
+  // Users can navigate to /login or /signup from the landing page
   // Only check status, not user - status is the source of truth
   // Checking !user can cause race conditions during hydration
   if (status === "unauthenticated") {
-    return <Navigate to="/login" replace />;
+    return <Landing />;
   }
 
   // CRITICAL: Only show onboarding when authenticated AND onboarding incomplete
