@@ -194,7 +194,7 @@ function WeekView({ currentDate, onActivityClick }: WeekViewProps) {
             <div
               key={idx}
               className={cn(
-                'rounded-xl border border-border bg-card min-h-[380px] flex flex-col',
+                'rounded-xl border border-border bg-card min-h-[640px] flex flex-col',
                 isCurrentDay && 'ring-2 ring-primary/50'
               )}
             >

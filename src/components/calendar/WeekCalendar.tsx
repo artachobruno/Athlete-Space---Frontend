@@ -382,7 +382,7 @@ export function WeekCalendar({ currentDate, onActivityClick }: WeekCalendarProps
             <div
               key={idx}
               className={cn(
-                'rounded-xl border border-border bg-card overflow-hidden min-h-[340px] flex flex-col',
+                'rounded-xl border border-border bg-card overflow-hidden min-h-[560px] flex flex-col',
                 isCurrentDay && 'ring-2 ring-primary/50',
               )}
             >
