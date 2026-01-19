@@ -57,18 +57,18 @@ export const TelemetryStatusBand = () => {
 export const TelemetryStrip = ({ variant = 'default' }: { variant?: 'default' | 'alt' }) => {
   const metrics = variant === 'default' 
     ? [
-        { label: 'PACE Δ', value: '−0.04' },
-        { label: 'LOAD', value: '+6', suffix: '7d' },
-        { label: 'CTL', value: '↑' },
-        { label: 'ATL', value: '↓' },
-        { label: 'TSB', value: '+8.2' },
+        { label: 'PACE Δ', value: '−0.04', explanation: 'Normalized daily load' },
+        { label: 'LOAD', value: '+6', suffix: '7d', explanation: 'Model confidence (14d)' },
+        { label: 'CTL', value: '↑', explanation: 'Autonomic balance' },
+        { label: 'ATL', value: '↓', explanation: 'Training response' },
+        { label: 'TSB', value: '+8.2', explanation: 'vs personal baseline' },
       ]
     : [
-        { label: 'ADAPTATION', value: '94%' },
-        { label: 'RECOVERY', value: 'OPTIMAL' },
-        { label: 'STRAIN', value: '12.4' },
-        { label: 'HRV', value: '+3ms' },
-        { label: 'SLEEP', value: '7.2h' },
+        { label: 'ADAPTATION', value: '94%', explanation: 'Model confidence (14d)' },
+        { label: 'RECOVERY', value: 'OPTIMAL', explanation: 'Autonomic balance' },
+        { label: 'STRAIN', value: '12.4', explanation: 'Normalized daily load' },
+        { label: 'HRV', value: '+3ms', explanation: 'vs personal baseline' },
+        { label: 'SLEEP', value: '7.2h', explanation: 'Effective sleep time' },
       ];
 
   return (
@@ -79,12 +79,19 @@ export const TelemetryStrip = ({ variant = 'default' }: { variant?: 'default' | 
       viewport={{ once: true }}
       transition={{ duration: 0.6 }}
     >
-      <div className="flex items-center justify-center gap-8 md:gap-16 text-[11px] tracking-[0.12em] font-mono">
+      <div className="flex items-center justify-center gap-8 md:gap-16">
         {metrics.map((metric, i) => (
-          <div key={i} className="flex items-center gap-2 whitespace-nowrap">
-            <span className="text-slate-600 uppercase">{metric.label}</span>
-            <span className="text-slate-400">{metric.value}</span>
-            {metric.suffix && <span className="text-slate-600">({metric.suffix})</span>}
+          <div key={i} className="flex flex-col items-center gap-1 whitespace-nowrap">
+            <div className="flex items-center gap-2 text-[11px] tracking-[0.12em] font-mono">
+              <span className="text-slate-600 uppercase">{metric.label}</span>
+              <span className="text-slate-400">{metric.value}</span>
+              {metric.suffix && <span className="text-slate-600">({metric.suffix})</span>}
+            </div>
+            {metric.explanation && (
+              <span className="text-[9px] font-mono tracking-wider text-slate-600 opacity-50">
+                {metric.explanation}
+              </span>
+            )}
           </div>
         ))}
       </div>

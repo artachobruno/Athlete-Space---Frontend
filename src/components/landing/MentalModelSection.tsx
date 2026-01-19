@@ -3,10 +3,10 @@ import { useRef, useEffect, useState } from 'react';
 import anime from 'animejs';
 
 const stages = [
-  { id: 'data', label: 'DATA', sublabel: 'Signals In' },
-  { id: 'signal', label: 'SIGNAL', sublabel: 'Pattern Recognition' },
-  { id: 'decision', label: 'DECISION', sublabel: 'AI Analysis' },
-  { id: 'adaptation', label: 'ADAPTATION', sublabel: 'Training Response' },
+  { id: 'data', label: 'DATA', sublabel: 'Sensors & sessions' },
+  { id: 'signal', label: 'SIGNAL', sublabel: 'Pattern recognition' },
+  { id: 'decision', label: 'DECISION', sublabel: 'AI analysis' },
+  { id: 'adaptation', label: 'ADAPTATION', sublabel: 'Training response' },
 ];
 
 export const MentalModelSection = () => {
@@ -133,17 +133,22 @@ export const MentalModelSection = () => {
           </div>
         </div>
 
-        {/* Minimal explanation */}
+        {/* System Logic explanation */}
         <motion.div
-          className="mt-20 max-w-xl mx-auto text-center"
+          className="mt-20 max-w-2xl mx-auto"
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
           viewport={{ once: true }}
           transition={{ delay: 0.8, duration: 0.8 }}
         >
+          <p className="text-slate-400 text-sm leading-relaxed mb-4">
+            Performance is not training more.
+            <br />
+            It is managing stress faster than it accumulates.
+          </p>
           <p className="text-slate-500 text-sm leading-relaxed font-mono">
-            Your training data becomes a signal. The signal informs a decision. 
-            The decision drives adaptation. Repeat.
+            AthleteSpace models load, recovery, and adaptation continuously —
+            not just after workouts.
           </p>
         </motion.div>
       </div>

@@ -16,9 +16,9 @@ export const TelemetryHero = () => {
     <section className="relative min-h-screen flex flex-col bg-slate-950">
       {/* Subtle grid background */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {/* Grid pattern */}
+        {/* Grid pattern - reduced opacity by 10% */}
         <div 
-          className="absolute inset-0 opacity-[0.03]"
+          className="absolute inset-0 opacity-[0.027]"
           style={{
             backgroundImage: `
               linear-gradient(to right, hsl(215, 20%, 30%) 1px, transparent 1px),
@@ -28,21 +28,21 @@ export const TelemetryHero = () => {
           }}
         />
         
-        {/* Video background - more visible */}
+        {/* Video background - increased contrast 8-12%, reduced opacity mask */}
         <video
           ref={videoRef}
           autoPlay
           loop
           muted
           playsInline
-          className="absolute inset-0 w-full h-full object-cover opacity-[0.25]"
-          style={{ filter: 'saturate(0.7) contrast(1.1)' }}
+          className="absolute inset-0 w-full h-full object-cover opacity-[0.30]"
+          style={{ filter: 'saturate(0.75) contrast(1.20)' }}
         >
           <source src="/Cycling_male.mp4" type="video/mp4" />
         </video>
         
         {/* Gradient overlay to maintain readability */}
-        <div className="absolute inset-0 bg-gradient-to-b from-slate-950/40 via-slate-950/60 to-slate-950" />
+        <div className="absolute inset-0 bg-gradient-to-b from-slate-950/35 via-slate-950/55 to-slate-950" />
       </div>
 
       {/* Status band at top */}
@@ -50,29 +50,32 @@ export const TelemetryHero = () => {
         <TelemetryStatusBand />
       </div>
 
-      {/* Main hero content */}
+      {/* Main hero content - centered more vertically */}
       <div className="relative z-10 flex-1 flex flex-col justify-center container mx-auto px-6 py-16">
-        {/* Minimal branding */}
+        {/* Hero headline section - increased font size 25% */}
         <motion.div
-          className="mb-16"
+          className="mb-12"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 1.2, delay: 0.3 }}
         >
-          <div className="flex items-center gap-3 mb-6">
-            <img 
-              src="/AthleteSpace_logo_dark.jpg" 
-              alt="Athlete Space" 
-              className="h-8 w-auto opacity-90"
-            />
-          </div>
-          
-          <h1 className="text-slate-400 text-sm tracking-[0.2em] uppercase font-mono mb-4">
-            Performance System
+          {/* Headline (H1) - 25% larger */}
+          <h1 className="text-5xl md:text-6xl lg:text-7xl font-mono font-light text-slate-200 mb-6 leading-[1.15] tracking-tight">
+            Training, driven by signal — not feel.
           </h1>
           
-          <p className="text-slate-500 text-sm max-w-md tracking-wide leading-relaxed">
-            Signal-driven training intelligence for endurance athletes.
+          {/* Subheadline (H2) */}
+          <h2 className="text-lg md:text-xl lg:text-2xl text-slate-400 font-light mb-4 leading-relaxed max-w-3xl">
+            Your training data becomes a signal.
+            <br />
+            The signal informs a decision.
+            <br />
+            The decision drives adaptation.
+          </h2>
+          
+          {/* Optional inline system label */}
+          <p className="text-xs font-mono tracking-[0.15em] text-slate-500 uppercase mt-4">
+            Closed-loop performance system
           </p>
         </motion.div>
 
@@ -93,7 +96,7 @@ export const TelemetryHero = () => {
           </motion.div>
         </div>
 
-        {/* CTA - subtle, invitation style */}
+        {/* CTA - updated copy */}
         <motion.div 
           className="mt-24 flex items-center gap-6"
           initial={{ opacity: 0 }}
@@ -104,14 +107,14 @@ export const TelemetryHero = () => {
             href="/login"
             className="text-sm font-mono tracking-[0.1em] text-slate-400 hover:text-slate-200 transition-colors border-b border-slate-700 hover:border-slate-500 pb-1"
           >
-            Enter Athlete Space
+            Enter the Performance System
           </a>
           <span className="text-slate-700">|</span>
           <a 
             href="#system"
             className="text-sm font-mono tracking-[0.1em] text-slate-600 hover:text-slate-400 transition-colors"
           >
-            View Performance System
+            View a Live System Example
           </a>
         </motion.div>
       </div>
