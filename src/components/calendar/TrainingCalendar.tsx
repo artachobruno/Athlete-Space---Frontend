@@ -11,6 +11,7 @@ import { CoachDrawer } from './CoachDrawer';
 import { ActivityPopup } from './ActivityPopup';
 import { AddSessionModal } from './AddSessionModal';
 import { AddWeekModal } from './AddWeekModal';
+import { AddRaceModal } from './AddRaceModal';
 
 import { fetchCalendarSeason, type CalendarSession } from '@/lib/api';
 import { downloadIcsFile } from '@/lib/ics-export';
@@ -37,6 +38,7 @@ export function TrainingCalendar() {
 
   const [addSessionOpen, setAddSessionOpen] = useState(false);
   const [addWeekOpen, setAddWeekOpen] = useState(false);
+  const [addRaceOpen, setAddRaceOpen] = useState(false);
 
   const queryClient = useQueryClient();
 
@@ -139,6 +141,11 @@ export function TrainingCalendar() {
             Add Week
           </Button>
 
+          <Button variant="outline" size="sm" onClick={() => setAddRaceOpen(true)}>
+            <Plus className="h-4 w-4 mr-1.5" />
+            Add Race
+          </Button>
+
           <Button
             variant="ghost"
             size="sm"
@@ -213,6 +220,13 @@ export function TrainingCalendar() {
         onOpenChange={setAddWeekOpen}
         initialDate={currentDate}
         // Note: Query invalidation is handled by useCreatePlannedWeek hook
+      />
+
+      <AddRaceModal
+        open={addRaceOpen}
+        onOpenChange={setAddRaceOpen}
+        initialDate={currentDate}
+        // Note: Query invalidation is handled by useCreatePlannedSession hook
       />
     </div>
   );

@@ -36,7 +36,12 @@ function formatDuration(minutes: number): string {
 /**
  * Maps calendar intent to human-readable workout type
  */
-function getWorkoutTypeLabel(intent: string): string {
+function getWorkoutTypeLabel(intent: string, sport?: string): string {
+  // Special handling for race entries
+  if (sport === 'race') {
+    return 'Race';
+  }
+
   const labels: Record<string, string> = {
     easy: 'Easy',
     steady: 'Steady',
@@ -56,6 +61,11 @@ function getWorkoutTypeLabel(intent: string): string {
 
 export function deriveCardVariant(item: CalendarItem): string {
   const isCompleted = item.kind === 'completed';
+
+  // Race entries get special styling
+  if (item.sport === 'race') {
+    return isCompleted ? 'completed-running' : 'planned-running';
+  }
 
   if (item.sport === 'strength') return 'strength';
 
@@ -79,7 +89,7 @@ export function toCalendarCardProps(item: CalendarItem): CalendarCardProps {
   const duration = formatDuration(item.durationMin);
 
   // Get human-readable workout type
-  const workoutType = getWorkoutTypeLabel(item.intent);
+  const workoutType = getWorkoutTypeLabel(item.intent, item.sport);
 
   // Extract pace from secondary metric (for completed activities)
   const pace =

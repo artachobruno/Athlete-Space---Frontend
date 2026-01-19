@@ -9,12 +9,13 @@ export function toPlanCalendarItem(
 ): CalendarItem | null {
   if (!workout && !completed) return null;
 
+  const title = workout?.title || completed?.title || '';
   return {
     id: workout?.id || completed?.id || '',
     kind: completed ? 'completed' : 'planned',
-    sport: normalizeCalendarSport(workout?.sport || completed?.sport),
+    sport: normalizeCalendarSport(workout?.sport || completed?.sport, title),
     intent: normalizeCalendarIntent(workout?.intent || 'aerobic'),
-    title: workout?.title || completed?.title || '',
+    title,
     startLocal: date.toISOString(),
     durationMin: workout?.duration || completed?.duration || 0,
     load: completed?.trainingLoad,

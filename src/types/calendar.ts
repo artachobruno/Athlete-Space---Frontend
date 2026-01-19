@@ -3,7 +3,7 @@
  * DO NOT invent fields beyond this contract
  */
 
-export type CalendarSport = 'run' | 'ride' | 'swim' | 'strength' | 'other';
+export type CalendarSport = 'run' | 'ride' | 'swim' | 'strength' | 'race' | 'other';
 
 export type CalendarIntent = 'easy' | 'steady' | 'tempo' | 'intervals' | 'long' | 'rest';
 
@@ -59,15 +59,27 @@ export interface DaySummary {
 /**
  * Maps backend sport types to calendar sport types
  */
-export function normalizeCalendarSport(sport: string | null | undefined): CalendarSport {
+export function normalizeCalendarSport(
+  sport: string | null | undefined,
+  title?: string | null | undefined
+): CalendarSport {
   if (!sport) return 'other';
   const lower = sport.toLowerCase();
-  
+  const titleLower = title?.toLowerCase() || '';
+
+  // Check title first for race/event keywords (since backend may normalize 'Race' to 'run')
+  if (titleLower.includes('race') || titleLower.includes('marathon') || titleLower.includes('5k') || 
+      titleLower.includes('10k') || titleLower.includes('half marathon') || titleLower.includes('ironman') ||
+      titleLower.includes('triathlon') || titleLower.includes('event')) {
+    return 'race';
+  }
+
+  if (lower.includes('race') || lower.includes('event')) return 'race';
   if (lower.includes('run') || lower === 'running') return 'run';
   if (lower.includes('ride') || lower.includes('cycling') || lower.includes('bike')) return 'ride';
   if (lower.includes('swim')) return 'swim';
   if (lower.includes('strength') || lower.includes('weight') || lower.includes('gym')) return 'strength';
-  
+
   return 'other';
 }
 

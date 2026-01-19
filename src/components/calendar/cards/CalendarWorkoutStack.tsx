@@ -1,5 +1,7 @@
 import { CalendarWorkoutCardSvg } from './CalendarWorkoutCardSvg';
 import type { CalendarItem } from '@/types/calendar';
+import { useAuthenticatedQuery } from '@/hooks/useAuthenticatedQuery';
+import { fetchActivityStreams } from '@/lib/api';
 
 interface Props {
   items: CalendarItem[];
@@ -7,6 +9,7 @@ interface Props {
   maxVisible?: number;
   onClick?: (item: CalendarItem) => void;
   className?: string;
+  activityIdBySessionId?: Record<string, string | null | undefined>;
 }
 
 export function CalendarWorkoutStack({
@@ -15,8 +18,20 @@ export function CalendarWorkoutStack({
   maxVisible = 3,
   onClick,
   className,
+  activityIdBySessionId,
 }: Props) {
   const visible = items.slice(0, maxVisible);
+  const topItem = visible[0];
+  const activityId = topItem ? activityIdBySessionId?.[topItem.id] : null;
+
+  const { data: activityStreams } = useAuthenticatedQuery({
+    queryKey: ['activityStreams', 'calendar', activityId],
+    queryFn: () => fetchActivityStreams(activityId as string),
+    retry: 1,
+    enabled: Boolean(activityId),
+    staleTime: 15 * 60 * 1000,
+    gcTime: 30 * 60 * 1000,
+  });
 
   if (visible.length === 0) {
     return null;
@@ -77,7 +92,11 @@ export function CalendarWorkoutStack({
                 maxHeight: '100%',
               }}
             >
-              <CalendarWorkoutCardSvg item={item} viewVariant={variant} />
+              <CalendarWorkoutCardSvg
+                item={item}
+                viewVariant={variant}
+                streams={isTopCard ? activityStreams ?? null : null}
+              />
             </div>
           </div>
         );

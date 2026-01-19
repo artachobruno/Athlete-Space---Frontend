@@ -108,6 +108,22 @@ function WeekView({ currentDate, onActivityClick }: WeekViewProps) {
     return map;
   }, [monthData, weekStart, weekEnd]);
 
+  const activityIdBySessionId = useMemo(() => {
+    if (!monthData) return {};
+    const map: Record<string, string> = {};
+    for (const session of [...monthData.planned_sessions, ...monthData.workouts]) {
+      if (session.completed_activity_id) {
+        map[session.id] = session.completed_activity_id;
+      }
+    }
+    for (const activity of monthData.completed_activities || []) {
+      if (activity.planned_session_id) {
+        map[activity.planned_session_id] = activity.id;
+      }
+    }
+    return map;
+  }, [monthData]);
+
   const days = useMemo(
     () => eachDayOfInterval({ start: weekStart, end: weekEnd }),
     [weekStart, weekEnd]
@@ -178,7 +194,7 @@ function WeekView({ currentDate, onActivityClick }: WeekViewProps) {
             <div
               key={idx}
               className={cn(
-                'rounded-xl border border-border bg-card min-h-[320px] flex flex-col',
+                'rounded-xl border border-border bg-card min-h-[380px] flex flex-col',
                 isCurrentDay && 'ring-2 ring-primary/50'
               )}
             >
@@ -216,6 +232,7 @@ function WeekView({ currentDate, onActivityClick }: WeekViewProps) {
                         variant="week"
                         maxVisible={3}
                         onClick={handleCardClick}
+                        activityIdBySessionId={activityIdBySessionId}
                       />
                     );
                   })()}

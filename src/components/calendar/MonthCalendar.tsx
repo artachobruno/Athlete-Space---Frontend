@@ -89,6 +89,22 @@ export function MonthCalendar({ currentDate, onActivityClick }: {
     return map;
   }, [monthData]);
 
+  const activityIdBySessionId = useMemo(() => {
+    if (!monthData) return {};
+    const map: Record<string, string> = {};
+    for (const session of [...monthData.planned_sessions, ...monthData.workouts]) {
+      if (session.completed_activity_id) {
+        map[session.id] = session.completed_activity_id;
+      }
+    }
+    for (const activity of monthData.completed_activities || []) {
+      if (activity.planned_session_id) {
+        map[activity.planned_session_id] = activity.id;
+      }
+    }
+    return map;
+  }, [monthData]);
+
   const days = useMemo(() => {
     const start = startOfWeek(monthStart, { weekStartsOn: 1 });
     const end = endOfWeek(monthEnd, { weekStartsOn: 1 });
@@ -152,7 +168,7 @@ export function MonthCalendar({ currentDate, onActivityClick }: {
             <div
               key={idx}
               className={cn(
-                'min-h-[260px] relative flex flex-col border-b border-r border-border bg-muted/40 overflow-hidden',
+                'min-h-[300px] relative flex flex-col border-b border-r border-border bg-muted/40 overflow-hidden',
                 idx % 7 === 6 && 'border-r-0'
               )}
             >
@@ -182,6 +198,7 @@ export function MonthCalendar({ currentDate, onActivityClick }: {
                       items={stackItems}
                       variant="month"
                       maxVisible={3}
+                      activityIdBySessionId={activityIdBySessionId}
                       className="w-full h-full"
                     />
                   );

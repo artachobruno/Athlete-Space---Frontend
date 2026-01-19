@@ -28,6 +28,7 @@ export interface WorkoutCardSvgProps {
   variant?: WorkoutCardVariant;
   className?: string;
   svgRef?: Ref<SVGSVGElement>;
+  fontScale?: number;
 }
 
 const toTitleCase = (value: string) =>
@@ -86,21 +87,6 @@ const formatValue = (value?: string | number | null, fallback = '--') => {
   return text.trim().length ? text : fallback;
 };
 
-const buildFallbackRoute = (mapBox: { x: number; y: number; width: number; height: number }) => {
-  const { x, y, width, height } = mapBox;
-  return [
-    { x: x + width * 0.06, y: y + height * 0.67 },
-    { x: x + width * 0.14, y: y + height * 0.53 },
-    { x: x + width * 0.24, y: y + height * 0.6 },
-    { x: x + width * 0.34, y: y + height * 0.42 },
-    { x: x + width * 0.45, y: y + height * 0.5 },
-    { x: x + width * 0.56, y: y + height * 0.32 },
-    { x: x + width * 0.68, y: y + height * 0.4 },
-    { x: x + width * 0.8, y: y + height * 0.2 },
-    { x: x + width * 0.92, y: y + height * 0.28 },
-  ];
-};
-
 const projectRoutePoints = (
   points: Array<[number, number]>,
   mapBox: { x: number; y: number; width: number; height: number }
@@ -150,9 +136,11 @@ export function WorkoutCardSvg({
   variant = 'feed',
   className,
   svgRef,
+  fontScale = 1,
 }: WorkoutCardSvgProps) {
   const { width, height } = VARIANT_SIZES[variant];
   const scale = Math.min(width / BASE_WIDTH, height / BASE_HEIGHT);
+  const textScale = scale * fontScale;
 
   const paddingX = width * (24 / BASE_WIDTH);
   const titleY = height * (34 / BASE_HEIGHT);
@@ -184,7 +172,7 @@ export function WorkoutCardSvg({
     if (normalizedRoute.length >= 2) {
       return projectRoutePoints(normalizedRoute, mapBox);
     }
-    return buildFallbackRoute(mapBox);
+    return [];
   }, [normalizedRoute, mapBox]);
 
   const routePath = useMemo(() => buildPath(plottedRoute), [plottedRoute]);
@@ -258,7 +246,7 @@ export function WorkoutCardSvg({
         x={paddingX}
         y={titleY}
         fill="#e5e7eb"
-        fontSize={18 * scale}
+        fontSize={18 * textScale}
         fontWeight={600}
         fontFamily="Inter, system-ui, sans-serif"
       >
@@ -266,40 +254,40 @@ export function WorkoutCardSvg({
       </text>
 
       <g fontFamily="Inter, system-ui, sans-serif" fill="#cbd5f5">
-        <text x={paddingX} y={metricsLabelY} fontSize={12 * scale}>
+        <text x={paddingX} y={metricsLabelY} fontSize={12 * textScale}>
           Distance
         </text>
-        <text x={paddingX} y={metricsValueY} fontSize={18 * scale} fill="#f8fafc">
+        <text x={paddingX} y={metricsValueY} fontSize={18 * textScale} fill="#f8fafc">
           {formatValue(distance)}
         </text>
 
-        <text x={width * (150 / BASE_WIDTH)} y={metricsLabelY} fontSize={12 * scale}>
+        <text x={width * (150 / BASE_WIDTH)} y={metricsLabelY} fontSize={12 * textScale}>
           Time
         </text>
-        <text x={width * (150 / BASE_WIDTH)} y={metricsValueY} fontSize={18 * scale} fill="#f8fafc">
+        <text x={width * (150 / BASE_WIDTH)} y={metricsValueY} fontSize={18 * textScale} fill="#f8fafc">
           {formatValue(time)}
         </text>
 
-        <text x={width * (300 / BASE_WIDTH)} y={metricsLabelY} fontSize={12 * scale}>
+        <text x={width * (300 / BASE_WIDTH)} y={metricsLabelY} fontSize={12 * textScale}>
           Pace
         </text>
-        <text x={width * (300 / BASE_WIDTH)} y={metricsValueY} fontSize={18 * scale} fill="#f8fafc">
+        <text x={width * (300 / BASE_WIDTH)} y={metricsValueY} fontSize={18 * textScale} fill="#f8fafc">
           {formatValue(pace)}
         </text>
       </g>
 
       <g fontFamily="Inter, system-ui, sans-serif">
-        <text x={paddingX} y={typeLabelY} fontSize={12 * scale} fill="#94a3b8">
+        <text x={paddingX} y={typeLabelY} fontSize={12 * textScale} fill="#94a3b8">
           Type
         </text>
-        <text x={paddingX} y={typeValueY} fontSize={14 * scale} fill="#e5e7eb">
+        <text x={paddingX} y={typeValueY} fontSize={14 * textScale} fill="#e5e7eb">
           {formatValue(typeLabel)}
         </text>
 
-        <text x={width * (300 / BASE_WIDTH)} y={typeLabelY} fontSize={12 * scale} fill="#94a3b8">
+        <text x={width * (300 / BASE_WIDTH)} y={typeLabelY} fontSize={12 * textScale} fill="#94a3b8">
           TSS
         </text>
-        <text x={width * (300 / BASE_WIDTH)} y={typeValueY} fontSize={16 * scale} fill="#22c55e">
+        <text x={width * (300 / BASE_WIDTH)} y={typeValueY} fontSize={16 * textScale} fill="#22c55e">
           {formatValue(tss)}
         </text>
       </g>

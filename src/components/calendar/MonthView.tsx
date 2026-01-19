@@ -90,6 +90,22 @@ export function MonthView({ currentDate, onActivityClick }: MonthViewProps) {
     return monthData.planned_sessions.map((s) => s.id);
   }, [monthData]);
 
+  const activityIdBySessionId = useMemo(() => {
+    if (!monthData) return {};
+    const map: Record<string, string> = {};
+    for (const session of [...monthData.planned_sessions, ...monthData.workouts]) {
+      if (session.completed_activity_id) {
+        map[session.id] = session.completed_activity_id;
+      }
+    }
+    for (const activity of monthData.completed_activities || []) {
+      if (activity.planned_session_id) {
+        map[activity.planned_session_id] = activity.id;
+      }
+    }
+    return map;
+  }, [monthData]);
+
   const getCalendarItemsForDay = (date: Date): CalendarItem[] => {
     if (!monthData) return [];
 
@@ -237,7 +253,7 @@ export function MonthView({ currentDate, onActivityClick }: MonthViewProps) {
                   key={idx}
                   date={day}
                   className={cn(
-                    'relative min-h-[180px] border-b border-r border-border flex flex-col',
+                    'relative min-h-[220px] border-b border-r border-border flex flex-col',
                     !isCurrentMonth && 'bg-muted/30',
                     idx % 7 === 6 && 'border-r-0'
                   )}
@@ -266,6 +282,7 @@ export function MonthView({ currentDate, onActivityClick }: MonthViewProps) {
                             items={stackItems}
                             variant="month"
                             maxVisible={3}
+                            activityIdBySessionId={activityIdBySessionId}
                             onClick={(item) => {
                             if (!monthData) return;
 

@@ -109,6 +109,22 @@ export function WeekCalendar({ currentDate, onActivityClick }: WeekCalendarProps
     return map;
   }, [monthData, weekStartStr, weekEndStr]);
 
+  const activityIdBySessionId = useMemo(() => {
+    if (!monthData) return {};
+    const map: Record<string, string> = {};
+    for (const session of [...monthData.planned_sessions, ...monthData.workouts]) {
+      if (session.completed_activity_id) {
+        map[session.id] = session.completed_activity_id;
+      }
+    }
+    for (const activity of monthData.completed_activities || []) {
+      if (activity.planned_session_id) {
+        map[activity.planned_session_id] = activity.id;
+      }
+    }
+    return map;
+  }, [monthData]);
+
   // Weekly summary data
   const weeklySummary = useMemo(() => {
     let totalDuration = 0;
@@ -366,7 +382,7 @@ export function WeekCalendar({ currentDate, onActivityClick }: WeekCalendarProps
             <div
               key={idx}
               className={cn(
-                'rounded-xl border border-border bg-card overflow-hidden min-h-[280px] flex flex-col',
+                'rounded-xl border border-border bg-card overflow-hidden min-h-[340px] flex flex-col',
                 isCurrentDay && 'ring-2 ring-primary/50',
               )}
             >
@@ -411,6 +427,7 @@ export function WeekCalendar({ currentDate, onActivityClick }: WeekCalendarProps
                       variant="week"
                       onClick={handleCardClick}
                       maxVisible={3}
+                      activityIdBySessionId={activityIdBySessionId}
                     />
                   </div>
                 )}

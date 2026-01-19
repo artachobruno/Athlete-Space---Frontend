@@ -95,7 +95,7 @@ export function toCalendarItem(
   return {
     id: session.id,
     kind,
-    sport: normalizeCalendarSport(session.type),
+    sport: normalizeCalendarSport(session.type, session.title),
     intent: normalizeCalendarIntent(session.intensity),
     title: capitalizeTitle(session.title || ''),
     startLocal,

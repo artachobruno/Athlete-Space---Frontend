@@ -14,6 +14,7 @@ import { fetchCalendarSeason, fetchActivities, fetchOverview } from '@/lib/api';
 import { getSeasonIntelligence } from '@/lib/intelligence';
 import { normalizeSportType } from '@/lib/session-utils';
 import { Card } from '@/components/ui/card';
+import { GlassCard } from '@/components/ui/GlassCard';
 import { Badge } from '@/components/ui/badge';
 import { useQueries, useQuery } from '@tanstack/react-query';
 import { useAuthenticatedQuery } from '@/hooks/useAuthenticatedQuery';
