@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { User, Save, Loader2 } from 'lucide-react';
+import { User, Save, Loader2, CheckCircle2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { fetchUserProfile, updateUserProfile, fetchSettingsProfile, updateSettingsProfile } from '@/lib/api';
 import { toast } from '@/hooks/use-toast';
@@ -37,7 +37,15 @@ const format1Decimal = (value: number): number => {
 export function AthleteProfileSection() {
   const queryClient = useQueryClient();
   const { user } = useAuth();
-  const { profile: athleteProfile, bioSource, isBioStale } = useAthleteProfile();
+  const { 
+    profile: athleteProfile, 
+    bioSource, 
+    isBioStale,
+    bioText,
+    confirmBio,
+    isConfirmingBio,
+    hasBio
+  } = useAthleteProfile();
   const [profile, setProfile] = useState<ProfileState>({
     name: '',
     email: user?.email || '',
@@ -428,6 +436,42 @@ export function AthleteProfileSection() {
         </div>
       </CardHeader>
       <CardContent className="space-y-6">
+        {/* Athlete Bio */}
+        {hasBio && bioText && (
+          <div className="p-4 bg-accent/5 border border-accent/20 rounded-lg space-y-3">
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex-1">
+                <p className="text-sm text-foreground whitespace-pre-wrap leading-relaxed">
+                  {bioText}
+                </p>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                {bioSource === 'ai_generated' && (
+                  <Badge variant="outline" className="text-xs">
+                    AI Generated
+                  </Badge>
+                )}
+                {bioSource === 'ai_generated' && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => confirmBio({})}
+                    disabled={isConfirmingBio}
+                    className="h-8 w-8 p-0"
+                    title="Confirm bio"
+                  >
+                    {isConfirmingBio ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <CheckCircle2 className="h-4 w-4 text-accent" />
+                    )}
+                  </Button>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Name, Email, and Role */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div className="space-y-2">
