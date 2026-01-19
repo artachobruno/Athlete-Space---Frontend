@@ -4,9 +4,12 @@ import { useRef, useEffect } from 'react';
 interface VideoFrameProps {
   src: string;
   className?: string;
+  opacity?: number;
+  filter?: string;
+  label?: string;
 }
 
-export const VideoFrame = ({ src, className = '' }: VideoFrameProps) => {
+export const VideoFrame = ({ src, className = '', opacity = 0.6, filter = 'saturate(0.6) contrast(1.1)', label = 'ATHLETE · LIVE' }: VideoFrameProps) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const isInView = useInView(containerRef, { once: false, margin: '-20%' });
@@ -41,7 +44,7 @@ export const VideoFrame = ({ src, className = '' }: VideoFrameProps) => {
 
       {/* Reference label */}
       <div className="absolute top-2 left-3 z-10 text-[9px] font-mono tracking-wider text-slate-600">
-        ATHLETE · LIVE
+        {label}
       </div>
 
       {/* Video content */}
@@ -50,8 +53,8 @@ export const VideoFrame = ({ src, className = '' }: VideoFrameProps) => {
         loop
         muted
         playsInline
-        className="w-full h-full object-cover opacity-60"
-        style={{ filter: 'saturate(0.6) contrast(1.1)' }}
+        className="w-full h-full object-cover"
+        style={{ filter, opacity }}
       >
         <source src={src} type="video/mp4" />
       </video>

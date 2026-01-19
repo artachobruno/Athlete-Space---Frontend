@@ -5,6 +5,7 @@ import { TelemetryStrip } from '@/components/landing/TelemetryStatusBand';
 import { MentalModelSection } from '@/components/landing/MentalModelSection';
 import { SystemExplanation } from '@/components/landing/SystemExplanation';
 import { AthletesExplanation } from '@/components/landing/AthletesExplanation';
+import { CoachesSection } from '@/components/landing/CoachesSection';
 import { TelemetryFooter } from '@/components/landing/TelemetryFooter';
 
 const Landing = () => {
@@ -36,6 +37,9 @@ const Landing = () => {
       
       {/* Athletes section with video */}
       <AthletesExplanation />
+      
+      {/* Coaches section with video */}
+      <CoachesSection />
       
       {/* Minimal footer */}
       <TelemetryFooter />
