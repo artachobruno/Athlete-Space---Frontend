@@ -13,7 +13,6 @@ import { cn } from '@/lib/utils';
 import { fetchCalendarSeason, fetchActivities, fetchOverview } from '@/lib/api';
 import { getSeasonIntelligence } from '@/lib/intelligence';
 import { normalizeSportType } from '@/lib/session-utils';
-import { Card } from '@/components/ui/card';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { Badge } from '@/components/ui/badge';
 import { useQueries, useQuery } from '@tanstack/react-query';
@@ -21,6 +20,7 @@ import { useAuthenticatedQuery } from '@/hooks/useAuthenticatedQuery';
 import { useAuth } from '@/context/AuthContext';
 import { Loader2, Flag, Target, RefreshCw } from 'lucide-react';
 import type { CompletedActivity } from '@/types';
+import { SeasonWeekCard } from '@/components/calendar/SeasonWeekCard';
 
 interface SeasonViewProps {
   currentDate: Date;
@@ -357,101 +357,43 @@ export function SeasonView({ currentDate }: SeasonViewProps) {
             start: weekStart,
             end: weekEnd,
           });
-          const loadPercentage = (stats.totalLoad / maxLoad) * 100;
           const weekNumber = getWeek(weekStart);
           const phase = getWeekPhase(weekNumber);
           const raceMarkers = getWeekRaceMarkers(weekNumber);
+          const dateRange = `${format(weekStart, 'MMM d')} - ${format(weekEnd, 'MMM d')}`;
 
           return (
-            <GlassCard
-              key={weekStart.toString()}
-              className={cn(
-                'p-4',
-                isCurrentWeek && 'ring-2 ring-accent'
-              )}
-            >
-              {/* Week header */}
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 mb-1">
-                    <div className="text-xs text-muted-foreground">
-                      Week {weekNumber}
-                    </div>
-                    {phase && (
-                      <Badge variant="outline" className="text-xs">
-                        {phase.label}
+            <div key={weekStart.toString()} className="space-y-2">
+              <SeasonWeekCard
+                weekLabel={`Week ${weekNumber}`}
+                dateRange={dateRange}
+                totalTss={stats.totalLoad}
+                maxTss={maxLoad}
+                completedPct={stats.completionRate}
+                workoutsDone={stats.completed}
+                workoutsPlanned={stats.planned}
+                ctl={stats.avgCtl}
+                isCurrent={isCurrentWeek}
+              />
+              {(phase || raceMarkers.length > 0) && (
+                <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
+                  {phase && <Badge variant="outline" className="text-xs">{phase.label}</Badge>}
+                  {raceMarkers.map((marker, idx) => {
+                    const Icon = raceMarkerIcons[marker.type];
+                    return (
+                      <Badge
+                        key={idx}
+                        variant="outline"
+                        className={cn('text-xs', raceMarkerColors[marker.type])}
+                      >
+                        <Icon className="h-3 w-3 mr-1" />
+                        {marker.label}
                       </Badge>
-                    )}
-                  </div>
-                  <div className="text-sm font-medium">
-                    {format(weekStart, 'MMM d')} - {format(weekEnd, 'MMM d')}
-                  </div>
-                  {raceMarkers.length > 0 && (
-                    <div className="flex flex-wrap gap-1 mt-2">
-                      {raceMarkers.map((marker, idx) => {
-                        const Icon = raceMarkerIcons[marker.type];
-                        return (
-                          <Badge
-                            key={idx}
-                            variant="outline"
-                            className={cn('text-xs', raceMarkerColors[marker.type])}
-                          >
-                            <Icon className="h-3 w-3 mr-1" />
-                            {marker.label}
-                          </Badge>
-                        );
-                      })}
-                    </div>
-                  )}
+                    );
+                  })}
                 </div>
-                {isCurrentWeek && (
-                  <span className="text-xs bg-accent/10 text-accent px-2 py-0.5 rounded shrink-0">
-                    Current
-                  </span>
-                )}
-              </div>
-
-              {/* Load bar */}
-              <div className="mb-3">
-                <div className="flex items-center justify-between text-xs text-muted-foreground mb-1">
-                  <span>Load</span>
-                  <span>{stats.totalLoad} TSS</span>
-                </div>
-                <div className="h-2 bg-muted rounded-full overflow-hidden">
-                  <div
-                    className="h-full bg-accent transition-all duration-300"
-                    style={{ width: `${loadPercentage}%` }}
-                  />
-                </div>
-              </div>
-
-              {/* Stats */}
-              <div className="grid grid-cols-3 gap-2 text-center">
-                <div>
-                  <div className="text-lg font-semibold text-foreground">
-                    {stats.completed}/{stats.planned}
-                  </div>
-                  <div className="text-xs text-muted-foreground">Workouts</div>
-                </div>
-                <div>
-                  <div className={cn(
-                    'text-lg font-semibold',
-                    stats.completionRate >= 80 ? 'text-load-fresh' :
-                    stats.completionRate >= 50 ? 'text-load-optimal' :
-                    'text-load-overreaching'
-                  )}>
-                    {stats.completionRate}%
-                  </div>
-                  <div className="text-xs text-muted-foreground">Complete</div>
-                </div>
-                <div>
-                  <div className="text-lg font-semibold text-foreground">
-                    {stats.avgCtl}
-                  </div>
-                  <div className="text-xs text-muted-foreground">CTL</div>
-                </div>
-              </div>
-            </GlassCard>
+              )}
+            </div>
           );
         })}
       </div>
