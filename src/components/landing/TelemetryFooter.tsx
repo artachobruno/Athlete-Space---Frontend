@@ -18,10 +18,12 @@ export const TelemetryFooter = () => {
           </div>
 
           {/* Links */}
-          <div className="flex items-center gap-8 text-[10px] font-mono tracking-[0.15em] text-slate-600 uppercase">
+          <div className="flex flex-wrap items-center gap-8 text-[10px] font-mono tracking-[0.15em] text-slate-600 uppercase">
+            <a href="/about" className="hover:text-slate-400 transition-colors">About</a>
+            <a href="/science" className="hover:text-slate-400 transition-colors">Science & AI</a>
             <a href="/privacy" className="hover:text-slate-400 transition-colors">Privacy</a>
-            <a href="/terms" className="hover:text-slate-400 transition-colors">Terms</a>
-            <a href="/login" className="hover:text-slate-400 transition-colors">Enter</a>
+            <a href="/faq" className="hover:text-slate-400 transition-colors">FAQ</a>
+            <a href="/login" className="hover:text-slate-400 transition-colors">Sign In</a>
           </div>
         </div>
 

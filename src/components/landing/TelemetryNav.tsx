@@ -33,8 +33,17 @@ export const TelemetryNav = () => {
             <a href="#athletes" className="text-slate-500 hover:text-slate-300 transition-colors">
               Athletes
             </a>
+            <a href="/about" className="text-slate-500 hover:text-slate-300 transition-colors">
+              About
+            </a>
+            <a href="/science" className="text-slate-500 hover:text-slate-300 transition-colors">
+              Science & AI
+            </a>
+            <a href="/faq" className="text-slate-500 hover:text-slate-300 transition-colors">
+              FAQ
+            </a>
             <a href="/login" className="text-slate-400 hover:text-slate-200 transition-colors">
-              Enter
+              Sign In
             </a>
           </div>
 
@@ -63,8 +72,17 @@ export const TelemetryNav = () => {
             <a href="#athletes" className="text-slate-500 hover:text-slate-300 transition-colors py-2">
               Athletes
             </a>
+            <a href="/about" className="text-slate-500 hover:text-slate-300 transition-colors py-2">
+              About
+            </a>
+            <a href="/science" className="text-slate-500 hover:text-slate-300 transition-colors py-2">
+              Science & AI
+            </a>
+            <a href="/faq" className="text-slate-500 hover:text-slate-300 transition-colors py-2">
+              FAQ
+            </a>
             <a href="/login" className="text-slate-400 hover:text-slate-200 transition-colors py-2">
-              Enter
+              Sign In
             </a>
           </div>
         </motion.div>

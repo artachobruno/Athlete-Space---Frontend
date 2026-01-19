@@ -59,9 +59,9 @@ export const TelemetryHero = () => {
           animate={{ opacity: 1 }}
           transition={{ duration: 1.2, delay: 0.3 }}
         >
-          {/* Headline (H1) - 25% larger */}
-          <h1 className="text-5xl md:text-6xl lg:text-7xl font-mono font-light text-slate-200 mb-6 leading-[1.15] tracking-tight">
-            Training, driven by signal — not feel.
+          {/* Headline (H1) - slightly reduced to prevent line breaks */}
+          <h1 className="text-4xl md:text-5xl lg:text-6xl font-mono font-light text-slate-200 mb-6 leading-[1.15] tracking-tight">
+            Training, driven by Data and Intelligence.
           </h1>
           
           {/* Subheadline (H2) */}
