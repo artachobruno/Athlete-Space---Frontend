@@ -50,7 +50,11 @@ function AthleteDashboard() {
     <AppLayout>
       <div className="space-y-5">
         {/* Telemetry Status Rail - Bridge between landing and dashboard */}
-        <TelemetryStatusRail className="-mx-6 -mt-6 mb-4" />
+        <TelemetryStatusRail 
+          className="-mx-6 -mt-6 mb-4" 
+          overview60d={dashboardData.overview60d}
+          isLoading={dashboardData.overview60dLoading}
+        />
 
         {/* Header - F1 typography, telemetry language */}
         <div className="col-span-12 mb-1">
@@ -64,7 +68,11 @@ function AthleteDashboard() {
         {/* Decision + Coach row */}
         <div className="grid grid-cols-12 gap-3">
           <div className="col-span-12 lg:col-span-8">
-            <DailyDecisionCard />
+            <DailyDecisionCard 
+              todayIntelligence={dashboardData.todayIntelligence}
+              isLoading={dashboardData.todayIntelligenceLoading}
+              error={dashboardData.todayIntelligenceError}
+            />
           </div>
           <div className="col-span-12 lg:col-span-4">
             <CoachChatWidget />

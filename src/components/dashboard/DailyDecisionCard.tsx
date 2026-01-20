@@ -1,8 +1,25 @@
 import { F1Card, F1CardLabel } from '@/components/ui/f1-card';
-import { getTodayIntelligence } from '@/lib/intelligence';
 import { cn } from '@/lib/utils';
 import { CheckCircle2, AlertCircle, RefreshCw, Moon, Loader2, TrendingUp } from 'lucide-react';
-import { useAuthenticatedQuery } from '@/hooks/useAuthenticatedQuery';
+
+/** Intelligence data structure from the API */
+interface IntelligenceData {
+  recommendation?: string | null;
+  explanation?: string | null;
+  confidence?: {
+    score: number;
+    explanation?: string;
+  } | null;
+}
+
+interface DailyDecisionCardProps {
+  /** Today's intelligence data from useDashboardData */
+  todayIntelligence?: IntelligenceData | null;
+  /** Loading state */
+  isLoading?: boolean;
+  /** Error state */
+  error?: unknown;
+}
 
 // F1 Design: Map decisions to status colors
 type DecisionType = 'proceed' | 'modify' | 'replace' | 'rest';
@@ -58,20 +75,14 @@ const mapRecommendationToDecision = (recommendation: string | null | undefined):
   return 'proceed';
 };
 
-export function DailyDecisionCard() {
-  const { data, isLoading, error } = useAuthenticatedQuery({
-    queryKey: ['intelligence', 'today', 'current'],
-    queryFn: () => getTodayIntelligence(),
-    retry: 1,
-    staleTime: 30 * 60 * 1000, // 30 minutes - intelligence is expensive
-    gcTime: 60 * 60 * 1000, // Keep in cache for 1 hour
-  });
+export function DailyDecisionCard({ todayIntelligence, isLoading = false, error }: DailyDecisionCardProps) {
+  const data = todayIntelligence;
 
   if (isLoading) {
     return (
-      <F1Card variant="strong" className="h-full" padding="lg">
-        <div className="flex items-center justify-center py-8">
-          <Loader2 className="h-6 w-6 animate-spin text-[hsl(var(--f1-text-tertiary))]" />
+      <F1Card variant="strong" className="h-full" padding="md">
+        <div className="flex items-center justify-center py-6">
+          <Loader2 className="h-5 w-5 animate-spin text-[hsl(var(--f1-text-muted))]" />
         </div>
       </F1Card>
     );
@@ -82,10 +93,10 @@ export function DailyDecisionCard() {
   
   if (isServiceUnavailable) {
     return (
-      <F1Card variant="strong" className="h-full" padding="lg">
-        <div className="text-center py-8">
-          <p className="f1-body text-[hsl(var(--f1-text-secondary))]">Today&apos;s decision is being generated</p>
-          <p className="f1-body-sm text-[hsl(var(--f1-text-muted))] mt-2">The coach will have your recommendation ready soon</p>
+      <F1Card variant="strong" className="h-full" padding="md">
+        <div className="text-center py-6">
+          <p className="f1-label text-[hsl(var(--f1-text-secondary))]">DECISION PENDING</p>
+          <p className="f1-label text-[hsl(var(--f1-text-muted))] mt-1">SIGNAL PROCESSING</p>
         </div>
       </F1Card>
     );
@@ -93,9 +104,9 @@ export function DailyDecisionCard() {
 
   if (error || !data) {
     return (
-      <F1Card variant="strong" className="h-full" padding="lg">
-        <div className="text-center py-8">
-          <p className="f1-body text-[hsl(var(--f1-text-secondary))]">Unable to load today&apos;s decision</p>
+      <F1Card variant="strong" className="h-full" padding="md">
+        <div className="text-center py-6">
+          <p className="f1-label text-[hsl(var(--f1-text-muted))]">SIGNAL UNAVAILABLE</p>
         </div>
       </F1Card>
     );
@@ -111,10 +122,10 @@ export function DailyDecisionCard() {
 
   if (isPlaceholder) {
     return (
-      <F1Card variant="strong" className="h-full" padding="lg">
-        <div className="text-center py-8">
-          <p className="f1-body text-[hsl(var(--f1-text-secondary))]">Today&apos;s decision is being generated</p>
-          <p className="f1-body-sm text-[hsl(var(--f1-text-muted))] mt-2">The coach will have your recommendation ready soon</p>
+      <F1Card variant="strong" className="h-full" padding="md">
+        <div className="text-center py-6">
+          <p className="f1-label text-[hsl(var(--f1-text-secondary))]">DECISION PENDING</p>
+          <p className="f1-label text-[hsl(var(--f1-text-muted))] mt-1">SIGNAL PROCESSING</p>
         </div>
       </F1Card>
     );

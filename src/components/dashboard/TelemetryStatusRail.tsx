@@ -1,4 +1,3 @@
-import { useDashboardData } from '@/hooks/useDashboardData';
 import { cn } from '@/lib/utils';
 import { telemetryText, telemetryTypography, telemetryBorders } from '@/styles/telemetry-theme';
 
@@ -55,6 +54,17 @@ function getRiskLevel(tsb: number): { value: string; status: 'safe' | 'caution' 
 
 interface TelemetryStatusRailProps {
   className?: string;
+  /** Overview data from useDashboardData - contains CTL/ATL/TSB metrics */
+  overview60d?: {
+    today: { ctl: number; atl: number; tsb: number };
+    metrics: {
+      ctl?: [string, number][];
+      atl?: [string, number][];
+      tsb?: [string, number][];
+    };
+  } | null;
+  /** Loading state for the overview data */
+  isLoading?: boolean;
 }
 
 /**
@@ -70,19 +80,16 @@ interface TelemetryStatusRailProps {
  * - No cards, no shadows, no background blocks
  * - Must visually match the landing telemetry band
  */
-export function TelemetryStatusRail({ className }: TelemetryStatusRailProps) {
-  const dashboardData = useDashboardData();
-  
-  // Extract metrics from dashboard data
-  const overview = dashboardData.overview60d;
-  const today = overview?.today as { ctl?: number; atl?: number; tsb?: number } | undefined;
+export function TelemetryStatusRail({ className, overview60d, isLoading = false }: TelemetryStatusRailProps) {
+  // Extract metrics from props
+  const today = overview60d?.today as { ctl?: number; atl?: number; tsb?: number } | undefined;
   
   const ctl = typeof today?.ctl === 'number' ? today.ctl : 0;
   const atl = typeof today?.atl === 'number' ? today.atl : 0;
   const tsb = typeof today?.tsb === 'number' ? today.tsb : 0;
   
   // Calculate CTL trend from metrics
-  const metrics = overview?.metrics as { ctl?: [string, number][] } | undefined;
+  const metrics = overview60d?.metrics as { ctl?: [string, number][] } | undefined;
   const ctlData = Array.isArray(metrics?.ctl) ? metrics.ctl : [];
   const previousCtl = ctlData.length >= 7 && ctlData[ctlData.length - 7]?.[1] !== undefined
     ? ctlData[ctlData.length - 7][1]
@@ -103,8 +110,6 @@ export function TelemetryStatusRail({ className }: TelemetryStatusRailProps) {
     { label: 'READINESS', value: `${readiness}%`, trend: tsb > 0 ? 'up' : tsb < -5 ? 'down' : 'stable' },
     { label: 'RISK', value: riskLevel.value, status: riskLevel.status },
   ];
-
-  const isLoading = dashboardData.overview60dLoading;
 
   // Status color mapping
   const getStatusColor = (status?: 'safe' | 'caution' | 'danger' | 'active') => {
