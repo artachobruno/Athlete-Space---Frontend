@@ -120,21 +120,21 @@ export function TelemetryStatusRail({ className }: TelemetryStatusRailProps) {
   return (
     <div className={cn('w-full border-b', telemetryBorders.divider, className)}>
       <div className={cn(
-        'flex items-center gap-8 px-6 py-2',
+        'flex items-center gap-6 px-6 py-2.5',
         telemetryTypography.statusLabel
       )}>
         {statusItems.map((item, index) => (
           <div key={item.label} className="flex items-center">
             {index > 0 && (
-              <div className={cn('w-px h-3 mr-6', telemetryBorders.separator)} />
+              <div className={cn('w-px h-2.5 mr-5', telemetryBorders.separator)} />
             )}
-            <div className="flex items-center gap-2">
-              <span className={telemetryText.label}>{item.label}</span>
+            <div className="flex items-center gap-1.5">
+              <span className={cn(telemetryText.label, 'text-[9px] tracking-[0.14em]')}>{item.label}</span>
               {isLoading ? (
-                <span className={cn(telemetryText.muted, 'animate-pulse')}>---</span>
+                <span className={cn(telemetryText.muted, 'animate-pulse text-[9px]')}>---</span>
               ) : (
                 <span className={cn(
-                  'flex items-center',
+                  'flex items-center text-[10px] tracking-[0.08em] font-mono',
                   item.status ? getStatusColor(item.status) : telemetryText.primary
                 )}>
                   <TrendIndicator trend={item.trend} />

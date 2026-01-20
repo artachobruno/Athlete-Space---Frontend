@@ -143,41 +143,41 @@ export function DailyDecisionCard() {
   };
 
   return (
-    <F1Card variant="strong" status={status} className="h-full" padding="lg">
+    <F1Card variant="strong" status={status} className="h-full" padding="md">
       {/* Telemetry row layout - flattened, no rounded icon containers */}
-      <div className="flex items-start gap-4">
+      <div className="flex items-start gap-3">
         {/* Status indicator - minimal, no background block */}
-        <div className="pt-1">
-          <Icon className={cn('h-6 w-6', config.iconClass)} />
+        <div className="pt-0.5">
+          <Icon className={cn('h-5 w-5', config.iconClass)} />
         </div>
         
         <div className="flex-1 min-w-0">
           {/* Header row - label left, confidence right */}
-          <div className="flex items-center justify-between mb-1">
-            <F1CardLabel>TODAY&apos;S DECISION</F1CardLabel>
+          <div className="flex items-center justify-between mb-0.5">
+            <F1CardLabel>TODAY'S DECISION</F1CardLabel>
             {confidence && (
-              <span className={cn('f1-label flex items-center gap-1', getConfidenceColor(confidence.score))}>
-                <TrendingUp className="h-3 w-3" />
+              <span className={cn('f1-label flex items-center gap-0.5', getConfidenceColor(confidence.score))}>
+                <TrendingUp className="h-2.5 w-2.5" />
                 CONF: {getConfidenceLabel(confidence.score)} ({Math.round(confidence.score * 100)}%)
               </span>
             )}
           </div>
           
           {/* Decision value row - telemetry style with sublabel */}
-          <div className="flex items-baseline gap-2 mb-2">
-            <span className="f1-metric f1-metric-lg">{config.label}</span>
-            <span className="f1-label text-[hsl(var(--f1-text-tertiary))]">· {config.sublabel}</span>
+          <div className="flex items-baseline gap-1.5 mb-2">
+            <span className="f1-metric f1-metric-md">{config.label}</span>
+            <span className="f1-label text-[hsl(var(--f1-text-muted))]">· {config.sublabel}</span>
           </div>
           
           {/* Divider */}
-          <div className="h-px bg-[var(--border-subtle)] my-3" />
+          <div className="h-px bg-[var(--border-subtle)] my-2" />
           
           {/* Explanation - telemetry log style */}
           <p className="f1-body text-[hsl(var(--f1-text-secondary))] leading-relaxed">{reason}</p>
           
           {/* Confidence explanation - inline telemetry note */}
           {confidence && confidence.explanation && (
-            <p className="f1-label text-[hsl(var(--f1-text-muted))] mt-3 leading-relaxed">
+            <p className="f1-label text-[hsl(var(--f1-text-muted))] mt-2 leading-relaxed">
               SIGNAL: {confidence.explanation}
             </p>
           )}

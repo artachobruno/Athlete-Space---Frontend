@@ -169,18 +169,18 @@ export function WeeklyLoadCard(props?: WeeklyLoadCardProps) {
     <F1Card>
       <F1CardHeader
         action={
-          <span className="f1-metric f1-metric-sm">
-            {weeklyStats.actualLoad} <span className="text-[hsl(var(--f1-text-muted))]">/</span> {weeklyStats.plannedLoad} <F1CardLabel className="ml-1">TSS</F1CardLabel>
+          <span className="f1-metric f1-metric-xs">
+            {weeklyStats.actualLoad} <span className="text-[hsl(var(--f1-text-muted))]">/</span> {weeklyStats.plannedLoad} <F1CardLabel className="ml-0.5">TSS</F1CardLabel>
           </span>
         }
       >
         <F1CardTitle>LOAD (7d)</F1CardTitle>
       </F1CardHeader>
       
-      <div className="space-y-4">
+      <div className="space-y-3">
         {/* Progress bar - F1 telemetry style */}
-        <div className="space-y-2">
-          <div className="h-1.5 bg-[var(--border-subtle)] rounded-f1-sm overflow-hidden">
+        <div className="space-y-1.5">
+          <div className="h-1 bg-[var(--border-subtle)] rounded-sm overflow-hidden">
             <div
               className="h-full bg-[hsl(var(--accent-telemetry))] transition-all duration-300"
               style={{ width: `${Math.min(weeklyStats.progress, 100)}%` }}
@@ -193,21 +193,21 @@ export function WeeklyLoadCard(props?: WeeklyLoadCardProps) {
         </div>
 
         {/* Daily load chart - F1 instrument panel style */}
-        <div className="h-32">
+        <div className="h-28">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={weekChartData} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
               <XAxis
                 dataKey="day"
                 axisLine={false}
                 tickLine={false}
-                tick={{ fontSize: 10, fill: 'hsl(var(--f1-text-tertiary))', fontFamily: 'JetBrains Mono, monospace' }}
+                tick={{ fontSize: 9, fill: 'hsl(var(--f1-text-muted))', fontFamily: 'JetBrains Mono, monospace' }}
               />
               <YAxis hide />
-              <Bar dataKey="load" radius={[2, 2, 0, 0]}>
+              <Bar dataKey="load" radius={[1, 1, 0, 0]}>
                 {weekChartData.map((entry, index) => (
                   <Cell
                     key={`cell-${index}`}
-                    fill={entry.isToday ? 'hsl(var(--accent-telemetry))' : 'hsl(215 20% 25%)'}
+                    fill={entry.isToday ? 'hsl(var(--accent-telemetry))' : 'hsl(215 15% 22%)'}
                   />
                 ))}
               </Bar>
