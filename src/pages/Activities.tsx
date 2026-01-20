@@ -148,21 +148,21 @@ export default function Activities() {
 
   return (
     <AppLayout>
-      <div className="space-y-6">
+      <div className="space-y-4">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-semibold text-primary">Activities</h1>
-            <p className="text-muted-foreground mt-1">Your completed workouts with coach analysis</p>
+            <h1 className="text-lg font-semibold text-foreground uppercase tracking-wide">Activities</h1>
+            <p className="text-[10px] text-muted-foreground/50 uppercase tracking-wider mt-0.5">Session telemetry & analysis</p>
           </div>
           <Button
             variant="outline"
             size="sm"
             onClick={handleSync}
             disabled={isLoading || isSyncing}
-            className="gap-2"
+            className="gap-1.5"
           >
-            <RefreshCw className={`h-4 w-4 ${isSyncing ? 'animate-spin' : ''}`} />
-            {isSyncing ? 'Syncing...' : 'Sync from Strava'}
+            <RefreshCw className={`h-3 w-3 ${isSyncing ? 'animate-spin' : ''}`} />
+            {isSyncing ? 'Syncing...' : 'Sync'}
           </Button>
         </div>
 

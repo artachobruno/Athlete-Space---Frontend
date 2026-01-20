@@ -243,51 +243,55 @@ export function ActivityCharts({ activity }: ActivityChartsProps) {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-3">
       {/* Heart Rate Chart */}
       {hasHeartRate && (
         <div>
-          <h5 className="text-sm font-medium text-foreground mb-3">Heart Rate</h5>
-          <div className="h-48 bg-muted/30 rounded-lg p-2">
+          <div className="flex items-center justify-between mb-1.5">
+            <span className="text-[9px] uppercase tracking-widest text-muted-foreground/50">Heart Rate</span>
+            <span className="text-[10px] font-mono text-muted-foreground/40">bpm</span>
+          </div>
+          <div className="h-32 bg-card/30 rounded border border-border/20 p-1.5">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={data} margin={{ top: 5, right: 5, left: 0, bottom: 5 }}>
+              <AreaChart data={data} margin={{ top: 4, right: 4, left: 0, bottom: 4 }}>
                 <defs>
                   <linearGradient id="hrGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="hsl(var(--chart-4))" stopOpacity={0.3} />
+                    <stop offset="5%" stopColor="hsl(var(--chart-4))" stopOpacity={0.15} />
                     <stop offset="95%" stopColor="hsl(var(--chart-4))" stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                <CartesianGrid strokeDasharray="2 4" stroke="hsl(var(--border))" strokeOpacity={0.3} />
                 <XAxis
                   dataKey="timeLabel"
-                  tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
-                  axisLine={{ stroke: 'hsl(var(--border))' }}
+                  tick={{ fontSize: 9, fill: 'hsl(var(--muted-foreground))', opacity: 0.5 }}
+                  axisLine={{ stroke: 'hsl(var(--border))', strokeOpacity: 0.3 }}
                   tickLine={false}
                   tickFormatter={createTimeTickFormatter(data)}
                   interval="preserveStartEnd"
                 />
                 <YAxis
                   domain={['dataMin - 10', 'dataMax + 10']}
-                  tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
+                  tick={{ fontSize: 9, fill: 'hsl(var(--muted-foreground))', opacity: 0.5 }}
                   axisLine={false}
                   tickLine={false}
-                  width={35}
+                  width={28}
                 />
                 <Tooltip
                   contentStyle={{
                     backgroundColor: 'hsl(var(--card))',
                     border: '1px solid hsl(var(--border))',
-                    borderRadius: '8px',
-                    fontSize: '12px',
+                    borderRadius: '4px',
+                    fontSize: '10px',
+                    padding: '4px 8px',
                   }}
-                  formatter={(value: number) => [`${value} bpm`, 'Heart Rate']}
+                  formatter={(value: number) => [`${value}`, 'HR']}
                 />
                 <Area
                   type="monotone"
                   dataKey="heartRate"
                   stroke="hsl(var(--chart-4))"
                   fill="url(#hrGradient)"
-                  strokeWidth={2}
+                  strokeWidth={1.5}
                 />
               </AreaChart>
             </ResponsiveContainer>
@@ -298,31 +302,34 @@ export function ActivityCharts({ activity }: ActivityChartsProps) {
       {/* Pace Chart */}
       {hasPaceData && (
         <div>
-          <h5 className="text-sm font-medium text-foreground mb-3">Pace</h5>
-          <div className="h-48 bg-muted/30 rounded-lg p-2">
+          <div className="flex items-center justify-between mb-1.5">
+            <span className="text-[9px] uppercase tracking-widest text-muted-foreground/50">Pace</span>
+            <span className="text-[10px] font-mono text-muted-foreground/40">{unitSystem === 'imperial' ? '/mi' : '/km'}</span>
+          </div>
+          <div className="h-32 bg-card/30 rounded border border-border/20 p-1.5">
             <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={paceData} margin={{ top: 5, right: 5, left: 0, bottom: 5 }}>
+              <AreaChart data={paceData} margin={{ top: 4, right: 4, left: 0, bottom: 4 }}>
                 <defs>
                   <linearGradient id="paceGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="hsl(var(--chart-1))" stopOpacity={0.3} />
+                    <stop offset="5%" stopColor="hsl(var(--chart-1))" stopOpacity={0.15} />
                     <stop offset="95%" stopColor="hsl(var(--chart-1))" stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+                <CartesianGrid strokeDasharray="2 4" stroke="hsl(var(--border))" strokeOpacity={0.3} />
                 <XAxis
                   dataKey="timeLabel"
-                  tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
-                  axisLine={{ stroke: 'hsl(var(--border))' }}
+                  tick={{ fontSize: 9, fill: 'hsl(var(--muted-foreground))', opacity: 0.5 }}
+                  axisLine={{ stroke: 'hsl(var(--border))', strokeOpacity: 0.3 }}
                   tickLine={false}
                   tickFormatter={createTimeTickFormatter(paceData)}
                   interval="preserveStartEnd"
                 />
                 <YAxis
                   domain={['dataMin - 0.5', 'dataMax + 0.5']}
-                  tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }}
+                  tick={{ fontSize: 9, fill: 'hsl(var(--muted-foreground))', opacity: 0.5 }}
                   axisLine={false}
                   tickLine={false}
-                  width={35}
+                  width={28}
                   tickFormatter={(value) => value.toFixed(1)}
                   reversed
                 />
@@ -330,8 +337,9 @@ export function ActivityCharts({ activity }: ActivityChartsProps) {
                   contentStyle={{
                     backgroundColor: 'hsl(var(--card))',
                     border: '1px solid hsl(var(--border))',
-                    borderRadius: '8px',
-                    fontSize: '12px',
+                    borderRadius: '4px',
+                    fontSize: '10px',
+                    padding: '4px 8px',
                   }}
                   formatter={(value: number, name: string, props: { payload: { paceUnit: string } }) => {
                     const unit = props.payload.paceUnit || (unitSystem === 'imperial' ? 'min/mi' : 'min/km');
@@ -343,7 +351,7 @@ export function ActivityCharts({ activity }: ActivityChartsProps) {
                   dataKey="paceDisplay"
                   stroke="hsl(var(--chart-1))"
                   fill="url(#paceGradient)"
-                  strokeWidth={2}
+                  strokeWidth={1.5}
                 />
               </AreaChart>
             </ResponsiveContainer>
