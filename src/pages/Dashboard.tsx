@@ -22,6 +22,7 @@ import { RecentActivitiesCard } from '@/components/dashboard/RecentActivitiesCar
 import { LoadStatusCard } from '@/components/dashboard/LoadStatusCard';
 import { CoachChatWidget } from '@/components/dashboard/CoachChatWidget';
 import { TelemetryStatusRail } from '@/components/dashboard/TelemetryStatusRail';
+import { TelemetryMetricsStrip } from '@/components/dashboard/TelemetryMetricsStrip';
 import { useSyncTodayWorkout } from '@/hooks/useSyncTodayWorkout';
 import { useDashboardData } from '@/hooks/useDashboardData';
 
@@ -62,8 +63,12 @@ function AthleteDashboard() {
           <p className="f1-label text-[hsl(var(--f1-text-muted))] mt-1">ATHLETE PERFORMANCE SYSTEM</p>
         </div>
 
-        {/* Thin divider after header */}
-        <div className="f1-divider" />
+        {/* Telemetry Metrics Strip - F1-style visualizations */}
+        <TelemetryMetricsStrip
+          overview60d={dashboardData.overview60d}
+          isLoading={dashboardData.overview60dLoading}
+          className="-mx-6"
+        />
 
         {/* Decision + Coach row */}
         <div className="grid grid-cols-12 gap-3">
