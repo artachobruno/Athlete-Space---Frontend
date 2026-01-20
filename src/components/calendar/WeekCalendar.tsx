@@ -430,6 +430,7 @@ export function WeekCalendar({ currentDate, onActivityClick }: WeekCalendarProps
                       onClick={handleCardClick}
                       maxVisible={3}
                       activityIdBySessionId={activityIdBySessionId}
+                      useNewCard
                     />
                   </div>
                 )}

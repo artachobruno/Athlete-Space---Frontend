@@ -199,6 +199,7 @@ export function MonthCalendar({ currentDate, onActivityClick }: {
                       variant="month"
                       maxVisible={3}
                       activityIdBySessionId={activityIdBySessionId}
+                      useNewCard
                       className="w-full h-full"
                     />
                   );

@@ -287,6 +287,7 @@ export function MonthView({ currentDate, onActivityClick }: MonthViewProps) {
                             variant="month"
                             maxVisible={3}
                             activityIdBySessionId={activityIdBySessionId}
+                            useNewCard
                             onClick={(item) => {
                             if (!monthData) return;
 

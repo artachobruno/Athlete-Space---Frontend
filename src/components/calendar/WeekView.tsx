@@ -233,6 +233,7 @@ function WeekView({ currentDate, onActivityClick }: WeekViewProps) {
                         maxVisible={3}
                         onClick={handleCardClick}
                         activityIdBySessionId={activityIdBySessionId}
+                        useNewCard
                       />
                     );
                   })()}
