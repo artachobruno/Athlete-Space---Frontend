@@ -171,7 +171,7 @@ export function RecentActivitiesCard(props: RecentActivitiesCardProps = {}) {
   }, [finalActivities, finalTrainingLoadData]);
 
   return (
-    <Card className={props.className}>
+    <Card className={cn('flex flex-col', props.className)}>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <CardTitle className="text-lg">Recent Activities</CardTitle>
         <div className="flex items-center gap-3">
@@ -193,13 +193,13 @@ export function RecentActivitiesCard(props: RecentActivitiesCardProps = {}) {
           </Link>
         </div>
       </CardHeader>
-      <CardContent>
+      <CardContent className="flex-1 flex flex-col">
         {isLoading ? (
-          <div className="flex items-center justify-center py-6">
+          <div className="flex-1 flex items-center justify-center">
             <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
           </div>
         ) : error || recentActivities.length === 0 ? (
-          <div className="text-center py-6">
+          <div className="flex-1 flex items-center justify-center">
             <p className="text-sm text-muted-foreground">
               {error ? 'Unable to load activities' : 'No recent activities'}
             </p>

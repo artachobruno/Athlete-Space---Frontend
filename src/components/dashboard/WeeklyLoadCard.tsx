@@ -5,6 +5,7 @@ import { useAuthenticatedQuery } from '@/hooks/useAuthenticatedQuery';
 import { Loader2 } from 'lucide-react';
 import { useMemo, useEffect, useState } from 'react';
 import { enrichActivitiesWithTss, type TrainingLoadData } from '@/lib/tss-utils';
+import { cn } from '@/lib/utils';
 import type { CompletedActivity } from '@/types';
 import type { WeekResponse } from '@/lib/api';
 
@@ -315,11 +316,11 @@ export function WeeklyLoadCard(props: WeeklyLoadCardProps = {}) {
 
   if (isLoading) {
     return (
-      <Card className={cardClassName}>
-        <CardHeader>
+      <Card className={cn('flex flex-col', cardClassName)}>
+        <CardHeader className="pb-2">
           <CardTitle className="text-lg">Weekly Load</CardTitle>
         </CardHeader>
-        <CardContent className="flex items-center justify-center py-8">
+        <CardContent className="flex-1 flex items-center justify-center">
           <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
         </CardContent>
       </Card>
@@ -327,14 +328,14 @@ export function WeeklyLoadCard(props: WeeklyLoadCardProps = {}) {
   }
 
   return (
-    <Card className={cardClassName}>
+    <Card className={cn('flex flex-col', cardClassName)}>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <CardTitle className="text-lg">Weekly Load</CardTitle>
         <span className="text-sm font-medium">
           {weeklyStats.actualLoad} <span className="text-muted-foreground">/</span> {weeklyStats.plannedLoad} <span className="text-xs text-muted-foreground ml-0.5">TSS</span>
         </span>
       </CardHeader>
-      <CardContent className="space-y-2">
+      <CardContent className="flex-1 flex flex-col space-y-2">
         {/* Progress bar */}
         <div className="space-y-1">
           <div className="h-2 bg-secondary rounded-full overflow-hidden">
@@ -350,7 +351,7 @@ export function WeeklyLoadCard(props: WeeklyLoadCardProps = {}) {
         </div>
 
         {/* Chart */}
-        <div className="h-24 -mx-1">
+        <div className="flex-1 min-h-[80px] -mx-1">
           <LoadTraceSvg data={weekChartData} maxLoad={maxLoad} />
         </div>
       </CardContent>

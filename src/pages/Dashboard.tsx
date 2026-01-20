@@ -15,6 +15,7 @@ import { isPreviewMode } from '@/lib/preview';
 
 // Athlete Dashboard Components
 import { AppLayout } from '@/components/layout/AppLayout';
+import { DailyDecisionCard } from '@/components/dashboard/DailyDecisionCard';
 import { TodayWorkoutCard } from '@/components/dashboard/TodayWorkoutCard';
 import { WeeklyLoadCard } from '@/components/dashboard/WeeklyLoadCard';
 import { RecentActivitiesCard } from '@/components/dashboard/RecentActivitiesCard';
@@ -46,7 +47,7 @@ function AthleteDashboard() {
 
   return (
     <AppLayout>
-      <div className="space-y-6">
+      <div className="space-y-4">
         {/* Header */}
         <div>
           <h1 className="text-2xl font-semibold text-primary">Dashboard</h1>
@@ -59,51 +60,44 @@ function AthleteDashboard() {
           isLoading={dashboardData.overview60dLoading}
         />
 
-        {/* Session Today */}
-        <div className="grid grid-cols-12 gap-4">
-          <div className="col-span-12">
-            <TodayWorkoutCard
-              todayData={dashboardData.todayData}
-              isLoading={dashboardData.todayDataLoading}
-              error={dashboardData.todayDataError}
-              trainingLoad7d={dashboardData.trainingLoad7d}
-              activities10={dashboardData.activities10}
-              todayIntelligence={dashboardData.todayIntelligence}
-              dailyDecision={{
-                data: dashboardData.todayIntelligence,
-                isLoading: dashboardData.todayIntelligenceLoading,
-                error: dashboardData.todayIntelligenceError
-              }}
-            />
-          </div>
+        {/* 2×2 Operational Grid - Fixed row heights */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4" style={{ gridTemplateRows: 'minmax(180px, auto) minmax(200px, auto)' }}>
+          {/* Row 1: Decision + Today Session */}
+          <DailyDecisionCard
+            todayIntelligence={dashboardData.todayIntelligence}
+            isLoading={dashboardData.todayIntelligenceLoading}
+            error={dashboardData.todayIntelligenceError}
+          />
+          <TodayWorkoutCard
+            todayData={dashboardData.todayData}
+            isLoading={dashboardData.todayDataLoading}
+            error={dashboardData.todayDataError}
+            trainingLoad7d={dashboardData.trainingLoad7d}
+            activities10={dashboardData.activities10}
+            todayIntelligence={dashboardData.todayIntelligence}
+          />
+
+          {/* Row 2: Weekly Load + Recent Activities */}
+          <WeeklyLoadCard
+            activities100={dashboardData.activities100}
+            activities100Loading={dashboardData.activities100Loading}
+            trainingLoad7d={dashboardData.trainingLoad7d}
+            trainingLoad7dLoading={dashboardData.trainingLoad7dLoading}
+            weekData={dashboardData.weekData}
+            weekDataLoading={dashboardData.weekDataLoading}
+            className="h-full"
+          />
+          <RecentActivitiesCard
+            activities10={dashboardData.activities10}
+            activities10Loading={dashboardData.activities10Loading}
+            activities10Error={dashboardData.activities10Error}
+            trainingLoad60d={dashboardData.trainingLoad60d}
+            className="h-full"
+          />
         </div>
 
         {/* Docked Coach Chat - minimized by default */}
         <CoachChatWidget minimized />
-
-        {/* Weekly Load + Recent Activities */}
-        <div className="grid grid-cols-12 gap-4 items-stretch">
-          <div className="col-span-12 lg:col-span-6 flex">
-            <WeeklyLoadCard
-              activities100={dashboardData.activities100}
-              activities100Loading={dashboardData.activities100Loading}
-              trainingLoad7d={dashboardData.trainingLoad7d}
-              trainingLoad7dLoading={dashboardData.trainingLoad7dLoading}
-              weekData={dashboardData.weekData}
-              weekDataLoading={dashboardData.weekDataLoading}
-              className="flex-1"
-            />
-          </div>
-          <div className="col-span-12 lg:col-span-6 flex">
-            <RecentActivitiesCard
-              activities10={dashboardData.activities10}
-              activities10Loading={dashboardData.activities10Loading}
-              activities10Error={dashboardData.activities10Error}
-              trainingLoad60d={dashboardData.trainingLoad60d}
-              className="flex-1"
-            />
-          </div>
-        </div>
       </div>
     </AppLayout>
   );
