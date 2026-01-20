@@ -1,11 +1,5 @@
-import { GlassCard } from '@/components/ui/GlassCard';
-import {
-  CardHeader,
-  CardContent,
-  CardTitle,
-  CardDescription,
-} from '@/components/ui/card';
-import { CheckCircle2, AlertTriangle, Info } from 'lucide-react';
+import { F1Card, F1CardHeader, F1CardTitle, F1CardLabel } from '@/components/ui/f1-card';
+import { CheckCircle2, AlertTriangle, AlertOctagon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface Risk {
@@ -17,57 +11,69 @@ interface RiskListProps {
   risks: Risk[];
 }
 
+// F1 Design: Map risk types to F1 status - flat, clear, ruthless
+type RiskType = 'success' | 'warning' | 'info';
+
+const riskToIconClass: Record<RiskType, string> = {
+  success: 'f1-status-safe',
+  warning: 'f1-status-caution',
+  info: 'f1-status-active',
+};
+
+const riskToBgClass: Record<RiskType, string> = {
+  success: 'f1-status-safe-bg',
+  warning: 'f1-status-caution-bg',
+  info: 'f1-status-active-bg',
+};
+
+const riskToBorderClass: Record<RiskType, string> = {
+  success: 'border-l-[hsl(var(--accent-success))]',
+  warning: 'border-l-[hsl(var(--accent-warning))]',
+  info: 'border-l-[hsl(var(--accent-telemetry))]',
+};
+
 /**
  * Risk signals list for Coach Dashboard
+ * F1 Design: Flat status colors, impossible to miss
  * Shows awareness items - no actions, just information
  */
 export function RiskList({ risks }: RiskListProps) {
-  const getIcon = (type: 'success' | 'warning' | 'info') => {
+  const getIcon = (type: RiskType) => {
+    const iconClass = cn('h-4 w-4 shrink-0', riskToIconClass[type]);
     switch (type) {
       case 'success':
-        return <CheckCircle2 className="h-4 w-4 text-load-fresh" />;
+        return <CheckCircle2 className={iconClass} />;
       case 'warning':
-        return <AlertTriangle className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />;
+        return <AlertTriangle className={iconClass} />;
       case 'info':
-        return <Info className="h-4 w-4 text-blue-500" />;
-    }
-  };
-
-  const getPrefix = (type: 'success' | 'warning' | 'info') => {
-    switch (type) {
-      case 'success':
-        return '✅';
-      case 'warning':
-        return '⚠️';
-      case 'info':
-        return 'ℹ️';
+        return <AlertOctagon className={iconClass} />;
     }
   };
 
   return (
-    <GlassCard className="bg-card border-border">
-      <CardHeader className="pb-2">
-        <CardTitle className="text-base font-semibold">Risk Signals</CardTitle>
-        <p className="text-xs text-muted-foreground">Awareness items for coach review</p>
-      </CardHeader>
-      <CardContent className="p-4 pt-0">
-        <ul className="space-y-2">
-          {risks.map((risk, index) => (
-            <li
-              key={index}
-              className={cn(
-                'flex items-start gap-3 text-sm py-2 px-3 rounded-md',
-                risk.type === 'success' && 'bg-load-fresh/10',
-                risk.type === 'warning' && 'bg-yellow-500/10',
-                risk.type === 'info' && 'bg-blue-500/10'
-              )}
-            >
-              {getIcon(risk.type)}
-              <span className="text-foreground">{risk.message}</span>
-            </li>
-          ))}
-        </ul>
-      </CardContent>
-    </GlassCard>
+    <F1Card>
+      <F1CardHeader>
+        <div>
+          <F1CardTitle>Risk Signals</F1CardTitle>
+          <F1CardLabel className="mt-1 block">Awareness items for coach review</F1CardLabel>
+        </div>
+      </F1CardHeader>
+      
+      <ul className="space-y-2">
+        {risks.map((risk, index) => (
+          <li
+            key={index}
+            className={cn(
+              'flex items-start gap-3 py-3 px-3 rounded-f1 border-l-2',
+              riskToBgClass[risk.type],
+              riskToBorderClass[risk.type]
+            )}
+          >
+            {getIcon(risk.type)}
+            <span className="f1-body text-[hsl(var(--f1-text-primary))]">{risk.message}</span>
+          </li>
+        ))}
+      </ul>
+    </F1Card>
   );
 }

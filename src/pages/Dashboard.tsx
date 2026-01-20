@@ -185,21 +185,22 @@ function CoachDashboard() {
         {/* Preview Banner */}
         {IS_PREVIEW && <PreviewBanner />}
 
-        {/* Header */}
+        {/* Header - F1 Mission Control style */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-semibold text-primary">Coach Dashboard</h1>
-            <p className="text-muted-foreground mt-1">
+            <h1 className="f1-headline f1-headline-lg text-[hsl(var(--f1-text-primary))]">Coach Dashboard</h1>
+            <p className="f1-body text-[hsl(var(--f1-text-tertiary))] mt-1">
               Overview of athlete adherence, trends, and risk
             </p>
           </div>
           
-          {/* Athlete selector */}
-          <div className="flex items-center gap-2">
+          {/* Athlete selector - F1 promoted primary control */}
+          <div className="f1-surface-strong rounded-f1 px-3 py-2 inline-flex items-center gap-3">
+            <span className="f1-label text-[hsl(var(--f1-text-tertiary))]">Active Athlete</span>
             {athletesLoading ? (
-              <div className="flex items-center gap-2 text-muted-foreground">
+              <div className="flex items-center gap-2 text-[hsl(var(--f1-text-tertiary))]">
                 <Loader2 className="h-4 w-4 animate-spin" />
-                <span className="text-sm">Loading athletes...</span>
+                <span className="f1-body-sm">Loading...</span>
               </div>
             ) : (
               <Select 
@@ -207,30 +208,30 @@ function CoachDashboard() {
                 onValueChange={setSelectedAthleteId}
                 disabled={athletes.length === 0}
               >
-                <SelectTrigger className="w-[200px]">
+                <SelectTrigger className="w-[180px] bg-[var(--surface-glass-subtle)] border-[var(--border-subtle)] text-[hsl(var(--f1-text-primary))] focus:border-[hsl(var(--accent-telemetry)/0.5)]">
                   <SelectValue placeholder="Select athlete">
                     {selectedAthlete && (
                       <div className="flex items-center gap-2">
                         <Avatar className="h-5 w-5">
-                          <AvatarFallback className="text-xs bg-primary/10 text-primary">
+                          <AvatarFallback className="text-xs bg-[hsl(var(--accent-telemetry)/0.15)] text-[hsl(var(--accent-telemetry))]">
                             {getAvatarInitials(selectedAthlete)}
                           </AvatarFallback>
                         </Avatar>
-                        <span>{selectedAthlete.name}</span>
+                        <span className="f1-body-sm">{selectedAthlete.name}</span>
                       </div>
                     )}
                   </SelectValue>
                 </SelectTrigger>
-                <SelectContent className="bg-popover border border-border shadow-lg z-50">
+                <SelectContent className="bg-[var(--surface-glass-strong)] backdrop-blur-xl border border-[var(--border-subtle)] shadow-lg z-50">
                   {athletes.map((athlete) => (
-                    <SelectItem key={athlete.id} value={athlete.id}>
+                    <SelectItem key={athlete.id} value={athlete.id} className="text-[hsl(var(--f1-text-primary))] focus:bg-[var(--border-subtle)]">
                       <div className="flex items-center gap-2">
                         <Avatar className="h-5 w-5">
-                          <AvatarFallback className="text-xs bg-primary/10 text-primary">
+                          <AvatarFallback className="text-xs bg-[hsl(var(--accent-telemetry)/0.15)] text-[hsl(var(--accent-telemetry))]">
                             {getAvatarInitials(athlete)}
                           </AvatarFallback>
                         </Avatar>
-                        <span>{athlete.name}</span>
+                        <span className="f1-body-sm">{athlete.name}</span>
                       </div>
                     </SelectItem>
                   ))}
@@ -243,17 +244,17 @@ function CoachDashboard() {
         {/* Loading or Error State */}
         {isLoadingDashboard && (
           <div className="flex items-center justify-center py-12">
-            <div className="flex items-center gap-2 text-muted-foreground">
+            <div className="flex items-center gap-2 text-[hsl(var(--f1-text-tertiary))]">
               <Loader2 className="h-5 w-5 animate-spin" />
-              <span>Loading dashboard data...</span>
+              <span className="f1-body">Loading dashboard data...</span>
             </div>
           </div>
         )}
 
         {hasError && !isLoadingDashboard && (
-          <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-4 text-destructive">
-            <p className="font-medium">Failed to load dashboard data</p>
-            <p className="text-sm mt-1">Please try refreshing the page.</p>
+          <div className="rounded-f1 border f1-status-danger-bg p-4">
+            <p className="f1-body font-medium f1-status-danger">Failed to load dashboard data</p>
+            <p className="f1-body-sm text-[hsl(var(--f1-text-secondary))] mt-1">Please try refreshing the page.</p>
           </div>
         )}
 
@@ -261,7 +262,7 @@ function CoachDashboard() {
         {!isLoadingDashboard && !hasError && (
           <>
             {/* KPI Cards */}
-            <div className="grid grid-cols-12 gap-6">
+            <div className="grid grid-cols-12 gap-4">
               <div className="col-span-12 lg:col-span-4">
                 <CoachKpiCard
                   label="Adherence"
@@ -288,8 +289,11 @@ function CoachDashboard() {
               </div>
             </div>
 
+            {/* Section divider */}
+            <div className="f1-divider" />
+
             {/* Charts Row */}
-            <div className="grid grid-cols-12 gap-6">
+            <div className="grid grid-cols-12 gap-4">
               <div className="col-span-12 lg:col-span-6">
                 <AdherenceChart data={data.adherence_trend} />
               </div>
@@ -297,6 +301,9 @@ function CoachDashboard() {
                 <WeeklyLoadChart data={data.weekly_loads} />
               </div>
             </div>
+
+            {/* Section divider */}
+            <div className="f1-divider" />
 
             {/* Risk Signals */}
             <RiskList risks={data.risks} />

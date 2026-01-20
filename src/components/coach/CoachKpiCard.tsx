@@ -1,5 +1,4 @@
-import { GlassCard } from '@/components/ui/GlassCard';
-import { CardContent } from '@/components/ui/card';
+import { F1Card, F1CardLabel } from '@/components/ui/f1-card';
 import { cn } from '@/lib/utils';
 
 interface CoachKpiCardProps {
@@ -9,25 +8,37 @@ interface CoachKpiCardProps {
   variant?: 'default' | 'success' | 'warning' | 'danger';
 }
 
+// F1 Design: Map variants to F1 status colors
+type F1Status = 'safe' | 'caution' | 'danger' | 'active';
+
+const variantToStatus: Record<string, F1Status | undefined> = {
+  default: undefined,
+  success: 'safe',
+  warning: 'caution',
+  danger: 'danger',
+};
+
+const variantToTextClass: Record<string, string> = {
+  default: 'text-[hsl(var(--f1-text-primary))]',
+  success: 'f1-status-safe',
+  warning: 'f1-status-caution',
+  danger: 'f1-status-danger',
+};
+
 /**
  * KPI Card for Coach Dashboard
  * Displays a single metric with label, value, and subtext
+ * F1 Design: Telemetry-style metric display
  */
 export function CoachKpiCard({ label, value, subtext, variant = 'default' }: CoachKpiCardProps) {
-  const valueColorClass = {
-    default: 'text-foreground',
-    success: 'text-load-fresh',
-    warning: 'text-yellow-600 dark:text-yellow-400',
-    danger: 'text-destructive',
-  }[variant];
+  const status = variantToStatus[variant];
+  const valueColorClass = variantToTextClass[variant];
 
   return (
-    <GlassCard className="bg-card border-border">
-      <CardContent className="p-4 sm:p-6">
-        <p className="text-sm font-medium text-muted-foreground mb-1">{label}</p>
-        <p className={cn('text-2xl sm:text-3xl font-bold', valueColorClass)}>{value}</p>
-        <p className="text-xs text-muted-foreground mt-1">{subtext}</p>
-      </CardContent>
-    </GlassCard>
+    <F1Card status={status} padding="lg">
+      <F1CardLabel className="mb-2 block">{label}</F1CardLabel>
+      <p className={cn('f1-metric f1-metric-lg', valueColorClass)}>{value}</p>
+      <p className="f1-label mt-2 text-[hsl(var(--f1-text-muted))]">{subtext}</p>
+    </F1Card>
   );
 }
