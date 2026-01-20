@@ -1,11 +1,6 @@
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { 
-  Footprints, 
-  Bike, 
-  Waves, 
-  Dumbbell, 
-  Activity,
   ChevronDown,
   ChevronUp,
 } from 'lucide-react';
@@ -22,39 +17,41 @@ interface TrainingCardProps {
   onClick?: (item: CalendarItem) => void;
 }
 
-const sportIcons: Record<CalendarSport, typeof Footprints> = {
-  run: Footprints,
-  ride: Bike,
-  swim: Waves,
-  strength: Dumbbell,
-  race: Activity,
-  other: Activity,
+// Minimal sport indicator dot colors
+const sportDotColors: Record<CalendarSport, string> = {
+  run: 'bg-accent',
+  ride: 'bg-chart-2',
+  swim: 'bg-chart-1',
+  strength: 'bg-chart-5',
+  race: 'bg-destructive',
+  other: 'bg-muted-foreground',
 };
 
 const intentLabels: Record<string, string> = {
-  easy: 'Easy',
-  steady: 'Steady',
-  tempo: 'Tempo',
-  intervals: 'Intervals',
-  long: 'Long',
-  rest: 'Rest',
+  easy: 'EASY',
+  steady: 'STEADY',
+  tempo: 'TEMPO',
+  intervals: 'INT',
+  long: 'LONG',
+  rest: 'REST',
 };
 
-const intentColors: Record<string, string> = {
-  easy: 'border-emerald-500/40 bg-emerald-500/5',
-  steady: 'border-blue-500/40 bg-blue-500/5',
-  tempo: 'border-amber-500/40 bg-amber-500/5',
-  intervals: 'border-red-500/40 bg-red-500/5',
-  long: 'border-purple-500/40 bg-purple-500/5',
-  rest: 'border-muted-foreground/30 bg-muted/20',
+// Telemetry-style: thin borders, no background fills
+const intentBorders: Record<string, string> = {
+  easy: 'border-load-fresh/40',
+  steady: 'border-accent/40',
+  tempo: 'border-load-overreaching/40',
+  intervals: 'border-destructive/40',
+  long: 'border-chart-5/40',
+  rest: 'border-border',
 };
 
 const intentTextColors: Record<string, string> = {
-  easy: 'text-emerald-600 dark:text-emerald-400',
-  steady: 'text-blue-600 dark:text-blue-400',
-  tempo: 'text-amber-600 dark:text-amber-400',
-  intervals: 'text-red-600 dark:text-red-400',
-  long: 'text-purple-600 dark:text-purple-400',
+  easy: 'text-load-fresh',
+  steady: 'text-accent',
+  tempo: 'text-load-overreaching',
+  intervals: 'text-destructive',
+  long: 'text-chart-5',
   rest: 'text-muted-foreground',
 };
 
@@ -63,30 +60,37 @@ function getCardStyles(
   compliance: CalendarCompliance | undefined,
   intent: string
 ): string {
-  const base = intentColors[intent] || intentColors.easy;
+  const borderStyle = intentBorders[intent] || intentBorders.easy;
   
   if (kind === 'completed') {
     if (compliance === 'complete') {
-      // Filled solid card
-      return cn(base, 'border-2 bg-opacity-20');
+      // Solid thin border - completed
+      return cn(borderStyle, 'border bg-card/50');
     }
     if (compliance === 'partial') {
-      // Dashed border with striped fill
-      return cn(base, 'border-dashed border-2 bg-gradient-to-r from-transparent via-current/5 to-transparent');
+      // Dashed border - partial
+      return cn(borderStyle, 'border-dashed border bg-transparent');
     }
     if (compliance === 'missed') {
-      return 'border-2 border-dashed border-destructive/40 bg-destructive/5';
+      return 'border border-dashed border-destructive/30 bg-transparent';
     }
   }
   
-  // Planned = outlined card
-  return cn(base, 'border border-dashed');
+  // Planned = dashed outline, no fill
+  return cn(borderStyle, 'border border-dashed bg-transparent');
+}
+
+// Minimal sport dot SVG
+function SportDot({ sport }: { sport: CalendarSport }) {
+  const colorClass = sportDotColors[sport] || sportDotColors.other;
+  return (
+    <span className={cn('inline-block w-1.5 h-1.5 rounded-full', colorClass)} />
+  );
 }
 
 export function TrainingCard({ group, variant = 'compact', onClick }: TrainingCardProps) {
   const [expanded, setExpanded] = useState(false);
   const primaryItem = group.items[0];
-  const Icon = sportIcons[primaryItem.sport] || Activity;
   const isMultiple = group.count > 1;
   
   const handleClick = () => {
@@ -221,7 +225,7 @@ export function TrainingCard({ group, variant = 'compact', onClick }: TrainingCa
               )}
               
               {primaryItem.kind === 'completed' && primaryItem.compliance === 'complete' && (
-                <span className="text-[9px] font-mono uppercase tracking-wider text-emerald-500/70">
+                <span className="text-[9px] font-mono uppercase tracking-wider text-load-fresh/70">
                   ✓
                 </span>
               )}

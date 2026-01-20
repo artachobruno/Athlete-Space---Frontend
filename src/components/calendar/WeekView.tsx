@@ -183,9 +183,9 @@ function WeekView({ currentDate, onActivityClick }: WeekViewProps) {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       {/* Week Grid */}
-      <div className="grid grid-cols-7 gap-3">
+      <div className="grid grid-cols-7 gap-2">
         {days.map((day, idx) => {
           const groupedItems = getGroupedItemsForDay(day);
           const isCurrentDay = isToday(day);
@@ -194,34 +194,34 @@ function WeekView({ currentDate, onActivityClick }: WeekViewProps) {
             <div
               key={idx}
               className={cn(
-                'rounded-xl border border-border bg-card min-h-[380px] flex flex-col',
-                isCurrentDay && 'ring-2 ring-primary/50'
+                'rounded-lg border border-border/60 bg-card min-h-[340px] flex flex-col',
+                isCurrentDay && 'ring-1 ring-accent/40 border-accent/30'
               )}
             >
-              {/* Day Header */}
+              {/* Day Header - compact telemetry style */}
               <div
-                className="px-3 py-2 border-b border-border cursor-pointer hover:bg-muted/30"
+                className="px-2 py-1.5 border-b border-border/40 cursor-pointer hover:bg-muted/20 transition-colors"
                 onClick={() => setSelectedDay(day)}
               >
-                <p className="text-xs font-medium text-muted-foreground uppercase">
-                  {format(day, 'EEE')}
+                <p className="text-[9px] font-medium text-muted-foreground/50 uppercase tracking-widest">
+                  {format(day, 'EEE').toUpperCase()}
                 </p>
                 <p
                   className={cn(
-                    'text-lg font-bold',
-                    isCurrentDay ? 'text-primary' : 'text-foreground'
+                    'text-lg font-semibold tabular-nums tracking-tight',
+                    isCurrentDay ? 'text-accent' : 'text-foreground'
                   )}
                 >
                   {format(day, 'd')}
                 </p>
               </div>
 
-              {/* Card Area — 98% FILL */}
+              {/* Card Area */}
               <div className="flex-1 relative">
                 <div className="absolute top-0 left-0 right-0 bottom-0">
                   {groupedItems.length === 0 ? (
                     <div className="h-full flex items-center justify-center">
-                      <p className="text-xs text-muted-foreground/50">Rest day</p>
+                      <p className="text-[9px] text-muted-foreground/30 uppercase tracking-wider">Rest</p>
                     </div>
                   ) : (() => {
                     const flatItems = groupedItems.flatMap((g) => g.items);
