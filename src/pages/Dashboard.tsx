@@ -48,14 +48,14 @@ function AthleteDashboard() {
   return (
     <AppLayout>
       <div className="space-y-6">
-        {/* Header */}
+        {/* Header - F1 typography */}
         <div className="col-span-12">
-          <h1 className="text-2xl font-semibold text-primary">Dashboard</h1>
-          <p className="text-muted-foreground mt-1">Your training at a glance</p>
+          <h1 className="f1-headline f1-headline-lg text-[hsl(var(--f1-text-primary))]">Dashboard</h1>
+          <p className="f1-body text-[hsl(var(--f1-text-tertiary))] mt-1">Your training at a glance</p>
         </div>
 
         {/* Decision + Coach row */}
-        <div className="grid grid-cols-12 gap-6">
+        <div className="grid grid-cols-12 gap-4">
           <div className="col-span-12 lg:col-span-8">
             <DailyDecisionCard />
           </div>
@@ -64,8 +64,11 @@ function AthleteDashboard() {
           </div>
         </div>
 
+        {/* Section divider */}
+        <div className="f1-divider" />
+
         {/* Today's Workout + Load Status */}
-        <div className="grid grid-cols-12 gap-6">
+        <div className="grid grid-cols-12 gap-4">
           <div className="col-span-12 lg:col-span-8">
             <TodayWorkoutCard
               todayData={dashboardData.todayData}
@@ -85,8 +88,11 @@ function AthleteDashboard() {
           </div>
         </div>
 
+        {/* Section divider */}
+        <div className="f1-divider" />
+
         {/* Weekly Load + Recent Activities */}
-        <div className="grid grid-cols-12 gap-6">
+        <div className="grid grid-cols-12 gap-4">
           <div className="col-span-12 lg:col-span-6">
             <WeeklyLoadCard
               activities100={dashboardData.activities100}

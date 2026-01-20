@@ -1,5 +1,4 @@
-import { GlassCard } from '@/components/ui/GlassCard';
-import { CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { F1Card, F1CardHeader, F1CardTitle, F1CardLabel } from '@/components/ui/f1-card';
 import { fetchActivities, fetchTrainingLoad, syncActivitiesNow } from '@/lib/api';
 import { format, parseISO } from 'date-fns';
 import { Bike, Footprints, Waves, Loader2, RefreshCw } from 'lucide-react';
@@ -13,6 +12,7 @@ import { Button } from '@/components/ui/button';
 import { toast } from '@/hooks/use-toast';
 import type { CompletedActivity } from '@/types';
 import { capitalizeTitle } from '@/adapters/calendarAdapter';
+import { cn } from '@/lib/utils';
 
 interface RecentActivitiesCardProps {
   activities10?: CompletedActivity[] | null;
@@ -140,45 +140,49 @@ export function RecentActivitiesCard(props?: RecentActivitiesCardProps) {
   }, [finalActivities, finalTrainingLoadData]);
 
   return (
-    <GlassCard>
-      <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-lg">Recent Activities</CardTitle>
+    <F1Card>
+      <F1CardHeader
+        action={
           <div className="flex items-center gap-2">
             <Button
               variant="ghost"
               size="sm"
               onClick={handleSync}
-              className="h-7 px-2 text-xs"
+              className="h-7 px-2 text-[hsl(var(--f1-text-tertiary))] hover:text-[hsl(var(--f1-text-primary))] hover:bg-[var(--border-subtle)]"
               disabled={isLoading || isSyncing}
               title="Sync activities from Strava"
             >
-              <RefreshCw className={`h-3 w-3 mr-1 ${isSyncing ? 'animate-spin' : ''}`} />
+              <RefreshCw className={cn('h-3 w-3 mr-1', isSyncing && 'animate-spin')} />
               {isSyncing ? 'Syncing...' : 'Sync'}
             </Button>
             <Link
               to="/activities"
-              className="text-sm text-accent hover:underline"
+              className="f1-label-md f1-status-active hover:underline"
             >
               View all
             </Link>
           </div>
-        </div>
-      </CardHeader>
-      <CardContent>
+        }
+      >
+        <F1CardTitle>Recent Activities</F1CardTitle>
+      </F1CardHeader>
+      
+      <div>
         {isLoading ? (
           <div className="flex items-center justify-center py-8">
-            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+            <Loader2 className="h-5 w-5 animate-spin text-[hsl(var(--f1-text-tertiary))]" />
           </div>
         ) : error || recentActivities.length === 0 ? (
-          <div className="text-center py-8 text-muted-foreground text-sm">
-            {error ? 'Unable to load activities' : 'No recent activities'}
+          <div className="text-center py-8">
+            <p className="f1-body text-[hsl(var(--f1-text-tertiary))]">
+              {error ? 'Unable to load activities' : 'No recent activities'}
+            </p>
           </div>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-0">
             {(Array.isArray(recentActivities) ? recentActivities : [])
               .filter((activity) => activity && activity.date && activity.id)
-              .map((activity) => {
+              .map((activity, index) => {
                 const Icon = sportIcons[activity.sport] || Footprints;
                 const dateStr = activity.date ? (() => {
                   try {
@@ -188,37 +192,51 @@ export function RecentActivitiesCard(props?: RecentActivitiesCardProps) {
                   }
                 })() : 'Unknown date';
                 
+                const isLast = index === recentActivities.length - 1;
+                
                 return (
                   <div
                     key={activity.id}
-                    className="flex items-center gap-3 py-2 border-b border-border last:border-0"
+                    className={cn(
+                      'flex items-center gap-3 py-3',
+                      !isLast && 'border-b border-[var(--border-subtle)]'
+                    )}
                   >
-                    <div className="p-2 bg-muted rounded-lg">
-                      <Icon className="h-4 w-4 text-muted-foreground" />
+                    {/* Sport icon */}
+                    <div className="p-2 rounded-f1 bg-[var(--surface-glass-subtle)]">
+                      <Icon className="h-4 w-4 text-[hsl(var(--f1-text-tertiary))]" />
                     </div>
+                    
+                    {/* Activity info */}
                     <div className="flex-1 min-w-0">
-                      <div className="font-medium text-sm text-foreground truncate">
+                      <div className="f1-body font-medium text-[hsl(var(--f1-text-primary))] truncate">
                         {capitalizeTitle(activity.title || 'Untitled Activity')}
                       </div>
-                      <div className="text-xs text-muted-foreground">
-                        {dateStr} · {(() => {
+                      <div className="f1-label-md text-[hsl(var(--f1-text-tertiary))] mt-0.5">
+                        <span className="font-mono">{dateStr}</span>
+                        <span className="mx-1.5 opacity-50">·</span>
+                        <span className="font-mono">{(() => {
                           const dist = convertDistance(activity.distance || 0);
                           return `${dist.value.toFixed(1)} ${dist.unit}`;
-                        })()} · {activity.duration || 0} min
+                        })()}</span>
+                        <span className="mx-1.5 opacity-50">·</span>
+                        <span className="font-mono">{activity.duration || 0} min</span>
                       </div>
                     </div>
+                    
+                    {/* TSS metric */}
                     <div className="text-right">
-                      <div className="text-sm font-medium text-foreground">
+                      <div className="f1-metric f1-metric-sm">
                         {activity.trainingLoad || 0}
                       </div>
-                      <div className="text-xs text-muted-foreground">TSS</div>
+                      <F1CardLabel>TSS</F1CardLabel>
                     </div>
                   </div>
                 );
               })}
           </div>
         )}
-      </CardContent>
-    </GlassCard>
+      </div>
+    </F1Card>
   );
 }

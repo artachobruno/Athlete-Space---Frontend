@@ -1,31 +1,44 @@
-import { GlassCard } from '@/components/ui/GlassCard';
-import { CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { F1Card, F1CardLabel } from '@/components/ui/f1-card';
 import { getTodayIntelligence } from '@/lib/intelligence';
 import { cn } from '@/lib/utils';
 import { CheckCircle2, AlertCircle, RefreshCw, Moon, Loader2, TrendingUp } from 'lucide-react';
 import { useAuthenticatedQuery } from '@/hooks/useAuthenticatedQuery';
 
+// F1 Design: Map decisions to status colors
+type DecisionType = 'proceed' | 'modify' | 'replace' | 'rest';
+type F1Status = 'safe' | 'caution' | 'danger' | 'active';
+
+const decisionToStatus: Record<DecisionType, F1Status> = {
+  proceed: 'safe',
+  modify: 'caution',
+  replace: 'active',
+  rest: 'caution',
+};
+
 const decisionConfig = {
   proceed: {
     icon: CheckCircle2,
     label: 'Proceed',
-    className: 'bg-decision-proceed/10 text-decision-proceed border-decision-proceed/20',
+    iconClass: 'f1-status-safe',
+    bgClass: 'f1-status-safe-bg',
   },
   modify: {
     icon: AlertCircle,
     label: 'Modify',
-    className: 'bg-decision-modify/10 text-decision-modify border-decision-modify/20',
+    iconClass: 'f1-status-caution',
+    bgClass: 'f1-status-caution-bg',
   },
   replace: {
     icon: RefreshCw,
     label: 'Replace',
-    className: 'bg-decision-replace/10 text-decision-replace border-decision-replace/20',
+    iconClass: 'f1-status-active',
+    bgClass: 'f1-status-active-bg',
   },
   rest: {
     icon: Moon,
     label: 'Rest',
-    className: 'bg-decision-rest/10 text-decision-rest border-decision-rest/20',
+    iconClass: 'f1-status-caution',
+    bgClass: 'f1-status-caution-bg',
   },
 };
 
@@ -51,13 +64,11 @@ export function DailyDecisionCard() {
 
   if (isLoading) {
     return (
-      <GlassCard className={cn('border-2 h-full')}>
-        <CardContent className="p-6">
-          <div className="flex items-center justify-center py-8">
-            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-          </div>
-        </CardContent>
-      </GlassCard>
+      <F1Card variant="strong" className="h-full" padding="lg">
+        <div className="flex items-center justify-center py-8">
+          <Loader2 className="h-6 w-6 animate-spin text-[hsl(var(--f1-text-tertiary))]" />
+        </div>
+      </F1Card>
     );
   }
 
@@ -66,26 +77,22 @@ export function DailyDecisionCard() {
   
   if (isServiceUnavailable) {
     return (
-      <GlassCard className={cn('border-2 h-full')}>
-        <CardContent className="p-6">
-          <div className="text-center py-8 text-muted-foreground">
-            <p className="text-sm">Today&apos;s decision is being generated</p>
-            <p className="text-xs mt-2 opacity-70">The coach will have your recommendation ready soon</p>
-          </div>
-        </CardContent>
-      </GlassCard>
+      <F1Card variant="strong" className="h-full" padding="lg">
+        <div className="text-center py-8">
+          <p className="f1-body text-[hsl(var(--f1-text-secondary))]">Today&apos;s decision is being generated</p>
+          <p className="f1-body-sm text-[hsl(var(--f1-text-muted))] mt-2">The coach will have your recommendation ready soon</p>
+        </div>
+      </F1Card>
     );
   }
 
   if (error || !data) {
     return (
-      <GlassCard className={cn('border-2 h-full')}>
-        <CardContent className="p-6">
-          <div className="text-center py-8 text-muted-foreground">
-            <p className="text-sm">Unable to load today&apos;s decision</p>
-          </div>
-        </CardContent>
-      </GlassCard>
+      <F1Card variant="strong" className="h-full" padding="lg">
+        <div className="text-center py-8">
+          <p className="f1-body text-[hsl(var(--f1-text-secondary))]">Unable to load today&apos;s decision</p>
+        </div>
+      </F1Card>
     );
   }
 
@@ -99,14 +106,12 @@ export function DailyDecisionCard() {
 
   if (isPlaceholder) {
     return (
-      <GlassCard className={cn('border-2 h-full')}>
-        <CardContent className="p-6">
-          <div className="text-center py-8 text-muted-foreground">
-            <p className="text-sm">Today&apos;s decision is being generated</p>
-            <p className="text-xs mt-2 opacity-70">The coach will have your recommendation ready soon</p>
-          </div>
-        </CardContent>
-      </GlassCard>
+      <F1Card variant="strong" className="h-full" padding="lg">
+        <div className="text-center py-8">
+          <p className="f1-body text-[hsl(var(--f1-text-secondary))]">Today&apos;s decision is being generated</p>
+          <p className="f1-body-sm text-[hsl(var(--f1-text-muted))] mt-2">The coach will have your recommendation ready soon</p>
+        </div>
+      </F1Card>
     );
   }
 
@@ -114,13 +119,14 @@ export function DailyDecisionCard() {
   const reason = data.explanation || data.recommendation;
   const confidence = data.confidence;
   const config = decisionConfig[decision];
+  const status = decisionToStatus[decision];
   const Icon = config.icon;
 
   const getConfidenceColor = (score: number) => {
-    if (score >= 0.8) return 'text-load-fresh';
-    if (score >= 0.6) return 'text-load-optimal';
-    if (score >= 0.4) return 'text-muted-foreground';
-    return 'text-load-overreaching';
+    if (score >= 0.8) return 'f1-status-safe';
+    if (score >= 0.6) return 'f1-status-active';
+    if (score >= 0.4) return 'text-[hsl(var(--f1-text-tertiary))]';
+    return 'f1-status-caution';
   };
 
   const getConfidenceLabel = (score: number) => {
@@ -131,39 +137,40 @@ export function DailyDecisionCard() {
   };
 
   return (
-    <GlassCard className={cn('border-2 h-full', config.className)}>
-      <CardContent className="p-6">
-        <div className="flex items-start gap-4">
-          <div className={cn('p-4 rounded-xl', config.className)}>
-            <Icon className="h-8 w-8" />
-          </div>
-          <div className="flex-1">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-xs font-semibold uppercase tracking-wider opacity-70">
-                Today&apos;s Decision
+    <F1Card variant="strong" status={status} className="h-full" padding="lg">
+      <div className="flex items-start gap-4">
+        {/* Icon container with F1 status styling */}
+        <div className={cn('p-4 rounded-f1 border', config.bgClass)}>
+          <Icon className={cn('h-8 w-8', config.iconClass)} />
+        </div>
+        <div className="flex-1">
+          {/* Header with label and confidence */}
+          <div className="flex items-center justify-between mb-2">
+            <F1CardLabel>Today&apos;s Decision</F1CardLabel>
+            {confidence && (
+              <span className={cn('f1-label-md flex items-center gap-1', getConfidenceColor(confidence.score))}>
+                <TrendingUp className="h-3 w-3" />
+                {getConfidenceLabel(confidence.score)} ({Math.round(confidence.score * 100)}%)
               </span>
-              {confidence && (
-                <Badge 
-                  variant="outline" 
-                  className={cn('text-xs', getConfidenceColor(confidence.score))}
-                >
-                  <TrendingUp className="h-3 w-3 mr-1" />
-                  {getConfidenceLabel(confidence.score)} ({Math.round(confidence.score * 100)}%)
-                </Badge>
-              )}
-            </div>
-            <h2 className="text-2xl font-bold mb-3">{config.label}</h2>
-            <p className="text-sm opacity-80 leading-relaxed mb-3">{reason}</p>
-            {confidence && confidence.explanation && (
-              <div className="mt-3 pt-3 border-t border-border/50">
-                <p className="text-xs text-muted-foreground leading-relaxed">
-                  <span className="font-medium">Confidence:</span> {confidence.explanation}
-                </p>
-              </div>
             )}
           </div>
+          
+          {/* Decision value - F1 metric style */}
+          <h2 className="f1-metric f1-metric-lg mb-3">{config.label}</h2>
+          
+          {/* Explanation */}
+          <p className="f1-body text-[hsl(var(--f1-text-secondary))] leading-relaxed mb-3">{reason}</p>
+          
+          {/* Confidence explanation */}
+          {confidence && confidence.explanation && (
+            <div className="mt-3 pt-3 border-t border-[var(--border-subtle)]">
+              <p className="f1-body-sm text-[hsl(var(--f1-text-tertiary))] leading-relaxed">
+                <span className="font-medium text-[hsl(var(--f1-text-secondary))]">Confidence:</span> {confidence.explanation}
+              </p>
+            </div>
+          )}
         </div>
-      </CardContent>
-    </GlassCard>
+      </div>
+    </F1Card>
   );
 }

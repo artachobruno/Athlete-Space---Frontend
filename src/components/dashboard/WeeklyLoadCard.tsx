@@ -1,5 +1,4 @@
-import { GlassCard } from '@/components/ui/GlassCard';
-import { CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { F1Card, F1CardHeader, F1CardTitle, F1CardLabel } from '@/components/ui/f1-card';
 import { fetchActivities, fetchTrainingLoad, fetchCalendarWeek } from '@/lib/api';
 import { BarChart, Bar, XAxis, YAxis, ResponsiveContainer, Cell } from 'recharts';
 import { subDays, format, startOfWeek } from 'date-fns';
@@ -155,44 +154,45 @@ export function WeeklyLoadCard(props?: WeeklyLoadCardProps) {
 
   if (isLoading) {
     return (
-      <GlassCard>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-lg">Weekly Load</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center justify-center py-8">
-            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-          </div>
-        </CardContent>
-      </GlassCard>
+      <F1Card>
+        <F1CardHeader>
+          <F1CardTitle>Weekly Load</F1CardTitle>
+        </F1CardHeader>
+        <div className="flex items-center justify-center py-8">
+          <Loader2 className="h-5 w-5 animate-spin text-[hsl(var(--f1-text-tertiary))]" />
+        </div>
+      </F1Card>
     );
   }
 
   return (
-    <GlassCard>
-      <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <CardTitle className="text-lg">Weekly Load</CardTitle>
-          <div className="text-sm text-muted-foreground">
-            {weeklyStats.actualLoad} / {weeklyStats.plannedLoad} TSS
-          </div>
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {/* Progress bar */}
+    <F1Card>
+      <F1CardHeader
+        action={
+          <span className="f1-metric f1-metric-sm">
+            {weeklyStats.actualLoad} <span className="text-[hsl(var(--f1-text-tertiary))]">/</span> {weeklyStats.plannedLoad} <F1CardLabel className="ml-1">TSS</F1CardLabel>
+          </span>
+        }
+      >
+        <F1CardTitle>Weekly Load</F1CardTitle>
+      </F1CardHeader>
+      
+      <div className="space-y-4">
+        {/* Progress bar - F1 telemetry style */}
         <div className="space-y-2">
-          <div className="h-2 bg-muted rounded-full overflow-hidden">
-          <div
-            className="h-full bg-accent transition-all duration-300"
-            style={{ width: `${Math.min(weeklyStats.progress, 100)}%` }}
-          />
+          <div className="h-1.5 bg-[var(--border-subtle)] rounded-f1-sm overflow-hidden">
+            <div
+              className="h-full bg-[hsl(var(--accent-telemetry))] transition-all duration-300"
+              style={{ width: `${Math.min(weeklyStats.progress, 100)}%` }}
+            />
           </div>
-          <div className="text-xs text-muted-foreground text-right">
-            {weeklyStats.progress.toFixed(0)}% complete
+          <div className="flex justify-between items-center">
+            <F1CardLabel>Progress</F1CardLabel>
+            <span className="f1-metric f1-metric-xs">{weeklyStats.progress.toFixed(0)}%</span>
           </div>
         </div>
 
-        {/* Daily load chart */}
+        {/* Daily load chart - F1 instrument panel style */}
         <div className="h-32">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={weekChartData} margin={{ top: 0, right: 0, left: 0, bottom: 0 }}>
@@ -200,21 +200,21 @@ export function WeeklyLoadCard(props?: WeeklyLoadCardProps) {
                 dataKey="day"
                 axisLine={false}
                 tickLine={false}
-                tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
+                tick={{ fontSize: 10, fill: 'hsl(var(--f1-text-tertiary))', fontFamily: 'JetBrains Mono, monospace' }}
               />
               <YAxis hide />
-              <Bar dataKey="load" radius={[4, 4, 0, 0]}>
+              <Bar dataKey="load" radius={[2, 2, 0, 0]}>
                 {weekChartData.map((entry, index) => (
                   <Cell
                     key={`cell-${index}`}
-                    fill={entry.isToday ? 'hsl(var(--accent))' : 'hsl(var(--muted))'}
+                    fill={entry.isToday ? 'hsl(var(--accent-telemetry))' : 'hsl(215 20% 25%)'}
                   />
                 ))}
               </Bar>
             </BarChart>
           </ResponsiveContainer>
         </div>
-      </CardContent>
-    </GlassCard>
+      </div>
+    </F1Card>
   );
 }

@@ -1,5 +1,4 @@
-import { GlassCard } from '@/components/ui/GlassCard';
-import { CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { F1Card, F1CardHeader, F1CardTitle, F1CardLabel, F1Metric, F1Divider } from '@/components/ui/f1-card';
 import { fetchOverview } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import { TrendingUp, TrendingDown, Minus, Loader2 } from 'lucide-react';
@@ -18,11 +17,22 @@ interface LoadStatusCardProps {
   error?: unknown;
 }
 
-const statusStyles = {
-  fresh: 'text-load-fresh',
-  optimal: 'text-load-optimal',
-  overreaching: 'text-load-overreaching',
-  overtraining: 'text-load-overtraining',
+// F1 Design: Map load status to F1 status colors
+type LoadStatus = 'fresh' | 'optimal' | 'overreaching' | 'overtraining';
+type F1Status = 'safe' | 'caution' | 'danger' | 'active';
+
+const statusToF1: Record<LoadStatus, F1Status> = {
+  fresh: 'safe',
+  optimal: 'active',
+  overreaching: 'caution',
+  overtraining: 'danger',
+};
+
+const statusStyles: Record<LoadStatus, string> = {
+  fresh: 'f1-status-safe',
+  optimal: 'f1-status-active',
+  overreaching: 'f1-status-caution',
+  overtraining: 'f1-status-danger',
 };
 
 const getLoadStatus = (tsb: number): { status: keyof typeof statusStyles; description: string } => {
@@ -58,31 +68,27 @@ export function LoadStatusCard(props?: LoadStatusCardProps) {
 
   if (isLoading) {
     return (
-      <GlassCard>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-lg">Training Load</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center justify-center py-8">
-            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-          </div>
-        </CardContent>
-      </GlassCard>
+      <F1Card className="h-full min-h-[220px]">
+        <F1CardHeader>
+          <F1CardTitle>Training Load</F1CardTitle>
+        </F1CardHeader>
+        <div className="flex items-center justify-center py-8">
+          <Loader2 className="h-5 w-5 animate-spin text-[hsl(var(--f1-text-tertiary))]" />
+        </div>
+      </F1Card>
     );
   }
 
   if (error || !finalOverview) {
     return (
-      <GlassCard>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-lg">Training Load</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="text-center py-8 text-muted-foreground text-sm">
-            Unable to load training data
-          </div>
-        </CardContent>
-      </GlassCard>
+      <F1Card className="h-full min-h-[220px]">
+        <F1CardHeader>
+          <F1CardTitle>Training Load</F1CardTitle>
+        </F1CardHeader>
+        <div className="text-center py-8">
+          <p className="f1-body text-[hsl(var(--f1-text-tertiary))]">Unable to load training data</p>
+        </div>
+      </F1Card>
     );
   }
 
@@ -106,49 +112,52 @@ export function LoadStatusCard(props?: LoadStatusCardProps) {
   const ctlTrend = latestCtl - previousCtl;
   const TrendIcon = ctlTrend > 2 ? TrendingUp : ctlTrend < -2 ? TrendingDown : Minus;
 
+  const f1Status = statusToF1[loadStatus.status];
+
   return (
-    <GlassCard className="h-full min-h-[220px]">
-      <CardHeader className="pb-3">
-        <CardTitle className="text-lg">Training Load</CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-4">
-        {/* TSB Status */}
-        <div className="text-center py-4 bg-muted/30 rounded-lg">
-          <div className={cn('text-3xl font-bold', statusStyles[loadStatus.status])}>
+    <F1Card className="h-full min-h-[220px]" status={f1Status}>
+      <F1CardHeader>
+        <F1CardTitle>Training Load</F1CardTitle>
+      </F1CardHeader>
+      
+      <div className="space-y-4">
+        {/* TSB Status - Primary telemetry display */}
+        <div className="text-center py-4 rounded-f1 bg-[var(--surface-glass-subtle)]">
+          <div className={cn('f1-metric f1-metric-lg', statusStyles[loadStatus.status])}>
             {tsb > 0 ? '+' : ''}{tsb.toFixed(0)}
           </div>
-          <div className="text-xs text-muted-foreground mt-1 uppercase tracking-wider">
-            Form (TSB)
-          </div>
+          <F1CardLabel className="mt-2 block">Form (TSB)</F1CardLabel>
         </div>
 
         {/* Status description */}
-        <div className={cn('text-sm text-center', statusStyles[loadStatus.status])}>
+        <div className={cn('f1-body-sm text-center', statusStyles[loadStatus.status])}>
           {loadStatus.description}
         </div>
 
-        {/* CTL/ATL */}
-        <div className="grid grid-cols-2 gap-4 pt-2">
+        <F1Divider />
+
+        {/* CTL/ATL - Secondary metrics */}
+        <div className="grid grid-cols-2 gap-4">
           <div className="text-center">
             <div className="flex items-center justify-center gap-1">
-              <span className="text-xl font-semibold text-foreground">
+              <span className="f1-metric f1-metric-md">
                 {ctl.toFixed(0)}
               </span>
               <TrendIcon className={cn(
                 'h-4 w-4',
-                ctlTrend > 2 ? 'text-load-fresh' : ctlTrend < -2 ? 'text-load-overtraining' : 'text-muted-foreground'
+                ctlTrend > 2 ? 'f1-status-safe' : ctlTrend < -2 ? 'f1-status-danger' : 'text-[hsl(var(--f1-text-tertiary))]'
               )} />
             </div>
-            <div className="text-xs text-muted-foreground">Fitness (CTL)</div>
+            <F1CardLabel className="mt-1 block">Fitness (CTL)</F1CardLabel>
           </div>
           <div className="text-center">
-            <div className="text-xl font-semibold text-foreground">
+            <span className="f1-metric f1-metric-md">
               {atl.toFixed(0)}
-            </div>
-            <div className="text-xs text-muted-foreground">Fatigue (ATL)</div>
+            </span>
+            <F1CardLabel className="mt-1 block">Fatigue (ATL)</F1CardLabel>
           </div>
         </div>
-      </CardContent>
-    </GlassCard>
+      </div>
+    </F1Card>
   );
 }

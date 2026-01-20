@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { GlassCard } from '@/components/ui/GlassCard';
-import { CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { F1Card, F1CardHeader, F1CardTitle, F1CardLabel } from '@/components/ui/f1-card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Send, Brain, User, Maximize2 } from 'lucide-react';
@@ -121,20 +120,28 @@ export function CoachChatWidget() {
   }, []);
 
   return (
-    <GlassCard className="flex flex-col h-full min-h-[220px]">
-      <CardHeader className="pb-2 flex-row items-center justify-between space-y-0">
+    <F1Card variant="strong" className="flex flex-col h-full min-h-[220px]" padding="none">
+      {/* Header */}
+      <div className="flex items-center justify-between px-4 py-3 border-b border-[var(--border-subtle)]">
         <div className="flex items-center gap-2">
-          <Brain className="h-4 w-4 text-coach" />
-          <CardTitle className="text-sm font-medium text-muted-foreground">Coach</CardTitle>
+          <div className="w-6 h-6 rounded-full bg-[hsl(var(--accent-telemetry)/0.15)] flex items-center justify-center">
+            <Brain className="h-3.5 w-3.5 f1-status-active" />
+          </div>
+          <F1CardLabel className="text-[hsl(var(--f1-text-secondary))]">Coach</F1CardLabel>
         </div>
         <Link to="/coach">
-          <Button variant="ghost" size="icon" className="h-7 w-7">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="h-7 w-7 text-[hsl(var(--f1-text-tertiary))] hover:text-[hsl(var(--f1-text-primary))] hover:bg-[var(--border-subtle)]"
+          >
             <Maximize2 className="h-3.5 w-3.5" />
           </Button>
         </Link>
-      </CardHeader>
-      <CardContent className="flex-1 flex flex-col overflow-hidden p-3 pt-0">
-        {/* Messages */}
+      </div>
+      
+      {/* Messages area */}
+      <div className="flex-1 flex flex-col overflow-hidden p-3">
         <div className="flex-1 overflow-y-auto space-y-2 mb-3">
           {/* Coach Progress Panel - shown above messages when conversation is active */}
           {conversationId && <CoachProgressPanel conversationId={conversationId} mode="executing" />}
@@ -146,33 +153,36 @@ export function CoachChatWidget() {
                   message.role === 'athlete' && 'flex-row-reverse'
                 )}
               >
+                {/* Avatar */}
                 <div
                   className={cn(
                     'w-6 h-6 rounded-full flex items-center justify-center shrink-0',
                     message.role === 'coach'
-                      ? 'bg-coach text-coach-foreground'
-                      : 'bg-muted text-muted-foreground'
+                      ? 'bg-[hsl(var(--accent-telemetry)/0.15)]'
+                      : 'bg-[var(--surface-glass-subtle)]'
                   )}
                 >
                   {message.role === 'coach' ? (
-                    <Brain className="h-3 w-3" />
+                    <Brain className="h-3 w-3 f1-status-active" />
                   ) : (
-                    <User className="h-3 w-3" />
+                    <User className="h-3 w-3 text-[hsl(var(--f1-text-tertiary))]" />
                   )}
                 </div>
+                
+                {/* Message bubble */}
                 <div
                   className={cn(
-                    'max-w-[80%] rounded-lg px-3 py-1.5 text-xs',
+                    'max-w-[80%] rounded-f1 px-3 py-1.5 f1-body-sm',
                     message.role === 'coach'
-                      ? 'bg-[#2F4F4F]/10 text-foreground'
-                      : 'bg-accent text-accent-foreground'
+                      ? 'bg-[hsl(var(--accent-telemetry)/0.08)] text-[hsl(var(--f1-text-primary))] border border-[hsl(var(--accent-telemetry)/0.15)]'
+                      : 'bg-[var(--surface-glass-subtle)] text-[hsl(var(--f1-text-primary))]'
                   )}
                 >
                   {message.content}
                 </div>
               </div>
+              
               {/* Plan List - rendered inline with coach message that produced it */}
-              {/* FE-2: Use show_plan flag instead of plan_items?.length */}
               {message.role === 'coach' &&
                 message.show_plan === true &&
                 message.plan_items &&
@@ -188,18 +198,19 @@ export function CoachChatWidget() {
             </div>
           ))}
 
+          {/* Typing indicator */}
           {isTyping && (
             <div className="flex gap-2">
-              <div className="w-6 h-6 rounded-full bg-coach text-coach-foreground flex items-center justify-center">
-                <Brain className="h-3 w-3" />
+              <div className="w-6 h-6 rounded-full bg-[hsl(var(--accent-telemetry)/0.15)] flex items-center justify-center">
+                <Brain className="h-3 w-3 f1-status-active" />
               </div>
-            <div className="bg-coach text-coach-foreground rounded-lg px-3 py-1.5">
-              <div className="flex gap-1">
-                <span className="w-1.5 h-1.5 bg-muted-foreground/50 rounded-full animate-pulse-subtle" />
-                <span className="w-1.5 h-1.5 bg-muted-foreground/50 rounded-full animate-pulse-subtle [animation-delay:150ms]" />
-                <span className="w-1.5 h-1.5 bg-muted-foreground/50 rounded-full animate-pulse-subtle [animation-delay:300ms]" />
+              <div className="bg-[hsl(var(--accent-telemetry)/0.08)] border border-[hsl(var(--accent-telemetry)/0.15)] rounded-f1 px-3 py-1.5">
+                <div className="flex gap-1">
+                  <span className="w-1.5 h-1.5 bg-[hsl(var(--accent-telemetry))] rounded-full animate-pulse-subtle" />
+                  <span className="w-1.5 h-1.5 bg-[hsl(var(--accent-telemetry))] rounded-full animate-pulse-subtle [animation-delay:150ms]" />
+                  <span className="w-1.5 h-1.5 bg-[hsl(var(--accent-telemetry))] rounded-full animate-pulse-subtle [animation-delay:300ms]" />
+                </div>
               </div>
-            </div>
             </div>
           )}
         </div>
@@ -211,18 +222,18 @@ export function CoachChatWidget() {
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder="Ask your coach..."
-            className="text-sm h-9"
+            className="f1-body-sm h-9 bg-[var(--surface-glass-subtle)] border-[var(--border-subtle)] text-[hsl(var(--f1-text-primary))] placeholder:text-[hsl(var(--f1-text-muted))] focus:border-[hsl(var(--accent-telemetry)/0.5)] focus:ring-[hsl(var(--accent-telemetry)/0.2)]"
           />
           <Button
             type="submit"
             disabled={!input.trim() || isTyping || isSendingRef.current}
             size="icon"
-            className="h-9 w-9 shrink-0 bg-coach hover:bg-coach/90 text-coach-foreground"
+            className="h-9 w-9 shrink-0 bg-[hsl(var(--accent-telemetry))] hover:bg-[hsl(var(--accent-telemetry-dim))] text-white"
           >
             <Send className="h-3.5 w-3.5" />
           </Button>
         </form>
-      </CardContent>
-    </GlassCard>
+      </div>
+    </F1Card>
   );
 }
