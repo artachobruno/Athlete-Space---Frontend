@@ -15,6 +15,8 @@ interface WeeklyLoadCardProps {
   trainingLoad7dLoading?: boolean;
   weekData?: WeekResponse | null;
   weekDataLoading?: boolean;
+  /** Additional CSS classes for the card container */
+  className?: string;
 }
 
 // SVG Telemetry Trace Component
@@ -179,18 +181,18 @@ function LoadTraceSvg({ data, maxLoad }: { data: { day: string; load: number; is
   );
 }
 
-export function WeeklyLoadCard(props?: WeeklyLoadCardProps) {
+export function WeeklyLoadCard(props: WeeklyLoadCardProps = {}) {
   const today = new Date();
   const weekStart = startOfWeek(today, { weekStartsOn: 1 });
   const weekStartStr = format(weekStart, 'yyyy-MM-dd');
 
   // Use props if provided, otherwise fetch (backward compatibility)
-  const propsActivities100 = props?.activities100;
-  const propsActivities100Loading = props?.activities100Loading;
-  const propsTrainingLoad7d = props?.trainingLoad7d;
-  const propsTrainingLoad7dLoading = props?.trainingLoad7dLoading;
-  const propsWeekData = props?.weekData;
-  const propsWeekDataLoading = props?.weekDataLoading;
+  const propsActivities100 = props.activities100;
+  const propsActivities100Loading = props.activities100Loading;
+  const propsTrainingLoad7d = props.trainingLoad7d;
+  const propsTrainingLoad7dLoading = props.trainingLoad7dLoading;
+  const propsWeekData = props.weekData;
+  const propsWeekDataLoading = props.weekDataLoading;
 
   // Fetch activities the same way as Calendar and Activities pages
   const { data: activities, isLoading: activitiesLoading } = useAuthenticatedQuery({
@@ -309,9 +311,11 @@ export function WeeklyLoadCard(props?: WeeklyLoadCardProps) {
 
   const maxLoad = useMemo(() => Math.max(...weekChartData.map(d => d.load), 1), [weekChartData]);
 
+  const cardClassName = props.className;
+
   if (isLoading) {
     return (
-      <F1Card>
+      <F1Card className={cardClassName}>
         <F1CardHeader>
           <F1CardTitle>LOAD (7d)</F1CardTitle>
         </F1CardHeader>
@@ -323,7 +327,7 @@ export function WeeklyLoadCard(props?: WeeklyLoadCardProps) {
   }
 
   return (
-    <F1Card>
+    <F1Card className={cardClassName}>
       <F1CardHeader
         action={
           <span className="f1-metric f1-metric-xs">

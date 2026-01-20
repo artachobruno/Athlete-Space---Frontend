@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
-import { F1Card, F1CardHeader, F1CardTitle, F1CardLabel } from '@/components/ui/f1-card';
+import { F1Card, F1CardLabel } from '@/components/ui/f1-card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Send, Brain, User, Maximize2 } from 'lucide-react';
+import { Send, Brain, User, Maximize2, MessageSquare, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Link } from 'react-router-dom';
 import { sendCoachChat, type PlanItem } from '@/lib/api';
@@ -19,7 +19,13 @@ interface Message {
   response_type?: 'plan' | 'weekly_plan' | 'season_plan' | 'session_plan' | 'recommendation' | 'summary' | 'greeting' | 'question' | 'explanation' | 'smalltalk';
 }
 
-export function CoachChatWidget() {
+interface CoachChatWidgetProps {
+  /** Start minimized - docked control behavior */
+  minimized?: boolean;
+}
+
+export function CoachChatWidget({ minimized: startMinimized = false }: CoachChatWidgetProps) {
+  const [isExpanded, setIsExpanded] = useState(!startMinimized);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
@@ -119,26 +125,52 @@ export function CoachChatWidget() {
     ]);
   }, []);
 
-  return (
-    <F1Card variant="strong" className="flex flex-col h-full min-h-[200px]" padding="none">
-      {/* Header */}
-      <div className="flex items-center justify-between px-3 py-2.5 border-b border-[var(--border-subtle)]">
-        <div className="flex items-center gap-1.5">
-          <div className="w-5 h-5 rounded-full bg-[hsl(var(--accent-telemetry)/0.12)] flex items-center justify-center">
-            <Brain className="h-3 w-3 f1-status-active" />
-          </div>
-          <F1CardLabel className="text-[hsl(var(--f1-text-secondary))]">AI COACH</F1CardLabel>
-        </div>
-        <Link to="/coach">
-          <Button 
-            variant="ghost" 
-            size="icon" 
-            className="h-6 w-6 text-[hsl(var(--f1-text-muted))] hover:text-[hsl(var(--f1-text-primary))] hover:bg-[var(--border-subtle)]"
-          >
-            <Maximize2 className="h-3 w-3" />
-          </Button>
-        </Link>
+  // Minimized docked state - compact trigger button
+  if (!isExpanded) {
+    return (
+      <div className="fixed bottom-6 right-6 z-50">
+        <Button
+          onClick={() => setIsExpanded(true)}
+          className="h-10 px-4 gap-2 bg-[hsl(var(--accent-telemetry))] hover:bg-[hsl(var(--accent-telemetry-dim))] text-white shadow-lg rounded-full"
+        >
+          <MessageSquare className="h-4 w-4" />
+          <span className="f1-label text-white">ASK COACH</span>
+        </Button>
       </div>
+    );
+  }
+
+  return (
+    <div className="fixed bottom-6 right-6 z-50 w-80">
+      <F1Card variant="strong" className="flex flex-col h-[360px] shadow-xl" padding="none">
+        {/* Header */}
+        <div className="flex items-center justify-between px-3 py-2.5 border-b border-[var(--border-subtle)]">
+          <div className="flex items-center gap-1.5">
+            <div className="w-5 h-5 rounded-full bg-[hsl(var(--accent-telemetry)/0.12)] flex items-center justify-center">
+              <Brain className="h-3 w-3 f1-status-active" />
+            </div>
+            <F1CardLabel className="text-[hsl(var(--f1-text-secondary))]">AI COACH</F1CardLabel>
+          </div>
+          <div className="flex items-center gap-1">
+            <Link to="/coach">
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="h-6 w-6 text-[hsl(var(--f1-text-muted))] hover:text-[hsl(var(--f1-text-primary))] hover:bg-[var(--border-subtle)]"
+              >
+                <Maximize2 className="h-3 w-3" />
+              </Button>
+            </Link>
+            <Button 
+              variant="ghost" 
+              size="icon" 
+              onClick={() => setIsExpanded(false)}
+              className="h-6 w-6 text-[hsl(var(--f1-text-muted))] hover:text-[hsl(var(--f1-text-primary))] hover:bg-[var(--border-subtle)]"
+            >
+              <X className="h-3 w-3" />
+            </Button>
+          </div>
+        </div>
       
       {/* Messages area */}
       <div className="flex-1 flex flex-col overflow-hidden p-2.5">
@@ -234,6 +266,7 @@ export function CoachChatWidget() {
           </Button>
         </form>
       </div>
-    </F1Card>
+      </F1Card>
+    </div>
   );
 }

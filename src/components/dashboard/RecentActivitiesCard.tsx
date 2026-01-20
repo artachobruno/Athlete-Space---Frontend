@@ -19,6 +19,8 @@ interface RecentActivitiesCardProps {
   activities10Loading?: boolean;
   activities10Error?: unknown;
   trainingLoad60d?: TrainingLoadData | null;
+  /** Additional CSS classes for the card container */
+  className?: string;
 }
 
 // Sport type indicator - minimal dot with color encoding
@@ -61,15 +63,15 @@ function TssDelta({ current, average }: { current: number; average: number }) {
   );
 }
 
-export function RecentActivitiesCard(props?: RecentActivitiesCardProps) {
+export function RecentActivitiesCard(props: RecentActivitiesCardProps = {}) {
   const { convertDistance } = useUnitSystem();
   const queryClient = useQueryClient();
   const [isSyncing, setIsSyncing] = useState(false);
   
-  const propsActivities10 = props?.activities10;
-  const propsActivities10Loading = props?.activities10Loading;
-  const propsActivities10Error = props?.activities10Error;
-  const propsTrainingLoad60d = props?.trainingLoad60d;
+  const propsActivities10 = props.activities10;
+  const propsActivities10Loading = props.activities10Loading;
+  const propsActivities10Error = props.activities10Error;
+  const propsTrainingLoad60d = props.trainingLoad60d;
 
   const { data: activities, isLoading: activitiesLoading, error: activitiesError, refetch } = useAuthenticatedQuery({
     queryKey: ['activities', 'limit', 10],
@@ -169,7 +171,7 @@ export function RecentActivitiesCard(props?: RecentActivitiesCardProps) {
   }, [finalActivities, finalTrainingLoadData]);
 
   return (
-    <F1Card>
+    <F1Card className={props.className}>
       <F1CardHeader
         action={
           <div className="flex items-center gap-3">

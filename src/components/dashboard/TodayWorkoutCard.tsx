@@ -2,7 +2,7 @@ import { F1Card, F1CardHeader, F1CardTitle, F1CardLabel, F1StatusBadge } from '@
 import { fetchCalendarToday, fetchTrainingLoad, fetchActivities, fetchActivityStreams } from '@/lib/api';
 import { getTodayIntelligence } from '@/lib/intelligence';
 import { format } from 'date-fns';
-import { Loader2, MessageSquare } from 'lucide-react';
+import { Loader2, MessageSquare, CheckCircle2, AlertCircle, RefreshCw, Moon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuthenticatedQuery } from '@/hooks/useAuthenticatedQuery';
 import { useMemo } from 'react';
@@ -10,6 +10,44 @@ import { getTssForDate, enrichActivitiesWithTss, type TrainingLoadData } from '@
 import { WorkoutCard } from '@/components/workout/WorkoutCard';
 import type { CompletedActivity } from '@/types';
 import type { TodayResponse } from '@/lib/api';
+
+/** Intelligence data structure from the API */
+interface IntelligenceData {
+  recommendation?: string | null;
+  explanation?: string | null;
+  confidence?: {
+    score: number;
+    explanation?: string;
+  } | null;
+}
+
+/** Daily decision props for merged display */
+interface DailyDecisionProps {
+  data?: IntelligenceData | null;
+  isLoading?: boolean;
+  error?: unknown;
+}
+
+// Decision type mapping
+type DecisionType = 'proceed' | 'modify' | 'replace' | 'rest';
+
+const mapRecommendationToDecision = (recommendation: string | null | undefined): DecisionType => {
+  if (!recommendation || typeof recommendation !== 'string') {
+    return 'proceed';
+  }
+  const lower = recommendation.toLowerCase();
+  if (lower.includes('rest') || lower.includes('recovery')) return 'rest';
+  if (lower.includes('modify') || lower.includes('adjust')) return 'modify';
+  if (lower.includes('replace') || lower.includes('change')) return 'replace';
+  return 'proceed';
+};
+
+const decisionConfig: Record<DecisionType, { icon: typeof CheckCircle2; label: string; colorClass: string }> = {
+  proceed: { icon: CheckCircle2, label: 'PROCEED', colorClass: 'f1-status-safe' },
+  modify: { icon: AlertCircle, label: 'MODIFY', colorClass: 'f1-status-caution' },
+  replace: { icon: RefreshCw, label: 'REPLACE', colorClass: 'f1-status-active' },
+  rest: { icon: Moon, label: 'REST', colorClass: 'f1-status-caution' },
+};
 
 // F1 Design: Map workout intent to status
 type WorkoutIntent = 'aerobic' | 'threshold' | 'vo2' | 'endurance' | 'recovery';
@@ -33,6 +71,8 @@ interface TodayWorkoutCardProps {
   trainingLoad7d?: TrainingLoadData | null;
   activities10?: CompletedActivity[] | null;
   todayIntelligence?: unknown;
+  /** Daily decision data - merged into this card as secondary annotation */
+  dailyDecision?: DailyDecisionProps;
 }
 
 export function TodayWorkoutCard(props?: TodayWorkoutCardProps) {
@@ -45,6 +85,7 @@ export function TodayWorkoutCard(props?: TodayWorkoutCardProps) {
   const propsTrainingLoad7d = props?.trainingLoad7d;
   const propsActivities10 = props?.activities10;
   const propsTodayIntelligence = props?.todayIntelligence;
+  const dailyDecision = props?.dailyDecision;
 
   const { data: todayData, isLoading: todayDataLoading, error: todayDataError } = useAuthenticatedQuery({
     queryKey: ['calendarToday', today],
@@ -243,6 +284,51 @@ export function TodayWorkoutCard(props?: TodayWorkoutCardProps) {
         {todayWorkout.notes && (
           <p className="f1-body-sm text-[hsl(var(--f1-text-tertiary))]">{todayWorkout.notes}</p>
         )}
+
+        {/* Decision Signal - Engineer's note annotation */}
+        {(() => {
+          if (!dailyDecision || dailyDecision.isLoading) return null;
+          
+          const decisionData = dailyDecision.data;
+          if (!decisionData) return null;
+          
+          // Check for placeholder/not-ready state
+          const isPlaceholder = 
+            (decisionData.confidence?.score === 0.0 && 
+             (decisionData.confidence?.explanation === "Decision not yet generated" || 
+              decisionData.explanation === "The coach is still analyzing your training data. Recommendations will be available soon.")) ||
+            (decisionData.explanation === "The coach is still analyzing your training data. Recommendations will be available soon.") ||
+            (decisionData.confidence?.explanation === "Decision not yet generated");
+          
+          if (isPlaceholder) return null;
+          
+          const decision = mapRecommendationToDecision(decisionData.recommendation);
+          const config = decisionConfig[decision];
+          const DecisionIcon = config.icon;
+          
+          return (
+            <div className="mt-3 pt-3 border-t border-[var(--border-subtle)]">
+              <div className="flex items-start gap-2">
+                <DecisionIcon className={cn('h-3.5 w-3.5 mt-0.5 shrink-0', config.colorClass)} />
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className={cn('f1-label', config.colorClass)}>{config.label}</span>
+                    {decisionData.confidence && (
+                      <span className="f1-label text-[hsl(var(--f1-text-muted))]">
+                        · CONF {Math.round(decisionData.confidence.score * 100)}%
+                      </span>
+                    )}
+                  </div>
+                  {decisionData.explanation && (
+                    <p className="f1-body-sm text-[hsl(var(--f1-text-secondary))] leading-relaxed">
+                      {decisionData.explanation}
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+          );
+        })()}
       </div>
     </F1Card>
   );

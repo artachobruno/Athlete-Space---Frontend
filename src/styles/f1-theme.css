@@ -7,10 +7,11 @@
 /* === CSS CUSTOM PROPERTIES === */
 :root {
   /* --- SURFACES --- */
-  --surface-void: 222 47% 5%;              /* Deep void - matches landing */
-  --surface-glass: rgba(12, 14, 20, 0.55); /* Lighter glass for subtlety */
-  --surface-glass-strong: rgba(12, 14, 20, 0.75); /* Elevated panels */
-  --surface-glass-subtle: rgba(12, 14, 20, 0.28); /* Background hints */
+  /* Neutral grey surfaces - not pure black, F1 telemetry grade */
+  --surface-void: 222 25% 7%;              /* Deep void - neutral grey base */
+  --surface-glass: rgba(22, 24, 30, 0.88); /* Card surface - darker neutral grey */
+  --surface-glass-strong: rgba(26, 28, 34, 0.92); /* Elevated panels - slightly lighter */
+  --surface-glass-subtle: rgba(18, 20, 26, 0.45); /* Background hints */
 
   /* --- BORDERS --- */
   --border-subtle: rgba(255, 255, 255, 0.05);
@@ -48,20 +49,22 @@
 
 .f1-surface {
   background: var(--surface-glass);
-  backdrop-filter: blur(12px) saturate(110%);
-  -webkit-backdrop-filter: blur(12px) saturate(110%);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   border: 1px solid var(--border-subtle);
   border-radius: var(--f1-radius-card);
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  /* Flat surface - minimal shadow */
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
 }
 
 .f1-surface-strong {
   background: var(--surface-glass-strong);
-  backdrop-filter: blur(16px) saturate(120%);
-  -webkit-backdrop-filter: blur(16px) saturate(120%);
-  border: 1px solid var(--border-emphasis);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid var(--border-subtle);
   border-radius: var(--f1-radius-card);
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
+  /* Flat surface - minimal shadow for elevation */
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
 .f1-surface-flat {

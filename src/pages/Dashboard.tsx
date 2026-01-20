@@ -15,11 +15,11 @@ import { isPreviewMode } from '@/lib/preview';
 
 // Athlete Dashboard Components
 import { AppLayout } from '@/components/layout/AppLayout';
-import { DailyDecisionCard } from '@/components/dashboard/DailyDecisionCard';
+// DailyDecisionCard merged into TodayWorkoutCard as secondary annotation
 import { TodayWorkoutCard } from '@/components/dashboard/TodayWorkoutCard';
 import { WeeklyLoadCard } from '@/components/dashboard/WeeklyLoadCard';
 import { RecentActivitiesCard } from '@/components/dashboard/RecentActivitiesCard';
-import { LoadStatusCard } from '@/components/dashboard/LoadStatusCard';
+// LoadStatusCard removed - load now embedded in TelemetryMetricsStrip
 import { CoachChatWidget } from '@/components/dashboard/CoachChatWidget';
 import { TelemetryStatusRail } from '@/components/dashboard/TelemetryStatusRail';
 import { TelemetryMetricsStrip } from '@/components/dashboard/TelemetryMetricsStrip';
@@ -70,26 +70,9 @@ function AthleteDashboard() {
           className="-mx-6"
         />
 
-        {/* Decision + Coach row */}
+        {/* Session · Today - Merged with Decision signal */}
         <div className="grid grid-cols-12 gap-3">
-          <div className="col-span-12 lg:col-span-8">
-            <DailyDecisionCard 
-              todayIntelligence={dashboardData.todayIntelligence}
-              isLoading={dashboardData.todayIntelligenceLoading}
-              error={dashboardData.todayIntelligenceError}
-            />
-          </div>
-          <div className="col-span-12 lg:col-span-4">
-            <CoachChatWidget />
-          </div>
-        </div>
-
-        {/* Thin telemetry strip divider */}
-        <div className="f1-divider my-2" />
-
-        {/* Today's Workout + Load Status */}
-        <div className="grid grid-cols-12 gap-3">
-          <div className="col-span-12 lg:col-span-8">
+          <div className="col-span-12">
             <TodayWorkoutCard
               todayData={dashboardData.todayData}
               isLoading={dashboardData.todayDataLoading}
@@ -97,23 +80,24 @@ function AthleteDashboard() {
               trainingLoad7d={dashboardData.trainingLoad7d}
               activities10={dashboardData.activities10}
               todayIntelligence={dashboardData.todayIntelligence}
-            />
-          </div>
-          <div className="col-span-12 lg:col-span-4">
-            <LoadStatusCard
-              overview60d={dashboardData.overview60d}
-              isLoading={dashboardData.overview60dLoading}
-              error={dashboardData.overview60dError}
+              dailyDecision={{
+                data: dashboardData.todayIntelligence,
+                isLoading: dashboardData.todayIntelligenceLoading,
+                error: dashboardData.todayIntelligenceError
+              }}
             />
           </div>
         </div>
 
+        {/* Docked Coach Chat - minimized by default */}
+        <CoachChatWidget minimized />
+
         {/* Thin telemetry strip divider */}
         <div className="f1-divider my-2" />
 
-        {/* Weekly Load + Recent Activities */}
-        <div className="grid grid-cols-12 gap-3">
-          <div className="col-span-12 lg:col-span-6">
+        {/* Weekly Load + Recent Activities - Equal height row */}
+        <div className="grid grid-cols-12 gap-3 items-stretch">
+          <div className="col-span-12 lg:col-span-6 flex">
             <WeeklyLoadCard
               activities100={dashboardData.activities100}
               activities100Loading={dashboardData.activities100Loading}
@@ -121,14 +105,16 @@ function AthleteDashboard() {
               trainingLoad7dLoading={dashboardData.trainingLoad7dLoading}
               weekData={dashboardData.weekData}
               weekDataLoading={dashboardData.weekDataLoading}
+              className="flex-1"
             />
           </div>
-          <div className="col-span-12 lg:col-span-6">
+          <div className="col-span-12 lg:col-span-6 flex">
             <RecentActivitiesCard
               activities10={dashboardData.activities10}
               activities10Loading={dashboardData.activities10Loading}
               activities10Error={dashboardData.activities10Error}
               trainingLoad60d={dashboardData.trainingLoad60d}
+              className="flex-1"
             />
           </div>
         </div>

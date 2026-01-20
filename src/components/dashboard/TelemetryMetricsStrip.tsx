@@ -133,24 +133,29 @@ export function TelemetryMetricsStrip({
       {/* Vertical separator */}
       <div className={cn('w-px h-8', telemetryBorders.separator)} />
 
-      {/* Load Band */}
+      {/* Load Status - Enhanced with inline gauge */}
       <div className="flex items-center gap-3">
         <div className="flex flex-col">
           <span className={cn(telemetryText.label, 'text-[9px] tracking-[0.12em]')}>
-            LOAD ZONE
+            LOAD
           </span>
-          <span className={cn(
-            'f1-metric f1-metric-xs',
-            inOptimalZone ? 'text-emerald-400' : 'text-amber-400'
-          )}>
-            {inOptimalZone ? 'OPTIMAL' : 'MONITOR'}
-          </span>
+          <div className="flex items-baseline gap-1.5">
+            <span className={cn(
+              'f1-metric f1-metric-xs',
+              inOptimalZone ? 'text-emerald-400' : 'text-amber-400'
+            )}>
+              {inOptimalZone ? 'OPTIMAL' : 'MONITOR'}
+            </span>
+            <span className="f1-label text-[8px] text-slate-500">
+              ATL/CTL {(atl / Math.max(ctl, 1)).toFixed(2)}
+            </span>
+          </div>
         </div>
         <LoadBandSvg
           value={loadPosition}
           zoneStart={0.3}
           zoneEnd={0.7}
-          width={120}
+          width={100}
           height={10}
           inZone={inOptimalZone}
         />
