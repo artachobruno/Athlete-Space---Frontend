@@ -35,11 +35,12 @@ const statusStyles: Record<LoadStatus, string> = {
   overtraining: 'f1-status-danger',
 };
 
-const getLoadStatus = (tsb: number): { status: keyof typeof statusStyles; description: string } => {
-  if (tsb > 5) return { status: 'fresh', description: 'Fresh - Ready for hard training' };
-  if (tsb > 0) return { status: 'optimal', description: 'Optimal - Good training balance' };
-  if (tsb > -5) return { status: 'overreaching', description: 'Overreaching - Reduce intensity' };
-  return { status: 'overtraining', description: 'Overtraining - Rest required' };
+// Telemetry-style status descriptions (F1 pit wall language)
+const getLoadStatus = (tsb: number): { status: keyof typeof statusStyles; description: string; code: string } => {
+  if (tsb > 5) return { status: 'fresh', description: 'READY FOR HIGH LOAD', code: 'FRESH' };
+  if (tsb > 0) return { status: 'optimal', description: 'BALANCED · NOMINAL', code: 'OPTIMAL' };
+  if (tsb > -5) return { status: 'overreaching', description: 'REDUCE INTENSITY', code: 'STRAIN' };
+  return { status: 'overtraining', description: 'RECOVERY REQUIRED', code: 'CRITICAL' };
 };
 
 export function LoadStatusCard(props?: LoadStatusCardProps) {
@@ -114,47 +115,58 @@ export function LoadStatusCard(props?: LoadStatusCardProps) {
 
   const f1Status = statusToF1[loadStatus.status];
 
+  // Format trend indicator
+  const trendArrow = ctlTrend > 2 ? '↑' : ctlTrend < -2 ? '↓' : '→';
+
   return (
     <F1Card className="h-full min-h-[220px]" status={f1Status}>
       <F1CardHeader>
-        <F1CardTitle>Training Load</F1CardTitle>
+        <F1CardTitle>LOAD STATUS</F1CardTitle>
       </F1CardHeader>
       
-      <div className="space-y-4">
-        {/* TSB Status - Primary telemetry display */}
-        <div className="text-center py-4 rounded-f1 bg-[var(--surface-glass-subtle)]">
-          <div className={cn('f1-metric f1-metric-lg', statusStyles[loadStatus.status])}>
-            {tsb > 0 ? '+' : ''}{tsb.toFixed(0)}
+      <div className="space-y-3">
+        {/* Primary metric row - TSB with status code */}
+        <div className="flex items-baseline justify-between py-2 border-b border-[var(--border-subtle)]">
+          <div className="flex items-baseline gap-2">
+            <span className="f1-label text-[hsl(var(--f1-text-tertiary))]">FORM (TSB)</span>
           </div>
-          <F1CardLabel className="mt-2 block">Form (TSB)</F1CardLabel>
+          <div className="flex items-baseline gap-2">
+            <span className={cn('f1-metric f1-metric-lg', statusStyles[loadStatus.status])}>
+              {tsb > 0 ? '+' : ''}{tsb.toFixed(0)}
+            </span>
+            <span className={cn('f1-label', statusStyles[loadStatus.status])}>
+              {loadStatus.code}
+            </span>
+          </div>
         </div>
 
-        {/* Status description */}
-        <div className={cn('f1-body-sm text-center', statusStyles[loadStatus.status])}>
+        {/* Status description row */}
+        <div className={cn('f1-label py-1', statusStyles[loadStatus.status])}>
           {loadStatus.description}
         </div>
 
         <F1Divider />
 
-        {/* CTL/ATL - Secondary metrics */}
-        <div className="grid grid-cols-2 gap-4">
-          <div className="text-center">
-            <div className="flex items-center justify-center gap-1">
-              <span className="f1-metric f1-metric-md">
-                {ctl.toFixed(0)}
+        {/* Secondary metrics - horizontal telemetry rows */}
+        <div className="space-y-2">
+          {/* CTL Row */}
+          <div className="flex items-center justify-between py-1">
+            <span className="f1-label text-[hsl(var(--f1-text-tertiary))]">FITNESS (CTL)</span>
+            <div className="flex items-center gap-2">
+              <span className="f1-metric f1-metric-sm">{ctl.toFixed(0)}</span>
+              <span className={cn(
+                'f1-label',
+                ctlTrend > 2 ? 'f1-status-safe' : ctlTrend < -2 ? 'f1-status-danger' : 'text-[hsl(var(--f1-text-muted))]'
+              )}>
+                {trendArrow} {Math.abs(ctlTrend).toFixed(0)}
               </span>
-              <TrendIcon className={cn(
-                'h-4 w-4',
-                ctlTrend > 2 ? 'f1-status-safe' : ctlTrend < -2 ? 'f1-status-danger' : 'text-[hsl(var(--f1-text-tertiary))]'
-              )} />
             </div>
-            <F1CardLabel className="mt-1 block">Fitness (CTL)</F1CardLabel>
           </div>
-          <div className="text-center">
-            <span className="f1-metric f1-metric-md">
-              {atl.toFixed(0)}
-            </span>
-            <F1CardLabel className="mt-1 block">Fatigue (ATL)</F1CardLabel>
+          
+          {/* ATL Row */}
+          <div className="flex items-center justify-between py-1">
+            <span className="f1-label text-[hsl(var(--f1-text-tertiary))]">FATIGUE (ATL)</span>
+            <span className="f1-metric f1-metric-sm">{atl.toFixed(0)}</span>
           </div>
         </div>
       </div>

@@ -21,6 +21,7 @@ import { WeeklyLoadCard } from '@/components/dashboard/WeeklyLoadCard';
 import { RecentActivitiesCard } from '@/components/dashboard/RecentActivitiesCard';
 import { LoadStatusCard } from '@/components/dashboard/LoadStatusCard';
 import { CoachChatWidget } from '@/components/dashboard/CoachChatWidget';
+import { TelemetryStatusRail } from '@/components/dashboard/TelemetryStatusRail';
 import { useSyncTodayWorkout } from '@/hooks/useSyncTodayWorkout';
 import { useDashboardData } from '@/hooks/useDashboardData';
 
@@ -48,10 +49,13 @@ function AthleteDashboard() {
   return (
     <AppLayout>
       <div className="space-y-6">
-        {/* Header - F1 typography */}
+        {/* Telemetry Status Rail - Bridge between landing and dashboard */}
+        <TelemetryStatusRail className="-mx-6 -mt-6 mb-6" />
+
+        {/* Header - F1 typography, telemetry language */}
         <div className="col-span-12">
-          <h1 className="f1-headline f1-headline-lg text-[hsl(var(--f1-text-primary))]">Dashboard</h1>
-          <p className="f1-body text-[hsl(var(--f1-text-tertiary))] mt-1">Your training at a glance</p>
+          <h1 className="f1-headline f1-headline-lg text-[hsl(var(--f1-text-primary))]">CONTROL</h1>
+          <p className="f1-label text-[hsl(var(--f1-text-tertiary))] mt-1">ATHLETE PERFORMANCE SYSTEM</p>
         </div>
 
         {/* Decision + Coach row */}

@@ -164,7 +164,7 @@ export function RecentActivitiesCard(props?: RecentActivitiesCardProps) {
           </div>
         }
       >
-        <F1CardTitle>Recent Activities</F1CardTitle>
+        <F1CardTitle>ACTIVITY LOG</F1CardTitle>
       </F1CardHeader>
       
       <div>
@@ -174,8 +174,8 @@ export function RecentActivitiesCard(props?: RecentActivitiesCardProps) {
           </div>
         ) : error || recentActivities.length === 0 ? (
           <div className="text-center py-8">
-            <p className="f1-body text-[hsl(var(--f1-text-tertiary))]">
-              {error ? 'Unable to load activities' : 'No recent activities'}
+            <p className="f1-label text-[hsl(var(--f1-text-tertiary))]">
+              {error ? 'SIGNAL UNAVAILABLE' : 'NO RECORDED SESSIONS'}
             </p>
           </div>
         ) : (

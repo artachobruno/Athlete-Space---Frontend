@@ -158,7 +158,7 @@ export function TodayWorkoutCard(props?: TodayWorkoutCardProps) {
     return (
       <F1Card variant="strong">
         <F1CardHeader>
-          <F1CardTitle>Today's Workout</F1CardTitle>
+          <F1CardTitle>SESSION · TODAY</F1CardTitle>
         </F1CardHeader>
         <div className="flex items-center justify-center py-8">
           <Loader2 className="h-5 w-5 animate-spin text-[hsl(var(--f1-text-tertiary))]" />
@@ -171,11 +171,11 @@ export function TodayWorkoutCard(props?: TodayWorkoutCardProps) {
     return (
       <F1Card variant="strong">
         <F1CardHeader>
-          <F1CardTitle>Today's Workout</F1CardTitle>
+          <F1CardTitle>SESSION · TODAY</F1CardTitle>
         </F1CardHeader>
         <div className="text-center py-8">
-          <p className="f1-body text-[hsl(var(--f1-text-tertiary))]">
-            {error ? 'Unable to load workout' : 'Rest day - no workout scheduled'}
+          <p className="f1-label text-[hsl(var(--f1-text-tertiary))]">
+            {error ? 'SIGNAL UNAVAILABLE' : 'REST DAY · NO SESSION'}
           </p>
         </div>
       </F1Card>
@@ -203,11 +203,11 @@ export function TodayWorkoutCard(props?: TodayWorkoutCardProps) {
       <F1CardHeader
         action={
           <F1StatusBadge status={getIntentStatus(workoutIntent)} dot={false}>
-            {todayWorkout.intensity || workoutType || 'Workout'}
+            {(todayWorkout.intensity || workoutType || 'SESSION').toUpperCase()}
           </F1StatusBadge>
         }
       >
-        <F1CardTitle>Today's Workout</F1CardTitle>
+        <F1CardTitle>SESSION · TODAY</F1CardTitle>
       </F1CardHeader>
       
       <div className="space-y-4">
@@ -242,7 +242,7 @@ export function TodayWorkoutCard(props?: TodayWorkoutCardProps) {
               <div className="flex items-start gap-2">
                 <MessageSquare className="h-4 w-4 f1-status-active mt-0.5 shrink-0" />
                 <div className="flex-1">
-                  <F1CardLabel className="mb-1 block">Coach&apos;s Explanation</F1CardLabel>
+                  <F1CardLabel className="mb-1 block">SIGNAL NOTE</F1CardLabel>
                   <p className="f1-body text-[hsl(var(--f1-text-primary))] leading-relaxed">
                     {explanation}
                   </p>

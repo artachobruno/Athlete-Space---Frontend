@@ -15,28 +15,33 @@ const decisionToStatus: Record<DecisionType, F1Status> = {
   rest: 'caution',
 };
 
+// Telemetry-style decision labels (F1 pit wall language)
 const decisionConfig = {
   proceed: {
     icon: CheckCircle2,
-    label: 'Proceed',
+    label: 'PROCEED',
+    sublabel: 'SYSTEMS GREEN',
     iconClass: 'f1-status-safe',
     bgClass: 'f1-status-safe-bg',
   },
   modify: {
     icon: AlertCircle,
-    label: 'Modify',
+    label: 'MODIFY',
+    sublabel: 'REDUCE INTENSITY',
     iconClass: 'f1-status-caution',
     bgClass: 'f1-status-caution-bg',
   },
   replace: {
     icon: RefreshCw,
-    label: 'Replace',
+    label: 'REPLACE',
+    sublabel: 'ALT SESSION',
     iconClass: 'f1-status-active',
     bgClass: 'f1-status-active-bg',
   },
   rest: {
     icon: Moon,
-    label: 'Rest',
+    label: 'REST',
+    sublabel: 'RECOVERY REQUIRED',
     iconClass: 'f1-status-caution',
     bgClass: 'f1-status-caution-bg',
   },
@@ -129,45 +134,52 @@ export function DailyDecisionCard() {
     return 'f1-status-caution';
   };
 
+  // Telemetry-style confidence labels
   const getConfidenceLabel = (score: number) => {
-    if (score >= 0.8) return 'High';
-    if (score >= 0.6) return 'Moderate';
-    if (score >= 0.4) return 'Low';
-    return 'Very Low';
+    if (score >= 0.8) return 'HIGH';
+    if (score >= 0.6) return 'MOD';
+    if (score >= 0.4) return 'LOW';
+    return 'V.LOW';
   };
 
   return (
     <F1Card variant="strong" status={status} className="h-full" padding="lg">
+      {/* Telemetry row layout - flattened, no rounded icon containers */}
       <div className="flex items-start gap-4">
-        {/* Icon container with F1 status styling */}
-        <div className={cn('p-4 rounded-f1 border', config.bgClass)}>
-          <Icon className={cn('h-8 w-8', config.iconClass)} />
+        {/* Status indicator - minimal, no background block */}
+        <div className="pt-1">
+          <Icon className={cn('h-6 w-6', config.iconClass)} />
         </div>
-        <div className="flex-1">
-          {/* Header with label and confidence */}
-          <div className="flex items-center justify-between mb-2">
-            <F1CardLabel>Today&apos;s Decision</F1CardLabel>
+        
+        <div className="flex-1 min-w-0">
+          {/* Header row - label left, confidence right */}
+          <div className="flex items-center justify-between mb-1">
+            <F1CardLabel>TODAY&apos;S DECISION</F1CardLabel>
             {confidence && (
-              <span className={cn('f1-label-md flex items-center gap-1', getConfidenceColor(confidence.score))}>
+              <span className={cn('f1-label flex items-center gap-1', getConfidenceColor(confidence.score))}>
                 <TrendingUp className="h-3 w-3" />
-                {getConfidenceLabel(confidence.score)} ({Math.round(confidence.score * 100)}%)
+                CONF: {getConfidenceLabel(confidence.score)} ({Math.round(confidence.score * 100)}%)
               </span>
             )}
           </div>
           
-          {/* Decision value - F1 metric style */}
-          <h2 className="f1-metric f1-metric-lg mb-3">{config.label}</h2>
+          {/* Decision value row - telemetry style with sublabel */}
+          <div className="flex items-baseline gap-2 mb-2">
+            <span className="f1-metric f1-metric-lg">{config.label}</span>
+            <span className="f1-label text-[hsl(var(--f1-text-tertiary))]">· {config.sublabel}</span>
+          </div>
           
-          {/* Explanation */}
-          <p className="f1-body text-[hsl(var(--f1-text-secondary))] leading-relaxed mb-3">{reason}</p>
+          {/* Divider */}
+          <div className="h-px bg-[var(--border-subtle)] my-3" />
           
-          {/* Confidence explanation */}
+          {/* Explanation - telemetry log style */}
+          <p className="f1-body text-[hsl(var(--f1-text-secondary))] leading-relaxed">{reason}</p>
+          
+          {/* Confidence explanation - inline telemetry note */}
           {confidence && confidence.explanation && (
-            <div className="mt-3 pt-3 border-t border-[var(--border-subtle)]">
-              <p className="f1-body-sm text-[hsl(var(--f1-text-tertiary))] leading-relaxed">
-                <span className="font-medium text-[hsl(var(--f1-text-secondary))]">Confidence:</span> {confidence.explanation}
-              </p>
-            </div>
+            <p className="f1-label text-[hsl(var(--f1-text-muted))] mt-3 leading-relaxed">
+              SIGNAL: {confidence.explanation}
+            </p>
           )}
         </div>
       </div>

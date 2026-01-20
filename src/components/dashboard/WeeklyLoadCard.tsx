@@ -156,7 +156,7 @@ export function WeeklyLoadCard(props?: WeeklyLoadCardProps) {
     return (
       <F1Card>
         <F1CardHeader>
-          <F1CardTitle>Weekly Load</F1CardTitle>
+          <F1CardTitle>LOAD (7d)</F1CardTitle>
         </F1CardHeader>
         <div className="flex items-center justify-center py-8">
           <Loader2 className="h-5 w-5 animate-spin text-[hsl(var(--f1-text-tertiary))]" />
@@ -170,11 +170,11 @@ export function WeeklyLoadCard(props?: WeeklyLoadCardProps) {
       <F1CardHeader
         action={
           <span className="f1-metric f1-metric-sm">
-            {weeklyStats.actualLoad} <span className="text-[hsl(var(--f1-text-tertiary))]">/</span> {weeklyStats.plannedLoad} <F1CardLabel className="ml-1">TSS</F1CardLabel>
+            {weeklyStats.actualLoad} <span className="text-[hsl(var(--f1-text-muted))]">/</span> {weeklyStats.plannedLoad} <F1CardLabel className="ml-1">TSS</F1CardLabel>
           </span>
         }
       >
-        <F1CardTitle>Weekly Load</F1CardTitle>
+        <F1CardTitle>LOAD (7d)</F1CardTitle>
       </F1CardHeader>
       
       <div className="space-y-4">
@@ -187,7 +187,7 @@ export function WeeklyLoadCard(props?: WeeklyLoadCardProps) {
             />
           </div>
           <div className="flex justify-between items-center">
-            <F1CardLabel>Progress</F1CardLabel>
+            <F1CardLabel>ADHERENCE</F1CardLabel>
             <span className="f1-metric f1-metric-xs">{weeklyStats.progress.toFixed(0)}%</span>
           </div>
         </div>

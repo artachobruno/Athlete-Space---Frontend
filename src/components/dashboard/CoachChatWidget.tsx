@@ -127,7 +127,7 @@ export function CoachChatWidget() {
           <div className="w-6 h-6 rounded-full bg-[hsl(var(--accent-telemetry)/0.15)] flex items-center justify-center">
             <Brain className="h-3.5 w-3.5 f1-status-active" />
           </div>
-          <F1CardLabel className="text-[hsl(var(--f1-text-secondary))]">Coach</F1CardLabel>
+          <F1CardLabel className="text-[hsl(var(--f1-text-secondary))]">AI COACH</F1CardLabel>
         </div>
         <Link to="/coach">
           <Button 
@@ -221,7 +221,7 @@ export function CoachChatWidget() {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Ask your coach..."
+            placeholder="Query system..."
             className="f1-body-sm h-9 bg-[var(--surface-glass-subtle)] border-[var(--border-subtle)] text-[hsl(var(--f1-text-primary))] placeholder:text-[hsl(var(--f1-text-muted))] focus:border-[hsl(var(--accent-telemetry)/0.5)] focus:ring-[hsl(var(--accent-telemetry)/0.2)]"
           />
           <Button

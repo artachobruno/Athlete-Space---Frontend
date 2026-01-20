@@ -20,6 +20,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/context/AuthContext';
 import { Logo } from '@/components/Logo';
+import { getGridPatternStyle } from '@/styles/telemetry-theme';
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -75,7 +76,7 @@ export function AppLayout({ children }: AppLayoutProps) {
           {sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
         </Button>
         <div className="flex items-center">
-          <Logo className="h-6 w-auto" />
+          <Logo size="nav" />
         </div>
       </header>
 
@@ -88,9 +89,9 @@ export function AppLayout({ children }: AppLayoutProps) {
         )}
       >
         <div className="flex flex-col h-full">
-          {/* Logo */}
+          {/* Logo - top-left primary brand anchor */}
           <div className="h-14 lg:h-16 flex items-center px-6 border-b border-[var(--border-subtle)]">
-            <Logo className="h-6 w-auto" />
+            <Logo size="nav" />
           </div>
 
           {/* Navigation */}
@@ -166,11 +167,16 @@ export function AppLayout({ children }: AppLayoutProps) {
         />
       )}
 
-      {/* Main content - F1 void background */}
+      {/* Main content - F1 void background with subtle grid */}
       <main className={cn(
-        'min-h-screen pt-safe-area lg:pt-0 lg:pl-64 transition-all duration-200'
+        'min-h-screen pt-safe-area lg:pt-0 lg:pl-64 transition-all duration-200 relative'
       )}>
-        <div className="mx-auto max-w-[1400px] px-6 py-6">
+        {/* Subtle grid background - visual continuity with landing */}
+        <div 
+          className="absolute inset-0 opacity-[0.04] pointer-events-none"
+          style={getGridPatternStyle('80px')}
+        />
+        <div className="relative mx-auto max-w-[1400px] px-6 py-6">
           {children}
         </div>
       </main>
