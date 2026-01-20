@@ -1,7 +1,7 @@
 import { F1Card, F1CardHeader, F1CardTitle, F1CardLabel } from '@/components/ui/f1-card';
 import { fetchActivities, fetchTrainingLoad, syncActivitiesNow } from '@/lib/api';
 import { format, parseISO } from 'date-fns';
-import { Bike, Footprints, Waves, Loader2, RefreshCw } from 'lucide-react';
+import { Loader2, RefreshCw } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAuthenticatedQuery } from '@/hooks/useAuthenticatedQuery';
@@ -21,31 +21,62 @@ interface RecentActivitiesCardProps {
   trainingLoad60d?: TrainingLoadData | null;
 }
 
-const sportIcons = {
-  running: Footprints,
-  cycling: Bike,
-  swimming: Waves,
-  triathlon: Footprints,
-};
+// Sport type indicator - minimal dot with color encoding
+function SportDot({ sport }: { sport: string }) {
+  const colorMap: Record<string, string> = {
+    running: 'hsl(175 60% 45%)',      // teal
+    cycling: 'hsl(35 80% 55%)',        // amber
+    swimming: 'hsl(210 70% 55%)',      // blue
+    triathlon: 'hsl(280 50% 55%)',     // purple
+    strength: 'hsl(0 60% 55%)',        // red
+  };
+  const color = colorMap[sport] || 'hsl(215 20% 45%)';
+  
+  return (
+    <svg width="8" height="8" viewBox="0 0 8 8" className="flex-shrink-0">
+      <circle cx="4" cy="4" r="3" fill={color} opacity="0.9" />
+    </svg>
+  );
+}
+
+// Delta indicator for TSS comparison
+function TssDelta({ current, average }: { current: number; average: number }) {
+  if (average === 0) return null;
+  
+  const delta = ((current - average) / average) * 100;
+  const isPositive = delta > 0;
+  const absValue = Math.abs(delta).toFixed(0);
+  
+  if (Math.abs(delta) < 5) return null; // Don't show insignificant deltas
+  
+  return (
+    <span 
+      className={cn(
+        "font-mono text-[9px] tracking-tight ml-1",
+        isPositive ? "text-[hsl(175_60%_45%)]" : "text-[hsl(215_20%_50%)]"
+      )}
+    >
+      {isPositive ? '▲' : '▼'}{absValue}%
+    </span>
+  );
+}
 
 export function RecentActivitiesCard(props?: RecentActivitiesCardProps) {
   const { convertDistance } = useUnitSystem();
   const queryClient = useQueryClient();
   const [isSyncing, setIsSyncing] = useState(false);
   
-  // Use props if provided, otherwise fetch (backward compatibility)
   const propsActivities10 = props?.activities10;
   const propsActivities10Loading = props?.activities10Loading;
   const propsActivities10Error = props?.activities10Error;
   const propsTrainingLoad60d = props?.trainingLoad60d;
 
-  // Use same query key structure as main activities page to share cache
   const { data: activities, isLoading: activitiesLoading, error: activitiesError, refetch } = useAuthenticatedQuery({
     queryKey: ['activities', 'limit', 10],
     queryFn: () => fetchActivities({ limit: 10 }),
     retry: 1,
-    enabled: propsActivities10 === undefined, // Only fetch if props not provided
-    staleTime: 2 * 60 * 1000, // 2 minutes
+    enabled: propsActivities10 === undefined,
+    staleTime: 2 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
     refetchOnWindowFocus: true,
   });
@@ -56,14 +87,13 @@ export function RecentActivitiesCard(props?: RecentActivitiesCardProps) {
       await syncActivitiesNow();
       toast({
         title: 'Sync started',
-        description: 'Activities are being synced in the background. This may take a few moments.',
+        description: 'Activities are being synced in the background.',
       });
       
-      // Invalidate activities queries to trigger refetch after sync
       setTimeout(() => {
         queryClient.invalidateQueries({ queryKey: ['activities'] });
         refetch();
-      }, 3000); // Wait 3 seconds for sync to start processing
+      }, 3000);
     } catch (error) {
       console.error('Failed to sync activities:', error);
       toast({
@@ -93,37 +123,32 @@ export function RecentActivitiesCard(props?: RecentActivitiesCardProps) {
       }
       return failureCount < 1;
     },
-    enabled: propsTrainingLoad60d === undefined, // Only fetch if props not provided
-    staleTime: 2 * 60 * 1000, // 2 minutes
+    enabled: propsTrainingLoad60d === undefined,
+    staleTime: 2 * 60 * 1000,
     gcTime: 5 * 60 * 1000,
     refetchOnWindowFocus: true,
   });
 
-  // Use props if provided, otherwise use fetched data
   const finalActivities = propsActivities10 !== undefined ? propsActivities10 : activities;
   const isLoading = propsActivities10Loading !== undefined ? propsActivities10Loading : activitiesLoading;
   const error = propsActivities10Error !== undefined ? propsActivities10Error : activitiesError;
   const finalTrainingLoadData = propsTrainingLoad60d !== undefined ? propsTrainingLoad60d : trainingLoadData;
 
-  const recentActivities = useMemo(() => {
-    // Defensive: ensure activities is always an array
+  const { recentActivities, averageTss } = useMemo(() => {
     let activitiesArray: typeof finalActivities = [];
     if (Array.isArray(finalActivities)) {
       activitiesArray = finalActivities;
     } else if (finalActivities && typeof finalActivities === 'object' && 'activities' in finalActivities) {
-      // Handle case where API returns { activities: [...] }
       const nested = (finalActivities as { activities?: unknown }).activities;
       activitiesArray = Array.isArray(nested) ? nested : [];
     }
     
     const enriched = enrichActivitiesWithTss(activitiesArray, finalTrainingLoadData);
     
-    // Ensure enriched is an array before sorting
     if (!Array.isArray(enriched)) {
-      return [];
+      return { recentActivities: [], averageTss: 0 };
     }
     
-    // Sort by date (most recent first) and take only the 4 most recent
     const sorted = enriched.sort((a, b) => {
       if (!a.date || !b.date) return 0;
       try {
@@ -135,31 +160,34 @@ export function RecentActivitiesCard(props?: RecentActivitiesCardProps) {
       }
     });
     
-    // Ensure we return an array
-    return Array.isArray(sorted) ? sorted.slice(0, 4) : []; // Return only 4 most recent
+    const recent = Array.isArray(sorted) ? sorted.slice(0, 4) : [];
+    const avgTss = recent.length > 0 
+      ? recent.reduce((sum, a) => sum + (a.trainingLoad || 0), 0) / recent.length 
+      : 0;
+    
+    return { recentActivities: recent, averageTss: Math.round(avgTss) };
   }, [finalActivities, finalTrainingLoadData]);
 
   return (
     <F1Card>
       <F1CardHeader
         action={
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
             <Button
               variant="ghost"
               size="sm"
               onClick={handleSync}
-              className="h-7 px-2 text-[hsl(var(--f1-text-tertiary))] hover:text-[hsl(var(--f1-text-primary))] hover:bg-[var(--border-subtle)]"
+              className="h-6 px-1.5 text-[hsl(var(--f1-text-muted))] hover:text-[hsl(var(--f1-text-primary))] hover:bg-transparent"
               disabled={isLoading || isSyncing}
-              title="Sync activities from Strava"
+              title="Sync activities"
             >
-              <RefreshCw className={cn('h-3 w-3 mr-1', isSyncing && 'animate-spin')} />
-              {isSyncing ? 'Syncing...' : 'Sync'}
+              <RefreshCw className={cn('h-3 w-3', isSyncing && 'animate-spin')} />
             </Button>
             <Link
               to="/activities"
-              className="f1-label-md f1-status-active hover:underline"
+              className="f1-label tracking-widest text-[hsl(var(--f1-text-muted))] hover:text-[hsl(var(--accent-telemetry))] transition-colors"
             >
-              View all
+              ALL →
             </Link>
           </div>
         }
@@ -174,62 +202,72 @@ export function RecentActivitiesCard(props?: RecentActivitiesCardProps) {
           </div>
         ) : error || recentActivities.length === 0 ? (
           <div className="text-center py-6">
-            <p className="f1-label text-[hsl(var(--f1-text-muted))]">
-              {error ? 'SIGNAL UNAVAILABLE' : 'NO RECORDED SESSIONS'}
+            <p className="f1-label tracking-widest text-[hsl(var(--f1-text-muted))]">
+              {error ? 'SIGNAL UNAVAILABLE' : 'NO SESSIONS'}
             </p>
           </div>
         ) : (
           <div className="space-y-0">
+            {/* Table header */}
+            <div className="grid grid-cols-[8px_1fr_60px_50px_50px] gap-2 py-1 border-b border-[hsl(215_15%_18%)]">
+              <div />
+              <F1CardLabel className="tracking-widest text-[8px]">SESSION</F1CardLabel>
+              <F1CardLabel className="tracking-widest text-[8px] text-right">DIST</F1CardLabel>
+              <F1CardLabel className="tracking-widest text-[8px] text-right">DUR</F1CardLabel>
+              <F1CardLabel className="tracking-widest text-[8px] text-right">TSS</F1CardLabel>
+            </div>
+            
             {(Array.isArray(recentActivities) ? recentActivities : [])
               .filter((activity) => activity && activity.date && activity.id)
               .map((activity, index) => {
-                const Icon = sportIcons[activity.sport] || Footprints;
                 const dateStr = activity.date ? (() => {
                   try {
-                    return format(parseISO(activity.date), 'MMM d');
+                    return format(parseISO(activity.date), 'dd MMM').toUpperCase();
                   } catch {
                     return activity.date;
                   }
-                })() : 'Unknown date';
+                })() : '—';
                 
                 const isLast = index === recentActivities.length - 1;
+                const dist = convertDistance(activity.distance || 0);
                 
                 return (
                   <div
                     key={activity.id}
                     className={cn(
-                      'flex items-center gap-2.5 py-2',
-                      !isLast && 'border-b border-[var(--border-subtle)]'
+                      'grid grid-cols-[8px_1fr_60px_50px_50px] gap-2 py-1.5 items-center',
+                      !isLast && 'border-b border-[hsl(215_15%_14%)]'
                     )}
                   >
-                    {/* Sport icon */}
-                    <div className="p-1.5 rounded bg-[var(--surface-glass-subtle)]">
-                      <Icon className="h-3.5 w-3.5 text-[hsl(var(--f1-text-muted))]" />
-                    </div>
+                    {/* Sport indicator dot */}
+                    <SportDot sport={activity.sport || 'running'} />
                     
-                    {/* Activity info */}
-                    <div className="flex-1 min-w-0">
-                      <div className="f1-body-sm font-medium text-[hsl(var(--f1-text-primary))] truncate">
-                        {capitalizeTitle(activity.title || 'Untitled Activity')}
+                    {/* Session info */}
+                    <div className="min-w-0">
+                      <div className="font-mono text-[11px] text-[hsl(var(--f1-text-primary))] truncate tracking-tight">
+                        {capitalizeTitle(activity.title || 'Session')}
                       </div>
-                      <div className="f1-label text-[hsl(var(--f1-text-muted))] mt-0.5">
-                        <span className="font-mono">{dateStr}</span>
-                        <span className="mx-1 opacity-40">·</span>
-                        <span className="font-mono">{(() => {
-                          const dist = convertDistance(activity.distance || 0);
-                          return `${dist.value.toFixed(1)} ${dist.unit}`;
-                        })()}</span>
-                        <span className="mx-1 opacity-40">·</span>
-                        <span className="font-mono">{activity.duration || 0} min</span>
+                      <div className="font-mono text-[9px] text-[hsl(var(--f1-text-muted))] tracking-wider">
+                        {dateStr}
                       </div>
                     </div>
                     
-                    {/* TSS metric */}
+                    {/* Distance */}
+                    <div className="text-right font-mono text-[11px] text-[hsl(var(--f1-text-secondary))] tracking-tight">
+                      {dist.value.toFixed(1)}<span className="text-[hsl(var(--f1-text-muted))] text-[9px] ml-0.5">{dist.unit}</span>
+                    </div>
+                    
+                    {/* Duration */}
+                    <div className="text-right font-mono text-[11px] text-[hsl(var(--f1-text-secondary))] tracking-tight">
+                      {activity.duration || 0}<span className="text-[hsl(var(--f1-text-muted))] text-[9px] ml-0.5">m</span>
+                    </div>
+                    
+                    {/* TSS with delta */}
                     <div className="text-right">
-                      <div className="f1-metric f1-metric-xs">
+                      <span className="font-mono text-[11px] text-[hsl(var(--f1-text-primary))] tracking-tight font-medium">
                         {activity.trainingLoad || 0}
-                      </div>
-                      <F1CardLabel>TSS</F1CardLabel>
+                      </span>
+                      <TssDelta current={activity.trainingLoad || 0} average={averageTss} />
                     </div>
                   </div>
                 );
