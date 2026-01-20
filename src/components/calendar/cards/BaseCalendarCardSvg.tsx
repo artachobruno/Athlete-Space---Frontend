@@ -51,6 +51,9 @@ export function BaseCalendarCardSvg({
   const titleFontSize = 40;
   const descFontSize = 32;
 
+  // Telemetry style: reduced radius, no heavy shadows
+  const borderRadius = 12; // Reduced from 28
+
   return (
     <svg
       width="100%"
@@ -60,119 +63,112 @@ export function BaseCalendarCardSvg({
       xmlns="http://www.w3.org/2000/svg"
       style={{
         display: 'block',
-        fontFamily: 'Space Grotesk, Inter, system-ui, -apple-system, sans-serif',
+        fontFamily: 'Inter, system-ui, -apple-system, sans-serif',
       }}
     >
       <defs>
-        <linearGradient id={`${id}-bg`} x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stopColor={theme.base} stopOpacity="0.85" />
-          <stop offset="100%" stopColor={theme.base} stopOpacity="0.55" />
+        {/* Simplified background - flat, no glass effect */}
+        <linearGradient id={`${id}-bg`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor={theme.base} stopOpacity="0.75" />
+          <stop offset="100%" stopColor={theme.base} stopOpacity="0.60" />
         </linearGradient>
 
-        <linearGradient id={`${id}-glass`} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="rgba(255,255,255,0.22)" />
-          <stop offset="55%" stopColor="rgba(255,255,255,0.09)" />
-          <stop offset="100%" stopColor="rgba(255,255,255,0.04)" />
+        {/* Subtle top edge highlight only */}
+        <linearGradient id={`${id}-edge`} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stopColor="rgba(255,255,255,0.15)" />
+          <stop offset="100%" stopColor="rgba(255,255,255,0)" />
         </linearGradient>
-
-        <linearGradient id={`${id}-inner-edge`} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="rgba(255,255,255,0.65)" />
-          <stop offset="40%" stopColor="rgba(255,255,255,0.22)" />
-          <stop offset="100%" stopColor="rgba(255,255,255,0.05)" />
-        </linearGradient>
-
-        <linearGradient id={`${id}-outer-edge`} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="rgba(0,0,0,0.40)" />
-          <stop offset="100%" stopColor="rgba(0,0,0,0.18)" />
-        </linearGradient>
-
-        <filter
-          id={filterId}
-          x="-20%"
-          y="-20%"
-          width="140%"
-          height="140%"
-          colorInterpolationFilters="sRGB"
-        >
-          <feGaussianBlur in="SourceGraphic" stdDeviation="1.4" result="blurred" />
-          <feTurbulence
-            type="fractalNoise"
-            baseFrequency="0.012"
-            numOctaves="2"
-            seed="3"
-            stitchTiles="noStitch"
-            result="noise"
-          />
-          <feDisplacementMap
-            in="blurred"
-            in2="noise"
-            scale="12"
-            xChannelSelector="R"
-            yChannelSelector="G"
-            result="displaced"
-          />
-          <feColorMatrix
-            in="displaced"
-            type="matrix"
-            values="
-              1.05 0    0    0   0
-              0    1.05 0    0   0
-              0    0    1.08 0   0
-              0    0    0    1   0
-            "
-            result="adjusted"
-          />
-          <feBlend in="adjusted" in2="SourceGraphic" mode="normal" result="liquidGlass" />
-        </filter>
-
-        <filter id={`${id}-shadow`} x="-30%" y="-30%" width="160%" height="160%">
-          <feDropShadow
-            dx="0"
-            dy="18"
-            stdDeviation="28"
-            floodColor="#000"
-            floodOpacity="0.35"
-          />
-        </filter>
       </defs>
 
-      <rect width="360" height={viewBoxHeight} rx="28" fill="transparent" filter={`url(#${id}-shadow)`} />
+      {/* Main card - flat, no shadow filter */}
+      <rect 
+        width="360" 
+        height={viewBoxHeight} 
+        rx={borderRadius} 
+        fill={`url(#${id}-bg)`} 
+      />
+      
+      {/* Thin border - subtle */}
+      <rect 
+        x="0.5" 
+        y="0.5" 
+        width="359" 
+        height={viewBoxHeight - 1} 
+        rx={borderRadius - 0.5} 
+        fill="none" 
+        stroke="rgba(255,255,255,0.08)" 
+        strokeWidth="1"
+      />
+      
+      {/* Left accent border - telemetry style */}
+      <rect
+        x="0"
+        y="12"
+        width="2"
+        height={viewBoxHeight - 24}
+        fill={theme.sparkline || theme.text}
+        opacity="0.4"
+      />
 
-      <g filter={`url(#${filterId})`}>
-        <rect width="360" height={viewBoxHeight} rx="28" fill={`url(#${id}-bg)`} />
-        <rect width="360" height={viewBoxHeight} rx="28" fill={`url(#${id}-glass)`} />
-        <rect x="1" y="1" width="358" height={viewBoxHeight - 2} rx="27" fill="none" stroke={`url(#${id}-inner-edge)`} />
-        <rect x="0.5" y="0.5" width="359" height={viewBoxHeight - 1} rx="27.5" fill="none" stroke={`url(#${id}-outer-edge)`} />
-      </g>
-
-      {/* TOP ROW */}
-      <text x="28" y="48" fill={theme.text} fontSize={topRowFontSize} fontWeight="600">
+      {/* TOP ROW - telemetry style: left-aligned labels */}
+      <text 
+        x="20" 
+        y="40" 
+        fill={theme.secondary} 
+        fontSize={topRowFontSize - 6} 
+        fontWeight="500"
+        letterSpacing="0.08em"
+        style={{ textTransform: 'uppercase' } as React.CSSProperties}
+      >
         {topLeft}
       </text>
-      <text x="332" y="48" fill={theme.secondary} fontSize={topRowFontSize} fontWeight="600" textAnchor="end">
+      <text 
+        x="340" 
+        y="40" 
+        fill={theme.secondary} 
+        fontSize={topRowFontSize - 8} 
+        fontWeight="400"
+        textAnchor="end"
+        opacity="0.6"
+      >
         {topRight}
       </text>
 
-      {/* METRICS */}
+      {/* METRICS - duration dominant */}
       {showMetrics && (
         <>
-          <text x="28" y={isMonthView ? 78 : 82} fill={theme.secondary} fontSize={metricsLabelFontSize} letterSpacing="0.08em">
+          <text 
+            x="20" 
+            y={isMonthView ? 70 : 74} 
+            fill={theme.secondary} 
+            fontSize={metricsLabelFontSize - 2} 
+            letterSpacing="0.1em"
+            opacity="0.5"
+          >
             {metricsLabel}
           </text>
-          <text x="28" y={isMonthView ? 104 : 108} fill={theme.text} fontSize={metricsValueFontSize} fontWeight="500">
+          <text 
+            x="20" 
+            y={isMonthView ? 96 : 102} 
+            fill={theme.text} 
+            fontSize={metricsValueFontSize + 4} 
+            fontWeight="600"
+            style={{ fontVariantNumeric: 'tabular-nums' } as React.CSSProperties}
+          >
             {metricsValue}
           </text>
         </>
       )}
 
-      {/* TITLE */}
-      <foreignObject x="28" y="80" width="315" height={isMonthView ? 70 : 88}>
+      {/* TITLE - left aligned, tighter */}
+      <foreignObject x="20" y="75" width="320" height={isMonthView ? 60 : 80}>
         <div
           style={{
             color: theme.text,
-            fontSize: `${titleFontSize}px`,
-            fontWeight: 700,
-            lineHeight: 1.15,
+            fontSize: `${titleFontSize - 4}px`,
+            fontWeight: 600,
+            lineHeight: 1.2,
+            letterSpacing: '-0.01em',
             overflow: 'hidden',
             display: '-webkit-box',
             WebkitLineClamp: titleClampLines,
@@ -183,15 +179,15 @@ export function BaseCalendarCardSvg({
         </div>
       </foreignObject>
 
-      {/* DESCRIPTION */}
+      {/* DESCRIPTION - muted */}
       {description && (
-        <foreignObject x="28" y="125" width="315" height={isMonthView ? 90 : 120}>
+        <foreignObject x="20" y="115" width="320" height={isMonthView ? 80 : 100}>
           <div
             style={{
               color: theme.secondary,
-              fontSize: `${descFontSize}px`,
-              lineHeight: 1.45,
-              opacity: 0.95,
+              fontSize: `${descFontSize - 4}px`,
+              lineHeight: 1.4,
+              opacity: 0.7,
               overflow: 'hidden',
               display: '-webkit-box',
               WebkitLineClamp: descClampLines,
@@ -203,19 +199,29 @@ export function BaseCalendarCardSvg({
         </foreignObject>
       )}
 
-      {/* WAVY LINE - Speed data for activities or workout steps for planned */}
+      {/* Telemetry trace - subtle, de-emphasized */}
       {(isActivity || isPlanned) && (
-        <g transform={`translate(28,${isMonthView ? 230 : 280})`}>
+        <g transform={`translate(20,${isMonthView ? 220 : 260})`} opacity="0.5">
           <path
-            d={generateWavyLinePath(304, 36, isActivity ? 'speed' : 'steps')}
+            d={generateWavyLinePath(320, 28, isActivity ? 'speed' : 'steps')}
             fill="none"
             stroke={theme.sparkline}
-            strokeWidth="2"
+            strokeWidth="1.5"
             strokeLinecap="round"
             strokeLinejoin="round"
           />
         </g>
       )}
+      
+      {/* Bottom baseline - telemetry style */}
+      <line
+        x1="20"
+        y1={viewBoxHeight - 16}
+        x2="340"
+        y2={viewBoxHeight - 16}
+        stroke="rgba(255,255,255,0.06)"
+        strokeWidth="1"
+      />
     </svg>
   );
 }

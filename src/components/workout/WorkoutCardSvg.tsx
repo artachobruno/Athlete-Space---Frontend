@@ -317,9 +317,9 @@ export function WorkoutCardSvg({
           <stop offset="100%" stopColor={COLORS.void} stopOpacity="0" />
         </linearGradient>
         
-        {/* Subtle glow for trace line */}
-        <filter id={`${id}-glow`} x="-20%" y="-20%" width="140%" height="140%">
-          <feGaussianBlur stdDeviation={2 * scale} result="blur" />
+        {/* Minimal glow for trace line - reduced */}
+        <filter id={`${id}-glow`} x="-10%" y="-10%" width="120%" height="120%">
+          <feGaussianBlur stdDeviation={1 * scale} result="blur" />
           <feMerge>
             <feMergeNode in="blur" />
             <feMergeNode in="SourceGraphic" />
@@ -475,69 +475,66 @@ export function WorkoutCardSvg({
         )}
       </g>
 
-      {/* Trace region */}
-      <g clipPath={`url(#${id}-trace-clip)`}>
-        {/* Subtle grid background */}
+      {/* Trace region - de-emphasized, telemetry always dominates geography */}
+      <g clipPath={`url(#${id}-trace-clip)`} opacity="0.6">
+        {/* Subtle grid background - reduced */}
         <rect
           x={mapBox.x}
           y={mapBox.y}
           width={mapBox.width}
           height={mapBox.height}
           fill={`url(#${id}-grid)`}
-          opacity="0.4"
+          opacity="0.25"
         />
         
-        {/* Horizontal reference lines */}
-        {[0.25, 0.5, 0.75].map((ratio) => (
-          <line
-            key={ratio}
-            x1={mapBox.x}
-            y1={mapBox.y + mapBox.height * ratio}
-            x2={mapBox.x + mapBox.width}
-            y2={mapBox.y + mapBox.height * ratio}
-            stroke={COLORS.borderSubtle}
-            strokeWidth={0.5}
-            opacity="0.3"
-            strokeDasharray={`${4 * scale} ${8 * scale}`}
-          />
-        ))}
+        {/* Single reference line - minimal */}
+        <line
+          x1={mapBox.x}
+          y1={mapBox.y + mapBox.height * 0.5}
+          x2={mapBox.x + mapBox.width}
+          y2={mapBox.y + mapBox.height * 0.5}
+          stroke={COLORS.borderSubtle}
+          strokeWidth={0.5}
+          opacity="0.2"
+          strokeDasharray={`${4 * scale} ${12 * scale}`}
+        />
 
-        {/* Elevation/intensity fill */}
+        {/* Elevation/intensity fill - reduced */}
         {elevationPath && (
           <path
             d={elevationPath}
             fill={`url(#${id}-trace-fill)`}
-            opacity={hasElevation ? 0.6 : 0.3}
+            opacity={hasElevation ? 0.3 : 0.15}
           />
         )}
         
-        {/* Shadow trace - subtle depth */}
+        {/* Shadow trace - minimal */}
         <path
           d={smoothRoutePath}
           fill="none"
           stroke={COLORS.void}
-          strokeWidth={4 * scale}
+          strokeWidth={3 * scale}
           strokeLinecap="round"
           strokeLinejoin="round"
-          opacity={0.4}
-          transform={`translate(0, ${2 * scale})`}
+          opacity={0.25}
+          transform={`translate(0, ${1 * scale})`}
         />
         
-        {/* Main trace with intensity coloring */}
+        {/* Main trace - no glow, cleaner */}
         {routeSegments.length > 0 ? (
-          <g filter={`url(#${id}-glow)`}>
+          <g>
             {routeSegments.map((segment, index) => (
               <path
                 key={`${id}-seg-${index}`}
                 d={segment.path}
                 fill="none"
                 stroke={segment.color}
-                strokeWidth={2 * scale}
+                strokeWidth={1.5 * scale}
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                opacity={mounted ? 1 : 0}
+                opacity={mounted ? 0.8 : 0}
                 style={{
-                  transition: 'opacity 0.8s ease-out',
+                  transition: 'opacity 0.6s ease-out',
                   transitionDelay: `${index * 2}ms`,
                 }}
               />
@@ -548,63 +545,42 @@ export function WorkoutCardSvg({
             d={smoothRoutePath}
             fill="none"
             stroke={COLORS.accentCool}
-            strokeWidth={2 * scale}
+            strokeWidth={1.5 * scale}
             strokeLinecap="round"
             strokeLinejoin="round"
-            filter={`url(#${id}-glow)`}
-            opacity={mounted ? 0.9 : 0}
+            opacity={mounted ? 0.7 : 0}
             strokeDasharray={pathLength}
             strokeDashoffset={mounted ? 0 : pathLength}
             style={{
-              transition: 'stroke-dashoffset 1.2s ease-out, opacity 0.4s ease-out',
+              transition: 'stroke-dashoffset 0.8s ease-out, opacity 0.3s ease-out',
             }}
           />
         )}
       </g>
 
-      {/* Start/end markers - minimal */}
+      {/* Start/end markers - ultra minimal */}
       {plottedRoute.length > 0 && (
-        <>
-          {/* Start marker */}
+        <g opacity="0.5">
+          {/* Start marker - small dot only */}
           <circle
             cx={plottedRoute[0].x}
             cy={plottedRoute[0].y}
-            r={3 * scale}
+            r={2 * scale}
             fill={COLORS.positive}
-            opacity={mounted ? 1 : 0}
-            style={{ transition: 'opacity 0.5s ease-out 0.8s' }}
-          />
-          <circle
-            cx={plottedRoute[0].x}
-            cy={plottedRoute[0].y}
-            r={6 * scale}
-            fill="none"
-            stroke={COLORS.positive}
-            strokeWidth={1}
-            opacity={mounted ? 0.3 : 0}
-            style={{ transition: 'opacity 0.5s ease-out 0.8s' }}
+            opacity={mounted ? 0.7 : 0}
+            style={{ transition: 'opacity 0.4s ease-out 0.6s' }}
           />
           
-          {/* End marker */}
+          {/* End marker - small dot only */}
           <circle
             cx={plottedRoute[plottedRoute.length - 1].x}
             cy={plottedRoute[plottedRoute.length - 1].y}
-            r={3 * scale}
+            r={2 * scale}
             fill={COLORS.negative}
-            opacity={mounted ? 1 : 0}
-            style={{ transition: 'opacity 0.5s ease-out 1s' }}
+            opacity={mounted ? 0.7 : 0}
+            style={{ transition: 'opacity 0.4s ease-out 0.7s' }}
           />
-          <circle
-            cx={plottedRoute[plottedRoute.length - 1].x}
-            cy={plottedRoute[plottedRoute.length - 1].y}
-            r={6 * scale}
-            fill="none"
-            stroke={COLORS.negative}
-            strokeWidth={1}
-            opacity={mounted ? 0.3 : 0}
-            style={{ transition: 'opacity 0.5s ease-out 1s' }}
-          />
-        </>
+        </g>
       )}
 
       {/* Bottom baseline */}

@@ -104,95 +104,89 @@ export function TrainingCard({ group, variant = 'compact', onClick }: TrainingCa
 
   if (variant === 'compact') {
     return (
-      <div className="space-y-1">
+      <div className="space-y-0.5">
         <button
           onClick={handleClick}
           className={cn(
-            'w-full rounded-lg p-2 text-left transition-all hover:shadow-md',
-            'focus:outline-none focus:ring-2 focus:ring-primary/20',
+            'w-full rounded-md px-2 py-1.5 text-left transition-colors',
+            'focus:outline-none focus:ring-1 focus:ring-primary/20',
+            'border-l-2 border-t-0 border-r-0 border-b-0',
             getCardStyles(primaryItem.kind, primaryItem.compliance, primaryItem.intent)
           )}
         >
-          <div className="flex items-center gap-2">
-            <Icon className={cn('h-3.5 w-3.5 flex-shrink-0', intentTextColors[primaryItem.intent])} />
-            
-            <div className="flex-1 min-w-0">
-              <div className="flex items-center gap-1">
-                <span className={cn(
-                  'text-xs font-medium truncate',
-                  intentTextColors[primaryItem.intent]
-                )}>
-                  {intentLabels[primaryItem.intent] || primaryItem.intent}
-                </span>
-                
-                {isMultiple && (
-                  <span className="text-[10px] font-semibold text-muted-foreground bg-muted rounded px-1">
-                    ×{group.count}
-                  </span>
-                )}
-              </div>
+          {/* Telemetry hierarchy: Label → Duration → Metadata */}
+          <div className="flex flex-col gap-0.5">
+            {/* Session type label - small caps, muted */}
+            <div className="flex items-center justify-between">
+              <span className={cn(
+                'text-[9px] font-medium uppercase tracking-wider',
+                'text-muted-foreground/70'
+              )}>
+                {intentLabels[primaryItem.intent] || primaryItem.intent}
+              </span>
               
-              <div className="flex items-center gap-2 text-[10px] text-muted-foreground mt-0.5">
-                <span>{primaryItem.durationMin}m</span>
-                {primaryItem.secondary && (
-                  <>
-                    <span>•</span>
-                    <span className="truncate">{primaryItem.secondary}</span>
-                  </>
-                )}
-              </div>
+              {isMultiple && (
+                <span className="text-[9px] font-mono text-muted-foreground/50">
+                  ×{group.count}
+                </span>
+              )}
             </div>
             
-            {isMultiple && (
-              <button
-                onClick={handleToggleExpand}
-                className="p-0.5 hover:bg-muted rounded"
-              >
-                {expanded ? (
-                  <ChevronUp className="h-3 w-3 text-muted-foreground" />
-                ) : (
-                  <ChevronDown className="h-3 w-3 text-muted-foreground" />
-                )}
-              </button>
-            )}
+            {/* Duration - DOMINANT metric */}
+            <div className="flex items-baseline gap-2">
+              <span className="text-base font-semibold tabular-nums tracking-tight text-foreground">
+                {primaryItem.durationMin}
+              </span>
+              <span className="text-[10px] text-muted-foreground/60 uppercase tracking-wider">min</span>
+              
+              {primaryItem.secondary && (
+                <>
+                  <span className="text-muted-foreground/30">|</span>
+                  <span className="text-[10px] text-muted-foreground/60 truncate tabular-nums">
+                    {primaryItem.secondary}
+                  </span>
+                </>
+              )}
+            </div>
           </div>
           
-          {/* AM/PM labels */}
-          {isMultiple && (group.hasAM || group.hasPM) && (
-            <div className="flex gap-1 mt-1">
-              {group.hasAM && (
-                <span className="text-[9px] font-medium text-muted-foreground bg-muted/50 rounded px-1">
-                  AM
-                </span>
+          {isMultiple && (
+            <button
+              onClick={handleToggleExpand}
+              className="absolute right-1 top-1/2 -translate-y-1/2 p-0.5 hover:bg-muted/50 rounded"
+            >
+              {expanded ? (
+                <ChevronUp className="h-2.5 w-2.5 text-muted-foreground/50" />
+              ) : (
+                <ChevronDown className="h-2.5 w-2.5 text-muted-foreground/50" />
               )}
-              {group.hasPM && (
-                <span className="text-[9px] font-medium text-muted-foreground bg-muted/50 rounded px-1">
-                  PM
-                </span>
-              )}
-            </div>
+            </button>
           )}
         </button>
         
-        {/* Expanded items */}
+        {/* Expanded items - telemetry rows */}
         {expanded && isMultiple && (
-          <div className="pl-4 space-y-1">
+          <div className="pl-3 space-y-0.5 border-l border-muted/30 ml-1">
             {group.items.slice(1).map((item) => (
               <button
                 key={item.id}
                 onClick={() => onClick?.(item)}
                 className={cn(
-                  'w-full rounded-lg p-1.5 text-left transition-all hover:shadow-sm',
-                  'focus:outline-none focus:ring-2 focus:ring-primary/20',
-                  getCardStyles(item.kind, item.compliance, item.intent)
+                  'w-full rounded px-1.5 py-1 text-left transition-colors',
+                  'focus:outline-none focus:ring-1 focus:ring-primary/20',
+                  'hover:bg-muted/30'
                 )}
               >
-                <div className="flex items-center gap-2">
-                  <Icon className={cn('h-3 w-3 flex-shrink-0', intentTextColors[item.intent])} />
-                  <span className="text-[10px] text-muted-foreground">
-                    {item.durationMin}m
-                    {item.secondary && ` • ${item.secondary}`}
+                <div className="flex items-baseline gap-2">
+                  <span className="text-sm font-medium tabular-nums text-foreground/80">
+                    {item.durationMin}
                   </span>
+                  <span className="text-[9px] text-muted-foreground/50 uppercase">min</span>
+                  {item.secondary && (
+                    <span className="text-[9px] text-muted-foreground/50 truncate">
+                      {item.secondary}
+                    </span>
+                  )}
                 </div>
               </button>
             ))}
@@ -202,132 +196,111 @@ export function TrainingCard({ group, variant = 'compact', onClick }: TrainingCa
     );
   }
   
-  // Expanded variant (for week view)
+  // Expanded variant (for week view) - Telemetry style
   return (
-    <div className="space-y-2">
+    <div className="space-y-1">
       <button
         onClick={handleClick}
         className={cn(
-          'w-full rounded-xl p-3 text-left transition-all hover:shadow-lg',
-          'focus:outline-none focus:ring-2 focus:ring-primary/20',
+          'w-full rounded-md px-3 py-2 text-left transition-colors',
+          'focus:outline-none focus:ring-1 focus:ring-primary/20',
+          'border-l-2 border-t-0 border-r-0 border-b-0',
           getCardStyles(primaryItem.kind, primaryItem.compliance, primaryItem.intent)
         )}
       >
-        <div className="flex items-start gap-3">
-          <div className={cn(
-            'flex items-center justify-center w-10 h-10 rounded-lg',
-            'bg-background/80 shadow-sm'
-          )}>
-            <Icon className={cn('h-5 w-5', intentTextColors[primaryItem.intent])} />
-          </div>
-          
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2">
-              <span className={cn(
-                'text-sm font-semibold',
-                intentTextColors[primaryItem.intent]
-              )}>
-                {intentLabels[primaryItem.intent] || primaryItem.intent}
-              </span>
-              
+        <div className="flex flex-col gap-1">
+          {/* Session type - small caps label */}
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground/60">
+              {intentLabels[primaryItem.intent] || primaryItem.intent}
+            </span>
+            
+            <div className="flex items-center gap-1.5">
               {isMultiple && (
-                <span className="text-xs font-semibold text-muted-foreground bg-muted rounded-full px-2 py-0.5">
-                  ×{group.count}
-                </span>
+                <span className="text-[9px] font-mono text-muted-foreground/50">×{group.count}</span>
               )}
               
               {primaryItem.kind === 'completed' && primaryItem.compliance === 'complete' && (
-                <span className="text-[10px] font-medium text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 rounded-full px-2 py-0.5">
-                  ✓ Done
+                <span className="text-[9px] font-mono uppercase tracking-wider text-emerald-500/70">
+                  ✓
                 </span>
               )}
               
-              {/* Show MISSED label for planned sessions that are missed (past date, no activity) */}
               {primaryItem.kind === 'planned' && primaryItem.compliance === 'missed' && (
-                <span className="text-[10px] font-medium text-destructive bg-destructive/10 rounded-full px-2 py-0.5">
-                  MISSED
+                <span className="text-[9px] font-mono uppercase tracking-wider text-destructive/70">
+                  MISS
                 </span>
               )}
             </div>
-            
-            {primaryItem.title && primaryItem.title !== intentLabels[primaryItem.intent] && (
-              <p className="text-xs text-muted-foreground mt-0.5 line-clamp-1">
-                {primaryItem.title}
-              </p>
-            )}
-            
-            <div className="flex items-center gap-3 mt-2 text-xs text-muted-foreground">
-              <span className="font-medium">{primaryItem.durationMin} min</span>
-              {primaryItem.secondary && (
-                <>
-                  <span className="text-muted-foreground/50">|</span>
-                  <span>{primaryItem.secondary}</span>
-                </>
-              )}
-              {primaryItem.load && primaryItem.load > 0 && (
-                <>
-                  <span className="text-muted-foreground/50">|</span>
-                  <span>{Math.round(primaryItem.load)} TSS</span>
-                </>
-              )}
-            </div>
-            
-            {/* AM/PM labels for multiple sessions */}
-            {isMultiple && (
-              <div className="flex gap-1.5 mt-2">
-                {group.hasAM && (
-                  <span className="text-[10px] font-medium text-muted-foreground bg-muted/60 rounded px-1.5 py-0.5">
-                    AM
-                  </span>
-                )}
-                {group.hasPM && (
-                  <span className="text-[10px] font-medium text-muted-foreground bg-muted/60 rounded px-1.5 py-0.5">
-                    PM
-                  </span>
-                )}
-              </div>
-            )}
           </div>
           
-          {isMultiple && (
-            <button
-              onClick={handleToggleExpand}
-              className="p-1 hover:bg-muted rounded-md"
-            >
-              {expanded ? (
-                <ChevronUp className="h-4 w-4 text-muted-foreground" />
-              ) : (
-                <ChevronDown className="h-4 w-4 text-muted-foreground" />
-              )}
-            </button>
+          {/* Duration - DOMINANT */}
+          <div className="flex items-baseline gap-2">
+            <span className="text-xl font-semibold tabular-nums tracking-tight text-foreground">
+              {primaryItem.durationMin}
+            </span>
+            <span className="text-[10px] text-muted-foreground/50 uppercase tracking-wider">min</span>
+          </div>
+          
+          {/* Title if different from intent */}
+          {primaryItem.title && primaryItem.title !== intentLabels[primaryItem.intent] && (
+            <p className="text-[11px] text-muted-foreground/70 line-clamp-1 tracking-tight">
+              {primaryItem.title}
+            </p>
           )}
+          
+          {/* Metrics row - telemetry style */}
+          <div className="flex items-center gap-3 text-[10px] tabular-nums">
+            {primaryItem.secondary && (
+              <span className="text-muted-foreground/60">{primaryItem.secondary}</span>
+            )}
+            {primaryItem.load && primaryItem.load > 0 && (
+              <>
+                <span className="text-muted-foreground/30">|</span>
+                <span className="text-muted-foreground/60">{Math.round(primaryItem.load)} TSS</span>
+              </>
+            )}
+          </div>
         </div>
+        
+        {isMultiple && (
+          <button
+            onClick={handleToggleExpand}
+            className="absolute right-2 top-2 p-0.5 hover:bg-muted/50 rounded"
+          >
+            {expanded ? (
+              <ChevronUp className="h-3 w-3 text-muted-foreground/40" />
+            ) : (
+              <ChevronDown className="h-3 w-3 text-muted-foreground/40" />
+            )}
+          </button>
+        )}
       </button>
       
-      {/* Expanded items */}
+      {/* Expanded items - telemetry rows */}
       {expanded && isMultiple && (
-        <div className="pl-6 space-y-2">
+        <div className="pl-3 space-y-0.5 border-l border-muted/20 ml-1">
           {group.items.slice(1).map((item) => (
             <button
               key={item.id}
               onClick={() => onClick?.(item)}
               className={cn(
-                'w-full rounded-lg p-2.5 text-left transition-all hover:shadow-md',
-                'focus:outline-none focus:ring-2 focus:ring-primary/20',
-                getCardStyles(item.kind, item.compliance, item.intent)
+                'w-full rounded px-2 py-1.5 text-left transition-colors',
+                'focus:outline-none focus:ring-1 focus:ring-primary/20',
+                'hover:bg-muted/20'
               )}
             >
-              <div className="flex items-center gap-3">
-                <Icon className={cn('h-4 w-4 flex-shrink-0', intentTextColors[item.intent])} />
-                <div>
-                  <span className={cn('text-xs font-medium', intentTextColors[item.intent])}>
-                    {intentLabels[item.intent]}
-                  </span>
-                  <div className="text-[10px] text-muted-foreground mt-0.5">
-                    {item.durationMin}m
-                    {item.secondary && ` • ${item.secondary}`}
-                  </div>
-                </div>
+              <div className="flex items-baseline gap-2">
+                <span className="text-base font-medium tabular-nums text-foreground/80">
+                  {item.durationMin}
+                </span>
+                <span className="text-[9px] text-muted-foreground/40 uppercase">min</span>
+                {item.secondary && (
+                  <>
+                    <span className="text-muted-foreground/20">|</span>
+                    <span className="text-[10px] text-muted-foreground/50">{item.secondary}</span>
+                  </>
+                )}
               </div>
             </button>
           ))}

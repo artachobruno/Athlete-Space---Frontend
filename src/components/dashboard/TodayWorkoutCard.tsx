@@ -7,22 +7,12 @@ import { cn } from '@/lib/utils';
 import { useAuthenticatedQuery } from '@/hooks/useAuthenticatedQuery';
 import { useMemo } from 'react';
 import { getTssForDate, enrichActivitiesWithTss, type TrainingLoadData } from '@/lib/tss-utils';
-import { getGlowIntensityFromWorkout } from '@/lib/intensityGlow';
 import { WorkoutCard } from '@/components/workout/WorkoutCard';
 import type { CompletedActivity } from '@/types';
 import type { TodayResponse } from '@/lib/api';
 
-// F1 Design: Map workout intent to F1 glow and status
+// F1 Design: Map workout intent to status
 type WorkoutIntent = 'aerobic' | 'threshold' | 'vo2' | 'endurance' | 'recovery';
-type F1Glow = 'recovery' | 'aerobic' | 'tempo' | 'threshold' | 'vo2';
-
-const intentToGlow: Record<WorkoutIntent, F1Glow> = {
-  recovery: 'recovery',
-  aerobic: 'aerobic',
-  endurance: 'aerobic',
-  threshold: 'threshold',
-  vo2: 'vo2',
-};
 
 const mapTypeToIntent = (type: string | null | undefined): 'aerobic' | 'threshold' | 'vo2' | 'endurance' | 'recovery' => {
   if (!type || typeof type !== 'string') {
@@ -184,8 +174,6 @@ export function TodayWorkoutCard(props?: TodayWorkoutCardProps) {
 
   const workoutType = todayWorkout.type || '';
   const workoutIntent = mapTypeToIntent(workoutType);
-  const glowIntensity = getGlowIntensityFromWorkout(todayWorkout.intensity, workoutType);
-  const f1Glow = intentToGlow[workoutIntent];
 
   // Map glow intensity to F1 status for badge
   const getIntentStatus = (intent: WorkoutIntent): 'safe' | 'caution' | 'danger' | 'active' => {
@@ -199,7 +187,7 @@ export function TodayWorkoutCard(props?: TodayWorkoutCardProps) {
   };
 
   return (
-    <F1Card variant="strong" glow={f1Glow} actionable>
+    <F1Card variant="strong" actionable>
       <F1CardHeader
         action={
           <F1StatusBadge status={getIntentStatus(workoutIntent)} dot={false}>
@@ -210,7 +198,7 @@ export function TodayWorkoutCard(props?: TodayWorkoutCardProps) {
         <F1CardTitle>SESSION · TODAY</F1CardTitle>
       </F1CardHeader>
       
-      <div className="space-y-4">
+      <div className="space-y-3">
         <WorkoutCard
           session={todayWorkout}
           activity={matchingActivity}
@@ -238,12 +226,12 @@ export function TodayWorkoutCard(props?: TodayWorkoutCardProps) {
           const shouldShowExplanation = explanation && !isPlaceholder;
           
           return shouldShowExplanation ? (
-            <div className="bg-[hsl(var(--accent-telemetry)/0.08)] border border-[hsl(var(--accent-telemetry)/0.2)] rounded-f1 p-3">
+            <div className="border-l-2 border-[hsl(var(--accent-telemetry)/0.3)] pl-3 py-1">
               <div className="flex items-start gap-2">
-                <MessageSquare className="h-4 w-4 f1-status-active mt-0.5 shrink-0" />
+                <MessageSquare className="h-3 w-3 text-[hsl(var(--f1-text-muted))] mt-0.5 shrink-0" />
                 <div className="flex-1">
-                  <F1CardLabel className="mb-1 block">SIGNAL NOTE</F1CardLabel>
-                  <p className="f1-body text-[hsl(var(--f1-text-primary))] leading-relaxed">
+                  <F1CardLabel className="mb-0.5 block text-[hsl(var(--f1-text-muted))]">SIGNAL</F1CardLabel>
+                  <p className="f1-body-sm text-[hsl(var(--f1-text-secondary))] leading-relaxed">
                     {explanation}
                   </p>
                 </div>
