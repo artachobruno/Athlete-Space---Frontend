@@ -6,8 +6,7 @@ import { cn } from '@/lib/utils';
 import type { PlannedWorkout, CompletedActivity, DailyDecision } from '@/types';
 import { CheckCircle2, XCircle, AlertCircle, Moon, RefreshCw } from 'lucide-react';
 import { WorkoutSessionCard } from '@/components/workout/WorkoutSessionCard';
-import { toPlannedWorkoutSession } from '@/components/workout/workoutSessionAdapter';
-import type { WorkoutSession, WorkoutPhase, WorkoutMetrics, CoachTone } from '@/components/workout/types';
+import type { WorkoutSession, WorkoutPhase, WorkoutMetrics, CoachTone, WorkoutType } from '@/components/workout/types';
 import { getGlowIntensityFromWorkout } from '@/lib/intensityGlow';
 
 interface DailyWorkoutCardProps {
@@ -37,14 +36,64 @@ const coachNotes: Record<string, string> = {
 };
 
 /**
- * Converts PlannedWorkout to WorkoutSession for the new card
+ * Generates effort profile based on workout intent
+ */
+function generatePlannedEffort(intent: string, numBars: number = 10): number[] {
+  const lower = (intent || '').toLowerCase();
+  
+  if (lower.includes('interval') || lower.includes('vo2')) {
+    return Array.from({ length: numBars }, (_, i) => 
+      i % 2 === 0 ? 3 + Math.random() * 2 : 7 + Math.random() * 2
+    );
+  }
+  
+  if (lower.includes('tempo') || lower.includes('threshold')) {
+    return Array.from({ length: numBars }, (_, i) => {
+      if (i < 2) return 3 + Math.random() * 2;
+      if (i >= numBars - 2) return 3 + Math.random() * 2;
+      return 6 + Math.random() * 2;
+    });
+  }
+  
+  if (lower.includes('long') || lower.includes('endurance')) {
+    return Array.from({ length: numBars }, (_, i) => {
+      const progress = i / numBars;
+      if (progress < 0.2) return 4 + progress * 5;
+      if (progress > 0.8) return 5 + (1 - progress) * 3;
+      return 5 + Math.random() * 1.5;
+    });
+  }
+  
+  return Array.from({ length: numBars }, () => 3 + Math.random() * 2);
+}
+
+function mapIntentToType(intent: string): WorkoutType {
+  switch (intent) {
+    case 'threshold': return 'threshold';
+    case 'vo2': return 'interval';
+    case 'recovery': return 'recovery';
+    case 'endurance': return 'long';
+    case 'aerobic': return 'easy';
+    default: return 'easy';
+  }
+}
+
+function determineTone(text: string | undefined): CoachTone {
+  if (!text) return 'neutral';
+  const lower = text.toLowerCase();
+  if (lower.includes('great') || lower.includes('strong') || lower.includes('good')) return 'positive';
+  if (lower.includes('caution') || lower.includes('monitor') || lower.includes('careful')) return 'warning';
+  return 'neutral';
+}
+
+/**
+ * Converts PlannedWorkout to WorkoutSession
  */
 function plannedWorkoutToSession(
   workout: PlannedWorkout,
   completed: CompletedActivity | undefined,
   cardStatus: 'upcoming' | 'today' | 'completed' | 'missed'
 ): WorkoutSession {
-  // Determine phase based on status
   let phase: WorkoutPhase = 'planned';
   if (cardStatus === 'completed' && completed) {
     phase = 'compliance';
@@ -68,24 +117,11 @@ function plannedWorkoutToSession(
       }
     : undefined;
 
-  // Generate synthetic effort data
-  const segments = Math.min(12, Math.max(6, Math.floor(workout.duration / 10)));
-  const effortData = completed
-    ? Array.from({ length: segments }, () => Math.floor(Math.random() * 5) + 4)
-    : undefined;
-  const plannedEffortData = Array.from({ length: segments }, () => Math.floor(Math.random() * 4) + 3);
+  const plannedEffortData = generatePlannedEffort(workout.intent);
+  const effortData = completed ? generatePlannedEffort(workout.intent) : undefined;
 
-  // Coach insight
   const feedbackText = completed?.coachFeedback || coachNotes[workout.intent];
-  let tone: CoachTone = 'neutral';
-  if (feedbackText) {
-    const lower = feedbackText.toLowerCase();
-    if (lower.includes('great') || lower.includes('strong') || lower.includes('good')) {
-      tone = 'positive';
-    } else if (lower.includes('caution') || lower.includes('monitor') || lower.includes('careful')) {
-      tone = 'warning';
-    }
-  }
+  const tone = determineTone(feedbackText);
 
   return {
     id: workout.id,
@@ -99,17 +135,6 @@ function plannedWorkoutToSession(
   };
 }
 
-function mapIntentToType(intent: string): 'threshold' | 'interval' | 'recovery' | 'long' | 'easy' | 'tempo' {
-  switch (intent) {
-    case 'threshold': return 'threshold';
-    case 'vo2': return 'interval';
-    case 'recovery': return 'recovery';
-    case 'endurance': return 'long';
-    case 'aerobic': return 'easy';
-    default: return 'easy';
-  }
-}
-
 /**
  * Converts CompletedActivity (without planned) to WorkoutSession
  */
@@ -120,15 +145,8 @@ function activityToSession(activity: CompletedActivity): WorkoutSession {
     paceSecPerKm: activity.distance > 0 ? (activity.duration * 60) / activity.distance : 0,
   };
 
-  const segments = Math.min(12, Math.max(6, Math.floor(activity.duration / 10)));
-  const effortData = Array.from({ length: segments }, () => Math.floor(Math.random() * 5) + 4);
-
-  let tone: CoachTone = 'neutral';
-  if (activity.coachFeedback) {
-    const lower = activity.coachFeedback.toLowerCase();
-    if (lower.includes('great') || lower.includes('strong')) tone = 'positive';
-    else if (lower.includes('caution') || lower.includes('monitor')) tone = 'warning';
-  }
+  const effortData = generatePlannedEffort('easy');
+  const tone = determineTone(activity.coachFeedback);
 
   return {
     id: activity.id,
@@ -155,14 +173,12 @@ export function DailyWorkoutCard({
   const decisionInfo = dailyDecision ? decisionConfig[dailyDecision.decision] : null;
   const DecisionIcon = decisionInfo?.icon;
 
-  // Convert to WorkoutSession for the new card
   const workoutSession = workout
     ? plannedWorkoutToSession(workout, completed, status)
     : completed
       ? activityToSession(completed)
       : null;
 
-  // Determine glow intensity for quality workouts
   const glowIntensity = workout 
     ? getGlowIntensityFromWorkout(workout.intent, undefined)
     : undefined;
@@ -195,7 +211,6 @@ export function DailyWorkoutCard({
             </div>
             <div className="text-xs text-muted-foreground">{format(date, 'MMM')}</div>
             
-            {/* Status badge */}
             {status === 'today' && (
               <Badge variant="outline" className="mt-2 text-xs bg-accent/10 text-accent border-accent/30">
                 Today
