@@ -22,6 +22,8 @@ interface EffortGraphProps {
   plannedData?: number[];
   /** Whether in compliance mode (shows both planned and actual) */
   isCompliance?: boolean;
+  /** Compact mode for calendar views */
+  compact?: boolean;
   /** Additional CSS classes */
   className?: string;
 }
@@ -31,6 +33,7 @@ export function EffortGraph({
   showData,
   plannedData,
   isCompliance = false,
+  compact = false,
   className,
 }: EffortGraphProps) {
   const maxEffort = data.length > 0 ? Math.max(...data) : 10;
@@ -39,7 +42,8 @@ export function EffortGraph({
   return (
     <div
       className={cn(
-        'relative mx-3 mb-3 rounded-lg overflow-hidden',
+        'relative rounded-lg overflow-hidden h-full',
+        compact ? 'mx-1.5 mb-1.5' : 'mx-3 mb-3',
         className
       )}
       style={{
@@ -56,7 +60,10 @@ export function EffortGraph({
       <div className="absolute bottom-0 left-0 right-0 h-px bg-[hsl(var(--border))] opacity-50" />
 
       {/* Bars container */}
-      <div className="relative h-9 flex items-end gap-[2px] px-1.5 py-1.5">
+      <div className={cn(
+        'relative h-full flex items-end gap-[1px]',
+        compact ? 'px-1 py-1' : 'px-1.5 py-1.5'
+      )}>
         {data.map((value, index) => {
           const heightPercent = (value / maxEffort) * 100;
           const isPeak = index === peakIndex && showData;

@@ -42,12 +42,12 @@ interface WorkoutSessionCardProps {
  */
 function getTypeLabel(type: WorkoutType): string {
   const labels: Record<WorkoutType, string> = {
-    threshold: 'Threshold Run',
-    interval: 'Interval',
+    threshold: 'Threshold',
+    interval: 'Intervals',
     recovery: 'Recovery',
     long: 'Long Run',
-    easy: 'Easy Run',
-    tempo: 'Tempo Run',
+    easy: 'Easy',
+    tempo: 'Tempo',
   };
   return labels[type] || type;
 }
@@ -86,6 +86,7 @@ function calculateCompliance(
   completed?: { distanceKm: number; durationSec: number }
 ): boolean {
   if (!planned || !completed) return false;
+  if (planned.distanceKm === 0 || planned.durationSec === 0) return true;
 
   const distanceVariance = Math.abs(
     (completed.distanceKm - planned.distanceKm) / planned.distanceKm
@@ -94,8 +95,8 @@ function calculateCompliance(
     (completed.durationSec - planned.durationSec) / planned.durationSec
   );
 
-  // Good compliance: within 5% for both metrics
-  return distanceVariance < 0.05 && durationVariance < 0.05;
+  // Good compliance: within 15% for both metrics
+  return distanceVariance < 0.15 && durationVariance < 0.15;
 }
 
 export function WorkoutSessionCard({
@@ -107,7 +108,6 @@ export function WorkoutSessionCard({
 
   const isCompliance = phase === 'compliance';
   const isCompleted = phase === 'completed';
-  const isPlanned = phase === 'planned';
 
   const isGoodCompliance = isCompliance
     ? calculateCompliance(planned, completed)
@@ -120,7 +120,7 @@ export function WorkoutSessionCard({
   return (
     <div
       className={cn(
-        'rounded-xl overflow-hidden',
+        'rounded-xl overflow-hidden h-full flex flex-col',
         'bg-[hsl(var(--card))]',
         'dark:bg-gradient-to-b dark:from-[#1a2331] dark:to-[#151d28]',
         className
@@ -132,28 +132,43 @@ export function WorkoutSessionCard({
       }}
     >
       {/* Session type header */}
-      <div className={cn('px-4 pt-4', compact ? 'pb-2' : 'pb-3')}>
-        <div className="text-[10px] font-medium uppercase tracking-[0.14em] text-muted-foreground">
+      <div className={cn('px-2 pt-2', compact ? 'pb-1' : 'px-4 pt-4 pb-3')}>
+        <div className={cn(
+          'font-medium uppercase tracking-[0.12em] text-muted-foreground',
+          compact ? 'text-[8px]' : 'text-[10px]'
+        )}>
           {getTypeLabel(type)}
         </div>
       </div>
 
       {/* Metrics row */}
-      <WorkoutMetricsRow planned={planned} completed={completed} phase={phase} />
-
-      {/* Effort graph - always shown (important for scannability) */}
-      {graphData.length > 0 && (
-        <EffortGraph
-          data={effortData || plannedEffortData || []}
-          showData={showEffortData}
-          plannedData={isCompliance ? plannedEffortData : undefined}
-          isCompliance={isCompliance}
+      <div className="flex-shrink-0">
+        <WorkoutMetricsRow 
+          planned={planned} 
+          completed={completed} 
+          phase={phase} 
+          compact={compact}
         />
+      </div>
+
+      {/* Effort graph - fills remaining space */}
+      {graphData.length > 0 && (
+        <div className="flex-1 min-h-0">
+          <EffortGraph
+            data={effortData || plannedEffortData || []}
+            showData={showEffortData}
+            plannedData={isCompliance ? plannedEffortData : undefined}
+            isCompliance={isCompliance}
+            compact={compact}
+          />
+        </div>
       )}
 
       {/* Coach insight - hidden in compact mode */}
       {!compact && coachInsight && (
-        <CoachInsight message={coachInsight.message} tone={coachInsight.tone} />
+        <div className="flex-shrink-0">
+          <CoachInsight message={coachInsight.message} tone={coachInsight.tone} />
+        </div>
       )}
     </div>
   );

@@ -20,6 +20,8 @@ interface WorkoutMetricsRowProps {
   completed?: WorkoutMetrics;
   /** Current phase determines display mode */
   phase: WorkoutPhase;
+  /** Compact mode for calendar views */
+  compact?: boolean;
   /** Additional CSS classes */
   className?: string;
 }
@@ -42,6 +44,7 @@ function formatDuration(totalSeconds: number): string {
  * Formats pace from seconds per km to m:ss
  */
 function formatPace(secondsPerKm: number): string {
+  if (!secondsPerKm || !Number.isFinite(secondsPerKm)) return '--:--';
   const minutes = Math.floor(secondsPerKm / 60);
   const secs = Math.floor(secondsPerKm % 60);
   return `${minutes}:${secs.toString().padStart(2, '0')}`;
@@ -51,6 +54,7 @@ export function WorkoutMetricsRow({
   planned,
   completed,
   phase,
+  compact = false,
   className,
 }: WorkoutMetricsRowProps) {
   const showCompliance = phase === 'compliance' && planned && completed;
@@ -64,9 +68,10 @@ export function WorkoutMetricsRow({
   return (
     <div
       className={cn(
-        'mx-3 mb-3 px-3.5 py-3 rounded-lg',
+        'rounded-lg',
         'bg-[hsl(var(--muted))]',
         'dark:bg-gradient-to-b dark:from-[hsl(var(--card))] dark:to-[hsl(var(--background))]',
+        compact ? 'mx-1.5 mb-1.5 px-2 py-1.5' : 'mx-3 mb-3 px-3.5 py-3',
         className
       )}
       style={{
@@ -76,16 +81,28 @@ export function WorkoutMetricsRow({
     >
       <div className="grid grid-cols-3 gap-0">
         {/* Distance */}
-        <div className="pr-3.5 border-r border-[hsl(var(--border))] border-opacity-40">
-          <div className="text-[8px] font-medium uppercase tracking-[0.1em] mb-1.5 text-muted-foreground">
-            Distance
+        <div className={cn(
+          'border-r border-[hsl(var(--border))] border-opacity-40',
+          compact ? 'pr-2' : 'pr-3.5'
+        )}>
+          <div className={cn(
+            'font-medium uppercase tracking-[0.1em] mb-1 text-muted-foreground',
+            compact ? 'text-[6px]' : 'text-[8px]'
+          )}>
+            Dist
           </div>
           {showCompliance && planned && completed ? (
-            <div className="space-y-1.5">
-              <div className="text-[10px] font-medium line-through leading-none opacity-50 text-muted-foreground font-mono">
+            <div className="space-y-0.5">
+              <div className={cn(
+                'font-medium line-through leading-none opacity-50 text-muted-foreground font-mono',
+                compact ? 'text-[8px]' : 'text-[10px]'
+              )}>
                 {planned.distanceKm.toFixed(1)}
               </div>
-              <div className="text-[18px] font-semibold leading-none tracking-tight text-foreground font-mono">
+              <div className={cn(
+                'font-semibold leading-none tracking-tight text-foreground font-mono',
+                compact ? 'text-[12px]' : 'text-[18px]'
+              )}>
                 {completed.distanceKm.toFixed(1)}
               </div>
             </div>
@@ -94,29 +111,44 @@ export function WorkoutMetricsRow({
               className={cn(
                 'font-semibold leading-none tracking-tight font-mono',
                 isCompleted
-                  ? 'text-[18px] text-foreground'
-                  : 'text-[16px] text-muted-foreground'
+                  ? compact ? 'text-[12px] text-foreground' : 'text-[18px] text-foreground'
+                  : compact ? 'text-[11px] text-muted-foreground' : 'text-[16px] text-muted-foreground'
               )}
             >
-              {displayData?.distanceKm.toFixed(1)}
+              {displayData?.distanceKm ? displayData.distanceKm.toFixed(1) : '--'}
             </div>
           )}
-          <div className="text-[8px] font-medium mt-1.5 text-muted-foreground/60">
+          <div className={cn(
+            'font-medium mt-0.5 text-muted-foreground/60',
+            compact ? 'text-[5px]' : 'text-[8px]'
+          )}>
             km
           </div>
         </div>
 
         {/* Duration */}
-        <div className="px-3.5 border-r border-[hsl(var(--border))] border-opacity-40">
-          <div className="text-[8px] font-medium uppercase tracking-[0.1em] mb-1.5 text-muted-foreground">
-            Duration
+        <div className={cn(
+          'border-r border-[hsl(var(--border))] border-opacity-40',
+          compact ? 'px-2' : 'px-3.5'
+        )}>
+          <div className={cn(
+            'font-medium uppercase tracking-[0.1em] mb-1 text-muted-foreground',
+            compact ? 'text-[6px]' : 'text-[8px]'
+          )}>
+            Time
           </div>
           {showCompliance && planned && completed ? (
-            <div className="space-y-1.5">
-              <div className="text-[10px] font-medium line-through leading-none opacity-50 text-muted-foreground font-mono">
+            <div className="space-y-0.5">
+              <div className={cn(
+                'font-medium line-through leading-none opacity-50 text-muted-foreground font-mono',
+                compact ? 'text-[8px]' : 'text-[10px]'
+              )}>
                 {formatDuration(planned.durationSec)}
               </div>
-              <div className="text-[18px] font-semibold leading-none tracking-tight text-foreground font-mono">
+              <div className={cn(
+                'font-semibold leading-none tracking-tight text-foreground font-mono',
+                compact ? 'text-[12px]' : 'text-[18px]'
+              )}>
                 {formatDuration(completed.durationSec)}
               </div>
             </div>
@@ -125,29 +157,41 @@ export function WorkoutMetricsRow({
               className={cn(
                 'font-semibold leading-none tracking-tight font-mono',
                 isCompleted
-                  ? 'text-[18px] text-foreground'
-                  : 'text-[16px] text-muted-foreground'
+                  ? compact ? 'text-[12px] text-foreground' : 'text-[18px] text-foreground'
+                  : compact ? 'text-[11px] text-muted-foreground' : 'text-[16px] text-muted-foreground'
               )}
             >
-              {displayData && formatDuration(displayData.durationSec)}
+              {displayData ? formatDuration(displayData.durationSec) : '--:--'}
             </div>
           )}
-          <div className="text-[8px] font-medium mt-1.5 text-muted-foreground/60">
+          <div className={cn(
+            'font-medium mt-0.5 text-muted-foreground/60',
+            compact ? 'text-[5px]' : 'text-[8px]'
+          )}>
             h:mm
           </div>
         </div>
 
         {/* Pace */}
-        <div className="pl-3.5">
-          <div className="text-[8px] font-medium uppercase tracking-[0.1em] mb-1.5 text-muted-foreground">
+        <div className={compact ? 'pl-2' : 'pl-3.5'}>
+          <div className={cn(
+            'font-medium uppercase tracking-[0.1em] mb-1 text-muted-foreground',
+            compact ? 'text-[6px]' : 'text-[8px]'
+          )}>
             Pace
           </div>
           {showCompliance && planned && completed ? (
-            <div className="space-y-1.5">
-              <div className="text-[10px] font-medium line-through leading-none opacity-50 text-muted-foreground font-mono">
+            <div className="space-y-0.5">
+              <div className={cn(
+                'font-medium line-through leading-none opacity-50 text-muted-foreground font-mono',
+                compact ? 'text-[8px]' : 'text-[10px]'
+              )}>
                 {formatPace(planned.paceSecPerKm)}
               </div>
-              <div className="text-[18px] font-semibold leading-none tracking-tight text-foreground font-mono">
+              <div className={cn(
+                'font-semibold leading-none tracking-tight text-foreground font-mono',
+                compact ? 'text-[12px]' : 'text-[18px]'
+              )}>
                 {formatPace(completed.paceSecPerKm)}
               </div>
             </div>
@@ -156,15 +200,18 @@ export function WorkoutMetricsRow({
               className={cn(
                 'font-semibold leading-none tracking-tight font-mono',
                 isCompleted
-                  ? 'text-[18px] text-foreground'
-                  : 'text-[16px] text-muted-foreground'
+                  ? compact ? 'text-[12px] text-foreground' : 'text-[18px] text-foreground'
+                  : compact ? 'text-[11px] text-muted-foreground' : 'text-[16px] text-muted-foreground'
               )}
             >
-              {displayData && formatPace(displayData.paceSecPerKm)}
+              {displayData ? formatPace(displayData.paceSecPerKm) : '--:--'}
             </div>
           )}
-          <div className="text-[8px] font-medium mt-1.5 text-muted-foreground/60">
-            / km
+          <div className={cn(
+            'font-medium mt-0.5 text-muted-foreground/60',
+            compact ? 'text-[5px]' : 'text-[8px]'
+          )}>
+            /km
           </div>
         </div>
       </div>

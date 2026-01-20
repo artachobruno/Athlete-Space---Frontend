@@ -146,7 +146,7 @@ export function TodayWorkoutCard(props: TodayWorkoutCardProps = {}) {
     return toWorkoutSession({
       session: todayWorkout,
       activity: matchingActivity,
-      paceStream: activityStreams?.pace,
+      streams: activityStreams,
       coachFeedback,
     });
   }, [todayWorkout, matchingActivity, activityStreams, finalTodayIntelligence]);

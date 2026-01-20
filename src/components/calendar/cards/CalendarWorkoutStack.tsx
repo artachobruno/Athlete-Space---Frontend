@@ -45,20 +45,61 @@ export function CalendarWorkoutStack({
   // New card design - uses WorkoutSessionCard in compact mode
   if (useNewCard && visible.length === 1) {
     const item = visible[0];
-    const session = calendarItemToWorkoutSession(item);
+    const session = calendarItemToWorkoutSession(item, activityStreams);
 
     return (
       <div
-        className={`w-full h-full ${className ?? ''}`}
+        className={`w-full h-full p-1 ${className ?? ''}`}
         onClick={() => onClick?.(item)}
         style={{ cursor: onClick ? 'pointer' : 'default' }}
       >
-        <WorkoutSessionCard session={session} compact />
+        <WorkoutSessionCard session={session} compact className="h-full" />
       </div>
     );
   }
 
-  // Stack layout for multiple items or legacy SVG mode
+  // Stack layout for multiple items
+  if (useNewCard && visible.length > 1) {
+    const getScale = (index: number): number => {
+      if (index === 0) return 1.0;
+      if (index === 1) return 0.96;
+      return 0.92;
+    };
+
+    const getOffset = (index: number): { x: number; y: number } => ({
+      x: index * 4,
+      y: index * 4,
+    });
+
+    return (
+      <div className={`relative w-full h-full p-1 ${className ?? ''}`}>
+        {visible.map((item, i) => {
+          const offset = getOffset(i);
+          const scale = getScale(i);
+          const isTopCard = i === 0;
+          const session = calendarItemToWorkoutSession(item, isTopCard ? activityStreams : null);
+
+          return (
+            <div
+              key={item.id}
+              className="absolute inset-1 transition-all duration-[140ms] ease-out"
+              style={{
+                transform: `translate(${offset.x}px, ${offset.y}px) scale(${scale})`,
+                transformOrigin: 'top left',
+                zIndex: visible.length - i,
+                pointerEvents: isTopCard ? 'auto' : 'none',
+              }}
+              onClick={() => isTopCard && onClick?.(item)}
+            >
+              <WorkoutSessionCard session={session} compact className="h-full" />
+            </div>
+          );
+        })}
+      </div>
+    );
+  }
+
+  // Legacy SVG mode (fallback)
   const getScale = (index: number): number => {
     if (index === 0) return 1.0;
     if (index === 1) return 0.97;
@@ -77,26 +118,6 @@ export function CalendarWorkoutStack({
         const offset = getOffset(i);
         const scale = getScale(i);
         const isTopCard = i === 0;
-
-        // Use new card design for top card when enabled
-        if (useNewCard && isTopCard) {
-          const session = calendarItemToWorkoutSession(item);
-          return (
-            <div
-              key={item.id}
-              className="absolute inset-0 transition-all duration-[140ms] ease-out"
-              style={{
-                transform: `translate(${offset.x}px, ${offset.y}px) scale(${scale})`,
-                transformOrigin: 'top left',
-                zIndex: visible.length - i,
-                pointerEvents: 'auto',
-              }}
-              onClick={() => onClick?.(item)}
-            >
-              <WorkoutSessionCard session={session} compact />
-            </div>
-          );
-        }
 
         return (
           <div

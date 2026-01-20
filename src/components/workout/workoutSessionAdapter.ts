@@ -5,8 +5,9 @@
  * Single source of truth for data transformation.
  */
 
-import type { CalendarSession } from '@/lib/api';
+import type { CalendarSession, ActivityStreamsResponse } from '@/lib/api';
 import type { CompletedActivity } from '@/types';
+import type { CalendarItem } from '@/types/calendar';
 import type { WorkoutSession, WorkoutType, WorkoutPhase, WorkoutMetrics, CoachTone } from './types';
 
 /**
@@ -82,36 +83,82 @@ function toCompletedMetrics(activity: CompletedActivity | null | undefined): Wor
 }
 
 /**
- * Generates effort profile from pace stream or creates synthetic one
+ * Generates effort profile from pace/heart rate stream data
  */
-function generateEffortData(
-  paceStream: number[] | null | undefined,
-  durationMinutes: number | null | undefined
+function generateEffortFromStream(
+  streams: ActivityStreamsResponse | null | undefined,
+  numBars: number = 10
 ): number[] {
-  // If we have a pace stream, normalize it to 0-10 scale
-  if (paceStream && paceStream.length > 0) {
-    const minPace = Math.min(...paceStream);
-    const maxPace = Math.max(...paceStream);
-    const range = maxPace - minPace || 1;
+  if (!streams) return [];
 
-    // Sample to ~12 bars
-    const step = Math.max(1, Math.floor(paceStream.length / 12));
-    const sampled: number[] = [];
+  // Prefer heart rate for effort visualization, fall back to pace
+  const dataStream = streams.heartrate || streams.pace;
+  if (!dataStream || dataStream.length === 0) return [];
 
-    for (let i = 0; i < paceStream.length; i += step) {
-      // Invert: faster pace = higher effort
-      const normalized = 10 - ((paceStream[i] - minPace) / range) * 8;
-      sampled.push(Math.max(1, Math.min(10, normalized)));
+  // Sample the stream to the target number of bars
+  const step = Math.max(1, Math.floor(dataStream.length / numBars));
+  const sampled: number[] = [];
+
+  for (let i = 0; i < dataStream.length && sampled.length < numBars; i += step) {
+    const value = dataStream[i];
+    if (value !== null && value !== undefined) {
+      sampled.push(value);
     }
-
-    return sampled.slice(0, 12);
   }
 
-  // Generate synthetic effort profile based on duration
-  const duration = durationMinutes ?? 60;
-  const segments = Math.min(12, Math.max(6, Math.floor(duration / 10)));
+  if (sampled.length === 0) return [];
 
-  return Array.from({ length: segments }, () => Math.floor(Math.random() * 5) + 3);
+  // Normalize to 1-10 scale
+  const min = Math.min(...sampled);
+  const max = Math.max(...sampled);
+  const range = max - min || 1;
+
+  return sampled.map(v => {
+    // For heart rate: higher = more effort
+    // For pace: lower = more effort (faster), so we invert
+    const isHeartRate = Boolean(streams.heartrate);
+    const normalized = isHeartRate
+      ? 1 + ((v - min) / range) * 9
+      : 10 - ((v - min) / range) * 9;
+    return Math.max(1, Math.min(10, Math.round(normalized)));
+  });
+}
+
+/**
+ * Generates synthetic effort profile for planned workouts (when no real data)
+ */
+function generatePlannedEffort(intent: string, numBars: number = 10): number[] {
+  // Create effort profile based on workout intent
+  const lower = (intent || '').toLowerCase();
+  
+  if (lower.includes('interval') || lower.includes('vo2')) {
+    // Intervals: alternating high/low
+    return Array.from({ length: numBars }, (_, i) => 
+      i % 2 === 0 ? 3 + Math.random() * 2 : 7 + Math.random() * 2
+    );
+  }
+  
+  if (lower.includes('tempo') || lower.includes('threshold')) {
+    // Tempo: warmup, sustained effort, cooldown
+    return Array.from({ length: numBars }, (_, i) => {
+      if (i < 2) return 3 + Math.random() * 2; // warmup
+      if (i >= numBars - 2) return 3 + Math.random() * 2; // cooldown
+      return 6 + Math.random() * 2; // sustained
+    });
+  }
+  
+  if (lower.includes('long')) {
+    // Long run: gradual build, steady, slight fade
+    return Array.from({ length: numBars }, (_, i) => {
+      const progress = i / numBars;
+      if (progress < 0.2) return 4 + progress * 5;
+      if (progress > 0.8) return 5 + (1 - progress) * 3;
+      return 5 + Math.random() * 1.5;
+    });
+  }
+  
+  // Easy/recovery: flat, low effort
+  return Array.from({ length: numBars }, () => 3 + Math.random() * 2);
 }
 
 /**
@@ -149,8 +196,8 @@ export interface ToWorkoutSessionOptions {
   session: CalendarSession;
   /** Matched completed activity if available */
   activity?: CompletedActivity | null;
-  /** Pace stream data from activity streams */
-  paceStream?: number[] | null;
+  /** Activity streams for effort graph */
+  streams?: ActivityStreamsResponse | null;
   /** Coach feedback or AI insight */
   coachFeedback?: string | null;
 }
@@ -159,7 +206,7 @@ export interface ToWorkoutSessionOptions {
  * Converts CalendarSession + optional activity to WorkoutSession
  */
 export function toWorkoutSession(options: ToWorkoutSessionOptions): WorkoutSession {
-  const { session, activity, paceStream, coachFeedback } = options;
+  const { session, activity, streams, coachFeedback } = options;
 
   const phase = determinePhase(session, activity);
   const workoutType = mapToWorkoutType(session.type || session.intensity);
@@ -167,14 +214,13 @@ export function toWorkoutSession(options: ToWorkoutSessionOptions): WorkoutSessi
   const planned = toPlannedMetrics(session);
   const completed = toCompletedMetrics(activity);
 
-  // Generate effort data
+  // Generate effort data from real streams if available
   const effortData = phase !== 'planned'
-    ? generateEffortData(paceStream, activity?.duration)
+    ? generateEffortFromStream(streams)
     : undefined;
 
-  const plannedEffortData = planned
-    ? generateEffortData(null, session.duration_minutes)
-    : undefined;
+  // Generate planned effort profile based on workout intent
+  const plannedEffortData = generatePlannedEffort(session.intensity || session.type || 'easy');
 
   // Coach insight
   const feedback = coachFeedback || activity?.coachFeedback || session.notes;
@@ -188,7 +234,7 @@ export function toWorkoutSession(options: ToWorkoutSessionOptions): WorkoutSessi
     phase,
     planned,
     completed,
-    effortData,
+    effortData: effortData && effortData.length > 0 ? effortData : plannedEffortData,
     plannedEffortData,
     coachInsight,
   };
@@ -215,7 +261,7 @@ export function toPlannedWorkoutSession(
       durationSec: durationMinutes * 60,
       paceSecPerKm,
     },
-    plannedEffortData: generateEffortData(null, durationMinutes),
+    plannedEffortData: generatePlannedEffort(typeStr),
     coachInsight: recommendation
       ? { tone: 'neutral', message: recommendation }
       : undefined,
@@ -224,37 +270,30 @@ export function toPlannedWorkoutSession(
 
 /**
  * Converts CalendarItem to WorkoutSession for calendar views
+ * Uses real data from the CalendarItem which already contains backend data
  */
-export interface CalendarItemLike {
-  id: string;
-  kind: 'planned' | 'completed';
-  intent: string;
-  durationMin: number;
-  distanceKm?: number;
-  pace?: string;
-  compliance?: 'complete' | 'partial' | 'missed';
-  coachNote?: {
-    text: string;
-    tone: 'warning' | 'encouragement' | 'neutral';
-  };
-  description?: string;
-}
-
-function mapCalendarToneToCoachTone(tone: 'warning' | 'encouragement' | 'neutral'): CoachTone {
-  if (tone === 'encouragement') return 'positive';
-  if (tone === 'warning') return 'warning';
-  return 'neutral';
-}
-
-export function calendarItemToWorkoutSession(item: CalendarItemLike): WorkoutSession {
+export function calendarItemToWorkoutSession(
+  item: CalendarItem,
+  streams?: ActivityStreamsResponse | null
+): WorkoutSession {
   const durationSec = item.durationMin * 60;
   const distanceKm = item.distanceKm ?? 0;
-  const paceSecPerKm = distanceKm > 0 ? durationSec / distanceKm : 0;
+  
+  // Parse pace from formatted string if available (e.g., "5:30 /km")
+  let paceSecPerKm = 0;
+  if (item.pace) {
+    const match = item.pace.match(/(\d+):(\d+)/);
+    if (match) {
+      paceSecPerKm = parseInt(match[1], 10) * 60 + parseInt(match[2], 10);
+    }
+  } else if (distanceKm > 0) {
+    paceSecPerKm = durationSec / distanceKm;
+  }
 
   // Determine phase based on kind and compliance
   let phase: WorkoutPhase = 'planned';
   if (item.kind === 'completed') {
-    phase = item.compliance ? 'compliance' : 'completed';
+    phase = item.compliance === 'complete' || item.isPaired ? 'compliance' : 'completed';
   }
 
   const metrics: WorkoutMetrics = {
@@ -263,23 +302,29 @@ export function calendarItemToWorkoutSession(item: CalendarItemLike): WorkoutSes
     paceSecPerKm,
   };
 
-  // For compliance mode, we'll use the same metrics for both planned and completed
-  // In a real scenario, you'd have separate planned vs actual data
+  // For compliance mode, we use the same metrics (real data from completed activity)
   const planned = phase === 'planned' || phase === 'compliance' ? metrics : undefined;
   const completed = phase === 'completed' || phase === 'compliance' ? metrics : undefined;
+
+  // Generate effort data from real streams if available
+  const effortData = phase !== 'planned' && streams
+    ? generateEffortFromStream(streams)
+    : undefined;
+
+  // Generate planned effort profile based on intent
+  const plannedEffortData = generatePlannedEffort(item.intent);
 
   // Coach insight from coachNote or description
   let coachInsight: WorkoutSession['coachInsight'] = undefined;
   if (item.coachNote) {
-    coachInsight = {
-      tone: mapCalendarToneToCoachTone(item.coachNote.tone),
-      message: item.coachNote.text,
-    };
+    const tone: CoachTone = item.coachNote.tone === 'encouragement' 
+      ? 'positive' 
+      : item.coachNote.tone === 'warning' 
+        ? 'warning' 
+        : 'neutral';
+    coachInsight = { tone, message: item.coachNote.text };
   } else if (item.description) {
-    coachInsight = {
-      tone: 'neutral',
-      message: item.description,
-    };
+    coachInsight = { tone: 'neutral', message: item.description };
   }
 
   return {
@@ -288,8 +333,8 @@ export function calendarItemToWorkoutSession(item: CalendarItemLike): WorkoutSes
     phase,
     planned,
     completed,
-    effortData: phase !== 'planned' ? generateEffortData(null, item.durationMin) : undefined,
-    plannedEffortData: generateEffortData(null, item.durationMin),
+    effortData: effortData && effortData.length > 0 ? effortData : plannedEffortData,
+    plannedEffortData,
     coachInsight,
   };
 }
