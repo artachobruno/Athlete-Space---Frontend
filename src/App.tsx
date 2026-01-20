@@ -37,7 +37,7 @@ import AiDashboard from "./pages/admin/AiDashboard";
 import AdminAnalytics from "./pages/admin/AdminAnalytics";
 import WorkoutDetails from "./screens/WorkoutDetails";
 import WorkoutShare from "./pages/WorkoutShare";
-
+import Support from "./pages/Support";
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
@@ -261,6 +261,7 @@ const AppContent = () => {
         <Route path="/science" element={<ScienceAndAI />} />
         <Route path="/about" element={<About />} />
         <Route path="/terms" element={<Terms />} />
+        <Route path="/support" element={<Support />} />
         <Route
           path="/dashboard"
           element={

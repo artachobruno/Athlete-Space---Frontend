@@ -86,7 +86,7 @@ const statusToVariant: Record<string, "default" | "secondary" | "destructive" | 
   active: "default",
 };
 
-export const F1StatusBadge = React.forwardRef<HTMLSpanElement, F1StatusBadgeProps>(
+export const F1StatusBadge = React.forwardRef<HTMLDivElement, F1StatusBadgeProps>(
   ({ status, dot = true, className, children, ...props }, ref) => (
     <Badge ref={ref} variant={statusToVariant[status]} className={className} {...props}>
       {children}
