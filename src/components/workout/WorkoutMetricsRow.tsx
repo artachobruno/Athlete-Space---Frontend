@@ -3,6 +3,7 @@
  *
  * Displays workout metrics (distance, duration, pace) in a horizontal row.
  * Supports planned, completed, and compliance (strike-through) modes.
+ * Respects user's unit system preference (imperial/metric).
  *
  * Design rules:
  * - Numbers > labels (visual hierarchy)
@@ -11,6 +12,7 @@
  */
 
 import { cn } from '@/lib/utils';
+import { useUnitSystem } from '@/hooks/useUnitSystem';
 import type { WorkoutMetrics, WorkoutPhase } from './types';
 
 interface WorkoutMetricsRowProps {
@@ -41,14 +43,17 @@ function formatDuration(totalSeconds: number): string {
 }
 
 /**
- * Formats pace from seconds per km to m:ss
+ * Formats pace from seconds per unit to m:ss format
  */
-function formatPace(secondsPerKm: number): string {
-  if (!secondsPerKm || !Number.isFinite(secondsPerKm)) return '--:--';
-  const minutes = Math.floor(secondsPerKm / 60);
-  const secs = Math.floor(secondsPerKm % 60);
+function formatPaceValue(secondsPerUnit: number): string {
+  if (!secondsPerUnit || !Number.isFinite(secondsPerUnit)) return '--:--';
+  const minutes = Math.floor(secondsPerUnit / 60);
+  const secs = Math.floor(secondsPerUnit % 60);
   return `${minutes}:${secs.toString().padStart(2, '0')}`;
 }
+
+const KM_TO_MILES = 0.621371;
+const SEC_PER_KM_TO_SEC_PER_MI = 1.60934;
 
 export function WorkoutMetricsRow({
   planned,
@@ -57,6 +62,9 @@ export function WorkoutMetricsRow({
   compact = false,
   className,
 }: WorkoutMetricsRowProps) {
+  const { unitSystem } = useUnitSystem();
+  const isImperial = unitSystem === 'imperial';
+
   const showCompliance = phase === 'compliance' && planned && completed;
   const displayData = phase === 'completed' ? completed : planned;
   const isCompleted = phase === 'completed';
@@ -65,13 +73,26 @@ export function WorkoutMetricsRow({
     return null;
   }
 
+  // Convert distance based on unit system
+  const convertDistance = (km: number): number => {
+    return isImperial ? km * KM_TO_MILES : km;
+  };
+
+  // Convert pace based on unit system (seconds per km to seconds per mile)
+  const convertPace = (secPerKm: number): number => {
+    return isImperial ? secPerKm * SEC_PER_KM_TO_SEC_PER_MI : secPerKm;
+  };
+
+  const distanceUnit = isImperial ? 'mi' : 'km';
+  const paceUnit = isImperial ? '/mi' : '/km';
+
   return (
     <div
       className={cn(
         'rounded-lg',
         'bg-[hsl(var(--muted))]',
         'dark:bg-gradient-to-b dark:from-[hsl(var(--card))] dark:to-[hsl(var(--background))]',
-        compact ? 'mx-1.5 mb-1.5 px-2 py-1.5' : 'mx-3 mb-3 px-3.5 py-3',
+        compact ? 'mx-1.5 mb-1.5 px-1.5 py-1.5' : 'mx-3 mb-3 px-3.5 py-3',
         className
       )}
       style={{
@@ -82,8 +103,8 @@ export function WorkoutMetricsRow({
       <div className="grid grid-cols-3 gap-0">
         {/* Distance */}
         <div className={cn(
-          'border-r border-[hsl(var(--border))] border-opacity-40',
-          compact ? 'pr-2' : 'pr-3.5'
+          'border-r border-[hsl(var(--border))] border-opacity-40 min-w-0',
+          compact ? 'pr-1' : 'pr-3.5'
         )}>
           <div className={cn(
             'font-medium uppercase tracking-[0.1em] mb-1 text-muted-foreground',
@@ -97,13 +118,13 @@ export function WorkoutMetricsRow({
                 'font-medium line-through leading-none opacity-50 text-muted-foreground font-mono',
                 compact ? 'text-[8px]' : 'text-[10px]'
               )}>
-                {planned.distanceKm.toFixed(1)}
+                {convertDistance(planned.distanceKm).toFixed(1)}
               </div>
               <div className={cn(
                 'font-semibold leading-none tracking-tight text-foreground font-mono',
-                compact ? 'text-[12px]' : 'text-[18px]'
+                compact ? 'text-[11px]' : 'text-[18px]'
               )}>
-                {completed.distanceKm.toFixed(1)}
+                {convertDistance(completed.distanceKm).toFixed(1)}
               </div>
             </div>
           ) : (
@@ -111,25 +132,25 @@ export function WorkoutMetricsRow({
               className={cn(
                 'font-semibold leading-none tracking-tight font-mono',
                 isCompleted
-                  ? compact ? 'text-[12px] text-foreground' : 'text-[18px] text-foreground'
-                  : compact ? 'text-[11px] text-muted-foreground' : 'text-[16px] text-muted-foreground'
+                  ? compact ? 'text-[11px] text-foreground' : 'text-[18px] text-foreground'
+                  : compact ? 'text-[10px] text-muted-foreground' : 'text-[16px] text-muted-foreground'
               )}
             >
-              {displayData?.distanceKm ? displayData.distanceKm.toFixed(1) : '--'}
+              {displayData?.distanceKm ? convertDistance(displayData.distanceKm).toFixed(1) : '--'}
             </div>
           )}
           <div className={cn(
             'font-medium mt-0.5 text-muted-foreground/60',
             compact ? 'text-[5px]' : 'text-[8px]'
           )}>
-            km
+            {distanceUnit}
           </div>
         </div>
 
         {/* Duration */}
         <div className={cn(
-          'border-r border-[hsl(var(--border))] border-opacity-40',
-          compact ? 'px-2' : 'px-3.5'
+          'border-r border-[hsl(var(--border))] border-opacity-40 min-w-0',
+          compact ? 'px-1' : 'px-3.5'
         )}>
           <div className={cn(
             'font-medium uppercase tracking-[0.1em] mb-1 text-muted-foreground',
@@ -147,7 +168,7 @@ export function WorkoutMetricsRow({
               </div>
               <div className={cn(
                 'font-semibold leading-none tracking-tight text-foreground font-mono',
-                compact ? 'text-[12px]' : 'text-[18px]'
+                compact ? 'text-[11px]' : 'text-[18px]'
               )}>
                 {formatDuration(completed.durationSec)}
               </div>
@@ -157,8 +178,8 @@ export function WorkoutMetricsRow({
               className={cn(
                 'font-semibold leading-none tracking-tight font-mono',
                 isCompleted
-                  ? compact ? 'text-[12px] text-foreground' : 'text-[18px] text-foreground'
-                  : compact ? 'text-[11px] text-muted-foreground' : 'text-[16px] text-muted-foreground'
+                  ? compact ? 'text-[11px] text-foreground' : 'text-[18px] text-foreground'
+                  : compact ? 'text-[10px] text-muted-foreground' : 'text-[16px] text-muted-foreground'
               )}
             >
               {displayData ? formatDuration(displayData.durationSec) : '--:--'}
@@ -173,7 +194,7 @@ export function WorkoutMetricsRow({
         </div>
 
         {/* Pace */}
-        <div className={compact ? 'pl-2' : 'pl-3.5'}>
+        <div className={cn('min-w-0', compact ? 'pl-1' : 'pl-3.5')}>
           <div className={cn(
             'font-medium uppercase tracking-[0.1em] mb-1 text-muted-foreground',
             compact ? 'text-[6px]' : 'text-[8px]'
@@ -186,13 +207,13 @@ export function WorkoutMetricsRow({
                 'font-medium line-through leading-none opacity-50 text-muted-foreground font-mono',
                 compact ? 'text-[8px]' : 'text-[10px]'
               )}>
-                {formatPace(planned.paceSecPerKm)}
+                {formatPaceValue(convertPace(planned.paceSecPerKm))}
               </div>
               <div className={cn(
                 'font-semibold leading-none tracking-tight text-foreground font-mono',
-                compact ? 'text-[12px]' : 'text-[18px]'
+                compact ? 'text-[11px]' : 'text-[18px]'
               )}>
-                {formatPace(completed.paceSecPerKm)}
+                {formatPaceValue(convertPace(completed.paceSecPerKm))}
               </div>
             </div>
           ) : (
@@ -200,18 +221,18 @@ export function WorkoutMetricsRow({
               className={cn(
                 'font-semibold leading-none tracking-tight font-mono',
                 isCompleted
-                  ? compact ? 'text-[12px] text-foreground' : 'text-[18px] text-foreground'
-                  : compact ? 'text-[11px] text-muted-foreground' : 'text-[16px] text-muted-foreground'
+                  ? compact ? 'text-[11px] text-foreground' : 'text-[18px] text-foreground'
+                  : compact ? 'text-[10px] text-muted-foreground' : 'text-[16px] text-muted-foreground'
               )}
             >
-              {displayData ? formatPace(displayData.paceSecPerKm) : '--:--'}
+              {displayData ? formatPaceValue(convertPace(displayData.paceSecPerKm)) : '--:--'}
             </div>
           )}
           <div className={cn(
             'font-medium mt-0.5 text-muted-foreground/60',
             compact ? 'text-[5px]' : 'text-[8px]'
           )}>
-            /km
+            {paceUnit}
           </div>
         </div>
       </div>
