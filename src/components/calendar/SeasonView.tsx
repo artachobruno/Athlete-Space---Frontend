@@ -296,60 +296,61 @@ export function SeasonView({ currentDate }: SeasonViewProps) {
     <div className="space-y-4">
       {/* Season Intelligence Summary */}
       {seasonIntelligence && (
-        <GlassCard className="bg-accent/5 border-accent/20">
-          <div className="p-4 space-y-3">
+        <div className="bg-card/50 border border-border/50 rounded-lg p-3">
+          <div className="space-y-2">
             {seasonIntelligence.explanation && (
-              <p className="text-sm text-foreground leading-relaxed">
+              <p className="text-xs text-muted-foreground leading-relaxed">
                 {seasonIntelligence.explanation}
               </p>
             )}
             {seasonIntelligence.phases && seasonIntelligence.phases.length > 0 && (
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-1.5">
                 {seasonIntelligence.phases.map((phase, idx) => (
-                  <Badge key={idx} variant="outline" className="text-xs">
-                    {phase.label} (Weeks {phase.week_start}-{phase.week_end})
+                  <Badge key={idx} variant="outline" className="text-[9px] uppercase tracking-wider px-1.5 py-0.5">
+                    {phase.label} W{phase.week_start}-{phase.week_end}
                   </Badge>
                 ))}
               </div>
             )}
           </div>
-        </GlassCard>
+        </div>
       )}
 
-      {/* Legend */}
-      <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
-        <div className="flex items-center gap-2">
-          <div className="w-3 h-3 rounded bg-accent" />
-          <span>Training Load</span>
+      {/* Legend - minimal telemetry style */}
+      <div className="flex flex-wrap items-center gap-4 text-[10px] text-muted-foreground/60 uppercase tracking-wider">
+        <div className="flex items-center gap-1.5">
+          <div className="w-2 h-2 rounded-sm bg-accent/60" />
+          <span>Load</span>
         </div>
-        <div className="flex items-center gap-2">
-          <div className="w-3 h-3 rounded bg-load-fresh" />
-          <span>Completed</span>
+        <div className="flex items-center gap-1.5">
+          <div className="w-2 h-2 rounded-sm bg-load-fresh/60" />
+          <span>Done</span>
         </div>
-        <div className="flex items-center gap-2">
-          <div className="w-3 h-3 rounded bg-muted" />
-          <span>Planned</span>
+        <div className="flex items-center gap-1.5">
+          <div className="w-2 h-2 rounded-sm bg-muted/60" />
+          <span>Plan</span>
         </div>
         {seasonIntelligence?.race_markers && seasonIntelligence.race_markers.length > 0 && (
           <>
-            <div className="flex items-center gap-2">
-              <Flag className="w-3 h-3 text-red-600" />
+            <span className="text-muted-foreground/20">|</span>
+            <div className="flex items-center gap-1.5">
+              <Flag className="w-2.5 h-2.5 text-destructive/60" />
               <span>Race</span>
             </div>
-            <div className="flex items-center gap-2">
-              <Target className="w-3 h-3 text-blue-600" />
-              <span>Milestone</span>
+            <div className="flex items-center gap-1.5">
+              <Target className="w-2.5 h-2.5 text-accent/60" />
+              <span>Goal</span>
             </div>
-            <div className="flex items-center gap-2">
-              <RefreshCw className="w-3 h-3 text-green-600" />
+            <div className="flex items-center gap-1.5">
+              <RefreshCw className="w-2.5 h-2.5 text-load-fresh/60" />
               <span>Recovery</span>
             </div>
           </>
         )}
       </div>
 
-      {/* Weeks Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+      {/* Weeks Grid - tighter */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
         {weeks.map((weekStart) => {
           const stats = getWeekStats(weekStart);
           const weekEnd = endOfWeek(weekStart, { weekStartsOn: 1 });
@@ -360,10 +361,10 @@ export function SeasonView({ currentDate }: SeasonViewProps) {
           const weekNumber = getWeek(weekStart);
           const phase = getWeekPhase(weekNumber);
           const raceMarkers = getWeekRaceMarkers(weekNumber);
-          const dateRange = `${format(weekStart, 'MMM d')} - ${format(weekEnd, 'MMM d')}`;
+          const dateRange = `${format(weekStart, 'MMM d')} – ${format(weekEnd, 'MMM d')}`;
 
           return (
-            <div key={weekStart.toString()} className="space-y-2">
+            <div key={weekStart.toString()} className="space-y-1.5">
               <SeasonWeekCard
                 weekLabel={`Week ${weekNumber}`}
                 dateRange={dateRange}
@@ -376,17 +377,21 @@ export function SeasonView({ currentDate }: SeasonViewProps) {
                 isCurrent={isCurrentWeek}
               />
               {(phase || raceMarkers.length > 0) && (
-                <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
-                  {phase && <Badge variant="outline" className="text-xs">{phase.label}</Badge>}
+                <div className="flex flex-wrap gap-1 text-[9px]">
+                  {phase && (
+                    <Badge variant="outline" className="text-[8px] uppercase tracking-wider px-1 py-0">
+                      {phase.label}
+                    </Badge>
+                  )}
                   {raceMarkers.map((marker, idx) => {
                     const Icon = raceMarkerIcons[marker.type];
                     return (
                       <Badge
                         key={idx}
                         variant="outline"
-                        className={cn('text-xs', raceMarkerColors[marker.type])}
+                        className={cn('text-[8px] uppercase tracking-wider px-1 py-0', raceMarkerColors[marker.type])}
                       >
-                        <Icon className="h-3 w-3 mr-1" />
+                        <Icon className="h-2 w-2 mr-0.5" />
                         {marker.label}
                       </Badge>
                     );

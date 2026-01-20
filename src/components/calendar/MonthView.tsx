@@ -217,16 +217,16 @@ export function MonthView({ currentDate, onActivityClick }: MonthViewProps) {
     );
   }
 
-  const weekDays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+  const weekDays = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
 
   return (
     <div className="bg-card rounded-lg border border-border overflow-hidden">
-      {/* Header */}
-      <div className="grid grid-cols-7 border-b border-border">
+      {/* Header - telemetry style */}
+      <div className="grid grid-cols-7 border-b border-border bg-muted/20">
         {weekDays.map((d) => (
           <div
             key={d}
-            className="py-2 text-center text-xs font-medium text-muted-foreground"
+            className="py-1.5 text-center text-[10px] font-medium tracking-widest text-muted-foreground/60"
           >
             {d}
           </div>
@@ -242,7 +242,7 @@ export function MonthView({ currentDate, onActivityClick }: MonthViewProps) {
           items={allPlannedSessionIds}
           strategy={verticalListSortingStrategy}
         >
-          <div className="grid grid-cols-7 grid-rows-6 min-h-[1080px]">
+          <div className="grid grid-cols-7 grid-rows-6 min-h-[960px]">
             {days.map((day, idx) => {
               const isCurrentMonth = isSameMonth(day, currentDate);
               const isCurrentDay = isToday(day);
@@ -253,19 +253,19 @@ export function MonthView({ currentDate, onActivityClick }: MonthViewProps) {
                   key={idx}
                   date={day}
                   className={cn(
-                    'relative min-h-[220px] border-b border-r border-border flex flex-col',
-                    !isCurrentMonth && 'bg-muted/30',
+                    'relative min-h-[180px] border-b border-r border-border/50 flex flex-col',
+                    !isCurrentMonth && 'bg-muted/10',
                     idx % 7 === 6 && 'border-r-0'
                   )}
                 >
-                  {/* Day number */}
-                  <div className="px-2 pt-2">
+                  {/* Day number - compact */}
+                  <div className="px-1.5 pt-1">
                     <span
                       className={cn(
-                        'text-sm font-semibold',
-                        !isCurrentMonth && 'text-muted-foreground',
+                        'text-xs font-medium tabular-nums',
+                        !isCurrentMonth && 'text-muted-foreground/40',
                         isCurrentDay &&
-                          'bg-accent text-accent-foreground w-6 h-6 rounded-full inline-flex items-center justify-center'
+                          'bg-accent text-accent-foreground w-5 h-5 rounded inline-flex items-center justify-center text-[10px] font-semibold'
                       )}
                     >
                       {format(day, 'd')}
