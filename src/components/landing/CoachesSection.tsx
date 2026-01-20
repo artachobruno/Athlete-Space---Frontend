@@ -21,7 +21,7 @@ export const CoachesSection = () => {
         <div className="grid md:grid-cols-2 gap-16 items-center">
           {/* Video frame - slightly higher visibility for coach authority */}
           <VideoFrame 
-            src="/crossFit_female.mp4"
+            src="/coach_athletes.mp4"
             className="aspect-video rounded-sm"
             opacity={0.65}
             filter="saturate(0.65) contrast(1.15)"
