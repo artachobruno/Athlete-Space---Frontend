@@ -23,6 +23,8 @@ export interface CalendarItem {
   startLocal: string; // ISO datetime string
   durationMin: number;
   load?: number;
+  distanceKm?: number; // Distance in kilometers
+  pace?: string; // Formatted pace string (e.g., "5:30 /km")
   secondary?: string; // e.g., "Z2", "HR 145", "RPE 7"
   isPaired?: boolean;
   compliance?: CalendarCompliance;

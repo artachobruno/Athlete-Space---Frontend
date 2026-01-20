@@ -1,5 +1,6 @@
 import { WorkoutCardSvg, type WorkoutCardVariant } from '@/components/workout/WorkoutCardSvg';
-import { toCalendarCardProps } from './calendarCardAdapter';
+import { BaseCalendarCardSvg } from './BaseCalendarCardSvg';
+import { toCalendarCardProps, deriveCardVariant } from './calendarCardAdapter';
 import type { CalendarItem } from '@/types/calendar';
 import type { ActivityStreamsResponse } from '@/lib/api';
 
@@ -15,6 +16,26 @@ const mapVariant = (variant: 'month' | 'week' | 'plan'): WorkoutCardVariant =>
 
 export function CalendarWorkoutCardSvg({ item, viewVariant, streams, className }: CalendarWorkoutCardSvgProps) {
   const props = toCalendarCardProps(item);
+  const isCompleted = item.kind === 'completed';
+
+  // Planned sessions: use BaseCalendarCardSvg (training calendar card)
+  if (!isCompleted) {
+    const cardVariant = deriveCardVariant(item);
+    return (
+      <BaseCalendarCardSvg
+        variant={cardVariant}
+        topLeft={props.workoutType}
+        topRight={props.duration}
+        title={props.title || props.workoutType}
+        description={props.description ?? null}
+        isPlanned={true}
+        isActivity={false}
+        viewVariant={viewVariant}
+      />
+    );
+  }
+
+  // Completed activities: use WorkoutCardSvg with map/route
   const variant = mapVariant(viewVariant);
   const tss = item.load !== undefined ? Math.round(item.load) : null;
   const fontScale = viewVariant === 'month' ? 1.2 : viewVariant === 'week' ? 1.15 : 1;

@@ -82,6 +82,19 @@ export function deriveCardVariant(item: CalendarItem): string {
   return isCompleted ? 'completed-running' : 'planned-running';
 }
 
+/**
+ * Formats distance in km to a human-readable string
+ * Examples: 5.0 km, 10.5 km, 21.1 km
+ */
+function formatDistance(distanceKm: number | undefined): string | undefined {
+  if (distanceKm === undefined || distanceKm === null || distanceKm <= 0) {
+    return undefined;
+  }
+  // Round to 1 decimal place
+  const rounded = Math.round(distanceKm * 10) / 10;
+  return `${rounded} km`;
+}
+
 export function toCalendarCardProps(item: CalendarItem): CalendarCardProps {
   const variant = deriveCardVariant(item);
 
@@ -91,11 +104,11 @@ export function toCalendarCardProps(item: CalendarItem): CalendarCardProps {
   // Get human-readable workout type
   const workoutType = getWorkoutTypeLabel(item.intent, item.sport);
 
-  // Extract pace from secondary metric (for completed activities)
-  const pace =
-    item.kind === 'completed' && item.secondary?.match(/\d+:\d+/)
-      ? item.secondary.match(/\d+:\d+/)?.[0]
-      : undefined;
+  // Format distance
+  const distance = formatDistance(item.distanceKm);
+
+  // Use pace from CalendarItem (extracted from activity)
+  const pace = item.pace;
 
   // Sparkline only for completed activities
   const sparkline =
@@ -111,6 +124,7 @@ export function toCalendarCardProps(item: CalendarItem): CalendarCardProps {
     duration,
     workoutType,
     title: item.title || workoutType,
+    distance,
     pace,
     description,
     sparkline,

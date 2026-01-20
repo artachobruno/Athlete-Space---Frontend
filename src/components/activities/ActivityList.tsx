@@ -1,23 +1,13 @@
 import { useState, useEffect, useRef, useMemo } from 'react';
 import { format, parseISO } from 'date-fns';
-import { GlassCard } from '@/components/ui/GlassCard';
-import {
-  CardHeader,
-  CardContent,
-  CardTitle,
-  CardDescription,
-} from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { cn } from '@/lib/utils';
 import type { CompletedActivity } from '@/types';
 import { capitalizeTitle } from '@/adapters/calendarAdapter';
-import {
-  Footprints, Bike, Waves, Clock, Route, Heart, Zap,
-  Bot, ChevronDown, ChevronUp, Info, TrendingUp
-} from 'lucide-react';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Footprints, Bike, Waves, Heart, Bot, ChevronDown, ChevronUp } from 'lucide-react';
 import { ActivityExpandedContent } from './ActivityExpandedContent';
 import { useUnitSystem } from '@/hooks/useUnitSystem';
 import { fetchTrainingLoad } from '@/lib/api';
@@ -130,18 +120,18 @@ export function ActivityList({ activities, initialExpandedId = null }: ActivityL
   }
 
   return (
-    <div className="space-y-2">
+    <div className="space-y-3">
       {validActivities.map((activity) => {
           const Icon = sportIcons[activity.sport] || Footprints;
           const isExpanded = expandedId === activity.id;
           
           const dateStr = activity.date ? (() => {
             try {
-              return format(parseISO(activity.date), 'EEE, MMM d').toUpperCase();
+              return format(parseISO(activity.date), 'EEE, MMM d');
             } catch {
               return activity.date;
             }
-          })() : 'UNKNOWN';
+          })() : 'Unknown';
 
           return (
             <div
@@ -152,98 +142,93 @@ export function ActivityList({ activities, initialExpandedId = null }: ActivityL
                 open={isExpanded}
                 onOpenChange={() => toggleExpand(activity.id)}
               >
-                <GlassCard 
+                <Card 
                   className={cn(
-                    'transition-all border-border/50',
-                    isExpanded && 'ring-1 ring-accent/40'
+                    'transition-all',
+                    isExpanded && 'ring-1 ring-primary/30'
                   )}
                 >
                 <CollapsibleTrigger asChild>
-                  <CardContent className="p-3 cursor-pointer hover:bg-muted/20 transition-colors">
-                    {/* Header - Compact telemetry style */}
-                    <div className="flex items-center gap-2 mb-2">
-                      <div className="p-1.5 bg-muted/50 rounded">
-                        <Icon className="h-4 w-4 text-foreground/70" />
+                  <CardContent className="p-4 cursor-pointer hover:bg-muted/30 transition-colors">
+                    {/* Header */}
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className="p-2 bg-muted rounded-lg">
+                        <Icon className="h-5 w-5 text-foreground" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <h3 className="text-sm font-medium text-foreground truncate tracking-tight">
+                        <h3 className="text-base font-semibold text-foreground truncate">
                           {capitalizeTitle(activity.title || 'Untitled Activity')}
                         </h3>
-                        <p className="text-[10px] text-muted-foreground/50 uppercase tracking-wider">
+                        <p className="text-sm text-muted-foreground">
                           {dateStr}
                         </p>
                       </div>
-                      <Badge variant="outline" className="shrink-0 text-[9px] uppercase tracking-wider px-1.5 py-0">
+                      <Badge variant="outline" className="shrink-0">
                         {activity.sport}
                       </Badge>
-                      <Button variant="ghost" size="icon" className="h-6 w-6">
+                      <Button variant="ghost" size="icon" className="h-8 w-8">
                         {isExpanded ? (
-                          <ChevronUp className="h-3 w-3" />
+                          <ChevronUp className="h-4 w-4" />
                         ) : (
-                          <ChevronDown className="h-3 w-3" />
+                          <ChevronDown className="h-4 w-4" />
                         )}
                       </Button>
                     </div>
 
-                    {/* Metrics - Telemetry row style */}
-                    <div className="flex items-center gap-3 text-xs tabular-nums flex-wrap">
-                      <span className="flex items-center gap-1 text-foreground">
-                        <span className="font-semibold">{activity.duration || 0}</span>
-                        <span className="text-[9px] text-muted-foreground/50 uppercase">min</span>
+                    {/* Metrics row */}
+                    <div className="flex items-center gap-4 text-sm">
+                      <span className="flex items-center gap-1.5">
+                        <span className="font-medium text-foreground">{activity.duration || 0}</span>
+                        <span className="text-muted-foreground">min</span>
                       </span>
-                      <span className="text-muted-foreground/30">|</span>
-                      <span className="flex items-center gap-1 text-foreground">
-                        <span className="font-semibold">
+                      <div className="w-px h-4 bg-border" />
+                      <span className="flex items-center gap-1.5">
+                        <span className="font-medium text-foreground">
                           {convertDistance(activity.distance || 0).value.toFixed(1)}
                         </span>
-                        <span className="text-[9px] text-muted-foreground/50 uppercase">
+                        <span className="text-muted-foreground">
                           {convertDistance(activity.distance || 0).unit}
                         </span>
                       </span>
                       {activity.trainingLoad > 0 && (
                         <>
-                          <span className="text-muted-foreground/30">|</span>
-                          <span className="flex items-center gap-1 text-foreground">
-                            <span className="font-semibold">{Math.round(activity.trainingLoad)}</span>
-                            <span className="text-[9px] text-muted-foreground/50 uppercase">TSS</span>
+                          <div className="w-px h-4 bg-border" />
+                          <span className="flex items-center gap-1.5">
+                            <span className="font-medium text-foreground">{Math.round(activity.trainingLoad)}</span>
+                            <span className="text-muted-foreground">TSS</span>
                           </span>
                         </>
                       )}
                       {activity.avgHeartRate && (
                         <>
-                          <span className="text-muted-foreground/30">|</span>
-                          <span className="flex items-center gap-1 text-muted-foreground/70">
-                            <Heart className="h-3 w-3" />
-                            <span>{Math.round(activity.avgHeartRate)}</span>
+                          <div className="w-px h-4 bg-border" />
+                          <span className="flex items-center gap-1.5 text-muted-foreground">
+                            <Heart className="h-4 w-4" />
+                            <span>{Math.round(activity.avgHeartRate)} bpm</span>
                           </span>
                         </>
                       )}
                       {activity.intensityFactor !== undefined && activity.intensityFactor !== null && (
                         <>
-                          <span className="text-muted-foreground/30">|</span>
+                          <div className="w-px h-4 bg-border" />
                           <span className={cn(
-                            "text-[10px] font-mono",
-                            activity.intensityFactor >= 1.0 ? "text-load-overreaching" : "text-muted-foreground/60"
+                            "text-sm",
+                            activity.intensityFactor >= 1.0 ? "text-amber-600 dark:text-amber-400" : "text-muted-foreground"
                           )}>
                             IF {activity.intensityFactor.toFixed(2)}
                           </span>
                         </>
                       )}
-                      {activity.effortSource && (
-                        <span className="text-[9px] text-muted-foreground/40 ml-auto uppercase tracking-wider">
-                          {activity.effortSource}
-                        </span>
-                      )}
                     </div>
 
-                    {/* Coach Insight Preview - Condensed */}
+                    {/* Coach Insight Preview */}
                     {activity.coachFeedback && !isExpanded && (
-                      <div className="px-2 py-1.5 bg-card/50 border-l-2 border-accent/30 mt-2">
-                        <div className="flex items-center gap-1 mb-0.5">
-                          <Bot className="h-2.5 w-2.5 text-accent/60" />
-                          <span className="text-[9px] font-medium uppercase tracking-wider text-accent/60">Analysis</span>
+                      <div className="mt-3 p-3 bg-muted/50 rounded-lg border-l-2 border-primary/30">
+                        <div className="flex items-center gap-2 mb-1">
+                          <Bot className="h-4 w-4 text-primary" />
+                          <span className="text-xs font-medium text-primary">Analysis</span>
                         </div>
-                        <p className="text-[11px] text-foreground/70 leading-relaxed line-clamp-1">
+                        <p className="text-sm text-muted-foreground line-clamp-1">
                           {activity.coachFeedback}
                         </p>
                       </div>
@@ -254,7 +239,7 @@ export function ActivityList({ activities, initialExpandedId = null }: ActivityL
               <CollapsibleContent>
                 <ActivityExpandedContent activity={activity} />
               </CollapsibleContent>
-            </GlassCard>
+            </Card>
           </Collapsible>
         </div>
         );

@@ -71,12 +71,22 @@ export function toCalendarItem(
   // Extract load from activity if available, otherwise undefined
   const load = matchedActivity?.trainingLoad;
 
-  // Extract secondary metric (pace, power, etc.) from activity if available
+  // Extract distance: prefer activity data, fall back to session planned distance
+  let distanceKm: number | undefined = undefined;
+  if (matchedActivity?.distance) {
+    distanceKm = matchedActivity.distance;
+  } else if (session.distance_km) {
+    distanceKm = session.distance_km;
+  }
+
+  // Extract pace from activity if available
+  const pace = matchedActivity?.avgPace;
+
+  // Extract secondary metric (power, HR, etc.) from activity if available
+  // Pace is now a separate field, so use other metrics for secondary
   let secondary: string | undefined = undefined;
   if (matchedActivity) {
-    if (matchedActivity.avgPace) {
-      secondary = matchedActivity.avgPace;
-    } else if (matchedActivity.avgPower) {
+    if (matchedActivity.avgPower) {
       secondary = `${Math.round(matchedActivity.avgPower)}W`;
     } else if (matchedActivity.avgHeartRate) {
       secondary = `${matchedActivity.avgHeartRate} bpm`;
@@ -101,6 +111,8 @@ export function toCalendarItem(
     startLocal,
     durationMin: session.duration_minutes || 0,
     load,
+    distanceKm,
+    pace,
     secondary,
     isPaired,
     compliance,

@@ -76,7 +76,7 @@ function TelemetrySparkline({
   );
 }
 
-// Telemetry metric row - F1 style
+// Metric row component
 function TelemetryMetricRow({
   label,
   value,
@@ -96,17 +96,17 @@ function TelemetryMetricRow({
 }) {
   const deltaDisplay = delta !== undefined ? (
     <span className={cn(
-      'text-[10px] font-mono tracking-tight',
-      delta > 0 ? 'text-load-overreaching' : delta < 0 ? 'text-load-fresh' : 'text-muted-foreground/50'
+      'text-xs',
+      delta > 0 ? 'text-amber-600 dark:text-amber-400' : delta < 0 ? 'text-green-600 dark:text-green-400' : 'text-muted-foreground'
     )}>
       {delta > 0 ? '+' : ''}{delta.toFixed(1)}%
     </span>
   ) : null;
 
   return (
-    <div className="flex items-center justify-between py-1.5 border-b border-border/30 last:border-b-0">
+    <div className="flex items-center justify-between py-2 border-b border-border last:border-b-0">
       <div className="flex items-center gap-3">
-        <span className="text-[9px] uppercase tracking-widest text-muted-foreground/60 w-16">
+        <span className="text-xs uppercase tracking-wider text-muted-foreground w-16">
           {label}
         </span>
         {sparkData && sparkData.length > 2 && (
@@ -114,11 +114,11 @@ function TelemetryMetricRow({
         )}
       </div>
       <div className="flex items-baseline gap-2">
-        <span className="text-base font-semibold tabular-nums tracking-tight text-foreground">
+        <span className="text-lg font-semibold tabular-nums text-foreground">
           {value}
         </span>
         {unit && (
-          <span className="text-[10px] text-muted-foreground/50 uppercase">{unit}</span>
+          <span className="text-sm text-muted-foreground">{unit}</span>
         )}
         {deltaDisplay}
       </div>
@@ -144,36 +144,35 @@ function DeviationIndicator({
   const displayDiff = invertDelta ? -diff : diff;
   const isWithinTolerance = Math.abs(diff) <= 5;
   const isOver = diff > 5;
-  const isUnder = diff < -5;
 
   return (
-    <div className="flex items-center justify-between py-2 border-b border-border/20 last:border-b-0">
-      <div className="flex flex-col gap-0.5">
-        <span className="text-[9px] uppercase tracking-widest text-muted-foreground/50">
+    <div className="flex items-center justify-between py-3 border-b border-border last:border-b-0">
+      <div className="flex flex-col gap-1">
+        <span className="text-xs uppercase tracking-wider text-muted-foreground">
           {label}
         </span>
         <div className="flex items-baseline gap-2">
-          <span className="text-lg font-semibold tabular-nums tracking-tight text-foreground">
+          <span className="text-xl font-semibold tabular-nums text-foreground">
             {actual.toFixed(unit === 'min' ? 0 : 1)}
           </span>
-          <span className="text-[10px] text-muted-foreground/40 uppercase">{unit}</span>
+          <span className="text-sm text-muted-foreground">{unit}</span>
         </div>
       </div>
       
-      <div className="flex flex-col items-end gap-0.5">
-        <span className="text-[9px] text-muted-foreground/40 uppercase tracking-wider">
-          PLAN: {planned.toFixed(unit === 'min' ? 0 : 1)}
+      <div className="flex flex-col items-end gap-1">
+        <span className="text-sm text-muted-foreground">
+          Planned: {planned.toFixed(unit === 'min' ? 0 : 1)}
         </span>
         <div className={cn(
-          'flex items-center gap-1 text-xs font-mono',
-          isWithinTolerance ? 'text-load-fresh' : isOver ? 'text-load-overreaching' : 'text-accent'
+          'flex items-center gap-1 text-sm font-medium',
+          isWithinTolerance ? 'text-green-600 dark:text-green-400' : isOver ? 'text-amber-600 dark:text-amber-400' : 'text-blue-600 dark:text-blue-400'
         )}>
           {isWithinTolerance ? (
-            <span>WITHIN TOLERANCE</span>
+            <span>Within tolerance</span>
           ) : (
             <>
-              <span>{isOver ? '▲' : '▼'}</span>
-              <span>{Math.abs(displayDiff).toFixed(0)}% {isOver ? 'OVER' : 'UNDER'}</span>
+              <span>{isOver ? '↑' : '↓'}</span>
+              <span>{Math.abs(displayDiff).toFixed(0)}% {isOver ? 'over' : 'under'}</span>
             </>
           )}
         </div>
@@ -282,43 +281,43 @@ export function ActivityExpandedContent({ activity }: ActivityExpandedContentPro
   const verdict = getComplianceVerdict();
 
   return (
-    <div className="px-3 pb-4 pt-0 border-t border-border/50 space-y-4">
-      {/* Telemetry Header Strip */}
-      <div className="flex items-center justify-between pt-3 pb-2 border-b border-border/30">
+    <div className="px-4 pb-4 pt-0 border-t border-border space-y-4">
+      {/* Header */}
+      <div className="flex items-center justify-between pt-4 pb-2">
         <div className="flex items-center gap-2">
-          <Activity className="h-3.5 w-3.5 text-muted-foreground/50" />
-          <span className="text-[10px] uppercase tracking-widest text-muted-foreground/50">
-            Session Telemetry
+          <Activity className="h-4 w-4 text-muted-foreground" />
+          <span className="text-sm font-medium text-muted-foreground">
+            Session Details
           </span>
         </div>
-        <div className={cn('text-[10px] uppercase tracking-wider font-mono', verdict.color)}>
+        <div className={cn('text-sm font-medium', verdict.color)}>
           {verdict.label}
         </div>
       </div>
 
-      {/* Coach Insight - Condensed */}
+      {/* Coach Insight */}
       {activity.coachFeedback && (
-        <div className="px-3 py-2 bg-card/50 border-l-2 border-accent/40">
-          <div className="flex items-center gap-1.5 mb-1">
-            <Bot className="h-3 w-3 text-accent/70" />
-            <span className="text-[9px] font-medium uppercase tracking-wider text-accent/70">Analysis</span>
+        <div className="p-4 bg-muted/50 rounded-lg border-l-2 border-primary/40">
+          <div className="flex items-center gap-2 mb-2">
+            <Bot className="h-4 w-4 text-primary" />
+            <span className="text-sm font-medium text-primary">Analysis</span>
           </div>
-          <p className="text-xs text-foreground/80 leading-relaxed">
+          <p className="text-sm text-foreground leading-relaxed">
             {activity.coachFeedback}
           </p>
         </div>
       )}
 
-      {/* Core Metrics - Telemetry Style */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+      {/* Core Metrics */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <TelemetryMetricCard
-          label="DIST"
+          label="Distance"
           value={distanceDisplay.value.toFixed(1)}
           unit={distanceDisplay.unit}
           delta={distanceDiff}
         />
         <TelemetryMetricCard
-          label="TIME"
+          label="Time"
           value={activity.duration.toString()}
           unit="min"
           delta={durationDiff}
@@ -331,40 +330,40 @@ export function ActivityExpandedContent({ activity }: ActivityExpandedContentPro
         )}
         {elevationDisplay && (
           <TelemetryMetricCard
-            label="ELEV"
+            label="Elevation"
             value={elevationDisplay.value.toFixed(0)}
             unit={elevationDisplay.unit}
           />
         )}
       </div>
 
-      {/* Key Highlights - Compact chips */}
-      <div className="flex flex-wrap gap-1.5">
-        <HighlightChip type="positive" text="HR IN ZONE 85%" />
-        <HighlightChip type="positive" text="NEGATIVE SPLIT" />
+      {/* Key Highlights */}
+      <div className="flex flex-wrap gap-2">
+        <HighlightChip type="positive" text="HR in zone 85%" />
+        <HighlightChip type="positive" text="Negative split" />
         {durationDiff && durationDiff > 10 && (
-          <HighlightChip type="warning" text="OVER DURATION" />
+          <HighlightChip type="warning" text="Over duration" />
         )}
         {distanceDiff && distanceDiff > 10 && (
-          <HighlightChip type="warning" text="OVER DISTANCE" />
+          <HighlightChip type="warning" text="Over distance" />
         )}
       </div>
 
-      {/* Tabs - Refined styling */}
+      {/* Tabs */}
       <Tabs defaultValue="overview" className="w-full">
-        <TabsList className="w-full grid grid-cols-4 h-8 bg-muted/30">
-          <TabsTrigger value="overview" className="text-[10px] uppercase tracking-wider">Overview</TabsTrigger>
-          <TabsTrigger value="steps" className="text-[10px] uppercase tracking-wider">Steps</TabsTrigger>
-          <TabsTrigger value="execution" className="text-[10px] uppercase tracking-wider">Execution</TabsTrigger>
-          <TabsTrigger value="compliance" className="text-[10px] uppercase tracking-wider">Compliance</TabsTrigger>
+        <TabsList className="w-full grid grid-cols-4">
+          <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="steps">Steps</TabsTrigger>
+          <TabsTrigger value="execution">Execution</TabsTrigger>
+          <TabsTrigger value="compliance">Compliance</TabsTrigger>
         </TabsList>
         
-        {/* OVERVIEW TAB - Telemetry State Only */}
-        <TabsContent value="overview" className="mt-3 space-y-4">
-          {/* Telemetry Strips - No full graphs */}
-          <div className="space-y-1 bg-card/30 rounded-lg p-3 border border-border/30">
-            <div className="text-[9px] uppercase tracking-widest text-muted-foreground/40 mb-2">
-              Signal Overview
+        {/* OVERVIEW TAB */}
+        <TabsContent value="overview" className="mt-4 space-y-4">
+          {/* Metrics */}
+          <div className="space-y-1 bg-muted/30 rounded-lg p-4 border border-border">
+            <div className="text-sm font-medium text-muted-foreground mb-3">
+              Performance Metrics
             </div>
             
             {activity.avgHeartRate && (
@@ -379,7 +378,7 @@ export function ActivityExpandedContent({ activity }: ActivityExpandedContentPro
             
             {activity.avgPower && (
               <TelemetryMetricRow
-                label="PWR"
+                label="Power"
                 value={activity.avgPower}
                 unit="W"
               />
@@ -387,7 +386,7 @@ export function ActivityExpandedContent({ activity }: ActivityExpandedContentPro
             
             {paceSparkData && (
               <TelemetryMetricRow
-                label="PACE"
+                label="Pace"
                 value={(() => {
                   const avgPace = paceSparkData.reduce((a, b) => a + b, 0) / paceSparkData.length;
                   const mins = Math.floor(avgPace);
@@ -402,7 +401,7 @@ export function ActivityExpandedContent({ activity }: ActivityExpandedContentPro
             
             {elevSparkData && (
               <TelemetryMetricRow
-                label="ELEV"
+                label="Elev"
                 value={Math.round(Math.max(...elevSparkData) - Math.min(...elevSparkData))}
                 unit="m gain"
                 sparkData={elevSparkData}
@@ -411,19 +410,19 @@ export function ActivityExpandedContent({ activity }: ActivityExpandedContentPro
             )}
           </div>
           
-          {/* Route Map - Clean Frame */}
+          {/* Route Map */}
           <div className="space-y-2">
-            <div className="text-[9px] uppercase tracking-widest text-muted-foreground/40">
+            <div className="text-sm font-medium text-muted-foreground">
               Route
             </div>
-            <div className="rounded-lg overflow-hidden border border-border/30 bg-card/20">
+            <div className="rounded-lg overflow-hidden border border-border">
               {streamsLoading ? (
                 <div className="flex items-center justify-center h-48 text-muted-foreground">
-                  <Loader2 className="h-4 w-4 animate-spin" />
+                  <Loader2 className="h-5 w-5 animate-spin" />
                 </div>
               ) : streamsError ? (
-                <div className="flex items-center justify-center h-48 text-muted-foreground/50">
-                  <span className="text-[10px] uppercase tracking-wider">Route unavailable</span>
+                <div className="flex items-center justify-center h-48 text-muted-foreground">
+                  <span className="text-sm">Route unavailable</span>
                 </div>
               ) : (
                 <ActivityMap coordinates={routeCoordinates} />
@@ -433,106 +432,106 @@ export function ActivityExpandedContent({ activity }: ActivityExpandedContentPro
         </TabsContent>
         
         {/* STEPS TAB */}
-        <TabsContent value="steps" className="mt-3">
+        <TabsContent value="steps" className="mt-4">
           {workoutLoading ? (
             <div className="flex items-center justify-center h-48 text-muted-foreground">
-              <Loader2 className="h-4 w-4 animate-spin" />
+              <Loader2 className="h-5 w-5 animate-spin" />
             </div>
           ) : workoutError ? (
-            <div className="text-center py-8 text-muted-foreground/50">
-              <ListChecks className="h-6 w-6 mx-auto mb-2 opacity-30" />
-              <p className="text-[10px] uppercase tracking-wider">Error loading workout</p>
+            <div className="text-center py-8 text-muted-foreground">
+              <ListChecks className="h-8 w-8 mx-auto mb-2 opacity-50" />
+              <p className="text-sm">Error loading workout</p>
             </div>
           ) : structuredWorkout?.steps && structuredWorkout.steps.length > 0 ? (
             <div className="space-y-2">
               {structuredWorkout.steps.map((step, idx) => (
-                <div key={step.id} className="p-2.5 bg-card/30 rounded border border-border/20">
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className="text-[10px] font-mono text-muted-foreground/50 w-4">{idx + 1}</span>
-                    <span className="text-xs font-medium text-foreground uppercase tracking-wide">{step.type}</span>
+                <div key={step.id} className="p-3 bg-muted/30 rounded-lg border border-border">
+                  <div className="flex items-center gap-3 mb-1">
+                    <span className="text-sm font-medium text-muted-foreground w-6">{idx + 1}</span>
+                    <span className="text-sm font-semibold text-foreground capitalize">{step.type}</span>
                     {step.duration_seconds && (
-                      <span className="text-[10px] text-muted-foreground/50 ml-auto tabular-nums">
-                        {Math.round(step.duration_seconds / 60)}min
+                      <span className="text-sm text-muted-foreground ml-auto tabular-nums">
+                        {Math.round(step.duration_seconds / 60)} min
                       </span>
                     )}
                   </div>
                   {step.purpose && (
-                    <p className="text-[11px] text-foreground/80 ml-6">{step.purpose}</p>
+                    <p className="text-sm text-foreground ml-9">{step.purpose}</p>
                   )}
                   {step.intensity && (
-                    <p className="text-[10px] text-muted-foreground/50 ml-6 mt-0.5">{step.intensity}</p>
+                    <p className="text-sm text-muted-foreground ml-9 mt-1">{step.intensity}</p>
                   )}
                 </div>
               ))}
             </div>
           ) : (
-            <div className="text-center py-8 text-muted-foreground/50">
-              <ListChecks className="h-6 w-6 mx-auto mb-2 opacity-30" />
-              <p className="text-[10px] uppercase tracking-wider">No structured steps</p>
+            <div className="text-center py-8 text-muted-foreground">
+              <ListChecks className="h-8 w-8 mx-auto mb-2 opacity-50" />
+              <p className="text-sm">No structured steps</p>
             </div>
           )}
         </TabsContent>
         
-        {/* EXECUTION TAB - Full Analysis Graphs */}
-        <TabsContent value="execution" className="mt-3 space-y-4">
-          <div className="text-[9px] uppercase tracking-widest text-muted-foreground/40 mb-2">
+        {/* EXECUTION TAB */}
+        <TabsContent value="execution" className="mt-4 space-y-4">
+          <div className="text-sm font-medium text-muted-foreground mb-3">
             Time-Series Analysis
           </div>
           <ActivityCharts activity={activity} />
           
           {/* Execution Metrics Summary */}
-          <div className="grid grid-cols-2 gap-2 mt-4">
-            <div className="p-2.5 bg-card/30 rounded border border-border/20">
-              <div className="text-[9px] uppercase tracking-wider text-muted-foreground/40 mb-1">Status</div>
+          <div className="grid grid-cols-2 gap-3 mt-4">
+            <div className="p-4 bg-muted/30 rounded-lg border border-border">
+              <div className="text-sm text-muted-foreground mb-1">Status</div>
               <div className={cn(
-                "text-xs font-medium uppercase",
-                (execution?.completed ?? true) ? "text-load-fresh" : "text-muted-foreground/50"
+                "text-base font-medium",
+                (execution?.completed ?? true) ? "text-green-600 dark:text-green-400" : "text-muted-foreground"
               )}>
-                {(execution?.completed ?? true) ? "COMPLETED" : "INCOMPLETE"}
+                {(execution?.completed ?? true) ? "Completed" : "Incomplete"}
               </div>
             </div>
-            <div className="p-2.5 bg-card/30 rounded border border-border/20">
-              <div className="text-[9px] uppercase tracking-wider text-muted-foreground/40 mb-1">Date</div>
-              <div className="text-xs font-mono text-foreground/80">
+            <div className="p-4 bg-muted/30 rounded-lg border border-border">
+              <div className="text-sm text-muted-foreground mb-1">Date</div>
+              <div className="text-base text-foreground">
                 {execution?.executionDate || activity.date}
               </div>
             </div>
           </div>
         </TabsContent>
         
-        {/* COMPLIANCE TAB - Race Engineer Debrief */}
-        <TabsContent value="compliance" className="mt-3 space-y-4">
+        {/* COMPLIANCE TAB */}
+        <TabsContent value="compliance" className="mt-4 space-y-4">
           {workoutLoading ? (
             <div className="flex items-center justify-center h-48 text-muted-foreground">
-              <Loader2 className="h-4 w-4 animate-spin" />
+              <Loader2 className="h-5 w-5 animate-spin" />
             </div>
           ) : plannedData ? (
             <div className="space-y-4">
               {/* Verdict Header */}
-              <div className="flex items-center justify-between p-3 bg-card/30 rounded border border-border/30">
+              <div className="flex items-center justify-between p-4 bg-muted/30 rounded-lg border border-border">
                 <div>
-                  <div className="text-[9px] uppercase tracking-widest text-muted-foreground/40">
+                  <div className="text-sm text-muted-foreground">
                     Execution Assessment
                   </div>
-                  <div className={cn('text-sm font-medium uppercase tracking-wide mt-0.5', verdict.color)}>
+                  <div className={cn('text-lg font-semibold mt-1', verdict.color)}>
                     {verdict.label}
                   </div>
                 </div>
                 {complianceScore !== null && (
                   <div className="text-right">
-                    <div className="text-2xl font-semibold tabular-nums text-foreground">
+                    <div className="text-3xl font-bold tabular-nums text-foreground">
                       {complianceScore.toFixed(0)}
                     </div>
-                    <div className="text-[9px] uppercase tracking-wider text-muted-foreground/40">
-                      SCORE
+                    <div className="text-sm text-muted-foreground">
+                      Score
                     </div>
                   </div>
                 )}
               </div>
 
               {/* Deviations */}
-              <div className="space-y-1 bg-card/20 rounded-lg p-3 border border-border/20">
-                <div className="text-[9px] uppercase tracking-widest text-muted-foreground/40 mb-2">
+              <div className="space-y-1 bg-muted/30 rounded-lg p-4 border border-border">
+                <div className="text-sm font-medium text-muted-foreground mb-3">
                   Plan vs Executed
                 </div>
                 
@@ -557,8 +556,8 @@ export function ActivityExpandedContent({ activity }: ActivityExpandedContentPro
 
               {/* Compliance from API */}
               {structuredWorkout?.comparison && (
-                <div className="space-y-1 bg-card/20 rounded-lg p-3 border border-border/20">
-                  <div className="text-[9px] uppercase tracking-widest text-muted-foreground/40 mb-2">
+                <div className="space-y-1 bg-muted/30 rounded-lg p-4 border border-border">
+                  <div className="text-sm font-medium text-muted-foreground mb-3">
                     Detailed Compliance
                   </div>
                   {(() => {
@@ -570,11 +569,11 @@ export function ActivityExpandedContent({ activity }: ActivityExpandedContentPro
                     if (!summary) return null;
                     
                     return Object.entries(summary).map(([key, value]) => (
-                      <div key={key} className="flex items-center justify-between py-1.5 border-b border-border/20 last:border-b-0">
-                        <span className="text-[10px] uppercase tracking-wider text-muted-foreground/50">
+                      <div key={key} className="flex items-center justify-between py-2 border-b border-border last:border-b-0">
+                        <span className="text-sm text-muted-foreground capitalize">
                           {key.replace(/_/g, ' ')}
                         </span>
-                        <span className="text-xs font-mono text-foreground/80 tabular-nums">
+                        <span className="text-sm font-medium text-foreground tabular-nums">
                           {typeof value === 'number' ? value.toFixed(value % 1 === 0 ? 0 : 1) : String(value)}
                         </span>
                       </div>
@@ -584,9 +583,9 @@ export function ActivityExpandedContent({ activity }: ActivityExpandedContentPro
               )}
             </div>
           ) : (
-            <div className="text-center py-8 text-muted-foreground/50">
-              <CheckCircle2 className="h-6 w-6 mx-auto mb-2 opacity-30" />
-              <p className="text-[10px] uppercase tracking-wider">No plan data available</p>
+            <div className="text-center py-8 text-muted-foreground">
+              <CheckCircle2 className="h-8 w-8 mx-auto mb-2 opacity-50" />
+              <p className="text-sm">No plan data available</p>
             </div>
           )}
         </TabsContent>
@@ -595,7 +594,7 @@ export function ActivityExpandedContent({ activity }: ActivityExpandedContentPro
   );
 }
 
-// Telemetry Metric Card - Compact, numeric-dominant
+// Metric Card
 function TelemetryMetricCard({
   label,
   value,
@@ -608,22 +607,22 @@ function TelemetryMetricCard({
   delta?: number;
 }) {
   return (
-    <div className="p-2 bg-card/30 rounded border border-border/20">
-      <div className="text-[9px] uppercase tracking-widest text-muted-foreground/40 mb-0.5">
+    <div className="p-3 bg-muted/30 rounded-lg border border-border">
+      <div className="text-sm text-muted-foreground mb-1">
         {label}
       </div>
-      <div className="flex items-baseline gap-1">
-        <span className="text-lg font-semibold tabular-nums tracking-tight text-foreground">
+      <div className="flex items-baseline gap-1.5">
+        <span className="text-xl font-semibold tabular-nums text-foreground">
           {value}
         </span>
         {unit && (
-          <span className="text-[10px] text-muted-foreground/40 uppercase">{unit}</span>
+          <span className="text-sm text-muted-foreground">{unit}</span>
         )}
       </div>
       {delta !== undefined && (
         <div className={cn(
-          'text-[10px] font-mono mt-0.5',
-          delta > 5 ? 'text-load-overreaching' : delta < -5 ? 'text-load-fresh' : 'text-muted-foreground/40'
+          'text-sm mt-1',
+          delta > 5 ? 'text-amber-600 dark:text-amber-400' : delta < -5 ? 'text-green-600 dark:text-green-400' : 'text-muted-foreground'
         )}>
           {delta > 0 ? '+' : ''}{delta.toFixed(0)}%
         </div>
@@ -634,14 +633,14 @@ function TelemetryMetricCard({
 
 function HighlightChip({ type, text }: { type: 'positive' | 'warning' | 'neutral'; text: string }) {
   const colors = {
-    positive: 'border-load-fresh/30 text-load-fresh/80',
-    warning: 'border-load-overreaching/30 text-load-overreaching/80',
-    neutral: 'border-border text-muted-foreground/60',
+    positive: 'bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/30',
+    warning: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30',
+    neutral: 'bg-muted text-muted-foreground border-border',
   };
 
   return (
     <span className={cn(
-      'px-2 py-0.5 rounded border text-[9px] font-medium uppercase tracking-wider',
+      'px-2.5 py-1 rounded-md border text-xs font-medium',
       colors[type]
     )}>
       {text}

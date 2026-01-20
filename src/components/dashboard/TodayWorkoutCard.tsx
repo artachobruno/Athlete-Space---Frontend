@@ -3,14 +3,16 @@ import { Badge } from '@/components/ui/badge';
 import { fetchCalendarToday, fetchTrainingLoad, fetchActivities, fetchActivityStreams } from '@/lib/api';
 import { getTodayIntelligence } from '@/lib/intelligence';
 import { format } from 'date-fns';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Clock, Route } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuthenticatedQuery } from '@/hooks/useAuthenticatedQuery';
 import { useMemo } from 'react';
 import { getTssForDate, enrichActivitiesWithTss, type TrainingLoadData } from '@/lib/tss-utils';
 import { WorkoutCard } from '@/components/workout/WorkoutCard';
+import { BaseCalendarCardSvg } from '@/components/calendar/cards/BaseCalendarCardSvg';
 import type { CompletedActivity } from '@/types';
 import type { TodayResponse } from '@/lib/api';
+import { normalizeSportType } from '@/lib/session-utils';
 
 // F1 Design: Map workout intent to status
 type WorkoutIntent = 'aerobic' | 'threshold' | 'vo2' | 'endurance' | 'recovery';
@@ -178,6 +180,8 @@ export function TodayWorkoutCard(props: TodayWorkoutCardProps = {}) {
 
   const workoutType = todayWorkout.type || '';
   const workoutIntent = mapTypeToIntent(workoutType);
+  const isCompleted = todayWorkout.status === 'completed' || Boolean(matchingActivity);
+  const sport = normalizeSportType(todayWorkout.type);
 
   // Map intent to badge variant
   const getIntentVariant = (intent: WorkoutIntent): 'default' | 'secondary' | 'destructive' | 'outline' => {
@@ -190,25 +194,72 @@ export function TodayWorkoutCard(props: TodayWorkoutCardProps = {}) {
     }
   };
 
+  // Determine calendar card variant for planned sessions
+  const getCalendarVariant = (): string => {
+    if (isCompleted) {
+      return `completed-${sport}`;
+    }
+    return `planned-${sport}`;
+  };
+
+  // Format duration for display
+  const formatDuration = (minutes: number): string => {
+    if (minutes >= 60) {
+      const hours = Math.floor(minutes / 60);
+      const mins = minutes % 60;
+      return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
+    }
+    return `${minutes}m`;
+  };
+
   return (
     <Card className={cn('h-full flex flex-col', cardClassName)}>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
         <CardTitle className="text-lg">Today's Session</CardTitle>
-        <Badge variant={getIntentVariant(workoutIntent)}>
-          {todayWorkout.intensity || workoutType || 'Session'}
+        <Badge variant={isCompleted ? 'default' : getIntentVariant(workoutIntent)}>
+          {isCompleted ? 'Completed' : (todayWorkout.intensity || workoutType || 'Planned')}
         </Badge>
       </CardHeader>
       <CardContent className="flex-1 space-y-2 py-2">
-        <WorkoutCard
-          session={todayWorkout}
-          activity={matchingActivity}
-          streams={activityStreams ?? null}
-          tss={todayTss}
-          variant="feed"
-        />
-
-        {todayWorkout.notes && (
-          <p className="text-sm text-muted-foreground">{todayWorkout.notes}</p>
+        {isCompleted ? (
+          // Completed: Show WorkoutCard with map/route
+          <WorkoutCard
+            session={todayWorkout}
+            activity={matchingActivity}
+            streams={activityStreams ?? null}
+            tss={todayTss}
+            variant="feed"
+          />
+        ) : (
+          // Planned: Show calendar-style card
+          <div className="h-full flex flex-col">
+            <div style={{ aspectRatio: '600 / 360' }}>
+              <BaseCalendarCardSvg
+                variant={getCalendarVariant()}
+                topLeft={todayWorkout.intensity || workoutType || 'Session'}
+                topRight={todayWorkout.duration_minutes ? formatDuration(todayWorkout.duration_minutes) : ''}
+                title={todayWorkout.title || 'Planned Workout'}
+                description={todayWorkout.notes || null}
+                isPlanned={true}
+                viewVariant="week"
+              />
+            </div>
+            {/* Quick metrics for planned session */}
+            <div className="flex items-center gap-4 mt-3 text-sm text-muted-foreground">
+              {todayWorkout.duration_minutes && (
+                <span className="flex items-center gap-1.5">
+                  <Clock className="h-4 w-4" />
+                  {formatDuration(todayWorkout.duration_minutes)}
+                </span>
+              )}
+              {todayWorkout.distance_km && (
+                <span className="flex items-center gap-1.5">
+                  <Route className="h-4 w-4" />
+                  {todayWorkout.distance_km.toFixed(1)} km
+                </span>
+              )}
+            </div>
+          </div>
         )}
       </CardContent>
     </Card>
