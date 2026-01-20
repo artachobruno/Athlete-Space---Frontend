@@ -1,4 +1,6 @@
 import { CalendarWorkoutCardSvg } from './CalendarWorkoutCardSvg';
+import { WorkoutSessionCard } from '@/components/workout/WorkoutSessionCard';
+import { calendarItemToWorkoutSession } from '@/components/workout/workoutSessionAdapter';
 import type { CalendarItem } from '@/types/calendar';
 import { useAuthenticatedQuery } from '@/hooks/useAuthenticatedQuery';
 import { fetchActivityStreams } from '@/lib/api';
@@ -10,6 +12,8 @@ interface Props {
   onClick?: (item: CalendarItem) => void;
   className?: string;
   activityIdBySessionId?: Record<string, string | null | undefined>;
+  /** Use new WorkoutSessionCard design instead of SVG card */
+  useNewCard?: boolean;
 }
 
 export function CalendarWorkoutStack({
@@ -19,6 +23,7 @@ export function CalendarWorkoutStack({
   onClick,
   className,
   activityIdBySessionId,
+  useNewCard = false,
 }: Props) {
   const visible = items.slice(0, maxVisible);
   const topItem = visible[0];
@@ -37,6 +42,23 @@ export function CalendarWorkoutStack({
     return null;
   }
 
+  // New card design - uses WorkoutSessionCard in compact mode
+  if (useNewCard && visible.length === 1) {
+    const item = visible[0];
+    const session = calendarItemToWorkoutSession(item);
+
+    return (
+      <div
+        className={`w-full h-full ${className ?? ''}`}
+        onClick={() => onClick?.(item)}
+        style={{ cursor: onClick ? 'pointer' : 'default' }}
+      >
+        <WorkoutSessionCard session={session} compact />
+      </div>
+    );
+  }
+
+  // Stack layout for multiple items or legacy SVG mode
   const getScale = (index: number): number => {
     if (index === 0) return 1.0;
     if (index === 1) return 0.97;
@@ -55,6 +77,26 @@ export function CalendarWorkoutStack({
         const offset = getOffset(i);
         const scale = getScale(i);
         const isTopCard = i === 0;
+
+        // Use new card design for top card when enabled
+        if (useNewCard && isTopCard) {
+          const session = calendarItemToWorkoutSession(item);
+          return (
+            <div
+              key={item.id}
+              className="absolute inset-0 transition-all duration-[140ms] ease-out"
+              style={{
+                transform: `translate(${offset.x}px, ${offset.y}px) scale(${scale})`,
+                transformOrigin: 'top left',
+                zIndex: visible.length - i,
+                pointerEvents: 'auto',
+              }}
+              onClick={() => onClick?.(item)}
+            >
+              <WorkoutSessionCard session={session} compact />
+            </div>
+          );
+        }
 
         return (
           <div

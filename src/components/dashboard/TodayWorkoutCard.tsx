@@ -3,23 +3,20 @@ import { Badge } from '@/components/ui/badge';
 import { fetchCalendarToday, fetchTrainingLoad, fetchActivities, fetchActivityStreams } from '@/lib/api';
 import { getTodayIntelligence } from '@/lib/intelligence';
 import { format } from 'date-fns';
-import { Loader2, Clock, Route } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuthenticatedQuery } from '@/hooks/useAuthenticatedQuery';
 import { useMemo } from 'react';
 import { getTssForDate, enrichActivitiesWithTss, type TrainingLoadData } from '@/lib/tss-utils';
-import { WorkoutCard } from '@/components/workout/WorkoutCard';
-import { BaseCalendarCardSvg } from '@/components/calendar/cards/BaseCalendarCardSvg';
-import { WorkoutStepsBar, SimpleWorkoutBar } from '@/components/workout/WorkoutStepsBar';
-import { useStructuredWorkout } from '@/hooks/useStructuredWorkout';
+import { WorkoutSessionCard } from '@/components/workout/WorkoutSessionCard';
+import { toWorkoutSession } from '@/components/workout/workoutSessionAdapter';
 import type { CompletedActivity } from '@/types';
 import type { TodayResponse } from '@/lib/api';
-import { normalizeSportType } from '@/lib/session-utils';
 
-// F1 Design: Map workout intent to status
+// Map workout intent to status for badge display
 type WorkoutIntent = 'aerobic' | 'threshold' | 'vo2' | 'endurance' | 'recovery';
 
-const mapTypeToIntent = (type: string | null | undefined): 'aerobic' | 'threshold' | 'vo2' | 'endurance' | 'recovery' => {
+function mapTypeToIntent(type: string | null | undefined): WorkoutIntent {
   if (!type || typeof type !== 'string') {
     return 'aerobic';
   }
@@ -29,7 +26,7 @@ const mapTypeToIntent = (type: string | null | undefined): 'aerobic' | 'threshol
   if (lower.includes('endurance') || lower.includes('long')) return 'endurance';
   if (lower.includes('recovery') || lower.includes('easy')) return 'recovery';
   return 'aerobic';
-};
+}
 
 interface TodayWorkoutCardProps {
   todayData?: TodayResponse | null;
@@ -58,7 +55,7 @@ export function TodayWorkoutCard(props: TodayWorkoutCardProps = {}) {
     queryKey: ['calendarToday', today],
     queryFn: () => fetchCalendarToday(today),
     retry: 1,
-    enabled: propsTodayData === undefined, // Only fetch if props not provided
+    enabled: propsTodayData === undefined,
   });
 
   const { data: trainingLoadData } = useAuthenticatedQuery<TrainingLoadData>({
@@ -78,8 +75,8 @@ export function TodayWorkoutCard(props: TodayWorkoutCardProps = {}) {
       }
       return failureCount < 1;
     },
-    enabled: propsTrainingLoad7d === undefined, // Only fetch if props not provided
-    staleTime: 2 * 60 * 1000, // 2 minutes
+    enabled: propsTrainingLoad7d === undefined,
+    staleTime: 2 * 60 * 1000,
     gcTime: 5 * 60 * 1000,
     refetchOnWindowFocus: true,
   });
@@ -88,7 +85,7 @@ export function TodayWorkoutCard(props: TodayWorkoutCardProps = {}) {
     queryKey: ['activities', 'limit', 10],
     queryFn: () => fetchActivities({ limit: 10 }),
     retry: 1,
-    enabled: propsActivities10 === undefined, // Only fetch if props not provided
+    enabled: propsActivities10 === undefined,
     staleTime: 2 * 60 * 1000,
     gcTime: 10 * 60 * 1000,
   });
@@ -97,7 +94,7 @@ export function TodayWorkoutCard(props: TodayWorkoutCardProps = {}) {
     queryKey: ['intelligence', 'today', 'current'],
     queryFn: () => getTodayIntelligence(),
     retry: 1,
-    enabled: propsTodayIntelligence === undefined, // Only fetch if props not provided
+    enabled: propsTodayIntelligence === undefined,
     staleTime: 30 * 60 * 1000,
     gcTime: 60 * 60 * 1000,
   });
@@ -134,28 +131,25 @@ export function TodayWorkoutCard(props: TodayWorkoutCardProps = {}) {
     staleTime: 15 * 60 * 1000,
     gcTime: 30 * 60 * 1000,
   });
-  
-  // Get TSS for today from training load or completed activity
-  const todayTss = useMemo(() => {
-    if (todayWorkout?.status === 'completed') {
-      // Try to find matching completed activity
-      const enrichedActivities = enrichActivitiesWithTss(finalActivities || [], finalTrainingLoadData);
-      const activity = enrichedActivities.find(a => {
-        const activityDate = a.date?.split('T')[0] || a.date;
-        return activityDate === today;
-      });
-      if (activity?.trainingLoad) {
-        return activity.trainingLoad;
-      }
-    }
-    // Fallback to training load data
-    return getTssForDate(today, finalTrainingLoadData);
-  }, [todayWorkout, today, finalActivities, finalTrainingLoadData]);
 
-  // Fetch structured workout for steps bar (must be before early returns)
-  const structuredWorkoutState = useStructuredWorkout(
-    todayWorkout?.workout_id ?? undefined
-  );
+  // Convert to WorkoutSession for the new card
+  const workoutSession = useMemo(() => {
+    if (!todayWorkout) return null;
+
+    // Get coach feedback from intelligence or activity
+    const intelligenceMessage = finalTodayIntelligence && typeof finalTodayIntelligence === 'object'
+      ? (finalTodayIntelligence as { message?: string }).message
+      : undefined;
+    
+    const coachFeedback = intelligenceMessage || matchingActivity?.coachFeedback || todayWorkout.notes;
+
+    return toWorkoutSession({
+      session: todayWorkout,
+      activity: matchingActivity,
+      paceStream: activityStreams?.pace,
+      coachFeedback,
+    });
+  }, [todayWorkout, matchingActivity, activityStreams, finalTodayIntelligence]);
 
   if (isLoading) {
     return (
@@ -170,7 +164,7 @@ export function TodayWorkoutCard(props: TodayWorkoutCardProps = {}) {
     );
   }
 
-  if (error || !todayWorkout) {
+  if (error || !todayWorkout || !workoutSession) {
     return (
       <Card className={cn('h-full flex flex-col', cardClassName)}>
         <CardHeader className="pb-2">
@@ -188,10 +182,9 @@ export function TodayWorkoutCard(props: TodayWorkoutCardProps = {}) {
   const workoutType = todayWorkout.type || '';
   const workoutIntent = mapTypeToIntent(workoutType);
   const isCompleted = todayWorkout.status === 'completed' || Boolean(matchingActivity);
-  const sport = normalizeSportType(todayWorkout.type);
 
   // Map intent to badge variant
-  const getIntentVariant = (intent: WorkoutIntent): 'default' | 'secondary' | 'destructive' | 'outline' => {
+  function getIntentVariant(intent: WorkoutIntent): 'default' | 'secondary' | 'destructive' | 'outline' {
     switch (intent) {
       case 'recovery': return 'secondary';
       case 'aerobic': return 'default';
@@ -199,30 +192,7 @@ export function TodayWorkoutCard(props: TodayWorkoutCardProps = {}) {
       case 'threshold': return 'outline';
       case 'vo2': return 'destructive';
     }
-  };
-
-  // Determine calendar card variant for planned sessions
-  const getCalendarVariant = (): string => {
-    if (isCompleted) {
-      return `completed-${sport}`;
-    }
-    return `planned-${sport}`;
-  };
-
-  // Format duration for display
-  const formatDuration = (minutes: number): string => {
-    if (minutes >= 60) {
-      const hours = Math.floor(minutes / 60);
-      const mins = minutes % 60;
-      return mins > 0 ? `${hours}h ${mins}m` : `${hours}h`;
-    }
-    return `${minutes}m`;
-  };
-
-  // Get structured steps for the workout bar
-  const structuredSteps = (!isCompleted && structuredWorkoutState.status === 'ready')
-    ? structuredWorkoutState.data.steps 
-    : [];
+  }
 
   return (
     <Card className={cn('h-full flex flex-col', cardClassName)}>
@@ -232,61 +202,9 @@ export function TodayWorkoutCard(props: TodayWorkoutCardProps = {}) {
           {isCompleted ? 'Completed' : (todayWorkout.intensity || workoutType || 'Planned')}
         </Badge>
       </CardHeader>
-      <CardContent className="flex-1 space-y-2 py-2">
-        {isCompleted ? (
-          // Completed: Show WorkoutCard with map/route
-          <WorkoutCard
-            session={todayWorkout}
-            activity={matchingActivity}
-            streams={activityStreams ?? null}
-            tss={todayTss}
-            variant="feed"
-          />
-        ) : (
-          // Planned: Show calendar-style card with workout steps bar
-          <div className="flex flex-col h-full">
-            {/* Card with same aspect ratio as WorkoutCard */}
-            <div className="flex-1" style={{ aspectRatio: '600 / 360' }}>
-              <BaseCalendarCardSvg
-                variant={getCalendarVariant()}
-                topLeft={todayWorkout.intensity || workoutType || 'Session'}
-                topRight={todayWorkout.duration_minutes ? formatDuration(todayWorkout.duration_minutes) : ''}
-                title={todayWorkout.title || 'Planned Workout'}
-                description={todayWorkout.notes || null}
-                isPlanned={true}
-                viewVariant="week"
-              />
-            </div>
-            
-            {/* Workout Steps Bar - shows workout structure */}
-            <div className="mt-3">
-              {structuredSteps.length > 0 ? (
-                <WorkoutStepsBar steps={structuredSteps} />
-              ) : (
-                <SimpleWorkoutBar 
-                  intensity={todayWorkout.intensity || workoutType || 'moderate'} 
-                  durationMinutes={todayWorkout.duration_minutes || 60}
-                />
-              )}
-            </div>
-
-            {/* Quick metrics for planned session */}
-            <div className="flex items-center gap-4 mt-3 text-sm text-muted-foreground">
-              {todayWorkout.duration_minutes && (
-                <span className="flex items-center gap-1.5">
-                  <Clock className="h-4 w-4" />
-                  {formatDuration(todayWorkout.duration_minutes)}
-                </span>
-              )}
-              {todayWorkout.distance_km && (
-                <span className="flex items-center gap-1.5">
-                  <Route className="h-4 w-4" />
-                  {todayWorkout.distance_km.toFixed(1)} km
-                </span>
-              )}
-            </div>
-          </div>
-        )}
+      <CardContent className="flex-1 py-2">
+        {/* Full WorkoutSessionCard - metrics, effort graph, and coach insight */}
+        <WorkoutSessionCard session={workoutSession} />
       </CardContent>
     </Card>
   );

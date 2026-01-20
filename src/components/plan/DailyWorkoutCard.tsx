@@ -4,15 +4,10 @@ import { CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { cn } from '@/lib/utils';
 import type { PlannedWorkout, CompletedActivity, DailyDecision } from '@/types';
-import {
-  Footprints, Bike, Waves, Clock, Route, Heart,
-  CheckCircle2, XCircle, AlertCircle, Moon, RefreshCw
-} from 'lucide-react';
-import { useUnitSystem } from '@/hooks/useUnitSystem';
-import { CalendarWorkoutStack } from '@/components/calendar/cards/CalendarWorkoutStack';
-import { toCalendarCardProps } from '@/components/calendar/cards/calendarCardAdapter';
-import { normalizeCalendarSport, normalizeCalendarIntent } from '@/types/calendar';
-import { toPlanCalendarItem } from './planCalendarAdapter';
+import { CheckCircle2, XCircle, AlertCircle, Moon, RefreshCw } from 'lucide-react';
+import { WorkoutSessionCard } from '@/components/workout/WorkoutSessionCard';
+import { toPlannedWorkoutSession } from '@/components/workout/workoutSessionAdapter';
+import type { WorkoutSession, WorkoutPhase, WorkoutMetrics, CoachTone } from '@/components/workout/types';
 import { getGlowIntensityFromWorkout } from '@/lib/intensityGlow';
 
 interface DailyWorkoutCardProps {
@@ -25,21 +20,6 @@ interface DailyWorkoutCardProps {
   onClick?: () => void;
   isExpanded?: boolean;
 }
-
-const sportIcons = {
-  running: Footprints,
-  cycling: Bike,
-  swimming: Waves,
-  triathlon: Footprints,
-};
-
-const intentColors = {
-  aerobic: 'bg-training-aerobic/15 text-training-aerobic border-training-aerobic/30',
-  threshold: 'bg-training-threshold/15 text-training-threshold border-training-threshold/30',
-  vo2: 'bg-training-vo2/15 text-training-vo2 border-training-vo2/30',
-  endurance: 'bg-training-endurance/15 text-training-endurance border-training-endurance/30',
-  recovery: 'bg-training-recovery/15 text-training-recovery border-training-recovery/30',
-};
 
 const decisionConfig = {
   proceed: { icon: CheckCircle2, label: 'Proceed', className: 'bg-decision-proceed/15 text-decision-proceed border-decision-proceed/30' },
@@ -56,30 +36,139 @@ const coachNotes: Record<string, string> = {
   recovery: 'Very easy. Heart rate should stay low throughout.',
 };
 
-export function DailyWorkoutCard({ date, dateId, workout, completed, status, dailyDecision, onClick, isExpanded }: DailyWorkoutCardProps) {
-  const { convertDistance } = useUnitSystem();
+/**
+ * Converts PlannedWorkout to WorkoutSession for the new card
+ */
+function plannedWorkoutToSession(
+  workout: PlannedWorkout,
+  completed: CompletedActivity | undefined,
+  cardStatus: 'upcoming' | 'today' | 'completed' | 'missed'
+): WorkoutSession {
+  // Determine phase based on status
+  let phase: WorkoutPhase = 'planned';
+  if (cardStatus === 'completed' && completed) {
+    phase = 'compliance';
+  }
+
+  const plannedMetrics: WorkoutMetrics = {
+    distanceKm: workout.distance ?? 0,
+    durationSec: workout.duration * 60,
+    paceSecPerKm: workout.distance && workout.distance > 0
+      ? (workout.duration * 60) / workout.distance
+      : 0,
+  };
+
+  const completedMetrics: WorkoutMetrics | undefined = completed
+    ? {
+        distanceKm: completed.distance,
+        durationSec: completed.duration * 60,
+        paceSecPerKm: completed.distance > 0
+          ? (completed.duration * 60) / completed.distance
+          : 0,
+      }
+    : undefined;
+
+  // Generate synthetic effort data
+  const segments = Math.min(12, Math.max(6, Math.floor(workout.duration / 10)));
+  const effortData = completed
+    ? Array.from({ length: segments }, () => Math.floor(Math.random() * 5) + 4)
+    : undefined;
+  const plannedEffortData = Array.from({ length: segments }, () => Math.floor(Math.random() * 4) + 3);
+
+  // Coach insight
+  const feedbackText = completed?.coachFeedback || coachNotes[workout.intent];
+  let tone: CoachTone = 'neutral';
+  if (feedbackText) {
+    const lower = feedbackText.toLowerCase();
+    if (lower.includes('great') || lower.includes('strong') || lower.includes('good')) {
+      tone = 'positive';
+    } else if (lower.includes('caution') || lower.includes('monitor') || lower.includes('careful')) {
+      tone = 'warning';
+    }
+  }
+
+  return {
+    id: workout.id,
+    type: mapIntentToType(workout.intent),
+    phase,
+    planned: plannedMetrics,
+    completed: completedMetrics,
+    effortData,
+    plannedEffortData,
+    coachInsight: feedbackText ? { tone, message: feedbackText } : undefined,
+  };
+}
+
+function mapIntentToType(intent: string): 'threshold' | 'interval' | 'recovery' | 'long' | 'easy' | 'tempo' {
+  switch (intent) {
+    case 'threshold': return 'threshold';
+    case 'vo2': return 'interval';
+    case 'recovery': return 'recovery';
+    case 'endurance': return 'long';
+    case 'aerobic': return 'easy';
+    default: return 'easy';
+  }
+}
+
+/**
+ * Converts CompletedActivity (without planned) to WorkoutSession
+ */
+function activityToSession(activity: CompletedActivity): WorkoutSession {
+  const metrics: WorkoutMetrics = {
+    distanceKm: activity.distance,
+    durationSec: activity.duration * 60,
+    paceSecPerKm: activity.distance > 0 ? (activity.duration * 60) / activity.distance : 0,
+  };
+
+  const segments = Math.min(12, Math.max(6, Math.floor(activity.duration / 10)));
+  const effortData = Array.from({ length: segments }, () => Math.floor(Math.random() * 5) + 4);
+
+  let tone: CoachTone = 'neutral';
+  if (activity.coachFeedback) {
+    const lower = activity.coachFeedback.toLowerCase();
+    if (lower.includes('great') || lower.includes('strong')) tone = 'positive';
+    else if (lower.includes('caution') || lower.includes('monitor')) tone = 'warning';
+  }
+
+  return {
+    id: activity.id,
+    type: 'easy',
+    phase: 'completed',
+    completed: metrics,
+    effortData,
+    coachInsight: activity.coachFeedback
+      ? { tone, message: activity.coachFeedback }
+      : undefined,
+  };
+}
+
+export function DailyWorkoutCard({
+  date,
+  dateId,
+  workout,
+  completed,
+  status,
+  dailyDecision,
+  onClick,
+}: DailyWorkoutCardProps) {
   const isRestDay = !workout && !completed;
-  // Use activity icon if no workout but has completed activity
-  const Icon = workout 
-    ? (sportIcons[workout.sport as keyof typeof sportIcons] || Footprints)
-    : (completed 
-      ? (sportIcons[completed.sport as keyof typeof sportIcons] || Footprints)
-      : Moon);
   const decisionInfo = dailyDecision ? decisionConfig[dailyDecision.decision] : null;
   const DecisionIcon = decisionInfo?.icon;
 
-  // Convert workout/activity to CalendarItem for card display
-  const calendarItem = toPlanCalendarItem(date, workout, completed);
+  // Convert to WorkoutSession for the new card
+  const workoutSession = workout
+    ? plannedWorkoutToSession(workout, completed, status)
+    : completed
+      ? activityToSession(completed)
+      : null;
 
-  // Determine glow intensity for quality workouts (threshold, vo2, hill)
-  // Only apply glow to quality days, not rest days or easy workouts
+  // Determine glow intensity for quality workouts
   const glowIntensity = workout 
     ? getGlowIntensityFromWorkout(workout.intent, undefined)
-    : undefined
+    : undefined;
   
-  // Only show glow for quality workouts (threshold, vo2, hill)
-  const isQualityWorkout = glowIntensity === 'threshold' || glowIntensity === 'vo2' || glowIntensity === 'hill'
-  const finalGlowIntensity = isQualityWorkout ? glowIntensity : undefined
+  const isQualityWorkout = glowIntensity === 'threshold' || glowIntensity === 'vo2' || glowIntensity === 'hill';
+  const finalGlowIntensity = isQualityWorkout ? glowIntensity : undefined;
 
   return (
     <GlassCard 
@@ -94,17 +183,6 @@ export function DailyWorkoutCard({ date, dateId, workout, completed, status, dai
       onClick={onClick}
     >
       <CardContent className="p-4">
-        {/* Calendar Card Preview */}
-        {calendarItem && (
-          <div className="mb-4 w-full max-w-[400px]">
-            <CalendarWorkoutStack
-              items={[calendarItem]}
-              variant="plan"
-              maxVisible={1}
-            />
-          </div>
-        )}
-        
         <div className="flex flex-col lg:flex-row lg:items-start gap-4">
           {/* Left: Day info */}
           <div className="lg:w-24 shrink-0">
@@ -137,7 +215,7 @@ export function DailyWorkoutCard({ date, dateId, workout, completed, status, dai
             )}
           </div>
 
-          {/* Center: Workout details */}
+          {/* Center: Workout Card */}
           <div className="flex-1 min-w-0">
             {isRestDay ? (
               <div className="py-4">
@@ -149,147 +227,16 @@ export function DailyWorkoutCard({ date, dateId, workout, completed, status, dai
                   Recovery and adaptation. Stay active with light movement if desired.
                 </p>
               </div>
-            ) : workout ? (
-              <>
-                {/* Workout header */}
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="p-2 bg-muted rounded-lg">
-                    <Icon className="h-5 w-5 text-foreground" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h4 className="font-semibold text-foreground truncate">{workout.title}</h4>
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <Badge variant="outline" className={cn('text-xs', intentColors[workout.intent])}>
-                        {workout.intent}
-                      </Badge>
-                      <span className="text-xs text-muted-foreground capitalize">{workout.sport}</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Metrics */}
-                <div className="flex items-center gap-4 text-sm text-muted-foreground mb-3">
-                  <span className="flex items-center gap-1">
-                    <Clock className="h-4 w-4" />
-                    {workout.duration} min
-                  </span>
-                  {workout.distance && (
-                    <span className="flex items-center gap-1">
-                      <Route className="h-4 w-4" />
-                      {(() => {
-                        const dist = convertDistance(workout.distance);
-                        return `${dist.value.toFixed(1)} ${dist.unit}`;
-                      })()}
-                    </span>
-                  )}
-                </div>
-
-                {/* Description */}
-                <p className="text-sm text-muted-foreground">{workout.description}</p>
-
-                {/* Structure preview */}
-                {workout.structure && workout.structure.length > 0 && (
-                  <div className="mt-3 flex flex-wrap gap-1.5">
-                    {workout.structure.slice(0, 4).map((segment, idx) => (
-                      <span
-                        key={idx}
-                        className="text-xs px-2 py-0.5 rounded bg-muted text-muted-foreground capitalize"
-                      >
-                        {segment.type}
-                        {segment.duration && ` ${segment.duration}m`}
-                      </span>
-                    ))}
-                    {workout.structure.length > 4 && (
-                      <span className="text-xs px-2 py-0.5 rounded bg-muted text-muted-foreground">
-                        +{workout.structure.length - 4} more
-                      </span>
-                    )}
-                  </div>
-                )}
-
-                {/* Completed summary */}
-                {completed && status === 'completed' && (
-                  <div className="mt-3 p-3 bg-load-fresh/5 rounded-lg border border-load-fresh/20">
-                    <div className="flex items-center gap-4 text-sm mb-2">
-                      <span className="flex items-center gap-1 text-foreground">
-                        <Clock className="h-4 w-4 text-load-fresh" />
-                        {completed.duration} min
-                      </span>
-                      <span className="flex items-center gap-1 text-foreground">
-                        <Route className="h-4 w-4 text-load-fresh" />
-                        {(() => {
-                          const dist = convertDistance(completed.distance);
-                          return `${dist.value.toFixed(1)} ${dist.unit}`;
-                        })()}
-                      </span>
-                      {completed.avgHeartRate && (
-                        <span className="flex items-center gap-1 text-foreground">
-                          <Heart className="h-4 w-4 text-load-fresh" />
-                          {completed.avgHeartRate} bpm
-                        </span>
-                      )}
-                    </div>
-                    {completed.coachFeedback && (
-                      <p className="text-xs text-muted-foreground italic">
-                        &ldquo;{completed.coachFeedback.slice(0, 100)}...&rdquo;
-                      </p>
-                    )}
-                  </div>
-                )}
-              </>
-            ) : completed ? (
-              <>
-                {/* Completed activity without planned workout */}
-                <div className="flex items-center gap-3 mb-2">
-                  <div className="p-2 bg-accent/10 rounded-lg">
-                    <Icon className="h-5 w-5 text-accent" />
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <h4 className="font-semibold text-foreground truncate">{completed.title}</h4>
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-xs text-muted-foreground capitalize">{completed.sport}</span>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Metrics */}
-                <div className="flex items-center gap-4 text-sm text-muted-foreground mb-3">
-                  <span className="flex items-center gap-1">
-                    <Clock className="h-4 w-4" />
-                    {completed.duration} min
-                  </span>
-                  {completed.distance && (
-                    <span className="flex items-center gap-1">
-                      <Route className="h-4 w-4" />
-                      {(() => {
-                        const dist = convertDistance(completed.distance);
-                        return `${dist.value.toFixed(1)} ${dist.unit}`;
-                      })()}
-                    </span>
-                  )}
-                  {completed.avgHeartRate && (
-                    <span className="flex items-center gap-1">
-                      <Heart className="h-4 w-4" />
-                      {completed.avgHeartRate} bpm
-                    </span>
-                  )}
-                </div>
-
-                {/* Coach feedback if available */}
-                {completed.coachFeedback && (
-                  <div className="mt-3 p-3 bg-load-fresh/5 rounded-lg border border-load-fresh/20">
-                    <p className="text-xs text-muted-foreground italic">
-                      &ldquo;{completed.coachFeedback.slice(0, 150)}...&rdquo;
-                    </p>
-                  </div>
-                )}
-              </>
+            ) : workoutSession ? (
+              <div className="w-full max-w-[400px]">
+                <WorkoutSessionCard session={workoutSession} />
+              </div>
             ) : null}
           </div>
 
-          {/* Right: Daily decision (for today) or coach note */}
+          {/* Right: Daily decision (for today) */}
           <div className="lg:w-64 shrink-0">
-            {status === 'today' && dailyDecision && DecisionIcon && (
+            {status === 'today' && dailyDecision && DecisionIcon && decisionInfo && (
               <div className={cn(
                 'p-3 rounded-lg border',
                 decisionInfo.className
@@ -300,17 +247,6 @@ export function DailyWorkoutCard({ date, dateId, workout, completed, status, dai
                 </div>
                 <p className="text-xs leading-relaxed opacity-90">
                   {dailyDecision.reason}
-                </p>
-              </div>
-            )}
-            
-            {status !== 'today' && workout && (
-              <div className="p-3 bg-muted/50 rounded-lg">
-                <div className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">
-                  Coach Note
-                </div>
-                <p className="text-xs text-foreground leading-relaxed">
-                  {coachNotes[workout.intent] || 'Execute as planned.'}
                 </p>
               </div>
             )}
