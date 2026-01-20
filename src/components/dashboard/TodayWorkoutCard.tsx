@@ -1,7 +1,7 @@
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { fetchCalendarToday, fetchTrainingLoad, fetchActivities, fetchActivityStreams } from '@/lib/api';
-import { getTodayIntelligence } from '@/lib/intelligence';
+import { getTodayIntelligence, type DailyDecision } from '@/lib/intelligence';
 import { format } from 'date-fns';
 import { Loader2, Clock, Route } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -10,6 +10,7 @@ import { useMemo } from 'react';
 import { getTssForDate, enrichActivitiesWithTss, type TrainingLoadData } from '@/lib/tss-utils';
 import { WorkoutCard } from '@/components/workout/WorkoutCard';
 import { BaseCalendarCardSvg } from '@/components/calendar/cards/BaseCalendarCardSvg';
+import { DecisionStepsBar } from '@/components/telemetry/DecisionStepsBar';
 import type { CompletedActivity } from '@/types';
 import type { TodayResponse } from '@/lib/api';
 import { normalizeSportType } from '@/lib/session-utils';
@@ -28,6 +29,64 @@ const mapTypeToIntent = (type: string | null | undefined): 'aerobic' | 'threshol
   if (lower.includes('recovery') || lower.includes('easy')) return 'recovery';
   return 'aerobic';
 };
+
+/**
+ * Derives decision step values from available data.
+ * Returns 4 normalized values (0-1) for:
+ * [Load Context, Recovery State, Trend Check, Final Decision]
+ */
+function deriveDecisionSteps(
+  todayTss: number | null | undefined,
+  trainingLoad: TrainingLoadData | null | undefined,
+  intelligence: DailyDecision | null | undefined,
+  intent: WorkoutIntent
+): [number, number, number, number] {
+  // Step 1: Load Context - normalized todayTss vs 7d avg
+  let loadStep = 0.5; // default neutral
+  if (todayTss && trainingLoad?.daily_load) {
+    const recentLoads = trainingLoad.daily_load.slice(-7);
+    const avgLoad = recentLoads.length > 0
+      ? recentLoads.reduce((sum, load) => sum + (load || 0), 0) / recentLoads.length
+      : 50;
+    // Normalize: if todayTss equals avg, result is 0.5
+    // If todayTss is double avg, result is 1.0; if half, result is 0.25
+    loadStep = Math.min(1, Math.max(0, todayTss / (avgLoad * 2 || 100)));
+  }
+
+  // Step 2: Recovery State - from intelligence confidence or TSB
+  let recoveryStep = 0.5; // default neutral
+  if (intelligence?.confidence?.score !== undefined) {
+    recoveryStep = intelligence.confidence.score;
+  } else if (trainingLoad?.tsb && trainingLoad.tsb.length > 0) {
+    // TSB > 0 means fresh, TSB < -20 means fatigued
+    // Normalize TSB from [-40, 40] to [0, 1]
+    const latestTsb = trainingLoad.tsb[trainingLoad.tsb.length - 1] || 0;
+    recoveryStep = Math.min(1, Math.max(0, (latestTsb + 40) / 80));
+  }
+
+  // Step 3: Trend Check - from CTL trend (fitness directionality)
+  let trendStep = 0.5; // default neutral
+  if (trainingLoad?.ctl && trainingLoad.ctl.length >= 7) {
+    const recentCtl = trainingLoad.ctl.slice(-7);
+    const firstCtl = recentCtl[0] || 0;
+    const lastCtl = recentCtl[recentCtl.length - 1] || 0;
+    const ctlDelta = lastCtl - firstCtl;
+    // Normalize: -10 to +10 CTL change maps to 0-1
+    trendStep = Math.min(1, Math.max(0, (ctlDelta + 10) / 20));
+  }
+
+  // Step 4: Final Decision - intent severity
+  const intentSeverity: Record<WorkoutIntent, number> = {
+    recovery: 0.2,
+    aerobic: 0.4,
+    endurance: 0.6,
+    threshold: 0.8,
+    vo2: 1.0,
+  };
+  const decisionStep = intentSeverity[intent];
+
+  return [loadStep, recoveryStep, trendStep, decisionStep];
+}
 
 interface TodayWorkoutCardProps {
   todayData?: TodayResponse | null;
@@ -212,6 +271,14 @@ export function TodayWorkoutCard(props: TodayWorkoutCardProps = {}) {
     return `${minutes}m`;
   };
 
+  // Derive decision steps for the telemetry bar
+  const decisionSteps = deriveDecisionSteps(
+    todayTss,
+    finalTrainingLoadData,
+    finalTodayIntelligence as DailyDecision | null | undefined,
+    workoutIntent
+  );
+
   return (
     <Card className={cn('h-full flex flex-col', cardClassName)}>
       <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -231,8 +298,14 @@ export function TodayWorkoutCard(props: TodayWorkoutCardProps = {}) {
             variant="feed"
           />
         ) : (
-          // Planned: Show calendar-style card
-          <div className="h-full flex flex-col">
+          // Planned: Show calendar-style card with decision steps
+          <div className="flex flex-col">
+            {/* Decision Steps Bar - quiet engineering readout */}
+            <div className="mb-2">
+              <DecisionStepsBar steps={decisionSteps} intent={workoutIntent} />
+            </div>
+
+            {/* Card with same aspect ratio as WorkoutCard */}
             <div style={{ aspectRatio: '600 / 360' }}>
               <BaseCalendarCardSvg
                 variant={getCalendarVariant()}

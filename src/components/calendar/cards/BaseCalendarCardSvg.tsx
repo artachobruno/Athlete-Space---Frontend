@@ -17,52 +17,68 @@ export interface BaseCardProps {
   isPlanned?: boolean;
 }
 
-// Neutral color palette - matches shadcn/Dashboard styling
-// From index.css: .dark { --border: 220 20% 18%; }
-const COLORS = {
-  border: 'hsl(220 20% 18%)',
-  borderSubtle: 'hsl(220 20% 15%)',
+// Shared dimensions to match WorkoutCardSvg
+const VARIANT_SIZES = {
+  feed: { width: 600, height: 360 },
+  mobile: { width: 320, height: 220 },
 };
 
+const BASE_WIDTH = 420;
+const BASE_HEIGHT = 260;
+
+// Color palette - matches WorkoutCardSvg
+const COLORS = {
+  border: 'hsl(220 20% 18%)',
+  borderSubtle: 'hsl(220 20% 14%)',
+  textPrimary: 'hsl(0 0% 98%)',
+  textSecondary: 'hsl(220 10% 55%)',
+  textMuted: 'hsl(220 10% 45%)',
+};
 
 export function BaseCalendarCardSvg({
   variant,
   topLeft,
   topRight,
-  metricsLabel,
-  metricsValue,
   title,
   description,
   titleClampLines = 2,
   descClampLines = 3,
   viewVariant,
-  isActivity = false,
   isPlanned = false,
 }: BaseCardProps) {
   const theme = CALENDAR_CARD_THEMES[variant] ?? CALENDAR_CARD_THEMES['completed-running'];
   const isMonthView = viewVariant === 'month';
 
-  const showMetrics = Boolean(metricsLabel && metricsValue);
+  // Use same dimensions as WorkoutCardSvg
+  const { width, height } = isMonthView ? VARIANT_SIZES.mobile : VARIANT_SIZES.feed;
+  const scale = Math.min(width / BASE_WIDTH, height / BASE_HEIGHT);
+  const fontScale = isMonthView ? 1.2 : 1.15;
+  const textScale = scale * fontScale;
+
   const displayTitle = toTitleCase(title);
 
-  // Tighter dimensions for month view
-  const viewBoxHeight = isMonthView ? 280 : 400;
-  
-  // Typography scale - larger, more readable
-  const topRowFontSize = isMonthView ? 26 : 28;
-  const metricsLabelFontSize = isMonthView ? 12 : 14;
-  const metricsValueFontSize = isMonthView ? 24 : 26;
-  const titleFontSize = isMonthView ? 32 : 40;
-  const descFontSize = isMonthView ? 20 : 24;
+  // Layout calculations - matching WorkoutCardSvg
+  const paddingX = width * (20 / BASE_WIDTH);
+  const paddingY = height * (16 / BASE_HEIGHT);
 
-  const id = `calendar-card-${variant}`;
+  // Header region - matching WorkoutCardSvg layout
+  const typeLabelY = paddingY + 10 * textScale;
+  const titleY = typeLabelY + 18 * textScale;
+
+  // Description region - positioned below title
+  const descY = titleY + 24 * textScale;
+
+  // Accent line position
+  const accentY = height - paddingY - 4;
+
+  const id = `calendar-card-${variant}-${Math.random().toString(36).slice(2, 8)}`;
 
   return (
     <svg
       width="100%"
       height="100%"
-      viewBox={`0 0 360 ${viewBoxHeight}`}
-      preserveAspectRatio={isMonthView ? 'none' : 'xMidYMid meet'}
+      viewBox={`0 0 ${width} ${height}`}
+      preserveAspectRatio="xMidYMid meet"
       xmlns="http://www.w3.org/2000/svg"
       style={{
         display: 'block',
@@ -70,112 +86,85 @@ export function BaseCalendarCardSvg({
       }}
     >
       <defs>
-        {/* Flat background - matches Card component */}
+        {/* Background gradient */}
         <linearGradient id={`${id}-bg`} x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stopColor={theme.base} stopOpacity="1" />
           <stop offset="100%" stopColor={theme.base} stopOpacity="0.95" />
         </linearGradient>
-
-        {/* Trace gradient using theme accent */}
-        <linearGradient id={`${id}-trace`} x1="0" y1="0" x2="1" y2="0">
-          <stop offset="0%" stopColor={theme.sparkline} stopOpacity="0.2" />
-          <stop offset="50%" stopColor={theme.sparkline} stopOpacity="0.6" />
-          <stop offset="100%" stopColor={theme.sparkline} stopOpacity="0.2" />
-        </linearGradient>
       </defs>
 
-      {/* Background - flat, matching Card component */}
-      <rect width="360" height={viewBoxHeight} rx="8" fill={`url(#${id}-bg)`} />
-      
-      {/* Border - consistent with shadcn Card */}
-      <rect 
-        x="0.5" 
-        y="0.5" 
-        width="359" 
-        height={viewBoxHeight - 1} 
-        rx="7.5" 
-        fill="none" 
-        stroke={COLORS.border} 
-        strokeWidth="1" 
+      {/* Background */}
+      <rect
+        x="0"
+        y="0"
+        width={width}
+        height={height}
+        rx={8 * scale}
+        fill={`url(#${id}-bg)`}
       />
 
-      {/* TOP ROW - clean header style */}
-      <text 
-        x="16" 
-        y="28" 
-        fill={theme.text} 
-        fontSize={topRowFontSize} 
-        fontWeight="600"
-        letterSpacing="-0.01em"
+      {/* Border */}
+      <rect
+        x="0.5"
+        y="0.5"
+        width={width - 1}
+        height={height - 1}
+        rx={8 * scale}
+        fill="none"
+        stroke={COLORS.border}
+        strokeWidth={1}
+        opacity="0.5"
+      />
+
+      {/* Type label - small caps, matching WorkoutCardSvg */}
+      <text
+        x={paddingX}
+        y={typeLabelY}
+        fill={COLORS.textMuted}
+        fontSize={11 * textScale}
+        fontWeight={500}
+        letterSpacing="0.06em"
       >
-        {topLeft}
+        {topLeft.toUpperCase()}
       </text>
-      <text 
-        x="344" 
-        y="28" 
-        fill={theme.secondary} 
-        fontSize={topRowFontSize - 4} 
-        fontWeight="500" 
+
+      {/* Duration - right aligned, matching WorkoutCardSvg style */}
+      <text
+        x={width - paddingX}
+        y={typeLabelY}
+        fill={COLORS.textSecondary}
+        fontSize={11 * textScale}
+        fontWeight={500}
         textAnchor="end"
-        opacity="0.6"
+        letterSpacing="0.06em"
       >
         {topRight}
       </text>
 
-      {/* Divider line */}
-      <line x1="16" y1="40" x2="344" y2="40" stroke={COLORS.borderSubtle} strokeWidth="1" />
+      {/* Title - primary, matching WorkoutCardSvg */}
+      <text
+        x={paddingX}
+        y={titleY}
+        fill={COLORS.textPrimary}
+        fontSize={18 * textScale}
+        fontWeight={600}
+        letterSpacing="-0.01em"
+      >
+        {displayTitle.length > 28 ? `${displayTitle.slice(0, 28)}...` : displayTitle}
+      </text>
 
-      {/* METRICS - small caps labels */}
-      {showMetrics && (
-        <>
-          <text 
-            x="16" 
-            y={isMonthView ? 58 : 64} 
-            fill={theme.secondary} 
-            fontSize={metricsLabelFontSize} 
-            letterSpacing="0.08em"
-            opacity="0.6"
-          >
-            {metricsLabel?.toUpperCase()}
-          </text>
-          <text 
-            x="16" 
-            y={isMonthView ? 78 : 88} 
-            fill={theme.text} 
-            fontSize={metricsValueFontSize} 
-            fontWeight="500"
-          >
-            {metricsValue}
-          </text>
-        </>
-      )}
-
-      {/* TITLE */}
-      <foreignObject x="16" y={isMonthView ? 50 : 60} width="328" height={isMonthView ? 56 : 72}>
-        <div
-          style={{
-            color: theme.text,
-            fontSize: `${titleFontSize}px`,
-            fontWeight: 600,
-            lineHeight: 1.15,
-            letterSpacing: '-0.01em',
-            overflow: 'hidden',
-            display: '-webkit-box',
-            WebkitLineClamp: titleClampLines,
-            WebkitBoxOrient: 'vertical',
-          }}
-        >
-          {displayTitle}
-        </div>
-      </foreignObject>
-
-      {/* DESCRIPTION - muted */}
+      {/* Description - using foreignObject for text wrapping */}
       {description && (
-        <foreignObject x="16" y={isMonthView ? 104 : 128} width="328" height={isMonthView ? 48 : 64}>
+        <foreignObject
+          x={paddingX}
+          y={descY}
+          width={width - paddingX * 2}
+          height={height - descY - paddingY - 16}
+        >
           <div
             style={{
-              color: theme.secondary,
-              fontSize: `${descFontSize}px`,
+              color: COLORS.textSecondary,
+              fontSize: `${14 * textScale}px`,
               lineHeight: 1.4,
               opacity: 0.7,
               overflow: 'hidden',
@@ -189,33 +178,29 @@ export function BaseCalendarCardSvg({
         </foreignObject>
       )}
 
-      {/* ACCENT LINE - subtle accent indicator at bottom */}
-      {(isActivity || isPlanned) && (
-        <g transform={`translate(16,${isMonthView ? 220 : 340})`}>
-          {/* Accent bar */}
-          <rect 
-            x="0" 
-            y="0" 
-            width="328" 
-            height="3" 
-            rx="1.5"
-            fill={theme.sparkline}
-            opacity="0.3"
-          />
-          {/* Progress indicator (for activities with data) */}
-          {isActivity && (
-            <rect 
-              x="0" 
-              y="0" 
-              width="164" 
-              height="3" 
-              rx="1.5"
-              fill={theme.sparkline}
-              opacity="0.8"
-            />
-          )}
-        </g>
+      {/* Accent line at bottom - subtle indicator for planned */}
+      {isPlanned && (
+        <rect
+          x={paddingX}
+          y={accentY}
+          width={width - paddingX * 2}
+          height={3}
+          rx={1.5}
+          fill={theme.sparkline}
+          opacity={0.3}
+        />
       )}
+
+      {/* Bottom baseline - matching WorkoutCardSvg */}
+      <line
+        x1={paddingX}
+        y1={height - paddingY}
+        x2={width - paddingX}
+        y2={height - paddingY}
+        stroke={COLORS.border}
+        strokeWidth={1}
+        opacity="0.3"
+      />
     </svg>
   );
 }
