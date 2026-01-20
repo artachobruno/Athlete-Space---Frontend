@@ -3,14 +3,15 @@ import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Footprints, Bike, Waves, Clock, Route, Mountain, Heart, Zap, MessageCircle, CheckCircle2, ExternalLink, X, SkipForward, TrendingUp, Info, Download, Loader2, ArrowRight, Link2 } from 'lucide-react';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Footprints, Bike, Waves, Clock, Route, Mountain, Heart, Zap, MessageCircle, CheckCircle2, ExternalLink, X, SkipForward, TrendingUp, Info, Download, Loader2, ArrowRight, Link2, Bot } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import { useNavigate } from 'react-router-dom';
 import type { PlannedWorkout, CompletedActivity } from '@/types';
 import { useUnitSystem } from '@/hooks/useUnitSystem';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { fetchTrainingLoad, type CalendarSession, type ProposalOnlyResponse, exportWorkoutToFIT, fetchActivities } from '@/lib/api';
+import { fetchTrainingLoad, type CalendarSession, type ProposalOnlyResponse, exportWorkoutToFIT, fetchActivities, fetchActivityStreams } from '@/lib/api';
 import { fetchStructuredWorkout } from '@/api/workouts';
 import { useMemo, useState } from 'react';
 import { getTssForDate, enrichActivitiesWithTss } from '@/lib/tss-utils';
@@ -21,6 +22,9 @@ import { useUpdateSessionStatus } from '@/hooks/useCalendarMutations';
 import { useAuthenticatedQuery } from '@/hooks/useAuthenticatedQuery';
 import { parseISO, format } from 'date-fns';
 import { normalizeSportType } from '@/lib/session-utils';
+import { ActivityCharts } from '@/components/activities/ActivityCharts';
+import { ActivityMap } from '@/components/activities/ActivityMap';
+import { normalizeRoutePointsFromStreams } from '@/lib/route-utils';
 
 interface ActivityPopupProps {
   open: boolean;
@@ -54,6 +58,80 @@ const structureTypeColors = {
   interval: 'bg-training-vo2/20 text-training-vo2',
   recovery: 'bg-muted text-muted-foreground',
 };
+
+// Telemetry sparkline component - thin signal trace
+function TelemetrySparkline({ 
+  data, 
+  color, 
+  height = 24,
+}: { 
+  data: number[]; 
+  color: string; 
+  height?: number;
+}) {
+  if (!data || data.length < 2) return null;
+  
+  const width = 100;
+  const padding = 2;
+  const min = Math.min(...data);
+  const max = Math.max(...data);
+  const range = max - min || 1;
+  
+  const points = data.map((v, i) => {
+    const x = padding + (i / (data.length - 1)) * (width - padding * 2);
+    const y = height - padding - ((v - min) / range) * (height - padding * 2);
+    return `${x},${y}`;
+  }).join(' ');
+  
+  return (
+    <svg width={width} height={height} className="opacity-80">
+      <polyline
+        points={points}
+        fill="none"
+        stroke={color}
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
+
+// Metric row component for detailed view
+function TelemetryMetricRow({
+  label,
+  value,
+  unit,
+  sparkData,
+  sparkColor = 'hsl(var(--accent))',
+}: {
+  label: string;
+  value: string | number;
+  unit?: string;
+  sparkData?: number[];
+  sparkColor?: string;
+}) {
+  return (
+    <div className="flex items-center justify-between py-2 border-b border-border last:border-b-0">
+      <div className="flex items-center gap-3">
+        <span className="text-xs uppercase tracking-wider text-muted-foreground w-14">
+          {label}
+        </span>
+        {sparkData && sparkData.length > 2 && (
+          <TelemetrySparkline data={sparkData} color={sparkColor} />
+        )}
+      </div>
+      <div className="flex items-baseline gap-1.5">
+        <span className="text-base font-semibold tabular-nums text-foreground">
+          {value}
+        </span>
+        {unit && (
+          <span className="text-sm text-muted-foreground">{unit}</span>
+        )}
+      </div>
+    </div>
+  );
+}
 
 export function ActivityPopup({ 
   open, 
@@ -123,6 +201,46 @@ export function ActivityPopup({
   });
 
   const canExport = structuredWorkout && structuredWorkout.workout?.parse_status === 'parsed' && structuredWorkout.workout;
+
+  // Fetch activity streams for detailed view (map, charts, sparklines)
+  const { data: streamsData, isLoading: streamsLoading, error: streamsError } = useQuery({
+    queryKey: ['activityStreams', activity?.id],
+    queryFn: () => fetchActivityStreams(activity!.id),
+    retry: false,
+    enabled: !!activity?.id && open,
+  });
+
+  // Process route coordinates from streams
+  const routeCoordinates = useMemo<[number, number][] | undefined>(() => {
+    if (streamsError || !streamsData) return undefined;
+    const coords = normalizeRoutePointsFromStreams(streamsData);
+    return coords.length === 0 ? undefined : coords;
+  }, [streamsData, streamsError]);
+
+  // Generate sparkline data from streams
+  const hrSparkData = useMemo(() => {
+    if (!streamsData?.heartrate) return undefined;
+    const hr = (streamsData.heartrate as number[]).filter((v): v is number => typeof v === 'number');
+    if (hr.length < 10) return undefined;
+    const step = Math.max(1, Math.floor(hr.length / 30));
+    return hr.filter((_, i) => i % step === 0);
+  }, [streamsData]);
+
+  const paceSparkData = useMemo(() => {
+    if (!streamsData?.pace) return undefined;
+    const pace = (streamsData.pace as number[]).filter((v): v is number => typeof v === 'number' && v > 0);
+    if (pace.length < 10) return undefined;
+    const step = Math.max(1, Math.floor(pace.length / 30));
+    return pace.filter((_, i) => i % step === 0);
+  }, [streamsData]);
+
+  const elevSparkData = useMemo(() => {
+    if (!streamsData?.elevation) return undefined;
+    const elev = (streamsData.elevation as number[]).filter((v): v is number => typeof v === 'number');
+    if (elev.length < 10) return undefined;
+    const step = Math.max(1, Math.floor(elev.length / 30));
+    return elev.filter((_, i) => i % step === 0);
+  }, [streamsData]);
 
   const handleExportFIT = async () => {
     if (!session?.id || !canExport) return;
@@ -410,7 +528,7 @@ export function ActivityPopup({
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="p-0 sm:max-w-[500px]">
+      <DialogContent className="p-0 sm:max-w-[600px] max-h-[85vh] overflow-y-auto">
         <Card className="border-0 shadow-none">
           <CardHeader className="pb-3">
             <div className="flex items-center gap-3">
@@ -470,112 +588,210 @@ export function ActivityPopup({
             )}
           </div>
 
-          {/* Activity-specific metrics */}
+          {/* Activity-specific detailed view with tabs */}
           {activity && (
-            <div className="grid grid-cols-2 gap-3">
-              {activity.avgPace && (
-                <div className="p-3 rounded-lg bg-muted/50">
-                  <div className="text-xs text-muted-foreground mb-1">Avg Pace</div>
-                  <div className="text-sm font-medium text-foreground">{formatPace(activity.avgPace)}</div>
-                </div>
-              )}
-              {activity.avgHeartRate && (
-                <div className="p-3 rounded-lg bg-muted/50">
-                  <div className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
-                    <Heart className="h-3 w-3" /> Avg HR
+            <Tabs defaultValue="overview" className="w-full">
+              <TabsList className="w-full grid grid-cols-3">
+                <TabsTrigger value="overview">Overview</TabsTrigger>
+                <TabsTrigger value="map">Map</TabsTrigger>
+                <TabsTrigger value="charts">Charts</TabsTrigger>
+              </TabsList>
+
+              {/* OVERVIEW TAB */}
+              <TabsContent value="overview" className="mt-4 space-y-4">
+                {/* Coach Insight */}
+                {activity.coachFeedback && (
+                  <div className="p-3 bg-muted/50 rounded-lg border-l-2 border-primary/40">
+                    <div className="flex items-center gap-2 mb-1.5">
+                      <Bot className="h-4 w-4 text-primary" />
+                      <span className="text-xs font-medium text-primary">Analysis</span>
+                    </div>
+                    <p className="text-sm text-foreground leading-relaxed">
+                      {activity.coachFeedback}
+                    </p>
                   </div>
-                  <div className="text-sm font-medium text-foreground">{Math.round(activity.avgHeartRate)} bpm</div>
+                )}
+
+                {/* Core Metrics Grid */}
+                <div className="grid grid-cols-2 gap-3">
+                  {activity.avgPace && (
+                    <div className="p-3 rounded-lg bg-muted/50">
+                      <div className="text-xs text-muted-foreground mb-1">Avg Pace</div>
+                      <div className="text-sm font-medium text-foreground">{formatPace(activity.avgPace)}</div>
+                    </div>
+                  )}
+                  {activity.avgHeartRate && (
+                    <div className="p-3 rounded-lg bg-muted/50">
+                      <div className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
+                        <Heart className="h-3 w-3" /> Avg HR
+                      </div>
+                      <div className="text-sm font-medium text-foreground">{Math.round(activity.avgHeartRate)} bpm</div>
+                    </div>
+                  )}
+                  {activity.avgPower && (
+                    <div className="p-3 rounded-lg bg-muted/50">
+                      <div className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
+                        <Zap className="h-3 w-3" /> Avg Power
+                      </div>
+                      <div className="text-sm font-medium text-foreground">{Math.round(activity.avgPower)}w</div>
+                    </div>
+                  )}
+                  {displayTss !== null && displayTss > 0 && (
+                    <div className="p-3 rounded-lg bg-muted/50">
+                      <div className="text-xs text-muted-foreground mb-1">TSS</div>
+                      <div className="text-sm font-medium text-foreground">{Math.round(displayTss)}</div>
+                    </div>
+                  )}
+                  {/* Normalized Power / Effort - only for bike and run */}
+                  {activity.normalizedPower !== undefined && activity.normalizedPower !== null && 
+                   (activity.sport === 'cycling' || activity.sport === 'running') && (
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <div className="p-3 rounded-lg bg-muted/50 cursor-help">
+                            <div className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
+                              <Zap className="h-3 w-3" />
+                              {activity.sport === 'cycling' ? 'Normalized Power' : 'Normalized Effort'}
+                              <Info className="h-3 w-3 text-muted-foreground/60" />
+                            </div>
+                            <div className="text-sm font-medium text-foreground">
+                              {activity.sport === 'cycling' 
+                                ? `${Math.round(activity.normalizedPower)} W`
+                                : activity.normalizedPower.toFixed(2)}
+                            </div>
+                          </div>
+                        </TooltipTrigger>
+                        <TooltipContent side="top" className="max-w-xs">
+                          <div className="whitespace-pre-line text-sm">
+                            {activity.sport === 'cycling' 
+                              ? 'Normalized Power (NP)\nAccounts for variability in effort.\nMore accurate than average power.'
+                              : 'Normalized Effort\nAdjusts for pace variability to reflect true effort.'}
+                          </div>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  )}
+                  {/* Intensity Factor - only for bike and run */}
+                  {(activity.sport === 'cycling' || activity.sport === 'running') && (
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <div className={cn(
+                            "p-3 rounded-lg bg-muted/50 cursor-help",
+                            activity.effortSource === 'hr' && activity.intensityFactor !== undefined && "opacity-60",
+                            activity.intensityFactor !== undefined && activity.intensityFactor >= 1.0 && "ring-2 ring-load-overreaching/30"
+                          )}>
+                            <div className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
+                              <TrendingUp className="h-3 w-3" />
+                              Intensity Factor
+                              <Info className="h-3 w-3 text-muted-foreground/60" />
+                            </div>
+                            <div className={cn(
+                              "text-sm font-medium",
+                              activity.intensityFactor !== undefined && activity.intensityFactor >= 1.0 
+                                ? "text-load-overreaching" 
+                                : "text-foreground"
+                            )}>
+                              {activity.intensityFactor !== undefined && activity.intensityFactor !== null
+                                ? activity.intensityFactor.toFixed(2)
+                                : '—'}
+                            </div>
+                          </div>
+                        </TooltipTrigger>
+                        <TooltipContent side="top" className="max-w-xs">
+                          <div className="whitespace-pre-line text-sm">
+                            {activity.intensityFactor !== undefined && activity.intensityFactor !== null
+                              ? 'Intensity Factor (IF)\nCompares session effort to your threshold.\nIF = 1.00 ≈ threshold effort\nIF < 0.75 = easy\nIF > 1.05 = hard'
+                              : 'Set your threshold to enable IF'}
+                          </div>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                  )}
                 </div>
-              )}
-              {activity.avgPower && (
-                <div className="p-3 rounded-lg bg-muted/50">
-                  <div className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
-                    <Zap className="h-3 w-3" /> Avg Power
+
+                {/* Effort Source Label */}
+                {activity.effortSource && (
+                  <div className="text-xs text-muted-foreground">
+                    Effort source: {activity.effortSource === 'power' ? 'Power' : 
+                                    activity.effortSource === 'pace' ? 'Pace-derived' : 
+                                    'Heart rate (fallback)'}
                   </div>
-                  <div className="text-sm font-medium text-foreground">{Math.round(activity.avgPower)}w</div>
+                )}
+
+                {/* Performance Metrics with Sparklines */}
+                <div className="space-y-1 bg-muted/30 rounded-lg p-3 border border-border">
+                  <div className="text-xs font-medium text-muted-foreground mb-2">
+                    Performance Trends
+                  </div>
+                  
+                  {activity.avgHeartRate && (
+                    <TelemetryMetricRow
+                      label="HR"
+                      value={Math.round(activity.avgHeartRate)}
+                      unit="bpm"
+                      sparkData={hrSparkData}
+                      sparkColor="hsl(var(--chart-4))"
+                    />
+                  )}
+                  
+                  {paceSparkData && paceSparkData.length > 0 && (
+                    <TelemetryMetricRow
+                      label="Pace"
+                      value={(() => {
+                        const avgPace = paceSparkData.reduce((a, b) => a + b, 0) / paceSparkData.length;
+                        const mins = Math.floor(avgPace);
+                        const secs = Math.round((avgPace - mins) * 60);
+                        return `${mins}:${secs.toString().padStart(2, '0')}`;
+                      })()}
+                      unit="/km"
+                      sparkData={paceSparkData}
+                      sparkColor="hsl(var(--chart-1))"
+                    />
+                  )}
+                  
+                  {elevSparkData && elevSparkData.length > 0 && (
+                    <TelemetryMetricRow
+                      label="Elev"
+                      value={Math.round(Math.max(...elevSparkData) - Math.min(...elevSparkData))}
+                      unit="m gain"
+                      sparkData={elevSparkData}
+                      sparkColor="hsl(var(--chart-2))"
+                    />
+                  )}
+
+                  {activity.avgPower && (
+                    <TelemetryMetricRow
+                      label="Power"
+                      value={Math.round(activity.avgPower)}
+                      unit="W"
+                    />
+                  )}
                 </div>
-              )}
-              {displayTss !== null && displayTss > 0 && (
-                <div className="p-3 rounded-lg bg-muted/50">
-                  <div className="text-xs text-muted-foreground mb-1">TSS</div>
-                  <div className="text-sm font-medium text-foreground">{Math.round(displayTss)}</div>
+              </TabsContent>
+
+              {/* MAP TAB */}
+              <TabsContent value="map" className="mt-4">
+                <div className="rounded-lg overflow-hidden border border-border">
+                  {streamsLoading ? (
+                    <div className="flex items-center justify-center h-64 text-muted-foreground">
+                      <Loader2 className="h-5 w-5 animate-spin" />
+                    </div>
+                  ) : streamsError ? (
+                    <div className="flex items-center justify-center h-64 text-muted-foreground">
+                      <span className="text-sm">Route unavailable</span>
+                    </div>
+                  ) : (
+                    <ActivityMap coordinates={routeCoordinates} />
+                  )}
                 </div>
-              )}
-              {/* Normalized Power / Effort - only for bike and run */}
-              {activity.normalizedPower !== undefined && activity.normalizedPower !== null && 
-               (activity.sport === 'cycling' || activity.sport === 'running') && (
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <div className="p-3 rounded-lg bg-muted/50 cursor-help">
-                        <div className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
-                          <Zap className="h-3 w-3" />
-                          {activity.sport === 'cycling' ? 'Normalized Power' : 'Normalized Effort'}
-                          <Info className="h-3 w-3 text-muted-foreground/60" />
-                        </div>
-                        <div className="text-sm font-medium text-foreground">
-                          {activity.sport === 'cycling' 
-                            ? `${Math.round(activity.normalizedPower)} W`
-                            : activity.normalizedPower.toFixed(2)}
-                        </div>
-                      </div>
-                    </TooltipTrigger>
-                    <TooltipContent side="top" className="max-w-xs">
-                      <div className="whitespace-pre-line text-sm">
-                        {activity.sport === 'cycling' 
-                          ? 'Normalized Power (NP)\nAccounts for variability in effort.\nMore accurate than average power.'
-                          : 'Normalized Effort\nAdjusts for pace variability to reflect true effort.'}
-                      </div>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              )}
-              {/* Intensity Factor - only for bike and run */}
-              {(activity.sport === 'cycling' || activity.sport === 'running') && (
-                <TooltipProvider>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <div className={cn(
-                        "p-3 rounded-lg bg-muted/50 cursor-help",
-                        activity.effortSource === 'hr' && activity.intensityFactor !== undefined && "opacity-60",
-                        activity.intensityFactor !== undefined && activity.intensityFactor >= 1.0 && "ring-2 ring-load-overreaching/30"
-                      )}>
-                        <div className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
-                          <TrendingUp className="h-3 w-3" />
-                          Intensity Factor
-                          <Info className="h-3 w-3 text-muted-foreground/60" />
-                        </div>
-                        <div className={cn(
-                          "text-sm font-medium",
-                          activity.intensityFactor !== undefined && activity.intensityFactor >= 1.0 
-                            ? "text-load-overreaching" 
-                            : "text-foreground"
-                        )}>
-                          {activity.intensityFactor !== undefined && activity.intensityFactor !== null
-                            ? activity.intensityFactor.toFixed(2)
-                            : '—'}
-                        </div>
-                      </div>
-                    </TooltipTrigger>
-                    <TooltipContent side="top" className="max-w-xs">
-                      <div className="whitespace-pre-line text-sm">
-                        {activity.intensityFactor !== undefined && activity.intensityFactor !== null
-                          ? 'Intensity Factor (IF)\nCompares session effort to your threshold.\nIF = 1.00 ≈ threshold effort\nIF < 0.75 = easy\nIF > 1.05 = hard'
-                          : 'Set your threshold to enable IF'}
-                      </div>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-              )}
-              {/* Effort Source Label */}
-              {activity.effortSource && (
-                <div className="col-span-2 text-xs text-muted-foreground">
-                  Effort source: {activity.effortSource === 'power' ? 'Power' : 
-                                  activity.effortSource === 'pace' ? 'Pace-derived' : 
-                                  'Heart rate (fallback)'}
-                </div>
-              )}
-            </div>
+              </TabsContent>
+
+              {/* CHARTS TAB */}
+              <TabsContent value="charts" className="mt-4">
+                <ActivityCharts activity={activity} />
+              </TabsContent>
+            </Tabs>
           )}
 
           {/* Workout description */}
@@ -660,17 +876,6 @@ export function ActivityPopup({
                   </div>
                 ))}
               </div>
-            </div>
-          )}
-
-          {/* Coach feedback for completed activities */}
-          {activity?.coachFeedback && (
-            <div className="p-3 rounded-lg bg-accent/10 border border-accent/20">
-              <div className="flex items-center gap-2 mb-2">
-                <MessageCircle className="h-4 w-4 text-accent" />
-                <span className="text-xs font-medium text-accent">Coach Feedback</span>
-              </div>
-              <p className="text-sm text-foreground">{activity.coachFeedback}</p>
             </div>
           )}
 
