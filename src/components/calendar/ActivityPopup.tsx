@@ -821,6 +821,7 @@ export function ActivityPopup({
                 </Button>
               )}
             </div>
+          </div>
           </CardContent>
         </Card>
       </DialogContent>
