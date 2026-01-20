@@ -48,18 +48,21 @@ function AthleteDashboard() {
 
   return (
     <AppLayout>
-      <div className="space-y-6">
+      <div className="space-y-5">
         {/* Telemetry Status Rail - Bridge between landing and dashboard */}
-        <TelemetryStatusRail className="-mx-6 -mt-6 mb-6" />
+        <TelemetryStatusRail className="-mx-6 -mt-6 mb-4" />
 
         {/* Header - F1 typography, telemetry language */}
-        <div className="col-span-12">
+        <div className="col-span-12 mb-1">
           <h1 className="f1-headline f1-headline-lg text-[hsl(var(--f1-text-primary))]">CONTROL</h1>
-          <p className="f1-label text-[hsl(var(--f1-text-tertiary))] mt-1">ATHLETE PERFORMANCE SYSTEM</p>
+          <p className="f1-label text-[hsl(var(--f1-text-muted))] mt-1">ATHLETE PERFORMANCE SYSTEM</p>
         </div>
 
+        {/* Thin divider after header */}
+        <div className="f1-divider" />
+
         {/* Decision + Coach row */}
-        <div className="grid grid-cols-12 gap-4">
+        <div className="grid grid-cols-12 gap-3">
           <div className="col-span-12 lg:col-span-8">
             <DailyDecisionCard />
           </div>
@@ -68,11 +71,11 @@ function AthleteDashboard() {
           </div>
         </div>
 
-        {/* Section divider */}
-        <div className="f1-divider" />
+        {/* Thin telemetry strip divider */}
+        <div className="f1-divider my-2" />
 
         {/* Today's Workout + Load Status */}
-        <div className="grid grid-cols-12 gap-4">
+        <div className="grid grid-cols-12 gap-3">
           <div className="col-span-12 lg:col-span-8">
             <TodayWorkoutCard
               todayData={dashboardData.todayData}
@@ -92,11 +95,11 @@ function AthleteDashboard() {
           </div>
         </div>
 
-        {/* Section divider */}
-        <div className="f1-divider" />
+        {/* Thin telemetry strip divider */}
+        <div className="f1-divider my-2" />
 
         {/* Weekly Load + Recent Activities */}
-        <div className="grid grid-cols-12 gap-4">
+        <div className="grid grid-cols-12 gap-3">
           <div className="col-span-12 lg:col-span-6">
             <WeeklyLoadCard
               activities100={dashboardData.activities100}

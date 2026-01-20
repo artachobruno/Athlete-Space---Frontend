@@ -119,19 +119,17 @@ export function LoadStatusCard(props?: LoadStatusCardProps) {
   const trendArrow = ctlTrend > 2 ? '↑' : ctlTrend < -2 ? '↓' : '→';
 
   return (
-    <F1Card className="h-full min-h-[220px]" status={f1Status}>
+    <F1Card className="h-full min-h-[200px]" status={f1Status}>
       <F1CardHeader>
         <F1CardTitle>LOAD STATUS</F1CardTitle>
       </F1CardHeader>
       
-      <div className="space-y-3">
+      <div className="space-y-2.5">
         {/* Primary metric row - TSB with status code */}
-        <div className="flex items-baseline justify-between py-2 border-b border-[var(--border-subtle)]">
-          <div className="flex items-baseline gap-2">
-            <span className="f1-label text-[hsl(var(--f1-text-tertiary))]">FORM (TSB)</span>
-          </div>
-          <div className="flex items-baseline gap-2">
-            <span className={cn('f1-metric f1-metric-lg', statusStyles[loadStatus.status])}>
+        <div className="flex items-baseline justify-between py-1.5 border-b border-[var(--border-subtle)]">
+          <span className="f1-label text-[hsl(var(--f1-text-muted))]">FORM (TSB)</span>
+          <div className="flex items-baseline gap-1.5">
+            <span className={cn('f1-metric f1-metric-md', statusStyles[loadStatus.status])}>
               {tsb > 0 ? '+' : ''}{tsb.toFixed(0)}
             </span>
             <span className={cn('f1-label', statusStyles[loadStatus.status])}>
@@ -141,18 +139,18 @@ export function LoadStatusCard(props?: LoadStatusCardProps) {
         </div>
 
         {/* Status description row */}
-        <div className={cn('f1-label py-1', statusStyles[loadStatus.status])}>
+        <div className={cn('f1-label py-0.5', statusStyles[loadStatus.status])}>
           {loadStatus.description}
         </div>
 
         <F1Divider />
 
         {/* Secondary metrics - horizontal telemetry rows */}
-        <div className="space-y-2">
+        <div className="space-y-1.5">
           {/* CTL Row */}
-          <div className="flex items-center justify-between py-1">
-            <span className="f1-label text-[hsl(var(--f1-text-tertiary))]">FITNESS (CTL)</span>
-            <div className="flex items-center gap-2">
+          <div className="flex items-center justify-between py-0.5">
+            <span className="f1-label text-[hsl(var(--f1-text-muted))]">FITNESS (CTL)</span>
+            <div className="flex items-center gap-1.5">
               <span className="f1-metric f1-metric-sm">{ctl.toFixed(0)}</span>
               <span className={cn(
                 'f1-label',
@@ -164,8 +162,8 @@ export function LoadStatusCard(props?: LoadStatusCardProps) {
           </div>
           
           {/* ATL Row */}
-          <div className="flex items-center justify-between py-1">
-            <span className="f1-label text-[hsl(var(--f1-text-tertiary))]">FATIGUE (ATL)</span>
+          <div className="flex items-center justify-between py-0.5">
+            <span className="f1-label text-[hsl(var(--f1-text-muted))]">FATIGUE (ATL)</span>
             <span className="f1-metric f1-metric-sm">{atl.toFixed(0)}</span>
           </div>
         </div>

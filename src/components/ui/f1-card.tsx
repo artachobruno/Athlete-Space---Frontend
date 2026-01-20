@@ -46,9 +46,9 @@ const glowClasses: Record<F1CardGlow, string> = {
 
 const paddingClasses: Record<"sm" | "md" | "lg" | "none", string> = {
   none: "",
-  sm: "f1-card-padding-sm",
-  md: "f1-card-padding",
-  lg: "f1-card-padding-lg",
+  sm: "p-2.5",
+  md: "p-3.5",
+  lg: "p-4",
 };
 
 export const F1Card = React.forwardRef<HTMLDivElement, F1CardProps>(
@@ -101,7 +101,7 @@ export const F1CardHeader = React.forwardRef<HTMLDivElement, F1CardHeaderProps>(
       <div
         ref={ref}
         className={cn(
-          "flex items-center justify-between gap-4 mb-4",
+          "flex items-center justify-between gap-3 mb-3",
           className
         )}
         {...props}
