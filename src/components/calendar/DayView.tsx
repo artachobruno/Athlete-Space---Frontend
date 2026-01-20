@@ -12,8 +12,7 @@ import {
   ArrowLeft,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { GlassCard } from '@/components/ui/GlassCard';
-import { CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import type {
   CalendarItem,
@@ -146,11 +145,11 @@ export function DayView({ date, items, onBack, onItemClick }: DayViewProps) {
       
       {/* No sessions */}
       {items.length === 0 && (
-        <GlassCard className="border-dashed">
+        <Card className="border-dashed">
           <CardContent className="py-12 text-center">
             <p className="text-muted-foreground">No sessions scheduled for this day</p>
           </CardContent>
-        </GlassCard>
+        </Card>
       )}
       
       {/* Session Cards */}
@@ -161,11 +160,11 @@ export function DayView({ date, items, onBack, onItemClick }: DayViewProps) {
           const time = format(parseISO(item.startLocal), 'h:mm a');
           
           return (
-            <GlassCard
+            <Card
               key={item.id}
               className={cn(
-                'overflow-hidden cursor-pointer transition-all hover:shadow-lg',
-                item.kind === 'completed' && 'border-2',
+                'overflow-hidden cursor-pointer transition-all hover:shadow-md',
+                item.kind === 'completed' && 'border-green-500/30',
                 item.kind === 'planned' && 'border-dashed',
               )}
               onClick={() => onItemClick?.(item)}
@@ -260,7 +259,7 @@ export function DayView({ date, items, onBack, onItemClick }: DayViewProps) {
                   </div>
                 </div>
               </CardContent>
-            </GlassCard>
+            </Card>
           );
         })}
       </div>

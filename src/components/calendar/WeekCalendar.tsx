@@ -12,8 +12,7 @@ import { Loader2, Zap, Clock, TrendingUp, Share2, Copy, Download, Sparkles } fro
 import { CalendarWorkoutStack } from './cards/CalendarWorkoutStack';
 import { DayView } from './DayView';
 import { Button } from '@/components/ui/button';
-import { GlassCard } from '@/components/ui/GlassCard';
-import { CardContent } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -287,88 +286,91 @@ export function WeekCalendar({ currentDate, onActivityClick }: WeekCalendarProps
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-      </div>
+      <Card className="flex items-center justify-center py-12">
+        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground mr-2" />
+        <span className="text-muted-foreground">Loading week...</span>
+      </Card>
     );
   }
 
   return (
     <div className="space-y-4">
-      {/* Weekly Summary Card */}
-      <GlassCard className="border-0 shadow-sm bg-gradient-to-br from-muted/30 to-muted/10">
-        <CardContent className="py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-8">
-              <div className="flex items-center gap-3">
-                <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary/10">
-                  <Clock className="h-5 w-5 text-primary" />
-                </div>
-                <div>
-                  <p className="text-2xl font-bold text-foreground">{weeklySummary.totalDuration}</p>
-                  <p className="text-xs text-muted-foreground">minutes</p>
-                </div>
+      {/* Weekly Summary Card - consistent with Dashboard cards */}
+      <Card className="p-4">
+        <div className="flex items-center justify-between flex-wrap gap-4">
+          <div className="flex items-center gap-6 sm:gap-8">
+            <div className="flex items-center gap-3">
+              <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary/10">
+                <Clock className="h-5 w-5 text-primary" />
               </div>
+              <div>
+                <p className="text-2xl font-semibold text-foreground">{weeklySummary.totalDuration}</p>
+                <p className="text-xs uppercase tracking-wider text-muted-foreground">minutes</p>
+              </div>
+            </div>
 
-              {weeklySummary.totalLoad > 0 && (
+            {weeklySummary.totalLoad > 0 && (
+              <>
+                <div className="w-px h-10 bg-border hidden sm:block" />
                 <div className="flex items-center gap-3">
                   <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-amber-500/10">
-                    <Zap className="h-5 w-5 text-amber-500" />
+                    <Zap className="h-5 w-5 text-amber-600 dark:text-amber-400" />
                   </div>
                   <div>
-                    <p className="text-2xl font-bold text-foreground">{Math.round(weeklySummary.totalLoad)}</p>
-                    <p className="text-xs text-muted-foreground">TSS</p>
+                    <p className="text-2xl font-semibold text-foreground">{Math.round(weeklySummary.totalLoad)}</p>
+                    <p className="text-xs uppercase tracking-wider text-muted-foreground">TSS</p>
                   </div>
                 </div>
-              )}
+              </>
+            )}
 
-              <div className="flex items-center gap-3">
-                <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-emerald-500/10">
-                  <TrendingUp className="h-5 w-5 text-emerald-500" />
-                </div>
-                <div>
-                  <p className="text-2xl font-bold text-foreground">
-                    {weeklySummary.completedSessions}/{weeklySummary.completedSessions + weeklySummary.plannedSessions}
-                  </p>
-                  <p className="text-xs text-muted-foreground">completed</p>
-                </div>
+            <div className="w-px h-10 bg-border hidden sm:block" />
+            <div className="flex items-center gap-3">
+              <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-green-500/10">
+                <TrendingUp className="h-5 w-5 text-green-600 dark:text-green-400" />
+              </div>
+              <div>
+                <p className="text-2xl font-semibold text-foreground">
+                  {weeklySummary.completedSessions}/{weeklySummary.completedSessions + weeklySummary.plannedSessions}
+                </p>
+                <p className="text-xs uppercase tracking-wider text-muted-foreground">completed</p>
               </div>
             </div>
-
-            <div className="flex items-center gap-4">
-              {weeklyInsight && (
-                <div className="flex items-center gap-2 max-w-xs">
-                  <Sparkles className={cn('h-4 w-4 flex-shrink-0', weeklyInsight.color)} />
-                  <p className={cn('text-sm', weeklyInsight.color)}>{weeklyInsight.insight}</p>
-                </div>
-              )}
-
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm" disabled={isSharing}>
-                    <Share2 className="h-4 w-4 mr-1" />
-                    Share
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem onClick={handleShare}>
-                    <Share2 className="h-4 w-4 mr-2" />
-                    Share
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={handleCopy}>
-                    <Copy className="h-4 w-4 mr-2" />
-                    Copy
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={handleDownload}>
-                    <Download className="h-4 w-4 mr-2" />
-                    Download
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            </div>
           </div>
-        </CardContent>
-      </GlassCard>
+
+          <div className="flex items-center gap-4">
+            {weeklyInsight && (
+              <div className="flex items-center gap-2 max-w-xs">
+                <Sparkles className={cn('h-4 w-4 flex-shrink-0', weeklyInsight.color)} />
+                <p className={cn('text-sm', weeklyInsight.color)}>{weeklyInsight.insight}</p>
+              </div>
+            )}
+
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" disabled={isSharing}>
+                  <Share2 className="h-4 w-4 mr-1.5" />
+                  Share
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={handleShare}>
+                  <Share2 className="h-4 w-4 mr-2" />
+                  Share
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleCopy}>
+                  <Copy className="h-4 w-4 mr-2" />
+                  Copy
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleDownload}>
+                  <Download className="h-4 w-4 mr-2" />
+                  Download
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+        </div>
+      </Card>
 
       {/* Week Grid */}
       <div className="grid grid-cols-7 gap-3">
@@ -379,10 +381,10 @@ export function WeekCalendar({ currentDate, onActivityClick }: WeekCalendarProps
           const dayTotal = dayItems.reduce((sum, i) => sum + i.durationMin, 0);
 
           return (
-            <div
+            <Card
               key={idx}
               className={cn(
-                'rounded-xl border border-border bg-card overflow-hidden min-h-[340px] flex flex-col',
+                'overflow-hidden min-h-[340px] flex flex-col',
                 isCurrentDay && 'ring-2 ring-primary/50',
               )}
             >
@@ -396,12 +398,12 @@ export function WeekCalendar({ currentDate, onActivityClick }: WeekCalendarProps
               >
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-xs font-medium text-muted-foreground uppercase">
+                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
                       {format(day, 'EEE')}
                     </p>
                     <p
                       className={cn(
-                        'text-lg font-bold',
+                        'text-lg font-semibold',
                         isCurrentDay ? 'text-primary' : 'text-foreground',
                       )}
                     >
@@ -432,7 +434,7 @@ export function WeekCalendar({ currentDate, onActivityClick }: WeekCalendarProps
                   </div>
                 )}
               </div>
-            </div>
+            </Card>
           );
         })}
       </div>

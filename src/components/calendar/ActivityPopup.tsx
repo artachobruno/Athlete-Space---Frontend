@@ -1,9 +1,8 @@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { GlassCard } from '@/components/ui/glass-card';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import type { Intensity } from '@/lib/intensityGlow';
 import { Footprints, Bike, Waves, Clock, Route, Mountain, Heart, Zap, MessageCircle, CheckCircle2, ExternalLink, X, SkipForward, TrendingUp, Info, Download, Loader2, ArrowRight, Link2 } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
@@ -408,51 +407,43 @@ export function ActivityPopup({
     });
   };
 
-  // PHASE F1: Remove defensive checks - assume workout or activity always exists
-  // If this breaks, it's a backend bug
-
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="p-0 bg-transparent border-none sm:max-w-[500px]">
-        <GlassCard 
-          variant="raised" 
-          className="rounded-2xl"
-          glowIntensity={workout?.intent as Intensity | undefined}
-        >
-          <div className="p-6">
-          <DialogHeader className="pb-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2 rounded-lg bg-muted">
-              <SportIcon className="h-5 w-5 text-foreground" />
-            </div>
-            <div className="flex-1">
-              <DialogTitle className="text-lg font-semibold text-foreground">
-                {workout?.title || activity?.title}
-              </DialogTitle>
-              <div className="flex items-center gap-2 mt-1">
-                {workout && (
-                  <Badge 
-                    variant="outline" 
-                    className={cn('text-xs', intentColors[workout.intent])}
-                  >
-                    {workout.intent}
-                  </Badge>
-                )}
-                {activity && (
-                  <Badge variant="outline" className="text-xs bg-accent/15 text-accent border-accent/30">
-                    Completed
-                  </Badge>
-                )}
-                {workout?.completed && (
-                  <CheckCircle2 className="h-4 w-4 text-load-fresh" />
-                )}
+      <DialogContent className="p-0 sm:max-w-[500px]">
+        <Card className="border-0 shadow-none">
+          <CardHeader className="pb-3">
+            <div className="flex items-center gap-3">
+              <div className="p-2.5 rounded-lg bg-muted">
+                <SportIcon className="h-5 w-5 text-foreground" />
+              </div>
+              <div className="flex-1">
+                <DialogTitle className="text-lg font-semibold text-foreground">
+                  {workout?.title || activity?.title}
+                </DialogTitle>
+                <div className="flex items-center gap-2 mt-1.5">
+                  {workout && (
+                    <Badge 
+                      variant="outline" 
+                      className={cn('text-xs', intentColors[workout.intent])}
+                    >
+                      {workout.intent}
+                    </Badge>
+                  )}
+                  {activity && (
+                    <Badge variant="outline" className="text-xs bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/30">
+                      Completed
+                    </Badge>
+                  )}
+                  {workout?.completed && (
+                    <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />
+                  )}
+                </div>
               </div>
             </div>
-          </div>
-        </DialogHeader>
+          </CardHeader>
 
-        <div className="space-y-4 mt-4">
+          <CardContent className="space-y-4 pt-0">
           {/* Metrics row */}
           <div className="flex items-center gap-4 text-sm text-muted-foreground">
             <span className="flex items-center gap-1.5">
@@ -830,10 +821,8 @@ export function ActivityPopup({
                 </Button>
               )}
             </div>
-          </div>
-        </div>
-          </div>
-        </GlassCard>
+          </CardContent>
+        </Card>
       </DialogContent>
     </Dialog>
 

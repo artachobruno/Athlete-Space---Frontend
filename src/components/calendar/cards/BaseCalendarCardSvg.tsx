@@ -17,54 +17,13 @@ export interface BaseCardProps {
   isPlanned?: boolean;
 }
 
-// Telemetry color palette
+// Neutral color palette - matches shadcn/Dashboard styling
 const COLORS = {
-  grid: 'rgba(148, 163, 184, 0.04)',
-  border: 'rgba(148, 163, 184, 0.08)',
-  trace: 'rgba(56, 189, 248, 0.6)',
-  traceDim: 'rgba(56, 189, 248, 0.2)',
+  grid: 'rgba(148, 163, 184, 0.03)',
+  border: 'rgba(148, 163, 184, 0.12)',
+  borderSubtle: 'rgba(148, 163, 184, 0.06)',
 };
 
-// Generate telemetry-style signal trace path
-function generateTelemetryTrace(
-  width: number,
-  height: number,
-  type: 'speed' | 'steps',
-  seed: number = 0
-): string {
-  const points = 60;
-  const step = width / (points - 1);
-  const midHeight = height / 2;
-  const amplitude = height * 0.35;
-  
-  const pathPoints: string[] = [];
-  
-  for (let i = 0; i < points; i++) {
-    const x = i * step;
-    let y: number;
-    
-    if (type === 'speed') {
-      // Speed: smooth variations simulating pace changes
-      const baseWave = Math.sin((i / points) * Math.PI * 3 + seed) * amplitude * 0.6;
-      const micro = Math.sin((i / points) * Math.PI * 12 + seed * 2) * amplitude * 0.15;
-      const trend = Math.sin((i / points) * Math.PI * 1.5) * amplitude * 0.25;
-      y = midHeight + baseWave + micro + trend;
-    } else {
-      // Steps: more segmented pattern with plateaus
-      const segment = Math.floor(i / (points / 8));
-      const segmentBase = Math.sin((segment / 8) * Math.PI * 2 + seed) * amplitude * 0.7;
-      const stepNoise = Math.sin((i / points) * Math.PI * 16) * amplitude * 0.1;
-      y = midHeight + segmentBase + stepNoise;
-    }
-    
-    // Clamp to bounds
-    y = Math.max(2, Math.min(height - 2, y));
-    
-    pathPoints.push(`${i === 0 ? 'M' : 'L'} ${x.toFixed(1)} ${y.toFixed(1)}`);
-  }
-  
-  return pathPoints.join(' ');
-}
 
 export function BaseCalendarCardSvg({
   variant,
@@ -97,10 +56,6 @@ export function BaseCalendarCardSvg({
   const descFontSize = isMonthView ? 18 : 22;
 
   const id = `calendar-card-${variant}`;
-  const gridSize = 16;
-
-  // Generate seed from title for consistent trace per session
-  const traceSeed = title.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0) % 100;
 
   return (
     <svg
@@ -111,131 +66,99 @@ export function BaseCalendarCardSvg({
       xmlns="http://www.w3.org/2000/svg"
       style={{
         display: 'block',
-        fontFamily: 'SF Mono, Monaco, Consolas, system-ui, -apple-system, sans-serif',
+        fontFamily: 'system-ui, -apple-system, sans-serif',
       }}
     >
       <defs>
-        {/* Background gradient - darker, flatter */}
+        {/* Flat background - matches Card component */}
         <linearGradient id={`${id}-bg`} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor={theme.base} stopOpacity="0.95" />
-          <stop offset="100%" stopColor={theme.base} stopOpacity="0.85" />
+          <stop offset="0%" stopColor={theme.base} stopOpacity="1" />
+          <stop offset="100%" stopColor={theme.base} stopOpacity="0.95" />
         </linearGradient>
 
-        {/* Subtle inner edge highlight */}
-        <linearGradient id={`${id}-edge`} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor="rgba(255,255,255,0.08)" />
-          <stop offset="100%" stopColor="rgba(255,255,255,0.02)" />
-        </linearGradient>
-
-        {/* Grid pattern */}
-        <pattern id={`${id}-grid`} width={gridSize} height={gridSize} patternUnits="userSpaceOnUse">
-          <path 
-            d={`M ${gridSize} 0 L 0 0 0 ${gridSize}`} 
-            fill="none" 
-            stroke={COLORS.grid} 
-            strokeWidth="0.5" 
-          />
-        </pattern>
-
-        {/* Trace gradient */}
+        {/* Trace gradient using theme accent */}
         <linearGradient id={`${id}-trace`} x1="0" y1="0" x2="1" y2="0">
-          <stop offset="0%" stopColor={theme.sparkline} stopOpacity="0.3" />
-          <stop offset="50%" stopColor={theme.sparkline} stopOpacity="0.7" />
-          <stop offset="100%" stopColor={theme.sparkline} stopOpacity="0.3" />
+          <stop offset="0%" stopColor={theme.sparkline} stopOpacity="0.2" />
+          <stop offset="50%" stopColor={theme.sparkline} stopOpacity="0.6" />
+          <stop offset="100%" stopColor={theme.sparkline} stopOpacity="0.2" />
         </linearGradient>
       </defs>
 
-      {/* Background - flat, no liquid glass effects */}
-      <rect width="360" height={viewBoxHeight} rx="12" fill={`url(#${id}-bg)`} />
-      <rect width="360" height={viewBoxHeight} rx="12" fill={`url(#${id}-grid)`} />
+      {/* Background - flat, matching Card component */}
+      <rect width="360" height={viewBoxHeight} rx="8" fill={`url(#${id}-bg)`} />
       
-      {/* Border - thin, subtle */}
+      {/* Border - consistent with shadcn Card */}
       <rect 
         x="0.5" 
         y="0.5" 
         width="359" 
         height={viewBoxHeight - 1} 
-        rx="11.5" 
+        rx="7.5" 
         fill="none" 
         stroke={COLORS.border} 
-        strokeWidth="0.5" 
-      />
-      
-      {/* Top edge highlight */}
-      <rect 
-        x="1" 
-        y="1" 
-        width="358" 
-        height={viewBoxHeight - 2} 
-        rx="11" 
-        fill="none" 
-        stroke={`url(#${id}-edge)`} 
         strokeWidth="1" 
       />
 
-      {/* TOP ROW - metrics style */}
+      {/* TOP ROW - clean header style */}
       <text 
-        x="20" 
-        y="32" 
+        x="16" 
+        y="28" 
         fill={theme.text} 
         fontSize={topRowFontSize} 
         fontWeight="600"
-        letterSpacing="-0.02em"
+        letterSpacing="-0.01em"
       >
         {topLeft}
       </text>
       <text 
-        x="340" 
-        y="32" 
+        x="344" 
+        y="28" 
         fill={theme.secondary} 
         fontSize={topRowFontSize - 4} 
         fontWeight="500" 
         textAnchor="end"
-        opacity="0.7"
-        letterSpacing="0.02em"
+        opacity="0.6"
       >
         {topRight}
       </text>
 
       {/* Divider line */}
-      <line x1="20" y1="44" x2="340" y2="44" stroke={COLORS.border} strokeWidth="0.5" />
+      <line x1="16" y1="40" x2="344" y2="40" stroke={COLORS.borderSubtle} strokeWidth="1" />
 
       {/* METRICS - small caps labels */}
       {showMetrics && (
         <>
           <text 
-            x="20" 
-            y={isMonthView ? 62 : 68} 
+            x="16" 
+            y={isMonthView ? 58 : 64} 
             fill={theme.secondary} 
             fontSize={metricsLabelFontSize} 
-            letterSpacing="0.12em"
+            letterSpacing="0.08em"
             opacity="0.6"
-            style={{ textTransform: 'uppercase' }}
           >
             {metricsLabel?.toUpperCase()}
           </text>
           <text 
-            x="20" 
-            y={isMonthView ? 82 : 92} 
+            x="16" 
+            y={isMonthView ? 78 : 88} 
             fill={theme.text} 
             fontSize={metricsValueFontSize} 
             fontWeight="500"
-            letterSpacing="-0.01em"
           >
             {metricsValue}
           </text>
         </>
       )}
 
-      {/* TITLE - tighter line height */}
-      <foreignObject x="20" y={isMonthView ? 54 : 64} width="320" height={isMonthView ? 60 : 76}>
+      {/* TITLE */}
+      <foreignObject x="16" y={isMonthView ? 50 : 60} width="328" height={isMonthView ? 56 : 72}>
         <div
           style={{
             color: theme.text,
             fontSize: `${titleFontSize}px`,
             fontWeight: 600,
-            lineHeight: 1.1,
-            letterSpacing: '-0.02em',
+            lineHeight: 1.15,
+            letterSpacing: '-0.01em',
             overflow: 'hidden',
             display: '-webkit-box',
             WebkitLineClamp: titleClampLines,
@@ -248,14 +171,13 @@ export function BaseCalendarCardSvg({
 
       {/* DESCRIPTION - muted */}
       {description && (
-        <foreignObject x="20" y={isMonthView ? 110 : 136} width="320" height={isMonthView ? 50 : 70}>
+        <foreignObject x="16" y={isMonthView ? 104 : 128} width="328" height={isMonthView ? 48 : 64}>
           <div
             style={{
               color: theme.secondary,
               fontSize: `${descFontSize}px`,
-              lineHeight: 1.35,
+              lineHeight: 1.4,
               opacity: 0.7,
-              letterSpacing: '0.01em',
               overflow: 'hidden',
               display: '-webkit-box',
               WebkitLineClamp: descClampLines,
@@ -267,35 +189,31 @@ export function BaseCalendarCardSvg({
         </foreignObject>
       )}
 
-      {/* TELEMETRY TRACE - replaces wavy decorative line */}
+      {/* ACCENT LINE - subtle accent indicator at bottom */}
       {(isActivity || isPlanned) && (
-        <g transform={`translate(20,${isMonthView ? 200 : 300})`}>
-          {/* Baseline */}
-          <line 
-            x1="0" 
-            y1="20" 
-            x2="320" 
-            y2="20" 
-            stroke={COLORS.border} 
-            strokeWidth="0.5" 
-            strokeDasharray="2,4"
+        <g transform={`translate(16,${isMonthView ? 220 : 340})`}>
+          {/* Accent bar */}
+          <rect 
+            x="0" 
+            y="0" 
+            width="328" 
+            height="3" 
+            rx="1.5"
+            fill={theme.sparkline}
+            opacity="0.3"
           />
-          
-          {/* Signal trace */}
-          <path
-            d={generateTelemetryTrace(320, 40, isActivity ? 'speed' : 'steps', traceSeed)}
-            fill="none"
-            stroke={`url(#${id}-trace)`}
-            strokeWidth="1.5"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-          
-          {/* Start marker */}
-          <circle cx="0" cy="20" r="2" fill={theme.sparkline} opacity="0.5" />
-          
-          {/* End marker */}
-          <circle cx="320" cy="20" r="2" fill={theme.sparkline} opacity="0.5" />
+          {/* Progress indicator (for activities with data) */}
+          {isActivity && (
+            <rect 
+              x="0" 
+              y="0" 
+              width="164" 
+              height="3" 
+              rx="1.5"
+              fill={theme.sparkline}
+              opacity="0.8"
+            />
+          )}
         </g>
       )}
     </svg>

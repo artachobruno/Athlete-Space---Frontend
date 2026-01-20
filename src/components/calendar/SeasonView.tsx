@@ -13,7 +13,7 @@ import { cn } from '@/lib/utils';
 import { fetchCalendarSeason, fetchActivities, fetchOverview } from '@/lib/api';
 import { getSeasonIntelligence } from '@/lib/intelligence';
 import { normalizeSportType } from '@/lib/session-utils';
-import { GlassCard } from '@/components/ui/GlassCard';
+import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useQueries, useQuery } from '@tanstack/react-query';
 import { useAuthenticatedQuery } from '@/hooks/useAuthenticatedQuery';
@@ -259,9 +259,10 @@ export function SeasonView({ currentDate }: SeasonViewProps) {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-      </div>
+      <Card className="flex items-center justify-center py-12">
+        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground mr-2" />
+        <span className="text-muted-foreground">Loading season...</span>
+      </Card>
     );
   }
 
@@ -287,37 +288,37 @@ export function SeasonView({ currentDate }: SeasonViewProps) {
   };
 
   const raceMarkerColors = {
-    race: 'bg-red-500/20 text-red-600 border-red-500/30',
-    milestone: 'bg-blue-500/20 text-blue-600 border-blue-500/30',
-    recovery: 'bg-green-500/20 text-green-600 border-green-500/30',
+    race: 'bg-red-500/20 text-red-600 dark:text-red-400 border-red-500/30',
+    milestone: 'bg-blue-500/20 text-blue-600 dark:text-blue-400 border-blue-500/30',
+    recovery: 'bg-green-500/20 text-green-600 dark:text-green-400 border-green-500/30',
   };
 
   return (
     <div className="space-y-4">
       {/* Season Intelligence Summary */}
       {seasonIntelligence && (
-        <div className="bg-card/50 border border-border/50 rounded-lg p-3">
+        <Card className="p-4">
           <div className="space-y-2">
             {seasonIntelligence.explanation && (
-              <p className="text-xs text-muted-foreground leading-relaxed">
+              <p className="text-sm text-muted-foreground leading-relaxed">
                 {seasonIntelligence.explanation}
               </p>
             )}
             {seasonIntelligence.phases && seasonIntelligence.phases.length > 0 && (
-              <div className="flex flex-wrap gap-1.5">
+              <div className="flex flex-wrap gap-2">
                 {seasonIntelligence.phases.map((phase, idx) => (
-                  <Badge key={idx} variant="outline" className="text-[9px] uppercase tracking-wider px-1.5 py-0.5">
+                  <Badge key={idx} variant="outline" className="text-xs uppercase tracking-wider">
                     {phase.label} W{phase.week_start}-{phase.week_end}
                   </Badge>
                 ))}
               </div>
             )}
           </div>
-        </div>
+        </Card>
       )}
 
-      {/* Legend - minimal telemetry style */}
-      <div className="flex flex-wrap items-center gap-4 text-[10px] text-muted-foreground/60 uppercase tracking-wider">
+      {/* Legend - consistent with dashboard styling */}
+      <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground uppercase tracking-wider">
         <div className="flex items-center gap-1.5">
           <div className="w-2 h-2 rounded-sm bg-accent/60" />
           <span>Load</span>

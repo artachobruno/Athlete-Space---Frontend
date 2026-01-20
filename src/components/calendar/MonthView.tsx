@@ -23,6 +23,7 @@ import {
 } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 
+import { Card } from '@/components/ui/card';
 import {
   fetchCalendarMonth,
   normalizeCalendarMonth,
@@ -44,6 +45,7 @@ import { DroppableDayCell } from './DroppableDayCell';
 import { CalendarWorkoutStack } from './cards/CalendarWorkoutStack';
 import { toCalendarItem, capitalizeTitle } from '@/adapters/calendarAdapter';
 import { sortCalendarItems } from './cards/sortCalendarItems';
+import { Loader2 } from 'lucide-react';
 
 interface MonthViewProps {
   currentDate: Date;
@@ -211,22 +213,23 @@ export function MonthView({ currentDate, onActivityClick }: MonthViewProps) {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <span className="text-muted-foreground">Loading…</span>
-      </div>
+      <Card className="flex items-center justify-center py-12">
+        <Loader2 className="h-5 w-5 animate-spin text-muted-foreground mr-2" />
+        <span className="text-muted-foreground">Loading calendar...</span>
+      </Card>
     );
   }
 
   const weekDays = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
 
   return (
-    <div className="bg-card rounded-lg border border-border overflow-hidden">
-      {/* Header - telemetry style */}
-      <div className="grid grid-cols-7 border-b border-border bg-muted/20">
+    <Card className="overflow-hidden">
+      {/* Header row - consistent with dashboard card headers */}
+      <div className="grid grid-cols-7 border-b border-border bg-muted/30">
         {weekDays.map((d) => (
           <div
             key={d}
-            className="py-1.5 text-center text-[10px] font-medium tracking-widest text-muted-foreground/60"
+            className="py-2 text-center text-xs font-medium uppercase tracking-wider text-muted-foreground"
           >
             {d}
           </div>
@@ -253,26 +256,27 @@ export function MonthView({ currentDate, onActivityClick }: MonthViewProps) {
                   key={idx}
                   date={day}
                   className={cn(
-                    'relative min-h-[180px] border-b border-r border-border/50 flex flex-col',
-                    !isCurrentMonth && 'bg-muted/10',
+                    'relative min-h-[180px] border-b border-r border-border/50 flex flex-col transition-colors',
+                    !isCurrentMonth && 'bg-muted/5',
+                    isCurrentDay && 'bg-primary/5',
                     idx % 7 === 6 && 'border-r-0'
                   )}
                 >
-                  {/* Day number - compact */}
-                  <div className="px-1.5 pt-1">
+                  {/* Day number */}
+                  <div className="px-2 pt-1.5 pb-1">
                     <span
                       className={cn(
-                        'text-xs font-medium tabular-nums',
+                        'text-sm font-medium tabular-nums',
                         !isCurrentMonth && 'text-muted-foreground/40',
                         isCurrentDay &&
-                          'bg-accent text-accent-foreground w-5 h-5 rounded inline-flex items-center justify-center text-[10px] font-semibold'
+                          'bg-primary text-primary-foreground w-6 h-6 rounded-full inline-flex items-center justify-center text-xs font-semibold'
                       )}
                     >
                       {format(day, 'd')}
                     </span>
                   </div>
 
-                  {/* SVG cards */}
+                  {/* Workout cards */}
                   <div className="relative flex-1">
                     {items.length > 0 && (() => {
                       const stackItems = sortCalendarItems(items);
@@ -314,12 +318,12 @@ export function MonthView({ currentDate, onActivityClick }: MonthViewProps) {
 
         <DragOverlay>
           {activeId && draggedSession && (
-            <div className="px-2 py-1 text-xs rounded bg-muted shadow">
+            <div className="px-3 py-1.5 text-sm rounded-md bg-card border border-border shadow-lg">
               {capitalizeTitle(draggedSession.title || 'Workout')}
             </div>
           )}
         </DragOverlay>
       </DndContext>
-    </div>
+    </Card>
   );
 }
