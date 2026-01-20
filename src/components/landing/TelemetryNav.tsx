@@ -17,12 +17,14 @@ const NavLogo = () => {
     return () => mediaQuery.removeEventListener('change', handleChange);
   }, []);
 
+  const logoClasses = "h-8 md:h-10 lg:h-11 w-auto opacity-95 pointer-events-none drop-shadow-[0_0_12px_rgba(120,180,255,0.25)]";
+
   if (prefersReducedMotion) {
     return (
       <img
         src="/AthleteSpace_logo_dark.jpg"
         alt="Athlete Space"
-        className="h-7 md:h-8 w-auto opacity-90 pointer-events-none"
+        className={logoClasses}
       />
     );
   }
@@ -34,7 +36,7 @@ const NavLogo = () => {
       loop
       muted
       playsInline
-      className="h-6 md:h-7 w-auto opacity-90 pointer-events-none"
+      className={logoClasses}
     />
   );
 };
@@ -52,7 +54,7 @@ export const TelemetryNav = () => {
       <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm border-b border-slate-800/30" />
       
       <div className="relative container mx-auto px-6">
-        <div className="flex items-center justify-between h-14">
+        <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <a href="/" className="flex items-center gap-2">
             <NavLogo />

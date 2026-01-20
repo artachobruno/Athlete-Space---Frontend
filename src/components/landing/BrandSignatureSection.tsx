@@ -16,12 +16,14 @@ const SignatureLogo = () => {
     return () => mediaQuery.removeEventListener('change', handleChange);
   }, []);
 
+  const logoClasses = "w-48 md:w-60 h-auto opacity-70 pointer-events-none";
+
   if (prefersReducedMotion) {
     return (
       <img
         src="/AthleteSpace_logo_dark.jpg"
         alt="Athlete Space"
-        className="w-56 md:w-64 h-auto opacity-60 pointer-events-none"
+        className={logoClasses}
       />
     );
   }
@@ -33,42 +35,42 @@ const SignatureLogo = () => {
       loop
       muted
       playsInline
-      className="w-56 md:w-64 h-auto opacity-60 pointer-events-none"
+      className={logoClasses}
     />
   );
 };
 
 export const BrandSignatureSection = () => {
   return (
-    <section className="relative py-24 md:py-32 bg-slate-950 overflow-hidden">
+    <section className="relative py-20 md:py-28 bg-slate-950 overflow-hidden">
       {/* Subtle top border */}
       <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-slate-800/30 to-transparent" />
 
       <div className="relative container mx-auto px-6">
         <motion.div
-          className="flex flex-col items-center text-center"
+          className="max-w-5xl mx-auto flex flex-col md:flex-row items-center md:items-center gap-8 md:gap-12"
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 1, ease: 'easeOut' }}
         >
-          {/* Animated logo - larger, slower, dimmed */}
-          <div className="mb-8">
+          {/* Logo - left side */}
+          <div className="flex-shrink-0">
             <SignatureLogo />
           </div>
 
-          {/* Brand tagline - F1 tone */}
+          {/* Text block - right side */}
           <motion.div
-            className="flex flex-col items-center gap-2"
+            className="flex flex-col gap-3 text-center md:text-left"
             initial={{ opacity: 0 }}
             whileInView={{ opacity: 1 }}
             viewport={{ once: true }}
             transition={{ duration: 0.8, delay: 0.3 }}
           >
-            <h3 className="text-sm md:text-base font-mono tracking-[0.15em] text-slate-400 uppercase">
-              AthleteSpace
+            <h3 className="text-xl md:text-2xl font-mono font-medium tracking-[0.2em] text-slate-300 uppercase">
+              ATHLETESPACE
             </h3>
-            <p className="text-xs md:text-sm font-mono tracking-wider text-slate-600 italic">
+            <p className="text-sm md:text-base font-mono tracking-wide text-slate-500 italic">
               Precision intelligence for elite training.
             </p>
           </motion.div>

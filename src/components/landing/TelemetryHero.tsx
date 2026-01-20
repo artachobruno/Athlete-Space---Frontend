@@ -45,8 +45,8 @@ export const TelemetryHero = () => {
         <div className="absolute inset-0 bg-gradient-to-b from-slate-950/35 via-slate-950/55 to-slate-950" />
       </div>
 
-      {/* Status band at top */}
-      <div className="relative z-10 pt-20">
+      {/* Status band at top - reduced padding for tighter visual connection */}
+      <div className="relative z-10 pt-16">
         <TelemetryStatusBand />
       </div>
 
