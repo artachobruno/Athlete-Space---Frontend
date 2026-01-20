@@ -6,6 +6,7 @@ import { MentalModelSection } from '@/components/landing/MentalModelSection';
 import { SystemExplanation } from '@/components/landing/SystemExplanation';
 import { AthletesExplanation } from '@/components/landing/AthletesExplanation';
 import { CoachesSection } from '@/components/landing/CoachesSection';
+import { BrandSignatureSection } from '@/components/landing/BrandSignatureSection';
 import { TelemetryFooter } from '@/components/landing/TelemetryFooter';
 
 const Landing = () => {
@@ -40,6 +41,9 @@ const Landing = () => {
       
       {/* Coaches section with video */}
       <CoachesSection />
+      
+      {/* Brand signature - closing brand reinforcement */}
+      <BrandSignatureSection />
       
       {/* Minimal footer */}
       <TelemetryFooter />

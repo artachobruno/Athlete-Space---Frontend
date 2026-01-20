@@ -1,6 +1,43 @@
 import { motion } from 'framer-motion';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Menu, X } from 'lucide-react';
+
+const NavLogo = () => {
+  const [prefersReducedMotion, setPrefersReducedMotion] = useState(false);
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+    setPrefersReducedMotion(mediaQuery.matches);
+
+    const handleChange = (event: MediaQueryListEvent) => {
+      setPrefersReducedMotion(event.matches);
+    };
+
+    mediaQuery.addEventListener('change', handleChange);
+    return () => mediaQuery.removeEventListener('change', handleChange);
+  }, []);
+
+  if (prefersReducedMotion) {
+    return (
+      <img
+        src="/AthleteSpace_logo_dark.jpg"
+        alt="Athlete Space"
+        className="h-7 md:h-8 w-auto opacity-90 pointer-events-none"
+      />
+    );
+  }
+
+  return (
+    <video
+      src="/branding/athletespace-logo-motion.mp4"
+      autoPlay
+      loop
+      muted
+      playsInline
+      className="h-6 md:h-7 w-auto opacity-90 pointer-events-none"
+    />
+  );
+};
 
 export const TelemetryNav = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -18,11 +55,7 @@ export const TelemetryNav = () => {
         <div className="flex items-center justify-between h-14">
           {/* Logo */}
           <a href="/" className="flex items-center gap-2">
-            <img 
-              src="/AthleteSpace_logo_dark.jpg" 
-              alt="Athlete Space" 
-              className="h-6 w-auto opacity-80"
-            />
+            <NavLogo />
           </a>
 
           {/* Desktop nav */}
