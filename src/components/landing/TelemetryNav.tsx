@@ -46,7 +46,7 @@ export const TelemetryNav = () => {
 
   return (
     <motion.nav
-      className="fixed top-0 left-0 right-0 z-50"
+      className="fixed top-0 left-0 right-0 z-50 pt-[env(safe-area-inset-top,0px)]"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       transition={{ duration: 0.8, delay: 0.1 }}
@@ -95,7 +95,7 @@ export const TelemetryNav = () => {
       {/* Mobile menu */}
       {isMenuOpen && (
         <motion.div
-          className="md:hidden absolute top-14 left-0 right-0 bg-slate-950/95 backdrop-blur-sm border-b border-slate-800/30"
+          className="md:hidden absolute top-16 left-0 right-0 bg-slate-950/95 backdrop-blur-sm border-b border-slate-800/30"
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.2 }}

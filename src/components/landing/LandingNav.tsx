@@ -15,7 +15,7 @@ export const LandingNav = () => {
 
   return (
     <motion.nav
-      className="fixed top-0 left-0 right-0 z-50"
+      className="fixed top-0 left-0 right-0 z-50 pt-[env(safe-area-inset-top,0px)]"
       initial={{ y: -100 }}
       animate={{ y: 0 }}
       transition={{ duration: 0.6, ease: [0.21, 0.47, 0.32, 0.98] }}
