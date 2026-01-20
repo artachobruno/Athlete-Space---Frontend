@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion';
+import { VideoFrame } from './VideoFrame';
 
 interface ExplanationBlockProps {
   title: string;
@@ -55,31 +56,41 @@ export const SystemExplanation = () => {
           />
         </div>
 
-        {/* System Decision Example callout */}
-        <motion.div
-          className="max-w-2xl mx-auto mt-16 border border-slate-800/50 bg-slate-900/20 p-8"
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.8 }}
-        >
-          <h3 className="text-sm font-mono tracking-[0.15em] text-slate-300 mb-6 uppercase">
-            System Decision Example
-          </h3>
-          <div className="space-y-3 text-sm font-mono text-slate-400 leading-relaxed">
-            <p>Load trending upward.</p>
-            <p>Recovery within range.</p>
-            <p>Adaptation stable.</p>
-            <div className="mt-6 pt-6 border-t border-slate-800/50">
-              <p className="text-slate-300">
-                System recommendation:
-              </p>
-              <p className="text-slate-200 mt-1">
-                Proceed with planned intensity.
-              </p>
+        {/* System Decision Example with video */}
+        <div className="grid md:grid-cols-2 gap-16 items-center mt-16">
+          {/* Video frame */}
+          <VideoFrame 
+            src="/running_female.mp4"
+            className="aspect-video rounded-sm"
+            label="SIGNAL · LIVE"
+          />
+
+          {/* System Decision callout */}
+          <motion.div
+            className="border border-slate-800/50 bg-slate-900/20 p-8"
+            initial={{ opacity: 0, x: 20 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.8 }}
+          >
+            <h3 className="text-sm font-mono tracking-[0.15em] text-slate-300 mb-6 uppercase">
+              System Decision Example
+            </h3>
+            <div className="space-y-3 text-sm font-mono text-slate-400 leading-relaxed">
+              <p>Load trending upward.</p>
+              <p>Recovery within range.</p>
+              <p>Adaptation stable.</p>
+              <div className="mt-6 pt-6 border-t border-slate-800/50">
+                <p className="text-slate-300">
+                  System recommendation:
+                </p>
+                <p className="text-slate-200 mt-1">
+                  Proceed with planned intensity.
+                </p>
+              </div>
             </div>
-          </div>
-        </motion.div>
+          </motion.div>
+        </div>
       </div>
     </section>
   );
