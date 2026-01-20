@@ -24,6 +24,8 @@ export interface CoachInsightData {
 
 export interface WorkoutSession {
   id: string;
+  /** Display title for the session (e.g., "Morning Run", "Tempo Intervals") */
+  title: string;
   type: WorkoutType;
   phase: WorkoutPhase;
 

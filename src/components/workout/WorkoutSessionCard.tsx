@@ -104,7 +104,7 @@ export function WorkoutSessionCard({
   compact = false,
   className,
 }: WorkoutSessionCardProps) {
-  const { phase, type, planned, completed, effortData, plannedEffortData, coachInsight } = session;
+  const { phase, type, title, planned, completed, effortData, plannedEffortData, coachInsight } = session;
 
   const isCompliance = phase === 'compliance';
   const isCompleted = phase === 'completed';
@@ -116,6 +116,9 @@ export function WorkoutSessionCard({
   // Determine effort graph display mode
   const showEffortData = isCompleted || isCompliance;
   const graphData = effortData || plannedEffortData || [];
+
+  // Display title: use session title or fall back to type label
+  const displayTitle = title || getTypeLabel(type);
 
   return (
     <div
@@ -131,14 +134,19 @@ export function WorkoutSessionCard({
           '0 1px 3px rgba(0, 0, 0, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.03)',
       }}
     >
-      {/* Session type header */}
+      {/* Session title header */}
       <div className={cn('px-2 pt-2', compact ? 'pb-1' : 'px-4 pt-4 pb-3')}>
         <div className={cn(
-          'font-medium uppercase tracking-[0.12em] text-muted-foreground',
-          compact ? 'text-[8px]' : 'text-[10px]'
+          'font-semibold tracking-tight text-foreground truncate',
+          compact ? 'text-[10px]' : 'text-sm'
         )}>
-          {getTypeLabel(type)}
+          {displayTitle}
         </div>
+        {!compact && (
+          <div className="text-[9px] font-medium uppercase tracking-[0.12em] text-muted-foreground mt-0.5">
+            {getTypeLabel(type)}
+          </div>
+        )}
       </div>
 
       {/* Metrics row */}

@@ -123,8 +123,12 @@ function plannedWorkoutToSession(
   const feedbackText = completed?.coachFeedback || coachNotes[workout.intent];
   const tone = determineTone(feedbackText);
 
+  // Use workout title, completed activity title, or generate from intent
+  const title = workout.title || completed?.title || getDefaultTitleFromIntent(workout.intent);
+
   return {
     id: workout.id,
+    title,
     type: mapIntentToType(workout.intent),
     phase,
     planned: plannedMetrics,
@@ -133,6 +137,17 @@ function plannedWorkoutToSession(
     plannedEffortData,
     coachInsight: feedbackText ? { tone, message: feedbackText } : undefined,
   };
+}
+
+function getDefaultTitleFromIntent(intent: string): string {
+  const titles: Record<string, string> = {
+    threshold: 'Threshold Run',
+    vo2: 'Interval Session',
+    recovery: 'Recovery Run',
+    endurance: 'Long Run',
+    aerobic: 'Easy Run',
+  };
+  return titles[intent] || 'Workout';
 }
 
 /**
@@ -150,6 +165,7 @@ function activityToSession(activity: CompletedActivity): WorkoutSession {
 
   return {
     id: activity.id,
+    title: activity.title || 'Activity',
     type: 'easy',
     phase: 'completed',
     completed: metrics,

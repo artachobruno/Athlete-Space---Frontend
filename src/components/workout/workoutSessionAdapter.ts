@@ -27,6 +27,21 @@ function mapToWorkoutType(typeStr: string | null | undefined): WorkoutType {
 }
 
 /**
+ * Generates a display title for workout type
+ */
+function getDefaultTitle(type: WorkoutType): string {
+  const titles: Record<WorkoutType, string> = {
+    threshold: 'Threshold Run',
+    interval: 'Interval Session',
+    recovery: 'Recovery Run',
+    long: 'Long Run',
+    easy: 'Easy Run',
+    tempo: 'Tempo Run',
+  };
+  return titles[type] || 'Workout';
+}
+
+/**
  * Determines workout phase based on session status and activity presence
  */
 function determinePhase(
@@ -211,6 +226,9 @@ export function toWorkoutSession(options: ToWorkoutSessionOptions): WorkoutSessi
   const phase = determinePhase(session, activity);
   const workoutType = mapToWorkoutType(session.type || session.intensity);
 
+  // Determine title: use session title, activity title, or generate from type
+  const title = session.title || activity?.title || getDefaultTitle(workoutType);
+
   const planned = toPlannedMetrics(session);
   const completed = toCompletedMetrics(activity);
 
@@ -230,6 +248,7 @@ export function toWorkoutSession(options: ToWorkoutSessionOptions): WorkoutSessi
 
   return {
     id: session.id,
+    title,
     type: workoutType,
     phase,
     planned,
@@ -248,13 +267,16 @@ export function toPlannedWorkoutSession(
   typeStr: string,
   distanceKm: number,
   durationMinutes: number,
-  recommendation?: string
+  recommendation?: string,
+  title?: string
 ): WorkoutSession {
   const paceSecPerKm = distanceKm > 0 ? (durationMinutes * 60) / distanceKm : 0;
+  const workoutType = mapToWorkoutType(typeStr);
 
   return {
     id,
-    type: mapToWorkoutType(typeStr),
+    title: title || getDefaultTitle(workoutType),
+    type: workoutType,
     phase: 'planned',
     planned: {
       distanceKm,
@@ -296,6 +318,11 @@ export function calendarItemToWorkoutSession(
     phase = item.compliance === 'complete' || item.isPaired ? 'compliance' : 'completed';
   }
 
+  const workoutType = mapToWorkoutType(item.intent);
+  
+  // Use item title, fall back to generated title from type
+  const title = item.title || getDefaultTitle(workoutType);
+
   const metrics: WorkoutMetrics = {
     distanceKm,
     durationSec,
@@ -329,7 +356,8 @@ export function calendarItemToWorkoutSession(
 
   return {
     id: item.id,
-    type: mapToWorkoutType(item.intent),
+    title,
+    type: workoutType,
     phase,
     planned,
     completed,
