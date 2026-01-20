@@ -130,18 +130,18 @@ export function ActivityList({ activities, initialExpandedId = null }: ActivityL
   }
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-2">
       {validActivities.map((activity) => {
           const Icon = sportIcons[activity.sport] || Footprints;
           const isExpanded = expandedId === activity.id;
           
           const dateStr = activity.date ? (() => {
             try {
-              return format(parseISO(activity.date), 'EEEE, MMM d');
+              return format(parseISO(activity.date), 'EEE, MMM d').toUpperCase();
             } catch {
               return activity.date;
             }
-          })() : 'Unknown date';
+          })() : 'UNKNOWN';
 
           return (
             <div
@@ -154,164 +154,102 @@ export function ActivityList({ activities, initialExpandedId = null }: ActivityL
               >
                 <GlassCard 
                   className={cn(
-                    'transition-all',
-                    isExpanded && 'ring-2 ring-accent'
+                    'transition-all border-border/50',
+                    isExpanded && 'ring-1 ring-accent/40'
                   )}
                 >
                 <CollapsibleTrigger asChild>
-                  <CardContent className="p-4 cursor-pointer hover:bg-muted/30 transition-colors">
-                    {/* Header */}
-                    <div className="flex items-start gap-3 mb-3">
-                      <div className="p-2 bg-muted rounded-lg">
-                        <Icon className="h-5 w-5 text-foreground" />
+                  <CardContent className="p-3 cursor-pointer hover:bg-muted/20 transition-colors">
+                    {/* Header - Compact telemetry style */}
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="p-1.5 bg-muted/50 rounded">
+                        <Icon className="h-4 w-4 text-foreground/70" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <h3 className="font-semibold text-foreground truncate">{capitalizeTitle(activity.title || 'Untitled Activity')}</h3>
-                        <p className="text-sm text-muted-foreground">
+                        <h3 className="text-sm font-medium text-foreground truncate tracking-tight">
+                          {capitalizeTitle(activity.title || 'Untitled Activity')}
+                        </h3>
+                        <p className="text-[10px] text-muted-foreground/50 uppercase tracking-wider">
                           {dateStr}
                         </p>
                       </div>
-                    <div className="flex items-center gap-2">
-                      <Badge variant="outline" className="shrink-0 capitalize">
+                      <Badge variant="outline" className="shrink-0 text-[9px] uppercase tracking-wider px-1.5 py-0">
                         {activity.sport}
                       </Badge>
-                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                      <Button variant="ghost" size="icon" className="h-6 w-6">
                         {isExpanded ? (
-                          <ChevronUp className="h-4 w-4" />
+                          <ChevronUp className="h-3 w-3" />
                         ) : (
-                          <ChevronDown className="h-4 w-4" />
+                          <ChevronDown className="h-3 w-3" />
                         )}
                       </Button>
                     </div>
-                  </div>
 
-                  {/* Metrics */}
-                  <div className="flex items-center gap-4 text-sm text-muted-foreground mb-3 flex-wrap">
-                    <span className="flex items-center gap-1">
-                      <Clock className="h-4 w-4" />
-                      {activity.duration || 0} min
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Route className="h-4 w-4" />
-                      {(() => {
-                        const dist = convertDistance(activity.distance || 0);
-                        return `${dist.value.toFixed(1)} ${dist.unit}`;
-                      })()}
-                    </span>
-                    {activity.trainingLoad > 0 && (
-                      <span className="flex items-center gap-1">
-                        <Zap className="h-4 w-4" />
-                        {Math.round(activity.trainingLoad)} TSS
+                    {/* Metrics - Telemetry row style */}
+                    <div className="flex items-center gap-3 text-xs tabular-nums flex-wrap">
+                      <span className="flex items-center gap-1 text-foreground">
+                        <span className="font-semibold">{activity.duration || 0}</span>
+                        <span className="text-[9px] text-muted-foreground/50 uppercase">min</span>
                       </span>
-                    )}
-                    {/* Normalized Power / Effort - only for bike and run */}
-                    {activity.normalizedPower !== undefined && activity.normalizedPower !== null && 
-                     (activity.sport === 'cycling' || activity.sport === 'running') && (
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <span className="flex items-center gap-1 cursor-help">
-                              <Zap className="h-4 w-4" />
-                              {activity.sport === 'cycling' 
-                                ? `${Math.round(activity.normalizedPower)} NP`
-                                : `${activity.normalizedPower.toFixed(2)} NE`}
-                            </span>
-                          </TooltipTrigger>
-                          <TooltipContent side="top" className="max-w-xs">
-                            <div className="whitespace-pre-line text-sm">
-                              {activity.sport === 'cycling' 
-                                ? 'Normalized Power (NP)\nAccounts for variability in effort.\nMore accurate than average power.'
-                                : 'Normalized Effort\nAdjusts for pace variability to reflect true effort.'}
-                            </div>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                    )}
-                    {/* Intensity Factor */}
-                    {activity.intensityFactor !== undefined && activity.intensityFactor !== null ? (
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <span className={cn(
-                              "flex items-center gap-1 cursor-help",
-                              activity.effortSource === 'hr' && "opacity-60",
-                              activity.intensityFactor >= 1.0 && "text-load-overreaching font-medium"
-                            )}>
-                              <TrendingUp className="h-4 w-4" />
-                              IF {activity.intensityFactor.toFixed(2)}
-                            </span>
-                          </TooltipTrigger>
-                          <TooltipContent side="top" className="max-w-xs">
-                            <div className="whitespace-pre-line text-sm">
-                              Intensity Factor (IF)
-                              {'\n'}Compares session effort to your threshold.
-                              {'\n'}IF = 1.00 ≈ threshold effort
-                              {'\n'}IF &lt; 0.75 = easy
-                              {'\n'}IF &gt; 1.05 = hard
-                            </div>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                    ) : activity.sport === 'cycling' || activity.sport === 'running' ? (
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <span className="flex items-center gap-1 cursor-help opacity-60">
-                              <TrendingUp className="h-4 w-4" />
-                              IF —
-                            </span>
-                          </TooltipTrigger>
-                          <TooltipContent side="top">
-                            <div className="text-sm">Set your threshold to enable IF</div>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
-                    ) : null}
-                    {activity.avgHeartRate && (
-                      <span className="flex items-center gap-1">
-                        <Heart className="h-4 w-4" />
-                        {Math.round(activity.avgHeartRate)} bpm
+                      <span className="text-muted-foreground/30">|</span>
+                      <span className="flex items-center gap-1 text-foreground">
+                        <span className="font-semibold">
+                          {convertDistance(activity.distance || 0).value.toFixed(1)}
+                        </span>
+                        <span className="text-[9px] text-muted-foreground/50 uppercase">
+                          {convertDistance(activity.distance || 0).unit}
+                        </span>
                       </span>
-                    )}
-                    {activity.avgPower && (
-                      <span className="flex items-center gap-1">
-                        <Zap className="h-4 w-4" />
-                        {Math.round(activity.avgPower)} W
-                      </span>
-                    )}
-                    {activity.elevation && (
-                      <span className="flex items-center gap-1">
-                        <Route className="h-4 w-4" />
-                        {(() => {
-                          const elev = convertElevation(activity.elevation);
-                          return `${elev.value.toFixed(1)} ${elev.unit}`;
-                        })()}
-                      </span>
-                    )}
-                    {/* Effort Source Label */}
-                    {activity.effortSource && (
-                      <span className="text-xs text-muted-foreground/70 ml-auto">
-                        Source: {activity.effortSource === 'power' ? 'Power' : 
-                                activity.effortSource === 'pace' ? 'Pace' : 
-                                'HR'}
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Coach Insight Preview */}
-                  {activity.coachFeedback && !isExpanded && (
-                    <div className="p-3 bg-accent/5 border border-accent/20 rounded-lg">
-                      <div className="flex items-center gap-2 mb-1">
-                        <Bot className="h-4 w-4 text-accent" />
-                        <span className="text-xs font-medium text-accent">Coach Insight</span>
-                      </div>
-                      <p className="text-sm text-foreground leading-relaxed line-clamp-2">
-                        {activity.coachFeedback}
-                      </p>
+                      {activity.trainingLoad > 0 && (
+                        <>
+                          <span className="text-muted-foreground/30">|</span>
+                          <span className="flex items-center gap-1 text-foreground">
+                            <span className="font-semibold">{Math.round(activity.trainingLoad)}</span>
+                            <span className="text-[9px] text-muted-foreground/50 uppercase">TSS</span>
+                          </span>
+                        </>
+                      )}
+                      {activity.avgHeartRate && (
+                        <>
+                          <span className="text-muted-foreground/30">|</span>
+                          <span className="flex items-center gap-1 text-muted-foreground/70">
+                            <Heart className="h-3 w-3" />
+                            <span>{Math.round(activity.avgHeartRate)}</span>
+                          </span>
+                        </>
+                      )}
+                      {activity.intensityFactor !== undefined && activity.intensityFactor !== null && (
+                        <>
+                          <span className="text-muted-foreground/30">|</span>
+                          <span className={cn(
+                            "text-[10px] font-mono",
+                            activity.intensityFactor >= 1.0 ? "text-load-overreaching" : "text-muted-foreground/60"
+                          )}>
+                            IF {activity.intensityFactor.toFixed(2)}
+                          </span>
+                        </>
+                      )}
+                      {activity.effortSource && (
+                        <span className="text-[9px] text-muted-foreground/40 ml-auto uppercase tracking-wider">
+                          {activity.effortSource}
+                        </span>
+                      )}
                     </div>
-                  )}
-                </CardContent>
-              </CollapsibleTrigger>
+
+                    {/* Coach Insight Preview - Condensed */}
+                    {activity.coachFeedback && !isExpanded && (
+                      <div className="px-2 py-1.5 bg-card/50 border-l-2 border-accent/30 mt-2">
+                        <div className="flex items-center gap-1 mb-0.5">
+                          <Bot className="h-2.5 w-2.5 text-accent/60" />
+                          <span className="text-[9px] font-medium uppercase tracking-wider text-accent/60">Analysis</span>
+                        </div>
+                        <p className="text-[11px] text-foreground/70 leading-relaxed line-clamp-1">
+                          {activity.coachFeedback}
+                        </p>
+                      </div>
+                    )}
+                  </CardContent>
+                </CollapsibleTrigger>
 
               <CollapsibleContent>
                 <ActivityExpandedContent activity={activity} />
