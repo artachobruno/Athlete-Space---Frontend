@@ -16,11 +16,11 @@ export interface CardTheme {
   showPace: boolean;
 }
 
-// Neutral card background - matches shadcn Card bg-card
-const CARD_BG = 'hsl(240 5% 17%)';           // Dark neutral (matches --card in dark mode)
-const CARD_BG_LIGHT = 'hsl(0 0% 100%)';      // Light mode
-const TEXT_PRIMARY = 'hsl(0 0% 98%)';        // --foreground dark
-const TEXT_SECONDARY = 'hsl(240 5% 65%)';    // --muted-foreground dark
+// Neutral card background - matches shadcn Card bg-card (same as Dashboard Today's Session)
+// From index.css: .dark { --card: 220 25% 11%; --muted-foreground: 220 10% 55%; }
+const CARD_BG = 'hsl(220 25% 11%)';            // Matches --card dark mode exactly
+const TEXT_PRIMARY = 'hsl(0 0% 98%)';          // --foreground dark
+const TEXT_SECONDARY = 'hsl(220 10% 55%)';     // --muted-foreground dark
 
 // Accent colors for differentiation (subtle, used for traces/badges)
 const ACCENT_COMPLETED = 'hsl(142 71% 45%)'; // Green - completed

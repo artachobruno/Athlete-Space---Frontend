@@ -41,20 +41,21 @@ const toTitleCase = (value: string) =>
 const clamp = (value: number, min: number, max: number) =>
   Math.max(min, Math.min(max, value));
 
-// Telemetry color palette - muted, instrumentation-style
+// Color palette - matches shadcn/Dashboard Card styling
+// From index.css: .dark { --card: 220 25% 11%; --border: 220 20% 18%; --muted-foreground: 220 10% 55%; }
 const COLORS = {
-  void: '#0a0c10',
-  surface: '#0d1017',
-  border: '#1a1f2a',
-  borderSubtle: '#141820',
-  textPrimary: '#e8eaed',
-  textSecondary: '#7a8494',
-  textMuted: '#4a5260',
-  accentCool: '#3b82f6',
-  accentWarm: '#f59e0b',
-  accentHot: '#dc2626',
-  positive: '#10b981',
-  negative: '#ef4444',
+  card: 'hsl(220 25% 11%)',           // --card dark mode
+  cardDarker: 'hsl(220 25% 8%)',      // Slightly darker for gradient
+  border: 'hsl(220 20% 18%)',         // --border dark mode
+  borderSubtle: 'hsl(220 20% 14%)',   // Subtle border
+  textPrimary: 'hsl(0 0% 98%)',       // --foreground dark
+  textSecondary: 'hsl(220 10% 55%)',  // --muted-foreground dark
+  textMuted: 'hsl(220 10% 45%)',      // More muted text
+  accentCool: 'hsl(217 91% 60%)',     // Blue accent
+  accentWarm: 'hsl(38 92% 50%)',      // Amber accent
+  accentHot: 'hsl(0 84% 60%)',        // Red accent
+  positive: 'hsl(142 71% 45%)',       // Green
+  negative: 'hsl(0 84% 60%)',         // Red
 };
 
 const hexToRgb = (hex: string) => {
@@ -305,16 +306,16 @@ export function WorkoutCardSvg({
       style={{ display: 'block' }}
     >
       <defs>
-        {/* Background gradient - subtle depth */}
+        {/* Background - flat, matching Dashboard Card */}
         <linearGradient id={`${id}-bg`} x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stopColor={COLORS.surface} />
-          <stop offset="100%" stopColor={COLORS.void} />
+          <stop offset="0%" stopColor={COLORS.card} />
+          <stop offset="100%" stopColor={COLORS.cardDarker} />
         </linearGradient>
         
         {/* Intensity gradient for trace fill */}
         <linearGradient id={`${id}-trace-fill`} x1="0" y1="0" x2="0" y2="1">
           <stop offset="0%" stopColor={COLORS.accentCool} stopOpacity="0.15" />
-          <stop offset="100%" stopColor={COLORS.void} stopOpacity="0" />
+          <stop offset="100%" stopColor={COLORS.cardDarker} stopOpacity="0" />
         </linearGradient>
         
         {/* Minimal glow for trace line - reduced */}
@@ -364,38 +365,38 @@ export function WorkoutCardSvg({
         x={paddingX}
         y={typeLabelY}
         fill={COLORS.textMuted}
-        fontSize={9 * textScale}
+        fontSize={11 * textScale}
         fontWeight={500}
-        fontFamily="Inter, system-ui, sans-serif"
-        letterSpacing="0.08em"
+        fontFamily="system-ui, -apple-system, sans-serif"
+        letterSpacing="0.06em"
         style={{ textTransform: 'uppercase' }}
       >
         {formatValue(typeLabel)?.toUpperCase()}
       </text>
 
-      {/* Title - primary, concise */}
+      {/* Title - primary, larger */}
       <text
         x={paddingX}
         y={titleY}
         fill={COLORS.textPrimary}
-        fontSize={15 * textScale}
+        fontSize={18 * textScale}
         fontWeight={600}
-        fontFamily="Inter, system-ui, sans-serif"
+        fontFamily="system-ui, -apple-system, sans-serif"
         letterSpacing="-0.01em"
       >
         {toTitleCase(title)}
       </text>
 
-      {/* Metrics row - telemetry style */}
-      <g fontFamily="Inter, system-ui, sans-serif">
+      {/* Metrics row - larger, more readable */}
+      <g fontFamily="system-ui, -apple-system, sans-serif">
         {/* Distance */}
         <text
           x={paddingX}
           y={metricsY}
           fill={COLORS.textPrimary}
-          fontSize={14 * textScale}
+          fontSize={16 * textScale}
           fontWeight={600}
-          letterSpacing="-0.02em"
+          letterSpacing="-0.01em"
         >
           {formatValue(distance)}
         </text>
@@ -416,9 +417,9 @@ export function WorkoutCardSvg({
           x={paddingX + metricsSpacing}
           y={metricsY}
           fill={COLORS.textPrimary}
-          fontSize={14 * textScale}
+          fontSize={16 * textScale}
           fontWeight={600}
-          letterSpacing="-0.02em"
+          letterSpacing="-0.01em"
         >
           {formatValue(time)}
         </text>
@@ -439,24 +440,24 @@ export function WorkoutCardSvg({
           x={paddingX + metricsSpacing * 2}
           y={metricsY}
           fill={COLORS.textSecondary}
-          fontSize={13 * textScale}
+          fontSize={15 * textScale}
           fontWeight={500}
           letterSpacing="-0.01em"
         >
           {formatValue(pace)}
         </text>
 
-        {/* TSS - right aligned, accent color for high values */}
+        {/* TSS - right aligned */}
         {tss !== null && tss !== undefined && (
           <g>
             <text
               x={width - paddingX}
               y={metricsY - 14 * textScale}
               fill={COLORS.textMuted}
-              fontSize={8 * textScale}
+              fontSize={10 * textScale}
               fontWeight={500}
               textAnchor="end"
-              letterSpacing="0.1em"
+              letterSpacing="0.08em"
             >
               TSS
             </text>
@@ -464,10 +465,10 @@ export function WorkoutCardSvg({
               x={width - paddingX}
               y={metricsY}
               fill={COLORS.positive}
-              fontSize={16 * textScale}
-              fontWeight={700}
+              fontSize={18 * textScale}
+              fontWeight={600}
               textAnchor="end"
-              letterSpacing="-0.02em"
+              letterSpacing="-0.01em"
             >
               {formatValue(tss)}
             </text>
@@ -512,11 +513,11 @@ export function WorkoutCardSvg({
         <path
           d={smoothRoutePath}
           fill="none"
-          stroke={COLORS.void}
+          stroke={COLORS.cardDarker}
           strokeWidth={3 * scale}
           strokeLinecap="round"
           strokeLinejoin="round"
-          opacity={0.25}
+          opacity={0.5}
           transform={`translate(0, ${1 * scale})`}
         />
         

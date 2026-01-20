@@ -18,10 +18,10 @@ export interface BaseCardProps {
 }
 
 // Neutral color palette - matches shadcn/Dashboard styling
+// From index.css: .dark { --border: 220 20% 18%; }
 const COLORS = {
-  grid: 'rgba(148, 163, 184, 0.03)',
-  border: 'rgba(148, 163, 184, 0.12)',
-  borderSubtle: 'rgba(148, 163, 184, 0.06)',
+  border: 'hsl(220 20% 18%)',
+  borderSubtle: 'hsl(220 20% 15%)',
 };
 
 
@@ -48,12 +48,12 @@ export function BaseCalendarCardSvg({
   // Tighter dimensions for month view
   const viewBoxHeight = isMonthView ? 280 : 400;
   
-  // Typography scale - tighter, more instrumentation-like
-  const topRowFontSize = isMonthView ? 22 : 24;
-  const metricsLabelFontSize = isMonthView ? 10 : 11;
-  const metricsValueFontSize = isMonthView ? 20 : 22;
-  const titleFontSize = isMonthView ? 28 : 34;
-  const descFontSize = isMonthView ? 18 : 22;
+  // Typography scale - larger, more readable
+  const topRowFontSize = isMonthView ? 26 : 28;
+  const metricsLabelFontSize = isMonthView ? 12 : 14;
+  const metricsValueFontSize = isMonthView ? 24 : 26;
+  const titleFontSize = isMonthView ? 32 : 40;
+  const descFontSize = isMonthView ? 20 : 24;
 
   const id = `calendar-card-${variant}`;
 
