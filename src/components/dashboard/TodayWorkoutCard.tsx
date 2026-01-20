@@ -1,4 +1,5 @@
-import { F1Card, F1CardHeader, F1CardTitle, F1CardLabel, F1StatusBadge } from '@/components/ui/f1-card';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { fetchCalendarToday, fetchTrainingLoad, fetchActivities, fetchActivityStreams } from '@/lib/api';
 import { getTodayIntelligence } from '@/lib/intelligence';
 import { format } from 'date-fns';
@@ -43,10 +44,10 @@ const mapRecommendationToDecision = (recommendation: string | null | undefined):
 };
 
 const decisionConfig: Record<DecisionType, { icon: typeof CheckCircle2; label: string; colorClass: string }> = {
-  proceed: { icon: CheckCircle2, label: 'PROCEED', colorClass: 'f1-status-safe' },
-  modify: { icon: AlertCircle, label: 'MODIFY', colorClass: 'f1-status-caution' },
-  replace: { icon: RefreshCw, label: 'REPLACE', colorClass: 'f1-status-active' },
-  rest: { icon: Moon, label: 'REST', colorClass: 'f1-status-caution' },
+  proceed: { icon: CheckCircle2, label: 'Proceed', colorClass: 'text-green-600 dark:text-green-400' },
+  modify: { icon: AlertCircle, label: 'Modify', colorClass: 'text-amber-600 dark:text-amber-400' },
+  replace: { icon: RefreshCw, label: 'Replace', colorClass: 'text-blue-600 dark:text-blue-400' },
+  rest: { icon: Moon, label: 'Rest', colorClass: 'text-amber-600 dark:text-amber-400' },
 };
 
 // F1 Design: Map workout intent to status
@@ -187,59 +188,55 @@ export function TodayWorkoutCard(props?: TodayWorkoutCardProps) {
 
   if (isLoading) {
     return (
-      <F1Card variant="strong">
-        <F1CardHeader>
-          <F1CardTitle>SESSION · TODAY</F1CardTitle>
-        </F1CardHeader>
-        <div className="flex items-center justify-center py-8">
-          <Loader2 className="h-5 w-5 animate-spin text-[hsl(var(--f1-text-tertiary))]" />
-        </div>
-      </F1Card>
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Today's Session</CardTitle>
+        </CardHeader>
+        <CardContent className="flex items-center justify-center py-8">
+          <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+        </CardContent>
+      </Card>
     );
   }
 
   if (error || !todayWorkout) {
     return (
-      <F1Card variant="strong">
-        <F1CardHeader>
-          <F1CardTitle>SESSION · TODAY</F1CardTitle>
-        </F1CardHeader>
-        <div className="text-center py-8">
-          <p className="f1-label text-[hsl(var(--f1-text-tertiary))]">
-            {error ? 'SIGNAL UNAVAILABLE' : 'REST DAY · NO SESSION'}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Today's Session</CardTitle>
+        </CardHeader>
+        <CardContent className="text-center py-8">
+          <p className="text-sm text-muted-foreground">
+            {error ? 'Unable to load session' : 'Rest day - no session scheduled'}
           </p>
-        </div>
-      </F1Card>
+        </CardContent>
+      </Card>
     );
   }
 
   const workoutType = todayWorkout.type || '';
   const workoutIntent = mapTypeToIntent(workoutType);
 
-  // Map glow intensity to F1 status for badge
-  const getIntentStatus = (intent: WorkoutIntent): 'safe' | 'caution' | 'danger' | 'active' => {
+  // Map intent to badge variant
+  const getIntentVariant = (intent: WorkoutIntent): 'default' | 'secondary' | 'destructive' | 'outline' => {
     switch (intent) {
-      case 'recovery': return 'safe';
-      case 'aerobic': return 'active';
-      case 'endurance': return 'active';
-      case 'threshold': return 'caution';
-      case 'vo2': return 'danger';
+      case 'recovery': return 'secondary';
+      case 'aerobic': return 'default';
+      case 'endurance': return 'default';
+      case 'threshold': return 'outline';
+      case 'vo2': return 'destructive';
     }
   };
 
   return (
-    <F1Card variant="strong" actionable>
-      <F1CardHeader
-        action={
-          <F1StatusBadge status={getIntentStatus(workoutIntent)} dot={false}>
-            {(todayWorkout.intensity || workoutType || 'SESSION').toUpperCase()}
-          </F1StatusBadge>
-        }
-      >
-        <F1CardTitle>SESSION · TODAY</F1CardTitle>
-      </F1CardHeader>
-      
-      <div className="space-y-3">
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <CardTitle className="text-lg">Today's Session</CardTitle>
+        <Badge variant={getIntentVariant(workoutIntent)}>
+          {todayWorkout.intensity || workoutType || 'Session'}
+        </Badge>
+      </CardHeader>
+      <CardContent className="space-y-3">
         <WorkoutCard
           session={todayWorkout}
           activity={matchingActivity}
@@ -248,7 +245,7 @@ export function TodayWorkoutCard(props?: TodayWorkoutCardProps) {
           variant="feed"
         />
 
-        {/* Coach Explanation - F1 styled */}
+        {/* Coach Explanation */}
         {(() => {
           const intel = finalTodayIntelligence as Record<string, unknown> | null | undefined;
           const explanation = intel && typeof intel === 'object' && 'explanation' in intel 
@@ -267,12 +264,12 @@ export function TodayWorkoutCard(props?: TodayWorkoutCardProps) {
           const shouldShowExplanation = explanation && !isPlaceholder;
           
           return shouldShowExplanation ? (
-            <div className="border-l-2 border-[hsl(var(--accent-telemetry)/0.3)] pl-3 py-1">
+            <div className="border-l-2 border-accent/30 pl-3 py-1">
               <div className="flex items-start gap-2">
-                <MessageSquare className="h-3 w-3 text-[hsl(var(--f1-text-muted))] mt-0.5 shrink-0" />
+                <MessageSquare className="h-3 w-3 text-muted-foreground mt-0.5 shrink-0" />
                 <div className="flex-1">
-                  <F1CardLabel className="mb-0.5 block text-[hsl(var(--f1-text-muted))]">SIGNAL</F1CardLabel>
-                  <p className="f1-body-sm text-[hsl(var(--f1-text-secondary))] leading-relaxed">
+                  <span className="text-xs uppercase tracking-wider text-muted-foreground mb-0.5 block">Coach Note</span>
+                  <p className="text-sm text-muted-foreground leading-relaxed">
                     {explanation}
                   </p>
                 </div>
@@ -282,10 +279,10 @@ export function TodayWorkoutCard(props?: TodayWorkoutCardProps) {
         })()}
 
         {todayWorkout.notes && (
-          <p className="f1-body-sm text-[hsl(var(--f1-text-tertiary))]">{todayWorkout.notes}</p>
+          <p className="text-sm text-muted-foreground">{todayWorkout.notes}</p>
         )}
 
-        {/* Decision Signal - Engineer's note annotation */}
+        {/* Decision Signal */}
         {(() => {
           if (!dailyDecision || dailyDecision.isLoading) return null;
           
@@ -307,20 +304,20 @@ export function TodayWorkoutCard(props?: TodayWorkoutCardProps) {
           const DecisionIcon = config.icon;
           
           return (
-            <div className="mt-3 pt-3 border-t border-[var(--border-subtle)]">
+            <div className="mt-3 pt-3 border-t">
               <div className="flex items-start gap-2">
                 <DecisionIcon className={cn('h-3.5 w-3.5 mt-0.5 shrink-0', config.colorClass)} />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 mb-1">
-                    <span className={cn('f1-label', config.colorClass)}>{config.label}</span>
+                    <span className={cn('text-xs font-medium', config.colorClass)}>{config.label}</span>
                     {decisionData.confidence && (
-                      <span className="f1-label text-[hsl(var(--f1-text-muted))]">
-                        · CONF {Math.round(decisionData.confidence.score * 100)}%
+                      <span className="text-xs text-muted-foreground">
+                        · {Math.round(decisionData.confidence.score * 100)}% confidence
                       </span>
                     )}
                   </div>
                   {decisionData.explanation && (
-                    <p className="f1-body-sm text-[hsl(var(--f1-text-secondary))] leading-relaxed">
+                    <p className="text-sm text-muted-foreground leading-relaxed">
                       {decisionData.explanation}
                     </p>
                   )}
@@ -329,7 +326,7 @@ export function TodayWorkoutCard(props?: TodayWorkoutCardProps) {
             </div>
           );
         })()}
-      </div>
-    </F1Card>
+      </CardContent>
+    </Card>
   );
 }

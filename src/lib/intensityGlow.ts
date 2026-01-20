@@ -9,33 +9,17 @@ export type Intensity =
   | "recovery"
   | "endurance"
 
-export function intensityToGlow(intensity?: Intensity | string): string | undefined {
-  if (!intensity) return undefined
-  
-  const lower = intensity.toLowerCase()
-  
-  // Map workout intents and intensities to glow classes
-  switch (lower) {
-    case "easy":
-    case "recovery":
-    case "aerobic":
-      return "glass-glow-easy"
-    case "tempo":
-    case "moderate":
-    case "endurance":
-      return "glass-glow-tempo"
-    case "threshold":
-      return "glass-glow-threshold"
-    case "vo2":
-    case "hill":
-      return "glass-glow-vo2"
-    default:
-      return undefined
-  }
+/**
+ * Maps intensity to a visual class.
+ * Previously returned glass-glow-* classes, now returns undefined as the F1 theme was removed.
+ */
+export function intensityToGlow(_intensity?: Intensity | string): string | undefined {
+  // F1/glass theme removed - glow effects are no longer used
+  return undefined
 }
 
 /**
- * Maps workout intensity/type to Intensity type for glow effect.
+ * Maps workout intensity/type to Intensity type.
  * Handles various workout intensity formats from the backend.
  */
 export function getGlowIntensityFromWorkout(

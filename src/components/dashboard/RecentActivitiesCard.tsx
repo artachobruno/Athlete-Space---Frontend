@@ -1,4 +1,4 @@
-import { F1Card, F1CardHeader, F1CardTitle, F1CardLabel } from '@/components/ui/f1-card';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { fetchActivities, fetchTrainingLoad, syncActivitiesNow } from '@/lib/api';
 import { format, parseISO } from 'date-fns';
 import { Loader2, RefreshCw } from 'lucide-react';
@@ -55,7 +55,7 @@ function TssDelta({ current, average }: { current: number; average: number }) {
     <span 
       className={cn(
         "font-mono text-[9px] tracking-tight ml-1",
-        isPositive ? "text-[hsl(175_60%_45%)]" : "text-[hsl(215_20%_50%)]"
+        isPositive ? "text-green-600 dark:text-green-400" : "text-muted-foreground"
       )}
     >
       {isPositive ? '▲' : '▼'}{absValue}%
@@ -171,52 +171,48 @@ export function RecentActivitiesCard(props: RecentActivitiesCardProps = {}) {
   }, [finalActivities, finalTrainingLoadData]);
 
   return (
-    <F1Card className={props.className}>
-      <F1CardHeader
-        action={
-          <div className="flex items-center gap-3">
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleSync}
-              className="h-6 px-1.5 text-[hsl(var(--f1-text-muted))] hover:text-[hsl(var(--f1-text-primary))] hover:bg-transparent"
-              disabled={isLoading || isSyncing}
-              title="Sync activities"
-            >
-              <RefreshCw className={cn('h-3 w-3', isSyncing && 'animate-spin')} />
-            </Button>
-            <Link
-              to="/activities"
-              className="f1-label tracking-widest text-[hsl(var(--f1-text-muted))] hover:text-[hsl(var(--accent-telemetry))] transition-colors"
-            >
-              ALL →
-            </Link>
-          </div>
-        }
-      >
-        <F1CardTitle>ACTIVITY LOG</F1CardTitle>
-      </F1CardHeader>
-      
-      <div>
+    <Card className={props.className}>
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <CardTitle className="text-lg">Recent Activities</CardTitle>
+        <div className="flex items-center gap-3">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleSync}
+            className="h-6 px-1.5"
+            disabled={isLoading || isSyncing}
+            title="Sync activities"
+          >
+            <RefreshCw className={cn('h-3 w-3', isSyncing && 'animate-spin')} />
+          </Button>
+          <Link
+            to="/activities"
+            className="text-xs text-muted-foreground hover:text-primary transition-colors"
+          >
+            View all →
+          </Link>
+        </div>
+      </CardHeader>
+      <CardContent>
         {isLoading ? (
           <div className="flex items-center justify-center py-6">
-            <Loader2 className="h-4 w-4 animate-spin text-[hsl(var(--f1-text-muted))]" />
+            <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
           </div>
         ) : error || recentActivities.length === 0 ? (
           <div className="text-center py-6">
-            <p className="f1-label tracking-widest text-[hsl(var(--f1-text-muted))]">
-              {error ? 'SIGNAL UNAVAILABLE' : 'NO SESSIONS'}
+            <p className="text-sm text-muted-foreground">
+              {error ? 'Unable to load activities' : 'No recent activities'}
             </p>
           </div>
         ) : (
           <div className="space-y-0">
             {/* Table header */}
-            <div className="grid grid-cols-[8px_1fr_60px_50px_50px] gap-2 py-1 border-b border-[hsl(215_15%_18%)]">
+            <div className="grid grid-cols-[8px_1fr_60px_50px_50px] gap-2 py-1 border-b">
               <div />
-              <F1CardLabel className="tracking-widest text-[8px]">SESSION</F1CardLabel>
-              <F1CardLabel className="tracking-widest text-[8px] text-right">DIST</F1CardLabel>
-              <F1CardLabel className="tracking-widest text-[8px] text-right">DUR</F1CardLabel>
-              <F1CardLabel className="tracking-widest text-[8px] text-right">TSS</F1CardLabel>
+              <span className="text-xs text-muted-foreground uppercase tracking-wider">Session</span>
+              <span className="text-xs text-muted-foreground uppercase tracking-wider text-right">Dist</span>
+              <span className="text-xs text-muted-foreground uppercase tracking-wider text-right">Dur</span>
+              <span className="text-xs text-muted-foreground uppercase tracking-wider text-right">TSS</span>
             </div>
             
             {(Array.isArray(recentActivities) ? recentActivities : [])
@@ -224,7 +220,7 @@ export function RecentActivitiesCard(props: RecentActivitiesCardProps = {}) {
               .map((activity, index) => {
                 const dateStr = activity.date ? (() => {
                   try {
-                    return format(parseISO(activity.date), 'dd MMM').toUpperCase();
+                    return format(parseISO(activity.date), 'dd MMM');
                   } catch {
                     return activity.date;
                   }
@@ -238,7 +234,7 @@ export function RecentActivitiesCard(props: RecentActivitiesCardProps = {}) {
                     key={activity.id}
                     className={cn(
                       'grid grid-cols-[8px_1fr_60px_50px_50px] gap-2 py-1.5 items-center',
-                      !isLast && 'border-b border-[hsl(215_15%_14%)]'
+                      !isLast && 'border-b'
                     )}
                   >
                     {/* Sport indicator dot */}
@@ -246,27 +242,27 @@ export function RecentActivitiesCard(props: RecentActivitiesCardProps = {}) {
                     
                     {/* Session info */}
                     <div className="min-w-0">
-                      <div className="font-mono text-[11px] text-[hsl(var(--f1-text-primary))] truncate tracking-tight">
+                      <div className="text-sm truncate">
                         {capitalizeTitle(activity.title || 'Session')}
                       </div>
-                      <div className="font-mono text-[9px] text-[hsl(var(--f1-text-muted))] tracking-wider">
+                      <div className="text-xs text-muted-foreground">
                         {dateStr}
                       </div>
                     </div>
                     
                     {/* Distance */}
-                    <div className="text-right font-mono text-[11px] text-[hsl(var(--f1-text-secondary))] tracking-tight">
-                      {dist.value.toFixed(1)}<span className="text-[hsl(var(--f1-text-muted))] text-[9px] ml-0.5">{dist.unit}</span>
+                    <div className="text-right text-sm text-muted-foreground">
+                      {dist.value.toFixed(1)}<span className="text-xs ml-0.5">{dist.unit}</span>
                     </div>
                     
                     {/* Duration */}
-                    <div className="text-right font-mono text-[11px] text-[hsl(var(--f1-text-secondary))] tracking-tight">
-                      {activity.duration || 0}<span className="text-[hsl(var(--f1-text-muted))] text-[9px] ml-0.5">m</span>
+                    <div className="text-right text-sm text-muted-foreground">
+                      {activity.duration || 0}<span className="text-xs ml-0.5">m</span>
                     </div>
                     
                     {/* TSS with delta */}
                     <div className="text-right">
-                      <span className="font-mono text-[11px] text-[hsl(var(--f1-text-primary))] tracking-tight font-medium">
+                      <span className="text-sm font-medium">
                         {activity.trainingLoad || 0}
                       </span>
                       <TssDelta current={activity.trainingLoad || 0} average={averageTss} />
@@ -276,7 +272,7 @@ export function RecentActivitiesCard(props: RecentActivitiesCardProps = {}) {
               })}
           </div>
         )}
-      </div>
-    </F1Card>
+      </CardContent>
+    </Card>
   );
 }

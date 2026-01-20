@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { F1Card, F1CardLabel } from '@/components/ui/f1-card';
+import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Send, Brain, User, Maximize2, MessageSquare, X } from 'lucide-react';
@@ -131,10 +131,10 @@ export function CoachChatWidget({ minimized: startMinimized = false }: CoachChat
       <div className="fixed bottom-6 right-6 z-50">
         <Button
           onClick={() => setIsExpanded(true)}
-          className="h-10 px-4 gap-2 bg-[hsl(var(--accent-telemetry))] hover:bg-[hsl(var(--accent-telemetry-dim))] text-white shadow-lg rounded-full"
+          className="h-10 px-4 gap-2 shadow-lg rounded-full"
         >
           <MessageSquare className="h-4 w-4" />
-          <span className="f1-label text-white">ASK COACH</span>
+          <span className="text-xs uppercase tracking-wider">Ask Coach</span>
         </Button>
       </div>
     );
@@ -142,21 +142,21 @@ export function CoachChatWidget({ minimized: startMinimized = false }: CoachChat
 
   return (
     <div className="fixed bottom-6 right-6 z-50 w-80">
-      <F1Card variant="strong" className="flex flex-col h-[360px] shadow-xl" padding="none">
+      <Card className="flex flex-col h-[360px] shadow-xl">
         {/* Header */}
-        <div className="flex items-center justify-between px-3 py-2.5 border-b border-[var(--border-subtle)]">
+        <div className="flex items-center justify-between px-3 py-2.5 border-b">
           <div className="flex items-center gap-1.5">
-            <div className="w-5 h-5 rounded-full bg-[hsl(var(--accent-telemetry)/0.12)] flex items-center justify-center">
-              <Brain className="h-3 w-3 f1-status-active" />
+            <div className="w-5 h-5 rounded-full bg-accent/20 flex items-center justify-center">
+              <Brain className="h-3 w-3 text-accent-foreground" />
             </div>
-            <F1CardLabel className="text-[hsl(var(--f1-text-secondary))]">AI COACH</F1CardLabel>
+            <span className="text-xs uppercase tracking-wider text-muted-foreground">AI Coach</span>
           </div>
           <div className="flex items-center gap-1">
             <Link to="/coach">
               <Button 
                 variant="ghost" 
                 size="icon" 
-                className="h-6 w-6 text-[hsl(var(--f1-text-muted))] hover:text-[hsl(var(--f1-text-primary))] hover:bg-[var(--border-subtle)]"
+                className="h-6 w-6"
               >
                 <Maximize2 className="h-3 w-3" />
               </Button>
@@ -165,7 +165,7 @@ export function CoachChatWidget({ minimized: startMinimized = false }: CoachChat
               variant="ghost" 
               size="icon" 
               onClick={() => setIsExpanded(false)}
-              className="h-6 w-6 text-[hsl(var(--f1-text-muted))] hover:text-[hsl(var(--f1-text-primary))] hover:bg-[var(--border-subtle)]"
+              className="h-6 w-6"
             >
               <X className="h-3 w-3" />
             </Button>
@@ -190,24 +190,24 @@ export function CoachChatWidget({ minimized: startMinimized = false }: CoachChat
                   className={cn(
                     'w-5 h-5 rounded-full flex items-center justify-center shrink-0',
                     message.role === 'coach'
-                      ? 'bg-[hsl(var(--accent-telemetry)/0.12)]'
-                      : 'bg-[var(--surface-glass-subtle)]'
+                      ? 'bg-accent/20'
+                      : 'bg-secondary'
                   )}
                 >
                   {message.role === 'coach' ? (
-                    <Brain className="h-2.5 w-2.5 f1-status-active" />
+                    <Brain className="h-2.5 w-2.5 text-accent-foreground" />
                   ) : (
-                    <User className="h-2.5 w-2.5 text-[hsl(var(--f1-text-muted))]" />
+                    <User className="h-2.5 w-2.5 text-muted-foreground" />
                   )}
                 </div>
                 
                 {/* Message bubble */}
                 <div
                   className={cn(
-                    'max-w-[80%] rounded px-2.5 py-1 f1-body-sm',
+                    'max-w-[80%] rounded px-2.5 py-1 text-sm',
                     message.role === 'coach'
-                      ? 'bg-[hsl(var(--accent-telemetry)/0.06)] text-[hsl(var(--f1-text-primary))] border border-[hsl(var(--accent-telemetry)/0.12)]'
-                      : 'bg-[var(--surface-glass-subtle)] text-[hsl(var(--f1-text-primary))]'
+                      ? 'bg-accent/10 border'
+                      : 'bg-secondary'
                   )}
                 >
                   {message.content}
@@ -233,14 +233,14 @@ export function CoachChatWidget({ minimized: startMinimized = false }: CoachChat
           {/* Typing indicator */}
           {isTyping && (
             <div className="flex gap-1.5">
-              <div className="w-5 h-5 rounded-full bg-[hsl(var(--accent-telemetry)/0.12)] flex items-center justify-center">
-                <Brain className="h-2.5 w-2.5 f1-status-active" />
+              <div className="w-5 h-5 rounded-full bg-accent/20 flex items-center justify-center">
+                <Brain className="h-2.5 w-2.5 text-accent-foreground" />
               </div>
-              <div className="bg-[hsl(var(--accent-telemetry)/0.06)] border border-[hsl(var(--accent-telemetry)/0.12)] rounded px-2.5 py-1">
+              <div className="bg-accent/10 border rounded px-2.5 py-1">
                 <div className="flex gap-0.5">
-                  <span className="w-1 h-1 bg-[hsl(var(--accent-telemetry))] rounded-full animate-pulse-subtle" />
-                  <span className="w-1 h-1 bg-[hsl(var(--accent-telemetry))] rounded-full animate-pulse-subtle [animation-delay:150ms]" />
-                  <span className="w-1 h-1 bg-[hsl(var(--accent-telemetry))] rounded-full animate-pulse-subtle [animation-delay:300ms]" />
+                  <span className="w-1 h-1 bg-accent rounded-full animate-pulse" />
+                  <span className="w-1 h-1 bg-accent rounded-full animate-pulse [animation-delay:150ms]" />
+                  <span className="w-1 h-1 bg-accent rounded-full animate-pulse [animation-delay:300ms]" />
                 </div>
               </div>
             </div>
@@ -253,20 +253,20 @@ export function CoachChatWidget({ minimized: startMinimized = false }: CoachChat
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder="Query system..."
-            className="f1-body-sm h-8 bg-[var(--surface-glass-subtle)] border-[var(--border-subtle)] text-[hsl(var(--f1-text-primary))] placeholder:text-[hsl(var(--f1-text-muted))] focus:border-[hsl(var(--accent-telemetry)/0.4)] focus:ring-[hsl(var(--accent-telemetry)/0.15)]"
+            placeholder="Ask the coach..."
+            className="h-8 text-sm"
           />
           <Button
             type="submit"
             disabled={!input.trim() || isTyping || isSendingRef.current}
             size="icon"
-            className="h-8 w-8 shrink-0 bg-[hsl(var(--accent-telemetry))] hover:bg-[hsl(var(--accent-telemetry-dim))] text-white"
+            className="h-8 w-8 shrink-0"
           >
             <Send className="h-3 w-3" />
           </Button>
         </form>
       </div>
-      </F1Card>
+      </Card>
     </div>
   );
 }

@@ -1,13 +1,12 @@
 import * as React from "react"
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card"
 import { cn } from "@/lib/utils"
-import { intensityToGlow, type Intensity } from "@/lib/intensityGlow"
 
 export interface GlassCardProps extends React.ComponentProps<typeof Card> {
   variant?: "default" | "raised" | "blue"
   animated?: boolean
   hover?: boolean
-  glowIntensity?: Intensity
+  glowIntensity?: string
 }
 
 export const GlassCard = React.forwardRef<
@@ -17,27 +16,17 @@ export const GlassCard = React.forwardRef<
   (
     {
       className,
-      variant = "default",
-      animated = true,
-      hover = false,
-      glowIntensity,
       ...props
     },
     ref
   ) => {
+    // Ignore the glass-specific props and just render as standard Card
+    const { variant: _variant, animated: _animated, hover: _hover, glowIntensity: _glowIntensity, ...cardProps } = props;
     return (
       <Card
         ref={ref}
-        className={cn(
-          "glass-card",
-          animated && "glass-animate glass-focus",
-          hover && "glass-hover",
-          variant === "raised" && "glass-card--raised",
-          variant === "blue" && "glass-card--blue",
-          glowIntensity && intensityToGlow(glowIntensity),
-          className
-        )}
-        {...props}
+        className={cn(className)}
+        {...cardProps}
       />
     )
   }

@@ -1,4 +1,4 @@
-import { F1Card, F1CardHeader, F1CardTitle, F1CardLabel } from '@/components/ui/f1-card';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { fetchActivities, fetchTrainingLoad, fetchCalendarWeek } from '@/lib/api';
 import { subDays, format, startOfWeek } from 'date-fns';
 import { useAuthenticatedQuery } from '@/hooks/useAuthenticatedQuery';
@@ -315,49 +315,45 @@ export function WeeklyLoadCard(props: WeeklyLoadCardProps = {}) {
 
   if (isLoading) {
     return (
-      <F1Card className={cardClassName}>
-        <F1CardHeader>
-          <F1CardTitle>LOAD (7d)</F1CardTitle>
-        </F1CardHeader>
-        <div className="flex items-center justify-center py-8">
-          <Loader2 className="h-5 w-5 animate-spin text-[hsl(var(--f1-text-tertiary))]" />
-        </div>
-      </F1Card>
+      <Card className={cardClassName}>
+        <CardHeader>
+          <CardTitle className="text-lg">Weekly Load</CardTitle>
+        </CardHeader>
+        <CardContent className="flex items-center justify-center py-8">
+          <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+        </CardContent>
+      </Card>
     );
   }
 
   return (
-    <F1Card className={cardClassName}>
-      <F1CardHeader
-        action={
-          <span className="f1-metric f1-metric-xs">
-            {weeklyStats.actualLoad} <span className="text-[hsl(var(--f1-text-muted))] opacity-50">/</span> {weeklyStats.plannedLoad} <F1CardLabel className="ml-0.5">TSS</F1CardLabel>
-          </span>
-        }
-      >
-        <F1CardTitle>LOAD (7d)</F1CardTitle>
-      </F1CardHeader>
-      
-      <div className="space-y-2">
-        {/* Progress bar - telemetry band style */}
+    <Card className={cardClassName}>
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <CardTitle className="text-lg">Weekly Load</CardTitle>
+        <span className="text-sm font-medium">
+          {weeklyStats.actualLoad} <span className="text-muted-foreground">/</span> {weeklyStats.plannedLoad} <span className="text-xs text-muted-foreground ml-0.5">TSS</span>
+        </span>
+      </CardHeader>
+      <CardContent className="space-y-2">
+        {/* Progress bar */}
         <div className="space-y-1">
-          <div className="h-[3px] bg-[hsl(215_15%_18%)] overflow-hidden">
+          <div className="h-2 bg-secondary rounded-full overflow-hidden">
             <div
-              className="h-full bg-[hsl(175_60%_45%)] transition-all duration-500 ease-out"
+              className="h-full bg-primary transition-all duration-500 ease-out rounded-full"
               style={{ width: `${Math.min(weeklyStats.progress, 100)}%` }}
             />
           </div>
           <div className="flex justify-between items-center">
-            <F1CardLabel className="tracking-widest">ADHERENCE</F1CardLabel>
-            <span className="f1-metric f1-metric-xs">{weeklyStats.progress.toFixed(0)}%</span>
+            <span className="text-xs text-muted-foreground">Adherence</span>
+            <span className="text-sm font-medium">{weeklyStats.progress.toFixed(0)}%</span>
           </div>
         </div>
 
-        {/* SVG Telemetry Trace */}
+        {/* Chart */}
         <div className="h-24 -mx-1">
           <LoadTraceSvg data={weekChartData} maxLoad={maxLoad} />
         </div>
-      </div>
-    </F1Card>
+      </CardContent>
+    </Card>
   );
 }

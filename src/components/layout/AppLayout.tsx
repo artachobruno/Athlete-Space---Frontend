@@ -1,4 +1,4 @@
-import { ReactNode, useState, useEffect } from 'react';
+import { ReactNode, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import {
@@ -20,7 +20,6 @@ import {
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/context/AuthContext';
 import { Logo } from '@/components/Logo';
-import { getGridPatternStyle } from '@/styles/telemetry-theme';
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -45,27 +44,21 @@ export function AppLayout({ children }: AppLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { logout } = useAuth();
 
-  // F1 Design: Force dark mode for app pages
-  useEffect(() => {
-    document.documentElement.classList.add('dark');
-  }, []);
-
   const handleLogout = async () => {
     try {
       await logout();
       navigate('/login', { replace: true });
     } catch (error) {
       console.error('[AppLayout] Logout error:', error);
-      // Still navigate to login even if logout API call fails
       navigate('/login', { replace: true });
     }
   };
 
   return (
-    <div className="min-h-screen bg-[hsl(var(--surface-void))]">
-      {/* Mobile header - F1 glass surface */}
+    <div className="min-h-screen bg-background">
+      {/* Mobile header */}
       <header 
-        className="lg:hidden fixed top-0 left-0 right-0 h-14 bg-[var(--surface-glass-strong)] backdrop-blur-xl border-b border-[var(--border-subtle)] z-50 flex items-center px-4 safe-area-top"
+        className="lg:hidden fixed top-0 left-0 right-0 h-14 bg-card border-b z-50 flex items-center px-4 safe-area-top"
       >
         <Button
           variant="ghost"
@@ -80,17 +73,17 @@ export function AppLayout({ children }: AppLayoutProps) {
         </div>
       </header>
 
-      {/* Sidebar - F1 glass surface */}
+      {/* Sidebar */}
       <aside
         className={cn(
-          'fixed top-0 left-0 h-full w-64 bg-[var(--surface-glass-strong)] backdrop-blur-xl border-r border-[var(--border-subtle)] z-40 transition-transform duration-200 ease-in-out',
+          'fixed top-0 left-0 h-full w-64 bg-card border-r z-40 transition-transform duration-200 ease-in-out',
           'lg:translate-x-0',
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         )}
       >
         <div className="flex flex-col h-full">
-          {/* Logo - top-left primary brand anchor */}
-          <div className="h-14 lg:h-16 flex items-center px-6 border-b border-[var(--border-subtle)]">
+          {/* Logo */}
+          <div className="h-14 lg:h-16 flex items-center px-6 border-b">
             <Logo size="nav" />
           </div>
 
@@ -106,10 +99,10 @@ export function AppLayout({ children }: AppLayoutProps) {
                   to={item.path}
                   onClick={() => setSidebarOpen(false)}
                   className={cn(
-                    'flex items-center gap-3 px-3 py-2.5 rounded-f1 text-sm font-medium transition-colors',
+                    'flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
                     isActive
-                      ? 'bg-[hsl(var(--accent-telemetry)/0.12)] text-[hsl(var(--accent-telemetry))] border-l-2 border-[hsl(var(--accent-telemetry))] -ml-[2px] pl-[14px]'
-                      : 'text-[hsl(var(--f1-text-secondary))] hover:bg-[var(--border-subtle)] hover:text-[hsl(var(--f1-text-primary))]'
+                      ? 'bg-accent text-accent-foreground'
+                      : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
                   )}
                 >
                   <Icon className="h-4 w-4" />
@@ -120,15 +113,15 @@ export function AppLayout({ children }: AppLayoutProps) {
           </nav>
 
           {/* Footer */}
-          <div className="p-4 border-t border-[var(--border-subtle)] space-y-1">
+          <div className="p-4 border-t space-y-1">
             <Link
               to="/faq"
               onClick={() => setSidebarOpen(false)}
               className={cn(
-                'flex items-center gap-2 px-3 py-2 rounded-f1 text-sm font-medium transition-colors w-full',
+                'flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors w-full',
                 location.pathname === '/faq'
-                  ? 'bg-[hsl(var(--accent-telemetry)/0.12)] text-[hsl(var(--accent-telemetry))]'
-                  : 'text-[hsl(var(--f1-text-tertiary))] hover:bg-[var(--border-subtle)] hover:text-[hsl(var(--f1-text-primary))]'
+                  ? 'bg-accent text-accent-foreground'
+                  : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
               )}
             >
               <HelpCircle className="h-4 w-4" />
@@ -138,10 +131,10 @@ export function AppLayout({ children }: AppLayoutProps) {
               to="/privacy"
               onClick={() => setSidebarOpen(false)}
               className={cn(
-                'flex items-center gap-2 px-3 py-2 rounded-f1 text-sm font-medium transition-colors w-full',
+                'flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors w-full',
                 location.pathname === '/privacy'
-                  ? 'bg-[hsl(var(--accent-telemetry)/0.12)] text-[hsl(var(--accent-telemetry))]'
-                  : 'text-[hsl(var(--f1-text-tertiary))] hover:bg-[var(--border-subtle)] hover:text-[hsl(var(--f1-text-primary))]'
+                  ? 'bg-accent text-accent-foreground'
+                  : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
               )}
             >
               <Shield className="h-4 w-4" />
@@ -150,7 +143,7 @@ export function AppLayout({ children }: AppLayoutProps) {
             <Button
               variant="ghost"
               onClick={handleLogout}
-              className="w-full justify-start text-[hsl(var(--f1-text-tertiary))] hover:text-[hsl(var(--f1-text-primary))] hover:bg-[var(--border-subtle)]"
+              className="w-full justify-start text-muted-foreground hover:text-foreground"
             >
               <LogOut className="h-4 w-4 mr-2" />
               Logout
@@ -162,21 +155,16 @@ export function AppLayout({ children }: AppLayoutProps) {
       {/* Mobile overlay */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 bg-[hsl(var(--surface-void))]/80 backdrop-blur-sm z-30 lg:hidden"
+          className="fixed inset-0 bg-background/80 backdrop-blur-sm z-30 lg:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}
 
-      {/* Main content - F1 void background with subtle grid */}
+      {/* Main content */}
       <main className={cn(
-        'min-h-screen pt-safe-area lg:pt-0 lg:pl-64 transition-all duration-200 relative'
+        'min-h-screen pt-safe-area lg:pt-0 lg:pl-64 transition-all duration-200'
       )}>
-        {/* Subtle grid background - visual continuity with landing */}
-        <div 
-          className="absolute inset-0 opacity-[0.04] pointer-events-none"
-          style={getGridPatternStyle('80px')}
-        />
-        <div className="relative mx-auto max-w-[1400px] px-6 py-6">
+        <div className="mx-auto max-w-[1400px] px-6 py-6">
           {children}
         </div>
       </main>

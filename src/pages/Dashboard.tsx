@@ -15,13 +15,10 @@ import { isPreviewMode } from '@/lib/preview';
 
 // Athlete Dashboard Components
 import { AppLayout } from '@/components/layout/AppLayout';
-// DailyDecisionCard merged into TodayWorkoutCard as secondary annotation
 import { TodayWorkoutCard } from '@/components/dashboard/TodayWorkoutCard';
 import { WeeklyLoadCard } from '@/components/dashboard/WeeklyLoadCard';
 import { RecentActivitiesCard } from '@/components/dashboard/RecentActivitiesCard';
-// LoadStatusCard removed - load now embedded in TelemetryMetricsStrip
 import { CoachChatWidget } from '@/components/dashboard/CoachChatWidget';
-import { TelemetryStatusRail } from '@/components/dashboard/TelemetryStatusRail';
 import { TelemetryMetricsStrip } from '@/components/dashboard/TelemetryMetricsStrip';
 import { useSyncTodayWorkout } from '@/hooks/useSyncTodayWorkout';
 import { useDashboardData } from '@/hooks/useDashboardData';
@@ -49,29 +46,21 @@ function AthleteDashboard() {
 
   return (
     <AppLayout>
-      <div className="space-y-5">
-        {/* Telemetry Status Rail - Bridge between landing and dashboard */}
-        <TelemetryStatusRail 
-          className="-mx-6 -mt-6 mb-4" 
-          overview60d={dashboardData.overview60d}
-          isLoading={dashboardData.overview60dLoading}
-        />
-
-        {/* Header - F1 typography, telemetry language */}
-        <div className="col-span-12 mb-1">
-          <h1 className="f1-headline f1-headline-lg text-[hsl(var(--f1-text-primary))]">CONTROL</h1>
-          <p className="f1-label text-[hsl(var(--f1-text-muted))] mt-1">ATHLETE PERFORMANCE SYSTEM</p>
+      <div className="space-y-6">
+        {/* Header */}
+        <div>
+          <h1 className="text-2xl font-semibold text-primary">Dashboard</h1>
+          <p className="text-muted-foreground mt-1">Your training overview</p>
         </div>
 
-        {/* Telemetry Metrics Strip - F1-style visualizations */}
+        {/* Telemetry Metrics Strip */}
         <TelemetryMetricsStrip
           overview60d={dashboardData.overview60d}
           isLoading={dashboardData.overview60dLoading}
-          className="-mx-6"
         />
 
-        {/* Session · Today - Merged with Decision signal */}
-        <div className="grid grid-cols-12 gap-3">
+        {/* Session Today */}
+        <div className="grid grid-cols-12 gap-4">
           <div className="col-span-12">
             <TodayWorkoutCard
               todayData={dashboardData.todayData}
@@ -92,11 +81,8 @@ function AthleteDashboard() {
         {/* Docked Coach Chat - minimized by default */}
         <CoachChatWidget minimized />
 
-        {/* Thin telemetry strip divider */}
-        <div className="f1-divider my-2" />
-
-        {/* Weekly Load + Recent Activities - Equal height row */}
-        <div className="grid grid-cols-12 gap-3 items-stretch">
+        {/* Weekly Load + Recent Activities */}
+        <div className="grid grid-cols-12 gap-4 items-stretch">
           <div className="col-span-12 lg:col-span-6 flex">
             <WeeklyLoadCard
               activities100={dashboardData.activities100}
@@ -191,22 +177,22 @@ function CoachDashboard() {
         {/* Preview Banner */}
         {IS_PREVIEW && <PreviewBanner />}
 
-        {/* Header - F1 Mission Control style */}
+        {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="f1-headline f1-headline-lg text-[hsl(var(--f1-text-primary))]">Coach Dashboard</h1>
-            <p className="f1-body text-[hsl(var(--f1-text-tertiary))] mt-1">
+            <h1 className="text-2xl font-semibold text-primary">Coach Dashboard</h1>
+            <p className="text-muted-foreground mt-1">
               Overview of athlete adherence, trends, and risk
             </p>
           </div>
           
-          {/* Athlete selector - F1 promoted primary control */}
-          <div className="f1-surface-strong rounded-f1 px-3 py-2 inline-flex items-center gap-3">
-            <span className="f1-label text-[hsl(var(--f1-text-tertiary))]">Active Athlete</span>
+          {/* Athlete selector */}
+          <div className="bg-card rounded-lg border px-3 py-2 inline-flex items-center gap-3">
+            <span className="text-xs uppercase tracking-wider text-muted-foreground">Active Athlete</span>
             {athletesLoading ? (
-              <div className="flex items-center gap-2 text-[hsl(var(--f1-text-tertiary))]">
+              <div className="flex items-center gap-2 text-muted-foreground">
                 <Loader2 className="h-4 w-4 animate-spin" />
-                <span className="f1-body-sm">Loading...</span>
+                <span className="text-sm">Loading...</span>
               </div>
             ) : (
               <Select 
@@ -214,30 +200,30 @@ function CoachDashboard() {
                 onValueChange={setSelectedAthleteId}
                 disabled={athletes.length === 0}
               >
-                <SelectTrigger className="w-[180px] bg-[var(--surface-glass-subtle)] border-[var(--border-subtle)] text-[hsl(var(--f1-text-primary))] focus:border-[hsl(var(--accent-telemetry)/0.5)]">
+                <SelectTrigger className="w-[180px]">
                   <SelectValue placeholder="Select athlete">
                     {selectedAthlete && (
                       <div className="flex items-center gap-2">
                         <Avatar className="h-5 w-5">
-                          <AvatarFallback className="text-xs bg-[hsl(var(--accent-telemetry)/0.15)] text-[hsl(var(--accent-telemetry))]">
+                          <AvatarFallback className="text-xs bg-accent text-accent-foreground">
                             {getAvatarInitials(selectedAthlete)}
                           </AvatarFallback>
                         </Avatar>
-                        <span className="f1-body-sm">{selectedAthlete.name}</span>
+                        <span className="text-sm">{selectedAthlete.name}</span>
                       </div>
                     )}
                   </SelectValue>
                 </SelectTrigger>
-                <SelectContent className="bg-[var(--surface-glass-strong)] backdrop-blur-xl border border-[var(--border-subtle)] shadow-lg z-50">
+                <SelectContent>
                   {athletes.map((athlete) => (
-                    <SelectItem key={athlete.id} value={athlete.id} className="text-[hsl(var(--f1-text-primary))] focus:bg-[var(--border-subtle)]">
+                    <SelectItem key={athlete.id} value={athlete.id}>
                       <div className="flex items-center gap-2">
                         <Avatar className="h-5 w-5">
-                          <AvatarFallback className="text-xs bg-[hsl(var(--accent-telemetry)/0.15)] text-[hsl(var(--accent-telemetry))]">
+                          <AvatarFallback className="text-xs bg-accent text-accent-foreground">
                             {getAvatarInitials(athlete)}
                           </AvatarFallback>
                         </Avatar>
-                        <span className="f1-body-sm">{athlete.name}</span>
+                        <span className="text-sm">{athlete.name}</span>
                       </div>
                     </SelectItem>
                   ))}
@@ -250,17 +236,17 @@ function CoachDashboard() {
         {/* Loading or Error State */}
         {isLoadingDashboard && (
           <div className="flex items-center justify-center py-12">
-            <div className="flex items-center gap-2 text-[hsl(var(--f1-text-tertiary))]">
+            <div className="flex items-center gap-2 text-muted-foreground">
               <Loader2 className="h-5 w-5 animate-spin" />
-              <span className="f1-body">Loading dashboard data...</span>
+              <span>Loading dashboard data...</span>
             </div>
           </div>
         )}
 
         {hasError && !isLoadingDashboard && (
-          <div className="rounded-f1 border f1-status-danger-bg p-4">
-            <p className="f1-body font-medium f1-status-danger">Failed to load dashboard data</p>
-            <p className="f1-body-sm text-[hsl(var(--f1-text-secondary))] mt-1">Please try refreshing the page.</p>
+          <div className="rounded-lg border border-destructive/50 bg-destructive/10 p-4">
+            <p className="font-medium text-destructive">Failed to load dashboard data</p>
+            <p className="text-sm text-muted-foreground mt-1">Please try refreshing the page.</p>
           </div>
         )}
 
@@ -295,9 +281,6 @@ function CoachDashboard() {
               </div>
             </div>
 
-            {/* Section divider */}
-            <div className="f1-divider" />
-
             {/* Charts Row */}
             <div className="grid grid-cols-12 gap-4">
               <div className="col-span-12 lg:col-span-6">
@@ -307,9 +290,6 @@ function CoachDashboard() {
                 <WeeklyLoadChart data={data.weekly_loads} />
               </div>
             </div>
-
-            {/* Section divider */}
-            <div className="f1-divider" />
 
             {/* Risk Signals */}
             <RiskList risks={data.risks} />

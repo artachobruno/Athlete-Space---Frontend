@@ -1,4 +1,4 @@
-import { F1Card, F1CardHeader, F1CardTitle, F1CardLabel } from '@/components/ui/f1-card';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
 import { CheckCircle2, AlertTriangle, AlertOctagon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -11,30 +11,28 @@ interface RiskListProps {
   risks: Risk[];
 }
 
-// F1 Design: Map risk types to F1 status - flat, clear, ruthless
 type RiskType = 'success' | 'warning' | 'info';
 
 const riskToIconClass: Record<RiskType, string> = {
-  success: 'f1-status-safe',
-  warning: 'f1-status-caution',
-  info: 'f1-status-active',
+  success: 'text-green-600 dark:text-green-400',
+  warning: 'text-amber-600 dark:text-amber-400',
+  info: 'text-blue-600 dark:text-blue-400',
 };
 
 const riskToBgClass: Record<RiskType, string> = {
-  success: 'f1-status-safe-bg',
-  warning: 'f1-status-caution-bg',
-  info: 'f1-status-active-bg',
+  success: 'bg-green-500/10',
+  warning: 'bg-amber-500/10',
+  info: 'bg-blue-500/10',
 };
 
 const riskToBorderClass: Record<RiskType, string> = {
-  success: 'border-l-[hsl(var(--accent-success))]',
-  warning: 'border-l-[hsl(var(--accent-warning))]',
-  info: 'border-l-[hsl(var(--accent-telemetry))]',
+  success: 'border-l-green-500',
+  warning: 'border-l-amber-500',
+  info: 'border-l-blue-500',
 };
 
 /**
  * Risk signals list for Coach Dashboard
- * F1 Design: Flat status colors, impossible to miss
  * Shows awareness items - no actions, just information
  */
 export function RiskList({ risks }: RiskListProps) {
@@ -51,29 +49,28 @@ export function RiskList({ risks }: RiskListProps) {
   };
 
   return (
-    <F1Card>
-      <F1CardHeader>
-        <div>
-          <F1CardTitle>Risk Signals</F1CardTitle>
-          <F1CardLabel className="mt-1 block">Awareness items for coach review</F1CardLabel>
-        </div>
-      </F1CardHeader>
-      
-      <ul className="space-y-2">
-        {risks.map((risk, index) => (
-          <li
-            key={index}
-            className={cn(
-              'flex items-start gap-3 py-3 px-3 rounded-f1 border-l-2',
-              riskToBgClass[risk.type],
-              riskToBorderClass[risk.type]
-            )}
-          >
-            {getIcon(risk.type)}
-            <span className="f1-body text-[hsl(var(--f1-text-primary))]">{risk.message}</span>
-          </li>
-        ))}
-      </ul>
-    </F1Card>
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-lg">Risk Signals</CardTitle>
+        <CardDescription>Awareness items for coach review</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <ul className="space-y-2">
+          {risks.map((risk, index) => (
+            <li
+              key={index}
+              className={cn(
+                'flex items-start gap-3 py-3 px-3 rounded-lg border-l-2',
+                riskToBgClass[risk.type],
+                riskToBorderClass[risk.type]
+              )}
+            >
+              {getIcon(risk.type)}
+              <span className="text-sm">{risk.message}</span>
+            </li>
+          ))}
+        </ul>
+      </CardContent>
+    </Card>
   );
 }
