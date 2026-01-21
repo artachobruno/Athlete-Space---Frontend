@@ -5,21 +5,54 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Mail, MessageSquare, Clock } from 'lucide-react';
+import { Mail, MessageSquare, Clock, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
+import { api } from '@/lib/api';
+
+interface SupportFormState {
+  status: 'idle' | 'loading' | 'success' | 'error';
+  message: string;
+}
 
 export default function Support() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [subject, setSubject] = useState('');
   const [message, setMessage] = useState('');
+  const [formState, setFormState] = useState<SupportFormState>({ status: 'idle', message: '' });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    const mailtoBody = `Name: ${name}\nEmail: ${email}\n\n${message}`;
-    const mailtoLink = `mailto:support@athletespace.ai?subject=${encodeURIComponent(subject || 'Support Request')}&body=${encodeURIComponent(mailtoBody)}`;
+    setFormState({ status: 'loading', message: '' });
     
-    window.location.href = mailtoLink;
+    try {
+      const response = await api.post('/support', {
+        name,
+        email,
+        subject,
+        message,
+      }) as { success: boolean; message: string };
+      
+      if (response.success) {
+        setFormState({ 
+          status: 'success', 
+          message: response.message || 'Your message has been sent successfully!' 
+        });
+        // Clear form
+        setName('');
+        setEmail('');
+        setSubject('');
+        setMessage('');
+      } else {
+        throw new Error('Failed to send message');
+      }
+    } catch (error) {
+      console.error('[Support] Failed to send message:', error);
+      setFormState({ 
+        status: 'error', 
+        message: 'Failed to send your message. Please try again or email support@athletespace.ai directly.' 
+      });
+    }
   };
 
   return (
@@ -94,6 +127,7 @@ export default function Support() {
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     required
+                    disabled={formState.status === 'loading'}
                   />
                 </div>
                 <div className="space-y-2">
@@ -105,6 +139,7 @@ export default function Support() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
+                    disabled={formState.status === 'loading'}
                   />
                 </div>
               </div>
@@ -117,6 +152,7 @@ export default function Support() {
                   value={subject}
                   onChange={(e) => setSubject(e.target.value)}
                   required
+                  disabled={formState.status === 'loading'}
                 />
               </div>
 
@@ -129,11 +165,38 @@ export default function Support() {
                   value={message}
                   onChange={(e) => setMessage(e.target.value)}
                   required
+                  disabled={formState.status === 'loading'}
                 />
               </div>
 
-              <Button type="submit" className="w-full sm:w-auto">
-                Open Email Client
+              {/* Status messages */}
+              {formState.status === 'success' && (
+                <div className="flex items-center gap-2 p-3 bg-green-50 dark:bg-green-950/30 text-green-700 dark:text-green-400 rounded-lg">
+                  <CheckCircle className="h-5 w-5 flex-shrink-0" />
+                  <p className="text-sm">{formState.message}</p>
+                </div>
+              )}
+              
+              {formState.status === 'error' && (
+                <div className="flex items-center gap-2 p-3 bg-red-50 dark:bg-red-950/30 text-red-700 dark:text-red-400 rounded-lg">
+                  <AlertCircle className="h-5 w-5 flex-shrink-0" />
+                  <p className="text-sm">{formState.message}</p>
+                </div>
+              )}
+
+              <Button 
+                type="submit" 
+                className="w-full sm:w-auto"
+                disabled={formState.status === 'loading'}
+              >
+                {formState.status === 'loading' ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Sending...
+                  </>
+                ) : (
+                  'Send Message'
+                )}
               </Button>
             </form>
           </CardContent>
