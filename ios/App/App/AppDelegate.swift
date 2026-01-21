@@ -1,6 +1,5 @@
 import UIKit
 import Capacitor
-import WebKit
 
 @UIApplicationMain
 class AppDelegate: UIResponder, UIApplicationDelegate {
@@ -9,59 +8,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         // Override point for customization after application launch.
-        
-        // Hide web view navigation controls (back, refresh, etc.)
-        // These controls appear as the input accessory view toolbar
-        // The WKWebView extension handles hiding the toolbar automatically
-        
-        // Configure web view after a short delay to ensure it's loaded
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            self.configureWebView()
-        }
-        
-        // Also configure when app becomes active (handles app returning from background)
-        NotificationCenter.default.addObserver(
-            self,
-            selector: #selector(configureWebView),
-            name: UIApplication.didBecomeActiveNotification,
-            object: nil
-        )
-        
         return true
-    }
-    
-    @objc func configureWebView() {
-        // Find and configure all WKWebViews to hide input accessory toolbar
-        guard let window = self.window else {
-            return
-        }
-        
-        // Search through all windows and their view controllers
-        if let rootViewController = window.rootViewController {
-            self.hideToolbarInView(rootViewController.view)
-        }
-        
-        // Also check all presented view controllers
-        var currentVC = window.rootViewController
-        while let presented = currentVC?.presentedViewController {
-            self.hideToolbarInView(presented.view)
-            currentVC = presented
-        }
-    }
-    
-    func hideToolbarInView(_ view: UIView) {
-        // Recursively search for WKWebView
-        // The WKWebView extension will handle hiding the input accessory view
-        for subview in view.subviews {
-            if subview is WKWebView {
-                // The extension automatically hides the toolbar
-                // Just configure keyboard dismiss mode
-                if let webView = subview as? WKWebView {
-                    webView.scrollView.keyboardDismissMode = .onDrag
-                }
-            }
-            hideToolbarInView(subview)
-        }
     }
 
     func applicationWillResignActive(_ application: UIApplication) {
