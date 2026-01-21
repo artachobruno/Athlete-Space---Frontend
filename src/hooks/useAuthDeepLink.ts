@@ -16,7 +16,7 @@ import { isNative } from "@/lib/platform";
  */
 export function useAuthDeepLink(onDeepLink?: () => void) {
   useEffect(() => {
-    if (!isNative) return;
+    if (!isNative()) return;
 
     const sub = App.addListener("appUrlOpen", async ({ url }) => {
       if (!url) return;

@@ -58,6 +58,13 @@
 				<string>athletespace</string>
 			</array>
 		</dict>
+		<!-- Google Sign-In reversed client ID - REPLACE with your iOS Client ID reversed -->
+		<dict>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.googleusercontent.apps.951112451176-tossaqn3h3s89tbsq32buhf9c5tfe1hg</string>
+			</array>
+		</dict>
 	</array>
 </dict>
 </plist>

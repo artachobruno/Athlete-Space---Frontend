@@ -228,7 +228,7 @@ const AppContent = () => {
   useTimezoneSync();
   
   // Capacitor requires HashRouter on native platforms
-  const Router = isNative ? HashRouter : BrowserRouter;
+  const Router = isNative() ? HashRouter : BrowserRouter;
   
   return (
     <Router>

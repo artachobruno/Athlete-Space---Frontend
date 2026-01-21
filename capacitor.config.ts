@@ -10,6 +10,12 @@ const config: CapacitorConfig = {
     App: {
       // Listen for athletespace:// URLs
     },
+    // Native Google Sign-In configuration
+    SocialLogin: {
+      providers: {
+        google: true,
+      },
+    },
   },
   // Server config for handling OAuth redirects
   server: {

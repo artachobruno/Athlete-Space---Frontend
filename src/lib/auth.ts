@@ -1,8 +1,6 @@
 import { api } from "./api";
-import type { UserOut } from "./apiValidation";
-import type { AthleteProfile } from "@/types";
-import { Browser } from "@/lib/capacitor-stubs/browser";
 import { isNative } from "./platform";
+import { loginWithGoogleNative, initializeGoogleAuth } from "./google-auth-native";
 
 // Minimal user type for auth context (matches what /me returns)
 // This is a subset of the full profile - just enough for authentication
@@ -206,106 +204,74 @@ export async function signupWithEmail(email: string, password: string): Promise<
 
 /**
  * Login with Google OAuth.
- * Handles both web (redirect) and mobile (in-app browser) platforms.
+ * - On mobile (iOS/Android): Uses native Google Sign-In SDK to avoid webview restrictions
+ * - On web: Uses standard OAuth redirect flow
  */
 export async function loginWithGoogle(): Promise<void> {
-  // Get API base URL (same logic as api.ts)
-  const getBaseURL = () => {
-    // Check if we're in Capacitor (native app)
-    const isCapacitor = typeof window !== 'undefined' && (
-      window.location.protocol === 'capacitor:' ||
-      window.location.origin === 'capacitor://localhost' ||
-      window.location.href.startsWith('capacitor://')
-    );
-    
-    if (isCapacitor) {
-      // In Capacitor, we MUST use VITE_API_URL - capacitor://localhost is not a valid backend URL
-      const apiUrl = import.meta.env.VITE_API_URL;
-      if (!apiUrl) {
-        console.error("[Auth] VITE_API_URL is required in Capacitor/native builds but is not set!");
-        console.error("[Auth] VITE_API_URL must be set when running 'npm run build' before syncing to iOS.");
-        console.error("[Auth] Example: VITE_API_URL=https://your-backend.com npm run build");
-        throw new Error("Backend API URL is not configured. Please set VITE_API_URL environment variable when building.");
-      }
-      return apiUrl;
-    }
-    
-    // Safety check: if origin is capacitor://localhost, we're definitely in Capacitor
-    if (import.meta.env.PROD && typeof window !== 'undefined') {
-      if (window.location.origin === 'capacitor://localhost' || window.location.href.startsWith('capacitor://')) {
-        const apiUrl = import.meta.env.VITE_API_URL;
-        if (!apiUrl) {
-          console.error("[Auth] CRITICAL: Running in Capacitor but VITE_API_URL was not set at build time!");
-          throw new Error("Backend API URL is not configured. Please set VITE_API_URL when building.");
-        }
-        return apiUrl;
-      }
-    }
-    
+  const native = isNative();
+  console.log("[Auth] Starting Google login, isNative:", native);
+
+  // MOBILE: Use native Google Sign-In SDK
+  // This avoids the "disallowed_useragent" error from Google
+  if (native) {
+    console.log("[Auth] Using native Google Sign-In SDK");
+    await loginWithGoogleNative();
+    return;
+  }
+
+  // WEB: Use standard OAuth redirect flow
+  console.log("[Auth] Using web OAuth redirect flow");
+  
+  // Get API base URL for web flow
+  const getBaseURL = (): string => {
     if (import.meta.env.PROD) {
-      // CRITICAL: In production, VITE_API_URL is REQUIRED
-      // Never fall back to window.location.origin - frontend and backend are on different domains
       const apiUrl = import.meta.env.VITE_API_URL;
       if (!apiUrl) {
-        const errorMsg = "[Auth] CRITICAL: VITE_API_URL is required in production but is not set! " +
-                        "Please configure VITE_API_URL in your deployment environment (e.g., Render dashboard). " +
-                        "Example: VITE_API_URL=https://virtus-ai.onrender.com";
+        const errorMsg =
+          "[Auth] CRITICAL: VITE_API_URL is required in production but is not set! " +
+          "Please configure VITE_API_URL in your deployment environment.";
         console.error(errorMsg);
-        console.error("[Auth] Current window.location.origin:", window.location.origin);
-        throw new Error("VITE_API_URL environment variable is required in production. Please configure it in your deployment settings.");
+        throw new Error("VITE_API_URL environment variable is required in production.");
       }
       return apiUrl;
     }
     return "http://localhost:8000";
   };
-  
+
   const API = getBaseURL();
-  // CRITICAL: Must use backend URL, not frontend domain
-  // In production: https://virtus-ai.onrender.com/auth/google/login
-  // NOT: /auth/google/login (relative) or https://athletespace.ai/auth/google/login (frontend domain)
-  
-  // Build OAuth URL with platform and redirect_uri for mobile
   const params = new URLSearchParams();
-  params.set('platform', isNative ? 'mobile' : 'web');
-  
-  // For mobile apps, tell backend to redirect to our custom URL scheme
-  // This allows the OAuth callback to deep link back into the app
-  if (isNative) {
-    params.set('redirect_uri', 'athletespace://auth/callback');
-  }
-  
+  params.set("platform", "web");
+
   const url = `${API}/auth/google/login?${params.toString()}`;
-  
+
   console.log("[Auth] Google OAuth redirect URL:", url);
-  console.log("[Auth] API base URL:", API);
-  console.log("[Auth] Platform:", isNative ? "mobile" : "web");
-  
-  // Sanity check: In production, URL must point to backend, not frontend
-  if (import.meta.env.PROD && typeof window !== 'undefined') {
+
+  // Sanity check: URL must point to backend, not frontend
+  if (import.meta.env.PROD && typeof window !== "undefined") {
     const frontendOrigin = window.location.origin;
     if (url.startsWith(frontendOrigin)) {
-      const errorMsg = `[Auth] CRITICAL: Google OAuth URL points to frontend domain (${frontendOrigin}) instead of backend! ` +
-                      `This will cause OAuth failures. URL: ${url}`;
-      console.error(errorMsg);
-      throw new Error("Google OAuth URL must point to backend domain, not frontend. Check VITE_API_URL configuration.");
+      console.error("[Auth] CRITICAL: OAuth URL points to frontend instead of backend!");
+      throw new Error("Google OAuth URL must point to backend domain.");
     }
   }
 
-  if (isNative) {
-    // Mobile: Open in-app browser
+  // Standard redirect
+  window.location.href = url;
+}
+
+/**
+ * Initialize Google Auth SDK for native platforms.
+ * Call this early in app startup to prepare native Google Sign-In.
+ */
+export async function prepareGoogleAuth(): Promise<void> {
+  if (isNative()) {
     try {
-      await Browser.open({
-        url,
-        presentationStyle: "fullscreen",
-      });
+      await initializeGoogleAuth();
+      console.log("[Auth] Native Google Auth initialized");
     } catch (error) {
-      // Fallback to window.location if Capacitor is not available
-      console.warn("[Auth] Capacitor Browser not available, falling back to redirect:", error);
-      window.location.href = url;
+      console.warn("[Auth] Failed to initialize native Google Auth:", error);
+      // Don't throw - login will retry initialization
     }
-  } else {
-    // Web: Standard redirect
-    window.location.href = url;
   }
 }
 
