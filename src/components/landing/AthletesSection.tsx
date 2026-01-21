@@ -20,7 +20,7 @@ export const AthletesSection = () => {
 
   return (
     <section ref={containerRef} className="relative py-32 overflow-hidden">
-      {/* Background video layer */}
+      {/* Background video layer - iOS WebKit compatible */}
       <div className="absolute inset-0">
         <video
           className="absolute inset-0 w-full h-full object-cover opacity-10"
@@ -28,6 +28,8 @@ export const AthletesSection = () => {
           loop
           muted
           playsInline
+          webkit-playsinline="true"
+          preload="auto"
         >
           <source src="/Hyrox_male.mp4" type="video/mp4" />
         </video>

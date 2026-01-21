@@ -35,6 +35,9 @@ const SignatureLogo = () => {
       loop
       muted
       playsInline
+      // @ts-expect-error webkit-playsinline is required for iOS WebView compatibility
+      webkit-playsinline="true"
+      preload="auto"
       className={logoClasses}
     />
   );

@@ -29,12 +29,16 @@ export const TelemetryHero = () => {
         />
         
         {/* Video background - increased contrast 8-12%, reduced opacity mask */}
+        {/* iOS WebKit compatible attributes for autoplay in WebViews */}
         <video
           ref={videoRef}
           autoPlay
           loop
           muted
           playsInline
+          // @ts-expect-error webkit-playsinline is required for iOS WebView compatibility
+          webkit-playsinline="true"
+          preload="auto"
           className="absolute inset-0 w-full h-full object-cover opacity-[0.30]"
           style={{ filter: 'saturate(0.75) contrast(1.20)' }}
         >

@@ -440,6 +440,9 @@ export const disconnectStrava = async (): Promise<void> => {
  * 
  * Note: This function redirects to /auth/google/login?platform=web which
  * returns a 302 redirect to Google's consent screen.
+ * 
+ * For mobile apps, includes redirect_uri=athletespace://auth/callback to deep link
+ * back into the app after OAuth completes.
  */
 export const initiateGoogleConnect = async (): Promise<void> => {
   console.log("[API] Initiating Google connect");
@@ -447,14 +450,32 @@ export const initiateGoogleConnect = async (): Promise<void> => {
   try {
     // Use the same getBaseURL logic as the main API instance
     const API = getBaseURL();
+    
+    // Check if running in native app (Capacitor)
+    const isCapacitor = typeof window !== 'undefined' && (
+      window.location.protocol === 'capacitor:' ||
+      window.location.origin === 'capacitor://localhost' ||
+      window.location.href.startsWith('capacitor://')
+    );
+    
+    // Build OAuth URL with platform and redirect_uri for mobile
+    const params = new URLSearchParams();
+    params.set('platform', isCapacitor ? 'mobile' : 'web');
+    
+    // For mobile apps, tell backend to redirect to our custom URL scheme
+    if (isCapacitor) {
+      params.set('redirect_uri', 'athletespace://auth/callback');
+    }
+    
     // CRITICAL: Must use backend URL, not frontend domain
     // In production: https://virtus-ai.onrender.com/auth/google/login
     // NOT: /auth/google/login (relative) or https://athletespace.ai/auth/google/login (frontend domain)
     // This endpoint returns a 302 redirect to Google's consent screen
-    const url = `${API}/auth/google/login?platform=web`;
+    const url = `${API}/auth/google/login?${params.toString()}`;
     
     console.log("[API] Google OAuth redirect URL:", url);
     console.log("[API] API base URL:", API);
+    console.log("[API] Platform:", isCapacitor ? "mobile" : "web");
     
     // Sanity check: In production, URL must point to backend, not frontend
     if (import.meta.env.PROD && typeof window !== 'undefined') {

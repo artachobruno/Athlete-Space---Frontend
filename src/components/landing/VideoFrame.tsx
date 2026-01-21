@@ -1,5 +1,5 @@
 import { motion, useInView } from 'framer-motion';
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useState, useCallback } from 'react';
 
 interface VideoFrameProps {
   src: string;
@@ -13,16 +13,50 @@ export const VideoFrame = ({ src, className = '', opacity = 0.6, filter = 'satur
   const containerRef = useRef<HTMLDivElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const isInView = useInView(containerRef, { once: false, margin: '-20%' });
+  const [hasInteracted, setHasInteracted] = useState(false);
+
+  const attemptPlay = useCallback(() => {
+    const video = videoRef.current;
+    if (!video) return;
+    
+    const playPromise = video.play();
+    if (playPromise !== undefined) {
+      playPromise.catch(() => {
+        // Autoplay was prevented, will retry on user interaction
+      });
+    }
+  }, []);
+
+  // Handle user interaction to enable autoplay on iOS
+  useEffect(() => {
+    const handleInteraction = () => {
+      setHasInteracted(true);
+      if (isInView) {
+        attemptPlay();
+      }
+    };
+
+    if (!hasInteracted) {
+      document.addEventListener('touchstart', handleInteraction, { once: true });
+      document.addEventListener('click', handleInteraction, { once: true });
+    }
+
+    return () => {
+      document.removeEventListener('touchstart', handleInteraction);
+      document.removeEventListener('click', handleInteraction);
+    };
+  }, [hasInteracted, isInView, attemptPlay]);
 
   useEffect(() => {
-    if (videoRef.current) {
-      if (isInView) {
-        videoRef.current.play();
-      } else {
-        videoRef.current.pause();
-      }
+    const video = videoRef.current;
+    if (!video) return;
+    
+    if (isInView) {
+      attemptPlay();
+    } else {
+      video.pause();
     }
-  }, [isInView]);
+  }, [isInView, attemptPlay]);
 
   return (
     <motion.div
@@ -47,12 +81,16 @@ export const VideoFrame = ({ src, className = '', opacity = 0.6, filter = 'satur
         {label}
       </div>
 
-      {/* Video content */}
+      {/* Video content - iOS WebKit compatible attributes */}
       <video
         ref={videoRef}
+        autoPlay
         loop
         muted
         playsInline
+        // @ts-expect-error webkit-playsinline is required for iOS WebView compatibility
+        webkit-playsinline="true"
+        preload="auto"
         className="w-full h-full object-cover"
         style={{ filter, opacity }}
       >

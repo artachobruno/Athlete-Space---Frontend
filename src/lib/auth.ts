@@ -263,10 +263,22 @@ export async function loginWithGoogle(): Promise<void> {
   // CRITICAL: Must use backend URL, not frontend domain
   // In production: https://virtus-ai.onrender.com/auth/google/login
   // NOT: /auth/google/login (relative) or https://athletespace.ai/auth/google/login (frontend domain)
-  const url = `${API}/auth/google/login?platform=${isNative ? "mobile" : "web"}`;
+  
+  // Build OAuth URL with platform and redirect_uri for mobile
+  const params = new URLSearchParams();
+  params.set('platform', isNative ? 'mobile' : 'web');
+  
+  // For mobile apps, tell backend to redirect to our custom URL scheme
+  // This allows the OAuth callback to deep link back into the app
+  if (isNative) {
+    params.set('redirect_uri', 'athletespace://auth/callback');
+  }
+  
+  const url = `${API}/auth/google/login?${params.toString()}`;
   
   console.log("[Auth] Google OAuth redirect URL:", url);
   console.log("[Auth] API base URL:", API);
+  console.log("[Auth] Platform:", isNative ? "mobile" : "web");
   
   // Sanity check: In production, URL must point to backend, not frontend
   if (import.meta.env.PROD && typeof window !== 'undefined') {
