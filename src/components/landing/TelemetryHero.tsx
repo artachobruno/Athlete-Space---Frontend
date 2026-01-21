@@ -82,7 +82,7 @@ export const TelemetryHero = () => {
             {/* Get Started CTA */}
             <a 
               href="/signup"
-              className="flex-shrink-0 px-6 py-3 text-xs font-mono tracking-[0.1em] uppercase text-slate-200 border border-slate-700 hover:border-slate-500 hover:text-white transition-colors"
+              className="flex-shrink-0 px-8 py-3 text-xs font-mono tracking-[0.1em] uppercase bg-slate-200 text-slate-950 hover:bg-white transition-colors"
             >
               Get Started
             </a>
