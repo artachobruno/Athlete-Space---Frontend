@@ -468,7 +468,7 @@ export const initiateGoogleConnect = async (): Promise<void> => {
     }
     
     // CRITICAL: Must use backend URL, not frontend domain
-    // In production: https://app.athletespace.ai/auth/google/login
+    // In production: https://api.athletespace.ai/auth/google/login
     // NOT: /auth/google/login (relative) or https://athletespace.ai/auth/google/login (frontend domain)
     // This endpoint returns a 302 redirect to Google's consent screen
     const url = `${API}/auth/google/login?${params.toString()}`;

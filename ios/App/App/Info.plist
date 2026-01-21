@@ -54,7 +54,7 @@
 		<false/>
 		<key>NSExceptionDomains</key>
 		<dict>
-			<key>app.athletespace.ai</key>
+			<key>api.athletespace.ai</key>
 			<dict>
 				<key>NSIncludesSubdomains</key>
 				<true/>

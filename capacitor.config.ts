@@ -24,7 +24,7 @@ const config: CapacitorConfig = {
       'accounts.google.com',
       'www.strava.com',
       'athletespace.ai',
-      'app.athletespace.ai',
+      'api.athletespace.ai',
     ],
   },
   ios: {
