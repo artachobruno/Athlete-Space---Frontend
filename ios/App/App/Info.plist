@@ -72,7 +72,7 @@
 		<false/>
 		<key>NSExceptionDomains</key>
 		<dict>
-			<key>virtus-ai.onrender.com</key>
+			<key>app.athletespace.ai</key>
 			<dict>
 				<key>NSIncludesSubdomains</key>
 				<true/>

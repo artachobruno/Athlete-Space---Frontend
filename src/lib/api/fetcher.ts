@@ -21,7 +21,7 @@ const getBaseURL = () => {
     if (!apiUrl) {
       const errorMsg = "[Fetcher] CRITICAL: VITE_API_URL is required in production but is not set! " +
                       "Please configure VITE_API_URL in your deployment environment (e.g., Render dashboard). " +
-                      "Example: VITE_API_URL=https://virtus-ai.onrender.com";
+                      "Example: VITE_API_URL=https://app.athletespace.ai";
       console.error(errorMsg);
       console.error("[Fetcher] Current window.location.origin:", window.location.origin);
       throw new Error("VITE_API_URL environment variable is required in production. Please configure it in your deployment settings.");

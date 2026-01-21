@@ -24,7 +24,7 @@ const config: CapacitorConfig = {
       'accounts.google.com',
       'www.strava.com',
       'athletespace.ai',
-      'virtus-ai.onrender.com',
+      'app.athletespace.ai',
     ],
   },
   ios: {
