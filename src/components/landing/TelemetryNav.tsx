@@ -80,6 +80,9 @@ export const TelemetryNav = () => {
             <a href="/faq" className="text-slate-500 hover:text-slate-300 transition-colors">
               FAQ
             </a>
+            <a href="/support" className="text-slate-500 hover:text-slate-300 transition-colors">
+              Support
+            </a>
             <a href="/login" className="text-slate-400 hover:text-slate-200 transition-colors">
               Sign In
             </a>
@@ -95,10 +98,11 @@ export const TelemetryNav = () => {
         </div>
       </div>
 
-      {/* Mobile menu */}
+      {/* Mobile menu - position below nav accounting for safe area */}
       {isMenuOpen && (
         <motion.div
-          className="md:hidden absolute top-16 left-0 right-0 bg-slate-950/95 backdrop-blur-sm border-b border-slate-800/30"
+          className="md:hidden absolute left-0 right-0 bg-slate-950/95 backdrop-blur-sm border-b border-slate-800/30"
+          style={{ top: 'calc(4rem + env(safe-area-inset-top, 0px))' }}
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.2 }}
@@ -118,6 +122,9 @@ export const TelemetryNav = () => {
             </a>
             <a href="/faq" className="text-slate-500 hover:text-slate-300 transition-colors py-2">
               FAQ
+            </a>
+            <a href="/support" className="text-slate-500 hover:text-slate-300 transition-colors py-2">
+              Support
             </a>
             <a href="/login" className="text-slate-400 hover:text-slate-200 transition-colors py-2">
               Sign In

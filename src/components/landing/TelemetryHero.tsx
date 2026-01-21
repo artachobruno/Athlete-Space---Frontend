@@ -49,8 +49,11 @@ export const TelemetryHero = () => {
         <div className="absolute inset-0 bg-gradient-to-b from-slate-950/35 via-slate-950/55 to-slate-950" />
       </div>
 
-      {/* Status band at top - reduced padding for tighter visual connection */}
-      <div className="relative z-10 pt-16">
+      {/* Status band at top - account for fixed nav + safe area on iOS */}
+      <div 
+        className="relative z-10"
+        style={{ paddingTop: 'calc(4rem + env(safe-area-inset-top, 0px) + 0.5rem)' }}
+      >
         <TelemetryStatusBand />
       </div>
 

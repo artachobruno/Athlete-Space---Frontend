@@ -16,6 +16,7 @@ import {
   HelpCircle,
   Bot,
   Database,
+  LifeBuoy,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/context/AuthContext';
@@ -76,14 +77,18 @@ export function AppLayout({ children }: AppLayoutProps) {
       {/* Sidebar */}
       <aside
         className={cn(
-          'fixed top-0 left-0 h-full w-64 bg-card border-r z-40 transition-transform duration-200 ease-in-out',
+          'fixed left-0 w-64 bg-card border-r z-40 transition-transform duration-200 ease-in-out',
+          // On mobile: start below the header (which includes safe area)
+          'top-[calc(3.5rem+env(safe-area-inset-top,0px))] h-[calc(100%-3.5rem-env(safe-area-inset-top,0px))]',
+          // On desktop: full height from top
+          'lg:top-0 lg:h-full',
           'lg:translate-x-0',
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         )}
       >
         <div className="flex flex-col h-full">
-          {/* Logo */}
-          <div className="h-14 lg:h-16 flex items-center px-6 border-b">
+          {/* Logo - only visible on desktop since mobile has header */}
+          <div className="hidden lg:flex h-16 items-center px-6 border-b">
             <Logo size="nav" />
           </div>
 
@@ -126,6 +131,19 @@ export function AppLayout({ children }: AppLayoutProps) {
             >
               <HelpCircle className="h-4 w-4" />
               FAQ
+            </Link>
+            <Link
+              to="/support"
+              onClick={() => setSidebarOpen(false)}
+              className={cn(
+                'flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors w-full',
+                location.pathname === '/support'
+                  ? 'bg-accent text-accent-foreground'
+                  : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
+              )}
+            >
+              <LifeBuoy className="h-4 w-4" />
+              Support
             </Link>
             <Link
               to="/privacy"
