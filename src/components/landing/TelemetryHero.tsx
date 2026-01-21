@@ -36,8 +36,6 @@ export const TelemetryHero = () => {
           loop
           muted
           playsInline
-          // @ts-expect-error webkit-playsinline is required for iOS WebView compatibility
-          webkit-playsinline="true"
           preload="auto"
           className="absolute inset-0 w-full h-full object-cover opacity-[0.30]"
           style={{ filter: 'saturate(0.75) contrast(1.20)' }}
@@ -71,17 +69,27 @@ export const TelemetryHero = () => {
             Training, driven by Data and Intelligence.
           </h1>
           
-          {/* Subheadline (H2) */}
-          <h2 className="text-lg md:text-xl lg:text-2xl text-slate-400 font-light mb-4 leading-relaxed max-w-3xl">
-            Your training data becomes a signal.
-            <br />
-            The signal informs a decision.
-            <br />
-            The decision drives adaptation.
-          </h2>
+          {/* Subheadline (H2) + Get Started button row */}
+          <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6 lg:gap-12">
+            <h2 className="text-lg md:text-xl lg:text-2xl text-slate-400 font-light leading-relaxed max-w-3xl">
+              Your training data becomes a signal.
+              <br />
+              The signal informs a decision.
+              <br />
+              The decision drives adaptation.
+            </h2>
+            
+            {/* Get Started CTA */}
+            <a 
+              href="/signup"
+              className="flex-shrink-0 px-6 py-3 text-xs font-mono tracking-[0.1em] uppercase text-slate-200 border border-slate-700 hover:border-slate-500 hover:text-white transition-colors"
+            >
+              Get Started
+            </a>
+          </div>
           
           {/* Optional inline system label */}
-          <p className="text-xs font-mono tracking-[0.15em] text-slate-500 uppercase mt-4">
+          <p className="text-xs font-mono tracking-[0.15em] text-slate-500 uppercase mt-6">
             Closed-loop performance system
           </p>
         </motion.div>

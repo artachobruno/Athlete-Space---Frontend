@@ -88,8 +88,6 @@ export const VideoFrame = ({ src, className = '', opacity = 0.6, filter = 'satur
         loop
         muted
         playsInline
-        // @ts-expect-error webkit-playsinline is required for iOS WebView compatibility
-        webkit-playsinline="true"
         preload="auto"
         className="w-full h-full object-cover"
         style={{ filter, opacity }}
