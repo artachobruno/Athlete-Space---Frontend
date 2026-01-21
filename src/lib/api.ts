@@ -3082,7 +3082,22 @@ const normalizeError = (error: unknown): ApiError => {
       message = "Request timed out. Please try again.";
     } else if (axiosError.code === "ERR_NETWORK" || !axiosError.response) {
       const requestUrl = axiosError.config?.url || axiosError.request?.responseURL || "";
+      const baseURL = axiosError.config?.baseURL || "";
+      const fullUrl = requestUrl.startsWith('http') ? requestUrl : `${baseURL}${requestUrl}`;
       const isCrossOrigin = requestUrl && !requestUrl.startsWith(window.location.origin);
+      
+      // Enhanced logging for network errors to help diagnose connectivity issues
+      console.error("[API] ERR_NETWORK details:", {
+        code: axiosError.code,
+        message: axiosError.message,
+        requestUrl: fullUrl,
+        baseURL: baseURL,
+        isCrossOrigin: isCrossOrigin,
+        requestStatus: axiosError.request?.status,
+        requestReadyState: axiosError.request?.readyState,
+        hasResponse: !!axiosError.response,
+        error: axiosError,
+      });
       
       if (isCrossOrigin && axiosError.message && axiosError.message.includes("CORS") || 
           (typeof axiosError.request !== "undefined" && axiosError.request.status === 0)) {
