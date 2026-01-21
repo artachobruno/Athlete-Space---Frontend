@@ -47,12 +47,10 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
-	<!-- App Transport Security - Allow WKWebView to make HTTPS requests -->
+	<!-- App Transport Security - DIAGNOSTIC: Nuclear test to isolate ATS vs network issue -->
 	<key>NSAppTransportSecurity</key>
 	<dict>
 		<key>NSAllowsArbitraryLoads</key>
-		<false/>
-		<key>NSAllowsArbitraryLoadsInWebContent</key>
 		<true/>
 	</dict>
 	<!-- URL Schemes for OAuth deep linking -->
