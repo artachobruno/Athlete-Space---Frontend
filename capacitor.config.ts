@@ -25,6 +25,7 @@ const config: CapacitorConfig = {
       'www.strava.com',
       'athletespace.ai',
       'api.athletespace.ai',
+      'virtus-ai.onrender.com',
     ],
   },
   ios: {
