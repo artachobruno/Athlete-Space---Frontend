@@ -6,12 +6,13 @@ interface DroppableDayCellProps {
   date: Date;
   children: React.ReactNode;
   className?: string;
+  style?: React.CSSProperties;
 }
 
 /**
  * Wraps a calendar day cell to make it a drop target for planned sessions.
  */
-export function DroppableDayCell({ date, children, className }: DroppableDayCellProps) {
+export function DroppableDayCell({ date, children, className, style }: DroppableDayCellProps) {
   const dateStr = format(date, 'yyyy-MM-dd');
   const { isOver, setNodeRef } = useDroppable({
     id: `day-${dateStr}`,
@@ -29,6 +30,7 @@ export function DroppableDayCell({ date, children, className }: DroppableDayCell
         className,
         isOver && 'ring-2 ring-primary ring-offset-2 bg-primary/5'
       )}
+      style={style}
     >
       {children}
     </div>

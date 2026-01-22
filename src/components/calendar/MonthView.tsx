@@ -252,7 +252,8 @@ export function MonthView({ currentDate, onActivityClick }: MonthViewProps) {
           items={allPlannedSessionIds}
           strategy={verticalListSortingStrategy}
         >
-          <div className="grid grid-cols-7 grid-rows-6 flex-1 min-h-0" style={{ gridAutoRows: 'minmax(240px, 1fr)' }}>
+          {/* Month grid - fixed 6 rows, each row equal height */}
+          <div className="grid grid-cols-7 flex-1 min-h-0" style={{ gridTemplateRows: 'repeat(6, minmax(0, 1fr))' }}>
             {days.map((day, idx) => {
               const isCurrentMonth = isSameMonth(day, currentDate);
               const isCurrentDay = isToday(day);
@@ -263,12 +264,13 @@ export function MonthView({ currentDate, onActivityClick }: MonthViewProps) {
                   key={idx}
                   date={day}
                   className={cn(
-                    'relative border-b border-r border-border/50 flex flex-col transition-colors',
+                    'relative border-b border-r border-border/50 flex flex-col transition-colors min-h-0 overflow-hidden',
                     !isCurrentMonth && 'bg-muted/5',
                     isCurrentDay && 'bg-primary/5',
-                    idx % 7 === 6 && 'border-r-0'
+                    idx % 7 === 6 && 'border-r-0',
+                    // Bottom row no border
+                    idx >= days.length - 7 && 'border-b-0'
                   )}
-                  style={{ minHeight: '240px', overflow: 'visible' }}
                 >
                   {/* Day number */}
                   <div className="px-2 pt-1.5 pb-1">
@@ -284,23 +286,17 @@ export function MonthView({ currentDate, onActivityClick }: MonthViewProps) {
                     </span>
                   </div>
 
-                  {/* Workout cards - vertical stack layout (no absolute positioning) */}
-                  <div className="flex-1 flex flex-col gap-1 p-1 min-h-0" style={{ overflowY: 'auto', overflowX: 'visible' }}>
-                    {items.length > 0 ? (() => {
+                  {/* Workout cards - vertical stack with overflow scroll */}
+                  <div className="flex-1 flex flex-col gap-0.5 px-1 pb-1 min-h-0 overflow-y-auto overflow-x-hidden">
+                    {items.length > 0 && (() => {
                       const sortedItems = sortCalendarItems(items);
                       const visibleItems = sortedItems.slice(0, 3);
                       const remainingCount = sortedItems.length - 3;
-                      const topItem = visibleItems[0];
-                      const hasExecutionNotes = topItem?.executionNotes;
 
                       return (
                         <>
-                          {visibleItems.map((item, idx) => (
-                            <div
-                              key={item.id}
-                              className="flex-shrink-0 relative"
-                              style={{ height: idx === 0 ? 'auto' : '60px' }}
-                            >
+                          {visibleItems.map((item) => (
+                            <div key={item.id} className="flex-shrink-0">
                               <CalendarWorkoutStack
                                 items={[item]}
                                 variant="month"
@@ -309,42 +305,28 @@ export function MonthView({ currentDate, onActivityClick }: MonthViewProps) {
                                 useNewCard
                                 onClick={(clickedItem) => {
                                   if (!monthData) return;
-
                                   const session =
-                                    [
-                                      ...monthData.planned_sessions,
-                                      ...monthData.workouts,
-                                    ].find((s) => s.id === clickedItem.id) ?? null;
-
+                                    [...monthData.planned_sessions, ...monthData.workouts]
+                                      .find((s) => s.id === clickedItem.id) ?? null;
                                   const activity =
                                     monthData.completed_activities.find(
                                       (a) =>
                                         a.planned_session_id === clickedItem.id ||
                                         (session?.workout_id && a.workout_id === session.workout_id)
                                     ) ?? null;
-
                                   onActivityClick?.(null, activity, session ?? undefined);
                                 }}
                               />
-                              {/* Execution notes indicator - only on first card */}
-                              {idx === 0 && hasExecutionNotes && (
-                                <div
-                                  className="absolute top-1 right-1 z-10"
-                                  title={topItem.executionNotes || undefined}
-                                >
-                                  <div className="w-1.5 h-1.5 rounded-full bg-muted-foreground/60" />
-                                </div>
-                              )}
                             </div>
                           ))}
                           {remainingCount > 0 && (
-                            <div className="flex-shrink-0 text-[9px] text-muted-foreground/60 text-center py-1">
+                            <div className="flex-shrink-0 text-[9px] text-muted-foreground/60 text-center py-0.5">
                               +{remainingCount} more
                             </div>
                           )}
                         </>
                       );
-                    })() : null}
+                    })()}
                   </div>
                 </DroppableDayCell>
               );

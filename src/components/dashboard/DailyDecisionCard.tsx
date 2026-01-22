@@ -192,12 +192,19 @@ export function DailyDecisionCard({ todayIntelligence, isLoading = false, error,
   }
 
   // Check if this is a placeholder decision (not yet generated)
+  // Handle confidence as object or number
+  const confidenceObj = typeof data.confidence === 'object' && data.confidence !== null
+    ? data.confidence
+    : null;
+  const confidenceScore = confidenceObj?.score ?? (typeof data.confidence === 'number' ? data.confidence : null);
+  const confidenceExplanation = confidenceObj?.explanation ?? null;
+  
   const isPlaceholder = 
-    (data.confidence?.score === 0.0 && 
-     (data.confidence?.explanation === "Decision not yet generated" || 
-      data.explanation === "The coach is still analyzing your training data. Recommendations will be available soon.")) ||
-    (data.explanation === "The coach is still analyzing your training data. Recommendations will be available soon.") ||
-    (data.confidence?.explanation === "Decision not yet generated");
+    (confidenceScore === 0.0 && 
+     (confidenceExplanation === "Decision not yet generated" || 
+      ('explanation' in data && data.explanation === "The coach is still analyzing your training data. Recommendations will be available soon."))) ||
+    ('explanation' in data && data.explanation === "The coach is still analyzing your training data. Recommendations will be available soon.") ||
+    (confidenceExplanation === "Decision not yet generated");
 
   if (isPlaceholder) {
     return (
