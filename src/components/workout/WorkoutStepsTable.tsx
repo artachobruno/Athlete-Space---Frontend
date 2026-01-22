@@ -97,31 +97,47 @@ export function WorkoutStepsTable({ steps, groups = [] }: WorkoutStepsTableProps
   // Render grouped view
   if (viewMode === 'grouped' && groups.length > 0) {
     const processedStepIds = new Set<string>()
-    const rows: Array<{ type: 'group' | 'step'; data: WorkoutStepGroup | StructuredWorkoutStep; groupIndex?: number }> = []
-    let groupIndex = 1
+    const rows: Array<{ type: 'group' | 'step'; data: WorkoutStepGroup | StructuredWorkoutStep; displayOrder: number }> = []
+    let displayOrder = 1
 
+    // Process groups first, then individual steps
+    const groupMap = new Map<string, WorkoutStepGroup>()
+    for (const group of groups) {
+      // Use the first step's order as the group's order
+      const firstStep = sortedSteps.find(s => group.step_ids.includes(s.id))
+      if (firstStep) {
+        groupMap.set(group.group_id, group)
+      }
+    }
+
+    // Sort groups by their first step's order
+    const sortedGroups = Array.from(groupMap.values()).sort((a, b) => {
+      const aFirst = sortedSteps.find(s => a.step_ids.includes(s.id))
+      const bFirst = sortedSteps.find(s => b.step_ids.includes(s.id))
+      return (aFirst?.order || 0) - (bFirst?.order || 0)
+    })
+
+    // Add groups
+    for (const group of sortedGroups) {
+      const groupSteps = group.step_ids
+        .map(id => sortedSteps.find(s => s.id === id))
+        .filter((s): s is StructuredWorkoutStep => s !== undefined)
+        .sort((a, b) => a.order - b.order)
+      
+      rows.push({ type: 'group', data: group, displayOrder: displayOrder++ })
+      group.step_ids.forEach(id => processedStepIds.add(id))
+    }
+
+    // Add individual steps (not in any group)
     for (const step of sortedSteps) {
-      if (processedStepIds.has(step.id)) continue
-
-      const group = stepIdToGroup.get(step.id)
-      if (group) {
-        // Get all steps in this group, sorted by order
-        const groupSteps = group.step_ids
-          .map(id => sortedSteps.find(s => s.id === id))
-          .filter((s): s is StructuredWorkoutStep => s !== undefined)
-          .sort((a, b) => a.order - b.order)
-        
-        // Add group as a single row with combined name
-        const groupNames = groupSteps.map(s => s.name || STEP_TYPE_LABELS[s.step_type] || s.step_type || 'Step')
-        rows.push({ type: 'group', data: group, groupIndex: groupIndex++ })
-        
-        // Mark all steps in group as processed
-        group.step_ids.forEach(id => processedStepIds.add(id))
-      } else {
-        rows.push({ type: 'step', data: step })
+      if (!processedStepIds.has(step.id)) {
+        rows.push({ type: 'step', data: step, displayOrder: displayOrder++ })
         processedStepIds.add(step.id)
       }
     }
+
+    // Sort rows by displayOrder to ensure correct sequence
+    rows.sort((a, b) => a.displayOrder - b.displayOrder)
 
     return (
       <div className="space-y-4">
@@ -155,16 +171,22 @@ export function WorkoutStepsTable({ steps, groups = [] }: WorkoutStepsTableProps
               </TableRow>
             </TableHeader>
             <TableBody>
-              {rows.map((row, idx) => {
+              {rows.map((row) => {
                 if (row.type === 'group') {
                   const group = row.data as WorkoutStepGroup
                   const groupSteps = group.step_ids
                     .map(id => sortedSteps.find(s => s.id === id))
                     .filter((s): s is StructuredWorkoutStep => s !== undefined)
                     .sort((a, b) => a.order - b.order)
-                  const groupNames = groupSteps.map(s => s.name || STEP_TYPE_LABELS[s.step_type] || s.step_type || 'Step')
                   
-                  // Calculate total distance and duration for the group
+                  // Get unique pattern (first occurrence of each step type in the pattern)
+                  // The pattern is the first N steps where N = total steps / repeat count
+                  const patternLength = groupSteps.length / group.repeat
+                  const patternSteps = groupSteps.slice(0, patternLength)
+                  const patternNames = patternSteps.map(s => s.name || STEP_TYPE_LABELS[s.step_type] || s.step_type || 'Step')
+                  
+                  // Calculate total distance and duration for ALL steps in the group
+                  // (steps are already expanded, so don't multiply by repeat)
                   let totalDistance = 0
                   let totalDuration = 0
                   let hasDistance = false
@@ -181,16 +203,12 @@ export function WorkoutStepsTable({ steps, groups = [] }: WorkoutStepsTableProps
                     }
                   })
                   
-                  // Multiply by repeat count
-                  if (hasDistance) totalDistance *= group.repeat
-                  if (hasDuration) totalDuration *= group.repeat
-                  
                   return (
                     <TableRow key={`group-${group.group_id}`} className="bg-muted/50">
-                      <TableCell className="font-medium">{row.groupIndex || idx + 1}</TableCell>
+                      <TableCell className="font-medium">{row.displayOrder}</TableCell>
                       <TableCell>
                         <Badge variant="outline" className="font-semibold">
-                          {group.repeat}× {groupNames.join(' + ')}
+                          {group.repeat}× {patternNames.join(' + ')}
                         </Badge>
                       </TableCell>
                       <TableCell>
@@ -204,20 +222,17 @@ export function WorkoutStepsTable({ steps, groups = [] }: WorkoutStepsTableProps
                       </TableCell>
                       <TableCell>
                         <span className="text-sm text-muted-foreground">
-                          {groupSteps[0] ? formatTarget(groupSteps[0]) : 'N/A'}
+                          {patternSteps[0] ? formatTarget(patternSteps[0]) : 'N/A'}
                         </span>
                       </TableCell>
                     </TableRow>
                   )
                 } else {
                   const step = row.data as StructuredWorkoutStep
-                  // Find the step's position in the flat list (excluding groups)
-                  const flatStepIndex = sortedSteps.findIndex(s => s.id === step.id)
-                  const stepNumber = flatStepIndex >= 0 ? flatStepIndex + 1 : step.order
                   
                   return (
                     <TableRow key={step.id}>
-                      <TableCell className="font-medium">{stepNumber}</TableCell>
+                      <TableCell className="font-medium">{row.displayOrder}</TableCell>
                       <TableCell>
                         <Badge 
                           variant="outline"
