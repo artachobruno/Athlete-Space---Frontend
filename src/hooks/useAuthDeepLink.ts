@@ -1,5 +1,4 @@
 import { useEffect } from "react";
-import { App } from "@/lib/capacitor-stubs/app";
 import { Browser } from "@/lib/capacitor-stubs/browser";
 import { isNative } from "@/lib/platform";
 import { useAuth } from "@/context/AuthContext";
@@ -7,8 +6,12 @@ import { useAuth } from "@/context/AuthContext";
 /**
  * Hook to handle OAuth deep links in native apps.
  * 
+ * CRITICAL: The deep link listener is registered at module load time (registerDeepLinks.ts)
+ * to ensure it exists before iOS delivers deep links after OAuth. This hook listens for
+ * the custom 'oauth-callback' event dispatched by the top-level listener.
+ * 
  * When Google OAuth completes, the backend redirects to athletespace://auth/callback
- * This hook listens for that URL and:
+ * This hook handles that URL and:
  * 1. Closes the in-app browser (if open)
  * 2. Explicitly triggers AuthContext to re-check authentication via /me
  * 3. Navigates to the home screen
@@ -33,15 +36,18 @@ export function useAuthDeepLink(onDeepLink?: () => void) {
       return;
     }
 
-    console.log('[AuthDeepLink] Registering appUrlOpen listener for native app');
+    console.log('[AuthDeepLink] Registering oauth-callback event listener (React hook)');
     
-    const sub = App.addListener("appUrlOpen", async ({ url }) => {
+    const handleOAuthCallback = async (event: Event) => {
+      const customEvent = event as CustomEvent<{ url: string }>;
+      const url = customEvent.detail?.url;
+      
       if (!url) {
-        console.warn('[AuthDeepLink] Received appUrlOpen event but URL is empty');
+        console.warn('[AuthDeepLink] Received oauth-callback event but URL is empty');
         return;
       }
 
-      console.log('[AuthDeepLink] ✅ Received deep link:', url);
+      console.log('[AuthDeepLink] ✅ Processing OAuth callback:', url);
 
       // Handle OAuth callback URLs:
       // - athletespace://auth/callback (custom URL scheme)
@@ -91,12 +97,12 @@ export function useAuthDeepLink(onDeepLink?: () => void) {
           onDeepLink();
         }
       }
-    });
+    };
+
+    window.addEventListener('oauth-callback', handleOAuthCallback);
 
     return () => {
-      sub.then((h) => h.remove()).catch(() => {
-        // Ignore errors during cleanup (stub implementation)
-      });
+      window.removeEventListener('oauth-callback', handleOAuthCallback);
     };
   }, [onDeepLink, refreshUser]);
 }

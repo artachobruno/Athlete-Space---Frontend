@@ -4,6 +4,9 @@ import "./index.css";
 // Import debug utilities (makes them available in console)
 import "./lib/auth-debug";
 import "./lib/api-debug";
+// CRITICAL: Register deep link listener at module load (before React mounts)
+// This ensures the listener exists when iOS delivers deep links after OAuth
+import "./native/registerDeepLinks";
 import "leaflet/dist/leaflet.css";
 
 // Global error handlers to catch errors from browser extensions or other external sources
