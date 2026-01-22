@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ChevronLeft, ChevronRight, Download, Plus } from 'lucide-react';
@@ -16,6 +16,8 @@ import { fetchCalendarSeason, type CalendarSession } from '@/lib/api';
 import { downloadIcsFile } from '@/lib/ics-export';
 import { useQueryClient } from '@tanstack/react-query';
 import { useAuthenticatedQuery } from '@/hooks/useAuthenticatedQuery';
+import { useSwipeGesture } from '@/hooks/useSwipeGesture';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 import type { PlannedWorkout, CompletedActivity } from '@/types';
 
@@ -31,6 +33,28 @@ type ViewType = 'month' | 'week' | 'season';
 export function TrainingCalendar() {
   const [currentDate, setCurrentDate] = useState(new Date());
   const [view, setView] = useState<ViewType>('week');
+  const isMobile = useIsMobile();
+
+  // Navigation handlers - memoized for swipe gesture
+  const navigatePrevious = useCallback(() => {
+    if (view === 'month') setCurrentDate(prev => subMonths(prev, 1));
+    else if (view === 'week') setCurrentDate(prev => subWeeks(prev, 1));
+    else setCurrentDate(prev => subMonths(prev, 3));
+  }, [view]);
+
+  const navigateNext = useCallback(() => {
+    if (view === 'month') setCurrentDate(prev => addMonths(prev, 1));
+    else if (view === 'week') setCurrentDate(prev => addWeeks(prev, 1));
+    else setCurrentDate(prev => addMonths(prev, 3));
+  }, [view]);
+
+  // Swipe gesture for mobile navigation
+  const swipeRef = useSwipeGesture<HTMLDivElement>({
+    onSwipeLeft: navigateNext,
+    onSwipeRight: navigatePrevious,
+    enabled: isMobile,
+    threshold: 60,
+  });
 
   const [activityPopupOpen, setActivityPopupOpen] = useState(false);
   const [selectedPlannedWorkout, setSelectedPlannedWorkout] =
@@ -57,18 +81,6 @@ export function TrainingCalendar() {
     }
     localStorage.removeItem('calendarFocusDate');
   }, []);
-
-  const navigatePrevious = () => {
-    if (view === 'month') setCurrentDate(subMonths(currentDate, 1));
-    else if (view === 'week') setCurrentDate(subWeeks(currentDate, 1));
-    else setCurrentDate(subMonths(currentDate, 3));
-  };
-
-  const navigateNext = () => {
-    if (view === 'month') setCurrentDate(addMonths(currentDate, 1));
-    else if (view === 'week') setCurrentDate(addWeeks(currentDate, 1));
-    else setCurrentDate(addMonths(currentDate, 3));
-  };
 
   const goToToday = () => setCurrentDate(new Date());
 
@@ -167,7 +179,7 @@ export function TrainingCalendar() {
       </div>
 
       {/* Views - Must fit in viewport without vertical scrolling */}
-      <div className="flex-1 min-h-0 overflow-hidden">
+      <div ref={swipeRef} className="flex-1 min-h-0 overflow-hidden touch-pan-y">
         {view === 'month' && (
           <MonthView
             currentDate={currentDate}
