@@ -31,6 +31,7 @@ import { CalendarWorkoutStack } from './cards/CalendarWorkoutStack';
 import { DayView } from './DayView';
 import { DroppableDayCell } from './DroppableDayCell';
 import { MobileDayList } from './MobileDayList';
+import { SwipeIndicator } from './SwipeIndicator';
 import { Card } from '@/components/ui/card';
 import { SessionCard } from '@/components/sessions/SessionCard';
 import { toast } from '@/hooks/use-toast';
@@ -371,14 +372,15 @@ export function WeekCalendar({ currentDate, onActivityClick }: WeekCalendarProps
     };
 
     return (
-      <div className="h-full overflow-hidden">
+      <div className="h-full overflow-hidden flex flex-col">
+        <SwipeIndicator label="week" className="flex-shrink-0" />
         <MobileDayList
           days={days}
           getItemsForDay={getItemsForDay}
           onDayClick={setSelectedDay}
           onItemClick={handleMobileItemClick}
           showEmptyDays={true}
-          className="h-full px-1"
+          className="flex-1 px-1"
         />
       </div>
     );
