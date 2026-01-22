@@ -43,6 +43,10 @@ export function CalendarWorkoutStack({
     return null;
   }
 
+  // Phase 4.5: Determine density based on variant
+  // Month view uses compact, Week view uses standard
+  const density = variant === 'month' ? 'compact' : 'standard';
+
   // Phase 4: New React-based SessionCard (replaces SVG)
   if (useNewCard && visible.length === 1) {
     const item = visible[0];
@@ -53,7 +57,7 @@ export function CalendarWorkoutStack({
         onClick={() => onClick?.(item)}
         style={{ cursor: onClick ? 'pointer' : 'default' }}
       >
-        <SessionCard session={item} density="compact" className="h-full" />
+        <SessionCard session={item} density={density} className="h-full" />
       </div>
     );
   }
@@ -90,7 +94,7 @@ export function CalendarWorkoutStack({
               }}
               onClick={() => isTopCard && onClick?.(item)}
             >
-              <SessionCard session={item} density="compact" className="h-full" />
+              <SessionCard session={item} density={density} className="h-full" />
             </div>
           );
         })}

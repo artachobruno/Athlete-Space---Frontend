@@ -233,6 +233,14 @@ export function SessionCard({
   // Show actual data only for completed sessions, otherwise show planned (muted)
   const showEffortData = density === 'compact' && session.status === 'completed';
 
+  // Density rules: what to show/hide per density
+  const showIntensityBadge = density !== 'compact';
+  const showStatusBadge = density !== 'compact';
+  const showStatusIconOnRight = density === 'compact' && StatusIcon;
+  const showCoachInsight = density === 'standard' || density === 'rich';
+  const showSteps = density === 'rich';
+  const showBothDurationAndDistance = density !== 'compact';
+
   return (
     <Card
       className={cn(
@@ -256,59 +264,76 @@ export function SessionCard({
         {/* Left: Main content */}
         <div className={cn(
           'flex-1 min-w-0 flex flex-col justify-center',
-          // Use consistent spacing for compact, tighter for others
-          density === 'compact' ? 'space-y-1' : 'space-y-1.5'
+          // Vertical spacing between title and metadata
+          density === 'compact' ? 'space-y-1' : density === 'standard' ? 'space-y-1.5' : 'space-y-2'
         )}>
           {/* Title row */}
-          <div className="flex items-center gap-2 flex-wrap">
+          <div className={cn('flex items-center flex-wrap', spacing.titleGap)}>
             <h3 className={cn('font-semibold truncate', fonts.title, statusColors.text)}>
               {session.title || session.type || 'Workout'}
             </h3>
-            {intent && density !== 'compact' && (
-              <Badge variant="outline" className={cn('text-xs', intentColorClass)}>
+            {showIntensityBadge && intent && (
+              <Badge variant="outline" className={cn(fonts.badge, intentColorClass)}>
                 {getIntentLabel(intensity, session.type)}
               </Badge>
-            )}
-            {StatusIcon && density !== 'compact' && (
-              <StatusIcon className={cn('h-4 w-4', statusColors.text)} />
             )}
           </div>
 
           {/* Metadata row */}
           <div className={cn(
-            'flex items-center gap-3',
+            'flex items-center flex-nowrap',
+            spacing.metadataGap,
             fonts.metadata,
             'text-muted-foreground',
             // Fixed height for metadata row in compact mode
-            density === 'compact' && 'h-4',
-            // Prevent text wrapping
-            'flex-nowrap'
+            density === 'compact' && 'h-4'
           )}>
-            {session.duration_minutes && (
-              <div className="flex items-center gap-1.5 whitespace-nowrap shrink-0">
-                <Clock className="h-3.5 w-3.5 shrink-0" />
-                <span className="whitespace-nowrap">{formatDuration(session.duration_minutes)}</span>
-              </div>
+            {/* Compact: Show duration OR distance (prefer duration) */}
+            {density === 'compact' && (
+              <>
+                {session.duration_minutes ? (
+                  <div className="flex items-center gap-1.5 whitespace-nowrap shrink-0">
+                    <Clock className="h-3.5 w-3.5 shrink-0" />
+                    <span className="whitespace-nowrap">{formatDuration(session.duration_minutes)}</span>
+                  </div>
+                ) : session.distance_km ? (
+                  <div className="flex items-center gap-1.5 whitespace-nowrap shrink-0">
+                    <Route className="h-3.5 w-3.5 shrink-0" />
+                    <span className="whitespace-nowrap">{formatDistance(convertDistance(session.distance_km))}</span>
+                  </div>
+                ) : null}
+                {intent && (
+                  <span className={cn('uppercase tracking-wider opacity-60 whitespace-nowrap shrink-0', fonts.badge)}>
+                    {getIntentLabel(intensity, session.type)}
+                  </span>
+                )}
+              </>
             )}
-            {session.distance_km && (
-              <div className="flex items-center gap-1.5 whitespace-nowrap shrink-0">
-                <Route className="h-3.5 w-3.5 shrink-0" />
-                <span className="whitespace-nowrap">{formatDistance(convertDistance(session.distance_km))}</span>
-              </div>
-            )}
-            {density === 'compact' && intent && (
-              <span className="text-[10px] uppercase tracking-wider opacity-60 whitespace-nowrap shrink-0">
-                {getIntentLabel(intensity, session.type)}
-              </span>
+            {/* Standard/Rich: Show both duration and distance */}
+            {showBothDurationAndDistance && (
+              <>
+                {session.duration_minutes && (
+                  <div className="flex items-center gap-1.5 whitespace-nowrap shrink-0">
+                    <Clock className="h-3.5 w-3.5 shrink-0" />
+                    <span className="whitespace-nowrap">{formatDuration(session.duration_minutes)}</span>
+                  </div>
+                )}
+                {session.distance_km && (
+                  <div className="flex items-center gap-1.5 whitespace-nowrap shrink-0">
+                    <Route className="h-3.5 w-3.5 shrink-0" />
+                    <span className="whitespace-nowrap">{formatDistance(convertDistance(session.distance_km))}</span>
+                  </div>
+                )}
+              </>
             )}
           </div>
 
           {/* Rich density: Step preview and coach insight */}
-          {density === 'rich' && (
+          {showSteps && (
             <div className="space-y-2 pt-1">
               {/* Step preview (1-2 lines max) */}
               {session.steps && session.steps.length > 0 && (
-                <div className="text-xs text-muted-foreground">
+                <div className={cn('text-muted-foreground', fonts.metadata)}>
                   {session.steps.slice(0, 2).map((step, idx) => (
                     <div key={idx} className="truncate">
                       {step.order || idx + 1}. {step.name || `Step ${idx + 1}`}
@@ -324,27 +349,27 @@ export function SessionCard({
 
               {/* Coach insight teaser */}
               {session.coach_insight && (
-                <div className="text-xs text-muted-foreground italic line-clamp-2">
+                <div className={cn('text-muted-foreground italic line-clamp-2', fonts.insight)}>
                   {session.coach_insight}
                 </div>
               )}
             </div>
           )}
 
-          {/* Standard density: Small effort indicator or coach insight */}
-          {density === 'standard' && session.coach_insight && (
-            <div className="text-xs text-muted-foreground line-clamp-1">
+          {/* Standard density: Coach insight teaser (1 line max) */}
+          {density === 'standard' && showCoachInsight && session.coach_insight && (
+            <div className={cn('text-muted-foreground line-clamp-1', fonts.insight)}>
               {session.coach_insight}
             </div>
           )}
         </div>
 
-        {/* Right: Status indicator (compact shows icon only, others show badge) */}
-        {density === 'compact' && StatusIcon && (
+        {/* Right: Status indicator - consistent placement on right side across densities */}
+        {showStatusIconOnRight && (
           <StatusIcon className={cn('h-4 w-4 shrink-0', statusColors.text)} />
         )}
-        {density !== 'compact' && (
-          <Badge variant="outline" className={cn('text-xs shrink-0', statusColors.badge)}>
+        {showStatusBadge && (
+          <Badge variant="outline" className={cn(fonts.badge, 'shrink-0', statusColors.badge)}>
             {session.status === 'completed' && 'Completed'}
             {session.status === 'skipped' && 'Skipped'}
             {session.status === 'deleted' && 'Deleted'}

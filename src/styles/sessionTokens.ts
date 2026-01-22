@@ -1,33 +1,33 @@
 /**
- * Phase 4: Session Card Design Tokens
+ * Phase 4.5: Session Card Design Tokens
  * 
  * Unified design tokens for session cards across all surfaces.
- * Based on Training Plan style as visual baseline.
+ * Aligned to Lovable mockups for consistent spacing, hierarchy, and density.
  */
 
-// Spacing tokens
+// Spacing tokens - padding (x/y), gaps between elements
 export const sessionSpacing = {
   compact: {
-    padding: 'p-2',
-    gap: 'gap-1.5',
-    titleSize: 'text-sm',
-    metadataSize: 'text-xs',
+    padding: 'px-2 py-1.5',
+    gap: 'gap-1',
+    titleGap: 'gap-1.5',
+    metadataGap: 'gap-2',
   },
   standard: {
-    padding: 'p-3',
+    padding: 'px-3 py-2.5',
     gap: 'gap-2',
-    titleSize: 'text-base',
-    metadataSize: 'text-sm',
+    titleGap: 'gap-2',
+    metadataGap: 'gap-3',
   },
   rich: {
-    padding: 'p-4',
+    padding: 'px-4 py-3',
     gap: 'gap-3',
-    titleSize: 'text-lg',
-    metadataSize: 'text-sm',
+    titleGap: 'gap-2.5',
+    metadataGap: 'gap-3',
   },
 } as const;
 
-// Border radius
+// Border radius per density
 export const sessionRadius = {
   compact: 'rounded-md',
   standard: 'rounded-lg',
@@ -81,21 +81,24 @@ export const sessionIntentColors = {
   rest: 'bg-muted text-muted-foreground border-border',
 } as const;
 
-// Font sizes
+// Font sizes per density
 export const sessionFontSizes = {
   compact: {
     title: 'text-sm',
-    metadata: 'text-xs',
+    metadata: 'text-[11px]',
     badge: 'text-[10px]',
+    insight: 'text-[10px]',
   },
   standard: {
     title: 'text-base',
     metadata: 'text-sm',
     badge: 'text-xs',
+    insight: 'text-xs',
   },
   rich: {
     title: 'text-lg',
     metadata: 'text-sm',
     badge: 'text-xs',
+    insight: 'text-sm',
   },
 } as const;
