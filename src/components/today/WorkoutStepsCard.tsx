@@ -1,3 +1,7 @@
+// ❗ DO NOT PARSE WORKOUTS FROM TEXT
+// All workout structure must come from workout.steps
+// Never use regex, split(), match(), or pattern logic to extract workout data
+
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import type { WorkoutStep } from '@/lib/api';
 

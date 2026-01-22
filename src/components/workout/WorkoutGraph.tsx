@@ -1,5 +1,24 @@
+// ❗ DO NOT PARSE WORKOUTS FROM TEXT
+// All workout structure must come from workout.steps
+// Bar height should map to step intensity (recovery: 0.3, easy: 0.4, steady: 0.6, tempo: 0.75, interval: 1.0)
+// Width = duration, Height = intensity intent
+
 import { useMemo, useCallback, useRef, useEffect } from 'react'
 import type { WorkoutTimeline, WorkoutTimelineSegment, WorkoutStreams } from '@/types/workoutTimeline'
+
+/**
+ * Maps step type/intensity to bar height (0.0 to 1.0)
+ * Height = intent, width = duration
+ */
+function getIntensityHeight(stepType: string): number {
+  const lower = stepType.toLowerCase();
+  if (lower.includes('recovery') || lower.includes('cooldown') || lower.includes('warmup')) return 0.3;
+  if (lower.includes('easy') || lower.includes('aerobic')) return 0.4;
+  if (lower.includes('steady') || lower.includes('endurance')) return 0.6;
+  if (lower.includes('tempo') || lower.includes('threshold') || lower.includes('lt2')) return 0.75;
+  if (lower.includes('interval') || lower.includes('vo2') || lower.includes('hard')) return 1.0;
+  return 0.5; // default
+}
 
 type WorkoutGraphProps = {
   timeline: WorkoutTimeline
@@ -316,7 +335,7 @@ export function WorkoutGraph({ timeline, activeStepOrder, onStepHover, showActua
           </g>
         )}
 
-        {/* Segments - rendered as discrete bands */}
+        {/* Segments - rendered as intensity-aware bars (height = intensity, width = duration) */}
         {sortedSegments.map((seg) => {
           const isActive = activeStepOrder === seg.order
           const opacity = isActive ? 1 : 0.4
@@ -325,72 +344,29 @@ export function WorkoutGraph({ timeline, activeStepOrder, onStepHover, showActua
           const x2 = getX(seg.end_second, 720) + 40
           const width = x2 - x1
 
-          if (seg.target.min !== undefined && seg.target.max !== undefined) {
-            const y1 = getY(seg.target.max, 180) + 10
-            const y2 = getY(seg.target.min, 180) + 10
-            const height = y2 - y1
+          // Map step type to intensity height (0.0 to 1.0)
+          const intensityHeight = getIntensityHeight(seg.step_type)
+          const maxBarHeight = 180 // Maximum bar height in pixels
+          const barHeight = maxBarHeight * intensityHeight
+          const y1 = 10 + (maxBarHeight - barHeight) // Bottom-aligned bars
+          const y2 = 10 + maxBarHeight
 
-            return (
-              <g key={`segment-${seg.order}`}>
-                <rect
-                  x={x1}
-                  y={y1}
-                  width={width}
-                  height={height}
-                  fill={isActive ? "url(#bandGradientActive)" : "url(#bandGradient)"}
-                  fillOpacity={opacity}
-                  stroke="hsl(var(--primary))"
-                  strokeWidth={strokeWidth}
-                />
-                <line
-                  x1={x1}
-                  y1={y1}
-                  x2={x2}
-                  y2={y1}
-                  stroke="hsl(var(--primary))"
-                  strokeWidth={strokeWidth}
-                  opacity={opacity}
-                />
-                <line
-                  x1={x1}
-                  y1={y2}
-                  x2={x2}
-                  y2={y2}
-                  stroke="hsl(var(--primary))"
-                  strokeWidth={strokeWidth}
-                  opacity={opacity}
-                />
-              </g>
-            )
-          } else if (seg.target.value !== undefined) {
-            const y = getY(seg.target.value, 180) + 10
-
-            return (
-              <g key={`segment-${seg.order}`}>
-                <line
-                  x1={x1}
-                  y1={y}
-                  x2={x2}
-                  y2={y}
-                  stroke="hsl(var(--primary))"
-                  strokeWidth={strokeWidth}
-                  opacity={opacity}
-                />
-                {isActive && (
-                  <rect
-                    x={x1}
-                    y={y - 2}
-                    width={width}
-                    height={4}
-                    fill="hsl(var(--primary))"
-                    fillOpacity={0.2}
-                  />
-                )}
-              </g>
-            )
-          }
-
-          return null
+          // Render intensity-based bar
+          return (
+            <g key={`segment-${seg.order}`}>
+              <rect
+                x={x1}
+                y={y1}
+                width={width}
+                height={barHeight}
+                fill={isActive ? "url(#bandGradientActive)" : "url(#bandGradient)"}
+                fillOpacity={opacity}
+                stroke="hsl(var(--primary))"
+                strokeWidth={strokeWidth}
+                rx={2}
+              />
+            </g>
+          )
         })}
       </svg>
     </div>

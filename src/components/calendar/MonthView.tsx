@@ -283,51 +283,67 @@ export function MonthView({ currentDate, onActivityClick }: MonthViewProps) {
                     </span>
                   </div>
 
-                  {/* Workout cards */}
-                  <div className="relative flex-1">
-                    {items.length > 0 && (() => {
-                      const stackItems = sortCalendarItems(items);
-                      const topItem = stackItems[0];
+                  {/* Workout cards - vertical stack layout (no absolute positioning) */}
+                  <div className="flex-1 flex flex-col gap-1 p-1 overflow-y-auto min-h-0">
+                    {items.length > 0 ? (() => {
+                      const sortedItems = sortCalendarItems(items);
+                      const visibleItems = sortedItems.slice(0, 3);
+                      const remainingCount = sortedItems.length - 3;
+                      const topItem = visibleItems[0];
                       const hasExecutionNotes = topItem?.executionNotes;
+
                       return (
-                        <div className="absolute top-0 left-0 right-0 bottom-0">
-                          <CalendarWorkoutStack
-                            items={stackItems}
-                            variant="month"
-                            maxVisible={3}
-                            activityIdBySessionId={activityIdBySessionId}
-                            useNewCard
-                            onClick={(item) => {
-                            if (!monthData) return;
-
-                            const session =
-                              [
-                                ...monthData.planned_sessions,
-                                ...monthData.workouts,
-                              ].find((s) => s.id === item.id) ?? null;
-
-                            const activity =
-                              monthData.completed_activities.find(
-                                (a) =>
-                                  a.planned_session_id === item.id ||
-                                  (session?.workout_id && a.workout_id === session.workout_id)
-                              ) ?? null;
-
-                            onActivityClick?.(null, activity, session ?? undefined);
-                          }}
-                        />
-                          {/* Execution notes indicator - tiny dot in top-right corner */}
-                          {hasExecutionNotes && (
+                        <>
+                          {visibleItems.map((item, idx) => (
                             <div
-                              className="absolute top-1 right-1 z-10"
-                              title={topItem.executionNotes || undefined}
+                              key={item.id}
+                              className="flex-shrink-0 relative"
+                              style={{ height: idx === 0 ? 'auto' : '60px' }}
                             >
-                              <div className="w-1.5 h-1.5 rounded-full bg-muted-foreground/60" />
+                              <CalendarWorkoutStack
+                                items={[item]}
+                                variant="month"
+                                maxVisible={1}
+                                activityIdBySessionId={activityIdBySessionId}
+                                useNewCard
+                                onClick={(clickedItem) => {
+                                  if (!monthData) return;
+
+                                  const session =
+                                    [
+                                      ...monthData.planned_sessions,
+                                      ...monthData.workouts,
+                                    ].find((s) => s.id === clickedItem.id) ?? null;
+
+                                  const activity =
+                                    monthData.completed_activities.find(
+                                      (a) =>
+                                        a.planned_session_id === clickedItem.id ||
+                                        (session?.workout_id && a.workout_id === session.workout_id)
+                                    ) ?? null;
+
+                                  onActivityClick?.(null, activity, session ?? undefined);
+                                }}
+                              />
+                              {/* Execution notes indicator - only on first card */}
+                              {idx === 0 && hasExecutionNotes && (
+                                <div
+                                  className="absolute top-1 right-1 z-10"
+                                  title={topItem.executionNotes || undefined}
+                                >
+                                  <div className="w-1.5 h-1.5 rounded-full bg-muted-foreground/60" />
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                          {remainingCount > 0 && (
+                            <div className="flex-shrink-0 text-[9px] text-muted-foreground/60 text-center py-1">
+                              +{remainingCount} more
                             </div>
                           )}
-                        </div>
+                        </>
                       );
-                    })()}
+                    })() : null}
                   </div>
                 </DroppableDayCell>
               );

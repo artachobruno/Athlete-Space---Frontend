@@ -3,6 +3,10 @@
  *
  * Converts existing API types to WorkoutSession format for WorkoutSessionCard.
  * Single source of truth for data transformation.
+ *
+ * ❗ DO NOT PARSE WORKOUTS FROM TEXT
+ * All workout structure must come from workout.steps
+ * Never use regex, split(), match(), or pattern logic to extract workout data
  */
 
 import type { CalendarSession, ActivityStreamsResponse } from '@/lib/api';

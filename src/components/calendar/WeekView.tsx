@@ -226,15 +226,44 @@ function WeekView({ currentDate, onActivityClick }: WeekViewProps) {
                   ) : (() => {
                     const flatItems = groupedItems.flatMap((g) => g.items);
                     const stackItems = sortCalendarItems(flatItems);
+                    const topItem = stackItems[0];
+                    const hasInstructions = topItem?.executionNotes || (monthData && (() => {
+                      const session = [...monthData.planned_sessions, ...monthData.workouts].find(
+                        (s) => s.id === topItem.id
+                      );
+                      return session?.instructions && session.instructions.length > 0;
+                    })());
+                    const instructionText = topItem?.executionNotes || (monthData && (() => {
+                      const session = [...monthData.planned_sessions, ...monthData.workouts].find(
+                        (s) => s.id === topItem.id
+                      );
+                      return session?.instructions?.[0];
+                    })());
+
                     return (
-                      <CalendarWorkoutStack
-                        items={stackItems}
-                        variant="week"
-                        maxVisible={3}
-                        onClick={handleCardClick}
-                        activityIdBySessionId={activityIdBySessionId}
-                        useNewCard
-                      />
+                      <div className="h-full flex flex-col">
+                        <div className="flex-1 min-h-0">
+                          <CalendarWorkoutStack
+                            items={stackItems}
+                            variant="week"
+                            maxVisible={3}
+                            onClick={handleCardClick}
+                            activityIdBySessionId={activityIdBySessionId}
+                            useNewCard
+                          />
+                        </div>
+                        {/* Instruction / Must-Do box - below workout card */}
+                        {hasInstructions && instructionText && (
+                          <div className="flex-shrink-0 mt-1 px-2 py-1.5 border-t border-border/40 bg-muted/20 rounded-b">
+                            <div className="flex items-start gap-1.5">
+                              <span className="text-[9px] text-muted-foreground/60 mt-0.5">→</span>
+                              <p className="text-[10px] leading-relaxed text-muted-foreground flex-1">
+                                {instructionText}
+                              </p>
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     );
                   })()}
                 </div>
