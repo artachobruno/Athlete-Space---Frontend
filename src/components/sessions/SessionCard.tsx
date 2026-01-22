@@ -240,8 +240,8 @@ export function SessionCard({
         statusColors.border,
         statusColors.background,
         onClick && 'cursor-pointer hover:shadow-md transition-shadow',
-        // Fixed height for compact density - increased to accommodate graph
-        density === 'compact' && 'h-[100px] flex flex-col',
+        // Fixed height for compact density - adjusted to accommodate graph properly
+        density === 'compact' && 'h-[100px] flex flex-col overflow-hidden',
         className
       )}
       onClick={onClick}
@@ -279,22 +279,24 @@ export function SessionCard({
             fonts.metadata,
             'text-muted-foreground',
             // Fixed height for metadata row in compact mode
-            density === 'compact' && 'h-4'
+            density === 'compact' && 'h-4',
+            // Prevent text wrapping
+            'flex-nowrap'
           )}>
             {session.duration_minutes && (
-              <div className="flex items-center gap-1.5">
-                <Clock className="h-3.5 w-3.5" />
-                <span>{formatDuration(session.duration_minutes)}</span>
+              <div className="flex items-center gap-1.5 whitespace-nowrap shrink-0">
+                <Clock className="h-3.5 w-3.5 shrink-0" />
+                <span className="whitespace-nowrap">{formatDuration(session.duration_minutes)}</span>
               </div>
             )}
             {session.distance_km && (
-              <div className="flex items-center gap-1.5">
-                <Route className="h-3.5 w-3.5" />
-                <span>{formatDistance(convertDistance(session.distance_km))}</span>
+              <div className="flex items-center gap-1.5 whitespace-nowrap shrink-0">
+                <Route className="h-3.5 w-3.5 shrink-0" />
+                <span className="whitespace-nowrap">{formatDistance(convertDistance(session.distance_km))}</span>
               </div>
             )}
             {density === 'compact' && intent && (
-              <span className="text-[10px] uppercase tracking-wider opacity-60">
+              <span className="text-[10px] uppercase tracking-wider opacity-60 whitespace-nowrap shrink-0">
                 {getIntentLabel(intensity, session.type)}
               </span>
             )}
@@ -353,7 +355,7 @@ export function SessionCard({
 
       {/* Effort graph for compact density */}
       {density === 'compact' && effortData && effortData.length > 0 && (
-        <div className="flex-1 min-h-0 mt-1.5">
+        <div className="h-[24px] mt-1.5 -mx-2 -mb-2 flex-shrink-0">
           <EffortGraph
             data={effortData}
             showData={showEffortData}

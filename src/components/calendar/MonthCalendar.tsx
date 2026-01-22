@@ -168,18 +168,20 @@ export function MonthCalendar({ currentDate, onActivityClick }: {
             <div
               key={idx}
               className={cn(
-                'min-h-[300px] relative flex flex-col border-b border-r border-border bg-muted/40 overflow-hidden',
-                idx % 7 === 6 && 'border-r-0'
+                'min-h-[300px] relative flex flex-col border-b border-r border-border bg-muted/40',
+                idx % 7 === 6 && 'border-r-0',
+                // Ensure bottom row is fully visible
+                'overflow-visible'
               )}
             >
-              {/* Day header */}
+              {/* Day header - ensure it's above cards */}
               <div
-                className="px-2 pt-2 pb-1 cursor-pointer relative z-10"
+                className="px-2 pt-2 pb-1 cursor-pointer relative z-20 bg-muted/40"
                 onClick={() => setSelectedDay(day)}
               >
                 <span
                   className={cn(
-                    'text-sm font-medium',
+                    'text-sm font-medium inline-block',
                     isCurrentDay &&
                       'bg-primary text-primary-foreground w-7 h-7 rounded-full inline-flex items-center justify-center font-bold'
                   )}
@@ -189,7 +191,7 @@ export function MonthCalendar({ currentDate, onActivityClick }: {
               </div>
 
               {/* Workout card - fills content area */}
-              <div className="flex-1 relative overflow-hidden">
+              <div className="flex-1 relative overflow-hidden min-h-0">
                 {groupedItems.length > 0 && (() => {
                   const flatItems = groupedItems.flatMap((g) => g.items);
                   const stackItems = sortCalendarItems(flatItems);

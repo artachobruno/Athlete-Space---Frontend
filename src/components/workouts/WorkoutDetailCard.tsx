@@ -132,6 +132,13 @@ export function WorkoutDetailCard({
   const hasCoachVerdict = session.coach_verdict && session.coach_verdict.type !== 'ok';
   const coachVerdict = session.coach_verdict;
 
+  // Phase 5A: Only allow coach modification for today or future sessions
+  const sessionDate = new Date(session.date);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  sessionDate.setHours(0, 0, 0, 0);
+  const isTodayOrFuture = sessionDate >= today;
+
   /**
    * Phase 5A: Generate draft message based on coach verdict
    */
@@ -267,27 +274,29 @@ export function WorkoutDetailCard({
                     {coachVerdict.reason}
                   </p>
                   
-                  {/* Phase 5A: Action Buttons */}
-                  <div className="flex gap-2 pt-2 border-t border-border/50">
-                    <Button
-                      variant="default"
-                      size="sm"
-                      onClick={handleAskCoachToModify}
-                      className="flex-1"
-                    >
-                      <MessageCircle className="h-4 w-4 mr-2" />
-                      Ask Coach to Modify Today's Session
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleDiscussWithCoach}
-                      className="flex-1"
-                    >
-                      <Brain className="h-4 w-4 mr-2" />
-                      Discuss with Coach
-                    </Button>
-                  </div>
+                  {/* Phase 5A: Action Buttons - only for today or future sessions */}
+                  {isTodayOrFuture && (
+                    <div className="flex gap-2 pt-2 border-t border-border/50">
+                      <Button
+                        variant="default"
+                        size="sm"
+                        onClick={handleAskCoachToModify}
+                        className="flex-1"
+                      >
+                        <MessageCircle className="h-4 w-4 mr-2" />
+                        Ask Coach to Modify Today's Session
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handleDiscussWithCoach}
+                        className="flex-1"
+                      >
+                        <Brain className="h-4 w-4 mr-2" />
+                        Discuss with Coach
+                      </Button>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             )}
