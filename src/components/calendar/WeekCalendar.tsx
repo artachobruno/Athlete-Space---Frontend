@@ -169,9 +169,9 @@ export function WeekCalendar({ currentDate, onActivityClick }: WeekCalendarProps
   }
 
   return (
-    <div className="h-full flex flex-col">
+    <div className="flex flex-col">
       {/* Week Grid - Must fit in viewport without scrolling */}
-      <div className="grid grid-cols-7 gap-3 flex-1 min-h-0">
+      <div className="grid grid-cols-7 gap-3" style={{ height: 'fit-content', maxHeight: '600px' }}>
         {days.map((day, idx) => {
           const groupedItems = getGroupedItemsForDay(day);
           const isCurrentDay = isToday(day);

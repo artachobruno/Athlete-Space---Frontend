@@ -263,7 +263,7 @@ export function MonthView({ currentDate, onActivityClick }: MonthViewProps) {
                   key={idx}
                   date={day}
                   className={cn(
-                    'relative min-h-[180px] border-b border-r border-border/50 flex flex-col transition-colors overflow-visible',
+                    'relative min-h-[240px] border-b border-r border-border/50 flex flex-col transition-colors overflow-visible',
                     !isCurrentMonth && 'bg-muted/5',
                     isCurrentDay && 'bg-primary/5',
                     idx % 7 === 6 && 'border-r-0'

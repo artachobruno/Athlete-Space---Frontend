@@ -168,7 +168,7 @@ export function MonthCalendar({ currentDate, onActivityClick }: {
             <div
               key={idx}
               className={cn(
-                'min-h-[300px] relative flex flex-col border-b border-r border-border bg-muted/40',
+                'min-h-[240px] relative flex flex-col border-b border-r border-border bg-muted/40',
                 idx % 7 === 6 && 'border-r-0',
                 // Ensure bottom row is fully visible
                 'overflow-visible'
