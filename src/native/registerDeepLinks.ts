@@ -17,7 +17,7 @@ if (isNative()) {
   console.log('[DeepLink] Registering appUrlOpen listener (top-level, module load)');
 
   App.addListener('appUrlOpen', (event) => {
-    if (!event.url) {
+    if (!event?.url) {
       console.warn('[DeepLink] Received appUrlOpen event but URL is empty');
       return;
     }
@@ -30,13 +30,9 @@ if (isNative()) {
     window.dispatchEvent(
       new CustomEvent('oauth-callback', { detail: { url: event.url } })
     );
-  })
-    .then(() => {
-      console.log('[DeepLink] ✅ appUrlOpen listener registered successfully');
-    })
-    .catch((error) => {
-      console.error('[DeepLink] ❌ Failed to register appUrlOpen listener:', error);
-    });
+  });
+
+  console.log('[DeepLink] ✅ appUrlOpen listener registered successfully');
 } else {
   console.log('[DeepLink] Skipping deep link registration (web build)');
 }
