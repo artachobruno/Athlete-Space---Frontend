@@ -64,7 +64,7 @@ export function useAutoMatchSessions(enabled: boolean = true) {
 
         // FE-3: Remove invalid filters - filter sessions that aren't explicitly excluded
         const plannedSessions = sessions.filter(
-          (s: CalendarSession) => s.status !== 'completed' && s.status !== 'cancelled' && s.status !== 'skipped'
+          (s: CalendarSession) => s.status !== 'completed' && s.status !== 'deleted' && s.status !== 'skipped'
         ) as CalendarSession[];
 
         if (plannedSessions.length === 0) return;

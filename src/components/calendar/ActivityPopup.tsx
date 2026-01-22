@@ -4,7 +4,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Footprints, Bike, Waves, Clock, Route, Mountain, Heart, Zap, MessageCircle, CheckCircle2, ExternalLink, X, SkipForward, TrendingUp, Info, Download, Loader2, ArrowRight, Link2, Bot } from 'lucide-react';
+import { Footprints, Bike, Waves, Clock, Route, Mountain, Heart, Zap, MessageCircle, CheckCircle2, ExternalLink, X, SkipForward, TrendingUp, Info, Download, Loader2, ArrowRight, Link2, Bot, Trash2 } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
 import { useNavigate } from 'react-router-dom';
@@ -29,6 +29,16 @@ import { groupWorkoutSteps } from '@/lib/workout-grouping';
 import { getTodayIntelligence } from '@/lib/intelligence';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { ExpandableWorkoutCard } from '@/components/workout/ExpandableWorkoutCard';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 interface ActivityPopupProps {
   open: boolean;
@@ -151,8 +161,9 @@ export function ActivityPopup({
   const updateStatus = useUpdateSessionStatus();
   const [pendingConfirmation, setPendingConfirmation] = useState<{
     proposal: ProposalOnlyResponse;
-    status: 'completed' | 'skipped' | 'cancelled';
+    status: 'completed' | 'skipped' | 'deleted';
   } | null>(null);
+  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const { convertDistance, convertElevation, convertPace, formatDistance } = useUnitSystem();
   const workout = plannedWorkout;
   const activity = completedActivity;
@@ -162,7 +173,7 @@ export function ActivityPopup({
   const [selectedActivityId, setSelectedActivityId] = useState<string | null>(null);
   
   // FE-3: Remove invalid filters - check if this is a session that can be updated
-  const isPlannedSession = session && session.status !== 'completed' && session.status !== 'cancelled' && session.status !== 'skipped' && !activity;
+  const isPlannedSession = session && session.status !== 'completed' && session.status !== 'deleted' && session.status !== 'skipped' && !activity;
   
   // Check if session is completed but has no linked activity
   const isCompletedWithoutActivity = session && session.status === 'completed' && !session.completed_activity_id && !activity;
@@ -490,7 +501,7 @@ export function ActivityPopup({
     );
   };
 
-  const handleStatusUpdate = (newStatus: 'completed' | 'skipped' | 'cancelled') => {
+  const handleStatusUpdate = (newStatus: 'completed' | 'skipped' | 'deleted') => {
     if (!session || !isPlannedSession) return;
     
     updateStatus.mutate(
@@ -968,7 +979,7 @@ export function ActivityPopup({
                   disabled={updateStatus.isPending}
                 >
                   <CheckCircle2 className="h-4 w-4 mr-2" />
-                  Mark Completed
+                  {activity ? 'Confirm Completion' : 'Mark Completed'}
                 </Button>
                 <Button
                   variant="outline"
@@ -978,6 +989,15 @@ export function ActivityPopup({
                 >
                   <SkipForward className="h-4 w-4 mr-2" />
                   Skip
+                </Button>
+                <Button
+                  variant="outline"
+                  className="flex-1 text-destructive hover:text-destructive"
+                  onClick={() => setShowDeleteDialog(true)}
+                  disabled={updateStatus.isPending}
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
+                  Delete Session
                 </Button>
               </div>
             )}
@@ -1009,35 +1029,34 @@ export function ActivityPopup({
                         )}
                       </SelectContent>
                     </Select>
-                    <div className="flex gap-2">
-                      <Button
-                        variant="default"
-                        className="flex-1"
-                        onClick={handleLinkActivity}
-                        disabled={!selectedActivityId || updateStatus.isPending}
-                      >
-                        {updateStatus.isPending ? (
-                          <>
-                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                            Linking...
-                          </>
-                        ) : (
-                          <>
-                            <Link2 className="h-4 w-4 mr-2" />
-                            Link Activity
-                          </>
-                        )}
-                      </Button>
-                      <Button
-                        variant="outline"
-                        onClick={() => {
-                          setShowLinkActivity(false);
-                          setSelectedActivityId(null);
-                        }}
-                      >
-                        Cancel
-                      </Button>
-                    </div>
+                    <Button
+                      variant="default"
+                      className="w-full"
+                      onClick={handleLinkActivity}
+                      disabled={!selectedActivityId || updateStatus.isPending}
+                    >
+                      {updateStatus.isPending ? (
+                        <>
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          Linking...
+                        </>
+                      ) : (
+                        <>
+                          <Link2 className="h-4 w-4 mr-2" />
+                          Link Activity
+                        </>
+                      )}
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="w-full"
+                      onClick={() => {
+                        setShowLinkActivity(false);
+                        setSelectedActivityId(null);
+                      }}
+                    >
+                      Back
+                    </Button>
                   </div>
                 )}
               </div>
@@ -1139,6 +1158,27 @@ export function ActivityPopup({
         isLoading={updateStatus.isPending}
       />
     )}
+
+    <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Delete Session</AlertDialogTitle>
+          <AlertDialogDescription>
+            Delete this planned session? This cannot be undone.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel disabled={updateStatus.isPending}>Cancel</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={() => handleStatusUpdate('deleted')}
+            disabled={updateStatus.isPending}
+            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+          >
+            {updateStatus.isPending ? 'Deleting...' : 'Delete'}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
     </>
   );
 }

@@ -43,7 +43,7 @@ export function generateIcsFile(sessions: CalendarSession[]): string {
   
   // Add each session as an event
   sessions.forEach((session) => {
-    if (session.status === 'cancelled' || session.status === 'skipped') {
+    if (session.status === 'deleted' || session.status === 'skipped') {
       return;
     }
     

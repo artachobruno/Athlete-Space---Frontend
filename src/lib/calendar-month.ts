@@ -49,7 +49,7 @@ export async function fetchCalendarMonth(month: Date): Promise<MonthCalendarData
 
   // Separate planned and completed sessions
   const plannedSessions = monthSessions.filter(
-    (s) => s.status !== 'completed' && s.status !== 'cancelled' && s.status !== 'skipped'
+    (s) => s.status !== 'completed' && s.status !== 'deleted' && s.status !== 'skipped'
   );
   const workouts = monthSessions.filter((s) => s.status === 'completed');
 

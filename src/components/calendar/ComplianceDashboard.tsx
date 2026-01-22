@@ -18,7 +18,7 @@ interface ComplianceStats {
   totalPlanned: number;
   totalCompleted: number;
   totalSkipped: number;
-  totalCancelled: number;
+  totalDeleted: number;
   complianceRate: number;
   weeklyCompliance: number;
   missedSessions: number;
@@ -68,9 +68,9 @@ export function ComplianceDashboard({
     const planned = sessionsUpToPreviousDay.filter(s => s?.status === 'planned' || s?.status === 'completed');
     // Count completed sessions up to previous day
     const completed = sessionsUpToPreviousDay.filter(s => s?.status === 'completed');
-    // Count skipped and cancelled from all sessions (for display purposes)
+    // Count skipped and deleted from all sessions (for display purposes)
     const skipped = sessions.filter(s => s?.status === 'skipped');
-    const cancelled = sessions.filter(s => s?.status === 'cancelled');
+    const deleted = sessions.filter(s => s?.status === 'deleted');
 
     const complianceRate = planned.length > 0 
       ? Math.round((completed.length / planned.length) * 100)
@@ -80,7 +80,7 @@ export function ComplianceDashboard({
       totalPlanned: planned.length,
       totalCompleted: completed.length,
       totalSkipped: skipped.length,
-      totalCancelled: cancelled.length,
+      totalDeleted: deleted.length,
       complianceRate,
       weeklyCompliance: complianceRate,
       missedSessions: planned.length - completed.length,
@@ -104,9 +104,9 @@ export function ComplianceDashboard({
     const planned = sessionsUpToPreviousDay.filter(s => s?.status === 'planned' || s?.status === 'completed');
     // Count completed sessions up to previous day
     const completed = sessionsUpToPreviousDay.filter(s => s?.status === 'completed');
-    // Count skipped and cancelled from all sessions (for display purposes)
+    // Count skipped and deleted from all sessions (for display purposes)
     const skipped = sessions.filter(s => s?.status === 'skipped');
-    const cancelled = sessions.filter(s => s?.status === 'cancelled');
+    const deleted = sessions.filter(s => s?.status === 'deleted');
 
     const complianceRate = planned.length > 0 
       ? Math.round((completed.length / planned.length) * 100)
@@ -116,7 +116,7 @@ export function ComplianceDashboard({
       totalPlanned: planned.length,
       totalCompleted: completed.length,
       totalSkipped: skipped.length,
-      totalCancelled: cancelled.length,
+      totalDeleted: deleted.length,
       complianceRate,
       weeklyCompliance: 0, // Not applicable for season view
       missedSessions: planned.length - completed.length,

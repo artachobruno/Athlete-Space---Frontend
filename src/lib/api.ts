@@ -137,7 +137,7 @@ export interface CalendarSession {
   duration_minutes: number | null;
   distance_km: number | null;
   intensity: string | null;
-  status: "planned" | "completed" | "skipped" | "cancelled" | "missed";
+  status: "planned" | "completed" | "skipped" | "deleted" | "missed";
   notes: string | null;
   execution_notes?: string | null;
   // PHASE F3: Calendar API should return workout_id
@@ -2451,13 +2451,13 @@ export const getStructuredWorkout = async (sessionId: string): Promise<Structure
 /**
  * Updates the status of a calendar session.
  * @param sessionId - The ID of the session to update
- * @param status - The new status: "completed", "skipped", "cancelled", or "planned"
+ * @param status - The new status: "completed", "skipped", "deleted", or "planned"
  * @param completedActivityId - Optional ID of the completed activity to link to the session
  * @param confirmed - Optional flag to confirm the operation (for PROPOSAL_ONLY retries)
  */
 export const updateSessionStatus = async (
   sessionId: string,
-  status: "completed" | "skipped" | "cancelled" | "planned",
+  status: "completed" | "skipped" | "deleted" | "planned",
   completedActivityId?: string,
   confirmed?: boolean
 ): Promise<CalendarSession | WriteResponse<CalendarSession>> => {

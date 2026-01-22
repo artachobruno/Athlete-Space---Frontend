@@ -110,7 +110,7 @@ export function useUpdatePlannedSession() {
 }
 
 /**
- * Hook for updating a session's status (completed, skipped, cancelled).
+ * Hook for updating a session's status (completed, skipped, deleted).
  * Automatically invalidates calendar queries on success.
  * Returns the response which may be PROPOSAL_ONLY or the updated session.
  */
@@ -124,7 +124,7 @@ export function useUpdateSessionStatus() {
       confirmed,
     }: {
       sessionId: string;
-      status: 'completed' | 'skipped' | 'cancelled' | 'planned';
+      status: 'completed' | 'skipped' | 'deleted' | 'planned';
       completedActivityId?: string;
       confirmed?: boolean;
     }) => updateSessionStatus(sessionId, status, completedActivityId, confirmed),

@@ -162,8 +162,8 @@ export function SeasonView({ currentDate }: SeasonViewProps) {
       if (!s || typeof s !== 'object') return false;
       // Session dates from calendar API may have time components, so format consistently
       const sessionDate = s.date ? format(new Date(s.date), 'yyyy-MM-dd') : '';
-      // Show sessions that aren't completed, cancelled, or skipped (includes planned and null status)
-      return sessionDate >= weekStartStr && sessionDate <= weekEndStr && s.status !== 'completed' && s.status !== 'cancelled' && s.status !== 'skipped';
+      // Show sessions that aren't completed, deleted, or skipped (includes planned and null status)
+      return sessionDate >= weekStartStr && sessionDate <= weekEndStr && s.status !== 'completed' && s.status !== 'deleted' && s.status !== 'skipped';
     });
 
     const completedSessions = sessionsArray.filter(s => {
