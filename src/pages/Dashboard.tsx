@@ -50,8 +50,8 @@ function AthleteDashboard() {
       <div className="space-y-4">
         {/* Header */}
         <div>
-          <h1 className="text-[clamp(1.25rem,3vw,1.5rem)] font-semibold text-primary">Dashboard</h1>
-          <p className="text-muted-foreground mt-1">Your training overview</p>
+          <h1 className="text-[clamp(1.25rem,3vw,1.5rem)] font-semibold text-primary">Today</h1>
+          <p className="text-muted-foreground mt-1">What you need to do now</p>
         </div>
 
         {/* Telemetry Metrics Strip */}

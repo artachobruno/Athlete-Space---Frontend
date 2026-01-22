@@ -82,9 +82,9 @@ export function useExecutionPreview({
         description: `${response.sessions_created || 0} sessions added to your calendar.`,
       });
 
-      // Navigate to calendar view
+      // Navigate to schedule view
       setTimeout(() => {
-        navigate('/calendar');
+        navigate('/schedule');
       }, 1000);
     },
     onError: (err: Error) => {

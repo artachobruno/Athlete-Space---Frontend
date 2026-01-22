@@ -22,7 +22,7 @@ function FullPageSkeleton() {
  * - Loading → show loading (block routing until auth resolves)
  * - Unauthenticated → show Landing page
  * - Authenticated but onboarding incomplete → /onboarding
- * - Authenticated + onboarding complete → /dashboard
+ * - Authenticated + onboarding complete → /today
  * 
  * CRITICAL RULES:
  * 1. Never show onboarding when status !== "authenticated"
@@ -36,10 +36,10 @@ function FullPageSkeleton() {
 export function AuthLanding() {
   const { user, loading, status, authReady } = useAuth();
 
-  // Preview mode bypass - redirect directly to dashboard (no auth needed)
+  // Preview mode bypass - redirect directly to today (no auth needed)
   if (isPreviewMode()) {
-    console.log("[AuthLanding] Preview mode detected, redirecting to dashboard");
-    return <Navigate to="/dashboard" replace />;
+    console.log("[AuthLanding] Preview mode detected, redirecting to today");
+    return <Navigate to="/today" replace />;
   }
 
   // CRITICAL: Hard gate - block all routing until auth status is resolved
@@ -63,8 +63,8 @@ export function AuthLanding() {
     return <Navigate to="/onboarding" replace />;
   }
 
-  // Authenticated + onboarding complete → dashboard
-  return <Navigate to="/dashboard" replace />;
+  // Authenticated + onboarding complete → today
+  return <Navigate to="/today" replace />;
 }
 
 /**
@@ -89,7 +89,7 @@ export function PublicOnly({ children }: { children: ReactNode }) {
     if (!user.onboarding_complete) {
       return <Navigate to="/onboarding" replace />;
     }
-    return <Navigate to="/dashboard" replace />;
+    return <Navigate to="/today" replace />;
   }
 
   // Unauthenticated users can access public routes (login/signup)

@@ -151,9 +151,9 @@ const OAuthTokenHandler = () => {
       newSearchParams.delete('error');
       const newSearch = newSearchParams.toString();
       
-      // If onboarding already complete, go to dashboard; otherwise onboarding
+      // If onboarding already complete, go to today; otherwise onboarding
       if (user?.onboarding_complete) {
-        navigate(`/dashboard${newSearch ? `?${newSearch}` : ''}`, { replace: true });
+        navigate(`/today${newSearch ? `?${newSearch}` : ''}`, { replace: true });
       } else {
         navigate(`/onboarding${newSearch ? `?${newSearch}` : ''}`, { replace: true });
       }
@@ -264,7 +264,7 @@ const AppContent = () => {
         <Route path="/terms" element={<Terms />} />
         <Route path="/support" element={<Support />} />
         <Route
-          path="/dashboard"
+          path="/today"
           element={
             <RequireAuth>
               <Dashboard />
@@ -272,7 +272,7 @@ const AppContent = () => {
           }
         />
         <Route
-          path="/calendar"
+          path="/schedule"
           element={
             <RequireAuth>
               <Calendar />
@@ -288,7 +288,7 @@ const AppContent = () => {
           }
         />
         <Route
-          path="/activities"
+          path="/history"
           element={
             <RequireAuth>
               <Activities />
@@ -296,7 +296,7 @@ const AppContent = () => {
           }
         />
         <Route
-          path="/analytics"
+          path="/insights"
           element={
             <RequireAuth>
               <Analytics />

@@ -28,11 +28,11 @@ export default function Onboarding() {
     }
 
     // CRITICAL: Backend is source of truth for onboarding completion
-    // If backend says onboarding is complete, redirect to dashboard
+    // If backend says onboarding is complete, redirect to today
     if (status === "authenticated" && user && user.onboarding_complete && !hasRedirectedRef.current) {
-      console.log("[Onboarding] Backend confirms onboarding complete, redirecting to dashboard");
+      console.log("[Onboarding] Backend confirms onboarding complete, redirecting to today");
       hasRedirectedRef.current = true;
-      navigate('/dashboard', { replace: true });
+      navigate('/today', { replace: true });
     }
   }, [user, loading, status, navigate]);
 

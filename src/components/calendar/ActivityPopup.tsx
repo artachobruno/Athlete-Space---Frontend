@@ -387,9 +387,9 @@ export function ActivityPopup({
   const handleViewDetails = () => {
     onOpenChange(false);
     if (activity?.id) {
-      navigate(`/activities?activity=${activity.id}`);
+      navigate(`/history?activity=${activity.id}`);
     } else {
-      navigate('/activities');
+      navigate('/history');
     }
   };
 
