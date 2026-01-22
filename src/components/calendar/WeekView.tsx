@@ -18,7 +18,7 @@ import {
   Download,
   Sparkles,
 } from 'lucide-react';
-import { CalendarWorkoutStack } from './cards/CalendarWorkoutStack';
+import { CombinedSessionCard } from '@/components/schedule/CombinedSessionCard';
 import { DayView } from './DayView';
 import { Button } from '@/components/ui/button';
 import { GlassCard } from '@/components/ui/GlassCard';
@@ -28,9 +28,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
-import type { CalendarItem, GroupedCalendarItem } from '@/types/calendar';
-import { groupDuplicateSessions } from '@/types/calendar';
-import { sortCalendarItems } from './cards/sortCalendarItems';
 import { fetchCalendarMonth, normalizeCalendarMonth } from '@/lib/calendar-month';
 import { fetchOverview } from '@/lib/api';
 import { useAuthenticatedQuery } from '@/hooks/useAuthenticatedQuery';
@@ -38,7 +35,7 @@ import { useQuery } from '@tanstack/react-query';
 import type { PlannedWorkout, CompletedActivity } from '@/types';
 import type { CalendarSession } from '@/lib/api';
 import { toast } from '@/hooks/use-toast';
-import { toCalendarItem, capitalizeTitle } from '@/adapters/calendarAdapter';
+import { capitalizeTitle } from '@/adapters/calendarAdapter';
 import { normalizeSportType, mapIntensityToIntent } from '@/lib/session-utils';
 import {
   generateWeeklySummaryText,
@@ -47,6 +44,8 @@ import {
   downloadTextFile,
   shareContent,
 } from '@/lib/weekly-summary';
+import { buildExecutionSummaries } from '@/lib/execution-summary';
+import type { ExecutionSummary } from '@/types/execution';
 
 interface WeekViewProps {
   currentDate: Date;
@@ -78,11 +77,11 @@ function WeekView({ currentDate, onActivityClick }: WeekViewProps) {
     retry: 1,
   });
 
-  const dayDataMap = useMemo(() => {
-    if (!monthData) return new Map<string, CalendarItem[]>();
+  const executionSummariesByDay = useMemo(() => {
+    if (!monthData) return new Map<string, ExecutionSummary[]>();
 
     const normalizedDays = normalizeCalendarMonth(monthData);
-    const map = new Map<string, CalendarItem[]>();
+    const map = new Map<string, ExecutionSummary[]>();
 
     for (const day of normalizedDays) {
       if (day.date < format(weekStart, 'yyyy-MM-dd') ||
@@ -90,58 +89,44 @@ function WeekView({ currentDate, onActivityClick }: WeekViewProps) {
         continue;
       }
 
-      const items: CalendarItem[] = [];
+      // Combine all planned sessions (from plannedSessions and workouts)
+      const allPlannedSessions = [
+        ...day.plannedSessions,
+        ...day.workouts.filter(w => w.status === 'completed'),
+      ];
 
-      for (const session of day.plannedSessions) {
-        items.push(toCalendarItem(session, monthData.completed_activities));
-      }
+      // Build execution summaries for this day
+      const summaries = buildExecutionSummaries(
+        day.date,
+        allPlannedSessions,
+        day.completedActivities
+      );
 
-      for (const workout of day.workouts) {
-        if (!items.some(i => i.id === workout.id)) {
-          items.push(toCalendarItem(workout, monthData.completed_activities));
-        }
-      }
-
-      map.set(day.date, items);
+      map.set(day.date, summaries);
     }
 
     return map;
   }, [monthData, weekStart, weekEnd]);
 
-  const activityIdBySessionId = useMemo(() => {
-    if (!monthData) return {};
-    const map: Record<string, string> = {};
-    for (const session of [...monthData.planned_sessions, ...monthData.workouts]) {
-      if (session.completed_activity_id) {
-        map[session.id] = session.completed_activity_id;
-      }
-    }
-    for (const activity of monthData.completed_activities || []) {
-      if (activity.planned_session_id) {
-        map[activity.planned_session_id] = activity.id;
-      }
-    }
-    return map;
-  }, [monthData]);
 
   const days = useMemo(
     () => eachDayOfInterval({ start: weekStart, end: weekEnd }),
     [weekStart, weekEnd]
   );
 
-  const getGroupedItemsForDay = (date: Date): GroupedCalendarItem[] => {
-    const items = dayDataMap.get(format(date, 'yyyy-MM-dd'));
-    return items && items.length > 0 ? groupDuplicateSessions(items) : [];
+  const getExecutionSummariesForDay = (date: Date): ExecutionSummary[] => {
+    const summaries = executionSummariesByDay.get(format(date, 'yyyy-MM-dd'));
+    return summaries || [];
   };
 
-  const handleCardClick = (item: CalendarItem) => {
+  const handleCardClick = (summary: ExecutionSummary) => {
     if (monthData && onActivityClick) {
-      const session = [...monthData.planned_sessions, ...monthData.workouts].find(
-        (s) => s.id === item.id
-      );
-      const activity = monthData.completed_activities.find(
-        (a) => a.id === item.id || a.planned_session_id === item.id
-      );
+      const session = summary.planned
+        ? [...monthData.planned_sessions, ...monthData.workouts].find(
+            (s) => s.id === summary.planned!.id
+          )
+        : null;
+      const activity = summary.activity || null;
 
       onActivityClick(
         session
@@ -156,20 +141,22 @@ function WeekView({ currentDate, onActivityClick }: WeekViewProps) {
               completed: session.status === 'completed',
             }
           : null,
-        activity || null,
-        session
+        activity,
+        session || undefined
       );
     }
   };
 
   if (selectedDay) {
-    const items = dayDataMap.get(format(selectedDay, 'yyyy-MM-dd')) || [];
+    const summaries = getExecutionSummariesForDay(selectedDay);
+    // TODO: Update DayView to accept ExecutionSummary[] instead of CalendarItem[]
+    // For now, we'll keep DayView as-is and handle it separately
     return (
       <DayView
         date={selectedDay}
-        items={items}
+        items={[]}
         onBack={() => setSelectedDay(null)}
-        onItemClick={handleCardClick}
+        onItemClick={() => {}}
       />
     );
   }
@@ -218,50 +205,69 @@ function WeekView({ currentDate, onActivityClick }: WeekViewProps) {
 
               {/* Card Area */}
               <div className="flex-1 relative">
-                <div className="absolute top-0 left-0 right-0 bottom-0">
-                  {groupedItems.length === 0 ? (
-                    <div className="h-full flex items-center justify-center">
-                      <p className="text-[9px] text-muted-foreground/50 uppercase tracking-wider opacity-50">🧠 Adaptation day</p>
-                    </div>
-                  ) : (() => {
-                    const flatItems = groupedItems.flatMap((g) => g.items);
-                    const stackItems = sortCalendarItems(flatItems);
-                    const topItem = stackItems[0];
-                    // Priority: must_dos > execution_notes > instructions[0]
-                    const hasInstructions = topItem?.mustDos?.length || topItem?.executionNotes || (monthData && (() => {
-                      const session = [...monthData.planned_sessions, ...monthData.workouts].find(
-                        (s) => s.id === topItem.id
+                <div className="absolute top-0 left-0 right-0 bottom-0 p-1 overflow-y-auto">
+                  {(() => {
+                    const summaries = getExecutionSummariesForDay(day);
+                    
+                    if (summaries.length === 0) {
+                      return (
+                        <div className="h-full flex items-center justify-center">
+                          <p className="text-[9px] text-muted-foreground/50 uppercase tracking-wider opacity-50">
+                            🧠 Adaptation day
+                          </p>
+                        </div>
                       );
-                      return session?.must_dos?.length || (session?.instructions && session.instructions.length > 0);
-                    })());
-                    const instructionText = topItem?.mustDos?.[0] || topItem?.executionNotes || (monthData && (() => {
-                      const session = [...monthData.planned_sessions, ...monthData.workouts].find(
-                        (s) => s.id === topItem.id
-                      );
-                      return session?.must_dos?.[0] || session?.instructions?.[0];
-                    })());
+                    }
+
+                    // Show up to 3 summaries (stacked)
+                    const visibleSummaries = summaries.slice(0, 3);
+                    const hasMore = summaries.length > 3;
 
                     return (
-                      <div className="h-full flex flex-col">
-                        <div className="flex-1 min-h-0">
-                          <CalendarWorkoutStack
-                            items={stackItems}
-                            variant="week"
-                            maxVisible={3}
-                            onClick={handleCardClick}
-                            activityIdBySessionId={activityIdBySessionId}
-                            useNewCard
-                          />
-                        </div>
-                        {/* Instruction / Must-Do box - below workout card */}
-                        {hasInstructions && instructionText && (
-                          <div className="flex-shrink-0 mt-1 px-2 py-1.5 border-t border-border/40 bg-muted/20 rounded-b">
-                            <div className="flex items-start gap-1.5">
-                              <span className="text-[9px] text-muted-foreground/60 mt-0.5">→</span>
-                              <p className="text-[10px] leading-relaxed text-muted-foreground flex-1">
-                                {instructionText}
-                              </p>
+                      <div className="h-full flex flex-col gap-1">
+                        {visibleSummaries.map((summary, idx) => {
+                          const isTopCard = idx === 0;
+                          const topSummary = visibleSummaries[0];
+                          
+                          // Get instructions from top summary's planned session
+                          const hasInstructions = isTopCard && topSummary.planned && monthData && (() => {
+                            const session = [...monthData.planned_sessions, ...monthData.workouts].find(
+                              (s) => s.id === topSummary.planned!.id
+                            );
+                            return session?.must_dos?.length || (session?.instructions && session.instructions.length > 0);
+                          })();
+                          
+                          const instructionText = isTopCard && topSummary.planned && monthData && (() => {
+                            const session = [...monthData.planned_sessions, ...monthData.workouts].find(
+                              (s) => s.id === topSummary.planned!.id
+                            );
+                            return session?.must_dos?.[0] || session?.instructions?.[0];
+                          })();
+
+                          return (
+                            <div key={summary.planned?.id || summary.activity?.id || idx} className="flex-shrink-0">
+                              <CombinedSessionCard
+                                executionSummary={summary}
+                                onClick={() => handleCardClick(summary)}
+                                variant="week"
+                              />
+                              {/* Instruction / Must-Do box - below top card only */}
+                              {hasInstructions && instructionText && (
+                                <div className="mt-1 px-2 py-1.5 border-t border-border/40 bg-muted/20 rounded-b">
+                                  <div className="flex items-start gap-1.5">
+                                    <span className="text-[9px] text-muted-foreground/60 mt-0.5">→</span>
+                                    <p className="text-[10px] leading-relaxed text-muted-foreground flex-1">
+                                      {instructionText}
+                                    </p>
+                                  </div>
+                                </div>
+                              )}
                             </div>
+                          );
+                        })}
+                        {hasMore && (
+                          <div className="text-[9px] text-muted-foreground/50 text-center py-1">
+                            +{summaries.length - 3} more
                           </div>
                         )}
                       </div>

@@ -1,57 +1,50 @@
-/**
- * Phase 6B: Execution & Conflict UX Types
- * 
- * These types are used for the execution preview and conflict detection flow.
- * Frontend never mutates plans - backend is the single source of truth.
- */
+import type { CalendarSession } from '@/lib/api';
+import type { CompletedActivity } from '@/types';
 
 /**
- * Session within a week plan for execution preview
+ * Canonical execution states (derived, not stored).
+ * Represents the relationship between planned sessions and completed activities.
  */
-export interface PlanSession {
-  session_id: string;
-  date: string; // Resolved date (YYYY-MM-DD)
-  type: 'easy' | 'tempo' | 'long' | 'workout' | 'recovery' | 'rest';
-  duration: number; // minutes
-  distance?: number; // km (derived miles)
-  template_name: string; // Human readable template name
-  notes?: string; // Coach text
+export type ExecutionState =
+  | 'PLANNED_ONLY'
+  | 'COMPLETED_AS_PLANNED'
+  | 'COMPLETED_UNPLANNED'
+  | 'MISSED';
+
+/**
+ * Execution summary combining planned session and completed activity.
+ * This is the canonical representation for schedule rendering.
+ */
+export interface ExecutionSummary {
+  /** Planned session (if exists) */
+  planned?: CalendarSession;
+  /** Completed activity (if exists) */
+  activity?: CompletedActivity;
+  /** Derived execution state */
+  executionState: ExecutionState;
+  /** Deltas between planned and completed (only when COMPLETED_AS_PLANNED) */
+  deltas?: {
+    durationSeconds?: number;
+    distanceMeters?: number;
+  };
+  /** Date of this execution summary */
+  date: string;
 }
 
 /**
- * Week plan for execution (from Phase 5)
+ * Color mapping for execution states.
+ * Used globally for consistent visual representation.
  */
-export interface WeekPlan {
-  week: number; // Week number (1-based)
-  weekStart: string; // Week start date (YYYY-MM-DD)
-  weekEnd: string; // Week end date (YYYY-MM-DD)
-  sessions: PlanSession[];
-  coachNotes?: string;
-}
+export const EXECUTION_STATE_COLORS: Record<ExecutionState, string> = {
+  PLANNED_ONLY: 'text-muted-foreground', // Gray/Blue
+  COMPLETED_AS_PLANNED: 'text-green-600 dark:text-green-400', // Green
+  COMPLETED_UNPLANNED: 'text-amber-600 dark:text-amber-400', // Amber/Orange
+  MISSED: 'text-red-600 dark:text-red-400', // Red/Muted
+};
 
-/**
- * Conflict detected during execution preview
- */
-export interface ExecutionConflict {
-  session_id: string;
-  existing_session_id: string;
-  date: string; // YYYY-MM-DD
-  reason: 'overlap' | 'manual_edit';
-}
-
-/**
- * Execution preview response from backend
- */
-export interface ExecutionPreviewResponse {
-  conflicts: ExecutionConflict[];
-}
-
-/**
- * Execution response from backend
- */
-export interface ExecutionResponse {
-  status: 'success' | 'error';
-  message?: string;
-  sessions_created?: number;
-  weeks_affected?: number;
-}
+export const EXECUTION_STATE_BG_COLORS: Record<ExecutionState, string> = {
+  PLANNED_ONLY: 'bg-muted/20',
+  COMPLETED_AS_PLANNED: 'bg-green-500/10',
+  COMPLETED_UNPLANNED: 'bg-amber-500/10',
+  MISSED: 'bg-red-500/10',
+};
