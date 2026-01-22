@@ -3275,17 +3275,37 @@ api.interceptors.response.use(
     if (isMeEndpoint) {
       if (normalizedError.status === 401) {
         // 401 = authentication failure (cookie missing/invalid)
+        // CRITICAL: Only trigger logout/navigation if NOT on a public route
+        // During bootstrap, /me 401 is expected and should NOT trigger navigation
+        // For HashRouter (Capacitor), path is in hash, not pathname
+        const getCurrentPath = (): string => {
+          if (typeof window === 'undefined') return '';
+          // Check hash first (HashRouter for Capacitor)
+          if (window.location.hash) {
+            const hashPath = window.location.hash.replace('#', '');
+            return hashPath || '/';
+          }
+          // Fallback to pathname (BrowserRouter for web)
+          return window.location.pathname || '/';
+        };
+        
+        const currentPath = getCurrentPath();
+        const publicPaths = ["/login", "/signup", "/onboarding", "/", ""];
+        const isPublicPath = publicPaths.some(path => {
+          const normalizedPath = path === "" ? "/" : path;
+          return currentPath === normalizedPath || currentPath.startsWith(`${normalizedPath}/`);
+        });
+        
+        // Only trigger logout event (don't navigate if already on public route)
+        // The logout event updates auth state, but navigation is handled by router guards
         triggerLogoutEvent();
         
-        // Trigger navigation to login (unless on public pages)
-        const currentPath = typeof window !== 'undefined' ? window.location.pathname : '';
-        const publicPaths = ["/login", "/signup", "/onboarding"];
-        const isPublicPath = publicPaths.some(path => 
-          currentPath === path || currentPath.startsWith(`${path}/`)
-        );
-        
+        // Only navigate if NOT on a public route (let router guards handle public routes)
         if (!isPublicPath) {
+          console.log("[API] /me 401 on protected route, triggering navigation to /login");
           createNavigationEvent("/login");
+        } else {
+          console.log("[API] /me 401 on public route, skipping navigation (router guards will handle)");
         }
         
         return Promise.reject(normalizedError);

@@ -34,7 +34,7 @@ function FullPageSkeleton() {
  * AuthContext automatically checks authentication via /me endpoint.
  */
 export function AuthLanding() {
-  const { user, loading, status } = useAuth();
+  const { user, loading, status, authReady } = useAuth();
 
   // Preview mode bypass - redirect directly to dashboard (no auth needed)
   if (isPreviewMode()) {
@@ -44,7 +44,8 @@ export function AuthLanding() {
 
   // CRITICAL: Hard gate - block all routing until auth status is resolved
   // This prevents redirect loops on refresh/deep-link
-  if (status === "bootstrapping" || loading) {
+  // Use authReady to ensure we never redirect during bootstrap
+  if (!authReady || status === "bootstrapping" || loading) {
     return <FullPageSkeleton />;
   }
 
@@ -73,15 +74,17 @@ export function AuthLanding() {
  * CRITICAL: Only redirect to onboarding when authenticated AND onboarding incomplete
  */
 export function PublicOnly({ children }: { children: ReactNode }) {
-  const { user, loading, status } = useAuth();
+  const { user, loading, status, authReady } = useAuth();
 
   // CRITICAL: Block routing until auth resolves
-  if (status === "bootstrapping" || loading) {
+  // Use authReady to ensure we never redirect during bootstrap
+  if (!authReady || status === "bootstrapping" || loading) {
     return <FullPageSkeleton />;
   }
 
   // CRITICAL: Only redirect to onboarding when authenticated AND onboarding incomplete
   // Onboarding is a post-auth state, not an auth fallback
+  // CRITICAL: Only check authenticated status, never redirect unauthenticated users
   if (status === "authenticated" && user) {
     if (!user.onboarding_complete) {
       return <Navigate to="/onboarding" replace />;
@@ -89,5 +92,6 @@ export function PublicOnly({ children }: { children: ReactNode }) {
     return <Navigate to="/dashboard" replace />;
   }
 
+  // Unauthenticated users can access public routes (login/signup)
   return <>{children}</>;
 }

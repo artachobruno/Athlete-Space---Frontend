@@ -24,7 +24,7 @@ interface RequireAuthProps {
  * - Only works when hostname includes "lovable" or VITE_PREVIEW_MODE=true
  */
 export function RequireAuth({ children }: RequireAuthProps) {
-  const { user, loading, status } = useAuth();
+  const { user, loading, status, authReady } = useAuth();
 
   // Preview mode bypass - ONLY works in Lovable preview
   // This does NOT affect production or real auth
@@ -33,12 +33,13 @@ export function RequireAuth({ children }: RequireAuthProps) {
     return <PreviewShell>{children}</PreviewShell>;
   }
 
-  console.log("[RequireAuth] Auth state:", { user, loading, status, hasUser: !!user, onboardingComplete: user?.onboarding_complete });
+  console.log("[RequireAuth] Auth state:", { user, loading, status, authReady, hasUser: !!user, onboardingComplete: user?.onboarding_complete });
 
   // CRITICAL: Do NOT redirect while bootstrapping or loading
   // Show loading spinner until auth hydration completes
   // This prevents redirect loops on refresh/deep-link
-  if (status === "bootstrapping" || loading) {
+  // Use authReady to ensure we never redirect during bootstrap
+  if (!authReady || status === "bootstrapping" || loading) {
     console.log("[RequireAuth] Bootstrapping, showing spinner");
     return (
       <div className="min-h-[100svh] flex items-center justify-center">

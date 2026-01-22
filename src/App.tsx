@@ -196,11 +196,12 @@ const SafeThirdPartyInit = () => {
 
 // Component to handle sync on app mount and auth redirects
 const AppContent = () => {
-  const { refreshUser, status, loading } = useAuth();
+  const { refreshUser, status, loading, authReady } = useAuth();
   
   // CRITICAL: Hard gate - block all routing until auth resolves
   // This prevents race conditions where routes render before auth state is determined
-  if (status === "bootstrapping" || loading) {
+  // CRITICAL: authReady ensures we never redirect during bootstrap
+  if (!authReady || status === "bootstrapping" || loading) {
     return (
       <div className="min-h-[100svh] flex items-center justify-center bg-background">
         <div className="space-y-4 w-full max-w-md p-8">
