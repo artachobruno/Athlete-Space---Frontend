@@ -19,6 +19,9 @@ import { AppLayout } from '@/components/layout/AppLayout';
 import { DailyDecisionCard } from '@/components/dashboard/DailyDecisionCard';
 import { TodayWorkoutCard } from '@/components/dashboard/TodayWorkoutCard';
 import { TodayCompletionStatus } from '@/components/today/TodayCompletionStatus';
+import { WorkoutInstructionsCard } from '@/components/today/WorkoutInstructionsCard';
+import { WorkoutStepsCard } from '@/components/today/WorkoutStepsCard';
+import { CoachInsightCard } from '@/components/today/CoachInsightCard';
 import { useSyncTodayWorkout } from '@/hooks/useSyncTodayWorkout';
 import { useDashboardData } from '@/hooks/useDashboardData';
 
@@ -51,6 +54,14 @@ function AthleteDashboard() {
     );
   }, [dashboardData.todayData]);
 
+  // Get the first planned session for LLM-generated content
+  const firstPlannedSession = useMemo(() => {
+    if (!dashboardData.todayData?.sessions) return null;
+    return dashboardData.todayData.sessions.find(
+      s => s.status === 'planned' || s.status === 'completed'
+    ) || null;
+  }, [dashboardData.todayData]);
+
   return (
     <AppLayout>
       <div className="space-y-6">
@@ -60,16 +71,16 @@ function AthleteDashboard() {
           <p className="text-muted-foreground mt-1">What you need to do now</p>
         </div>
 
-        {/* Daily Execution: AI Guidance + Today's Session - Always stacked */}
-        <div className="flex flex-col gap-6 max-w-4xl mx-auto">
-          {/* AI Coach Guidance for Today */}
+        {/* Centered container with consistent styling */}
+        <div className="flex flex-col gap-6 max-w-[1000px] mx-auto px-4 sm:px-6">
+          {/* 1. Today's Verdict Card */}
           <DailyDecisionCard
             todayIntelligence={dashboardData.todayIntelligence}
             isLoading={dashboardData.todayIntelligenceLoading}
             error={dashboardData.todayIntelligenceError}
           />
           
-          {/* Today's Workout Session */}
+          {/* 2. Today's Session Card */}
           <TodayWorkoutCard
             todayData={dashboardData.todayData}
             isLoading={dashboardData.todayDataLoading}
@@ -78,14 +89,29 @@ function AthleteDashboard() {
             activities10={dashboardData.activities10}
             todayIntelligence={dashboardData.todayIntelligence}
           />
-        </div>
 
-        {/* Completion Status */}
-        <TodayCompletionStatus
-          todayData={dashboardData.todayData}
-          activities10={dashboardData.activities10}
-          todayIntelligence={dashboardData.todayIntelligence}
-        />
+          {/* 3. Workout Instructions Card */}
+          {firstPlannedSession?.instructions && firstPlannedSession.instructions.length > 0 && (
+            <WorkoutInstructionsCard instructions={firstPlannedSession.instructions} />
+          )}
+
+          {/* 4. Workout Steps Card */}
+          {firstPlannedSession?.steps && firstPlannedSession.steps.length > 0 && (
+            <WorkoutStepsCard steps={firstPlannedSession.steps} />
+          )}
+
+          {/* 5. Coach Insight Card */}
+          {firstPlannedSession?.coach_insight && (
+            <CoachInsightCard coachInsight={firstPlannedSession.coach_insight} />
+          )}
+
+          {/* 6. Completion Status Card */}
+          <TodayCompletionStatus
+            todayData={dashboardData.todayData}
+            activities10={dashboardData.activities10}
+            todayIntelligence={dashboardData.todayIntelligence}
+          />
+        </div>
       </div>
     </AppLayout>
   );

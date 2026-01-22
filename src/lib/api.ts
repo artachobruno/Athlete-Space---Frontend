@@ -119,6 +119,15 @@ export interface WriteResponse<T = unknown> {
 }
 
 // Calendar types
+export interface WorkoutStep {
+  order: number;
+  name: string;
+  duration_min: number | null;
+  distance_km: number | null;
+  intensity: string | null;
+  notes: string | null;
+}
+
 export interface CalendarSession {
   id: string;
   date: string;
@@ -140,6 +149,10 @@ export interface CalendarSession {
   completed_at?: string | null;
   // CRITICAL: Only planned_sessions.id may be mutated. Calendar sessions, workouts, and activities are READ-ONLY views.
   planned_session_id?: string | null;
+  // LLM-generated execution content
+  instructions?: string[];
+  steps?: WorkoutStep[];
+  coach_insight?: string | null;
 }
 
 export interface TodayResponse {

@@ -159,82 +159,85 @@ export function WorkoutSessionCard({
         />
       </div>
 
-      {/* Effort graph - fills remaining space */}
-      {graphData.length > 0 && (
-        <div className="flex-1 min-h-0">
-          <EffortGraph
-            data={effortData || plannedEffortData || []}
-            showData={showEffortData}
-            plannedData={isCompliance ? plannedEffortData : undefined}
-            isCompliance={isCompliance}
-            compact={compact}
-          />
+      {/* Body area - execution notes in compact mode, effort graph otherwise */}
+      {compact ? (
+        /* Execution notes body - fills remaining space in compact mode */
+        <div className="flex-1 min-h-0 flex flex-col justify-center px-2 py-2">
+          {executionNotes ? (
+            <div className="flex items-start gap-1.5">
+              {/* Icon - compass for planned, checkmark for completed */}
+              {phase === 'completed' || phase === 'compliance' ? (
+                <svg
+                  className="flex-shrink-0 w-3 h-3 text-muted-foreground mt-0.5"
+                  viewBox="0 0 16 16"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M13.5 4.5L6 12L2.5 8.5"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    fill="none"
+                  />
+                </svg>
+              ) : (
+                <svg
+                  className="flex-shrink-0 w-3 h-3 text-muted-foreground mt-0.5"
+                  viewBox="0 0 16 16"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="1" fill="none" opacity="0.4" />
+                  <path
+                    d="M8 2L8 8L12 10"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                    fill="none"
+                    opacity="0.6"
+                  />
+                  <circle cx="8" cy="8" r="1" fill="currentColor" opacity="0.6" />
+                </svg>
+              )}
+              {/* Text - fills available space */}
+              <p
+                className="text-[11px] leading-[1.2] text-muted-foreground flex-1"
+                style={{
+                  display: '-webkit-box',
+                  WebkitLineClamp: 4,
+                  WebkitBoxOrient: 'vertical',
+                  overflow: 'hidden',
+                }}
+              >
+                {executionNotes}
+              </p>
+            </div>
+          ) : (
+            /* Empty state - intentional silence, no fallback text */
+            <div className="h-full" />
+          )}
         </div>
+      ) : (
+        /* Effort graph - fills remaining space in non-compact mode */
+        graphData.length > 0 && (
+          <div className="flex-1 min-h-0">
+            <EffortGraph
+              data={effortData || plannedEffortData || []}
+              showData={showEffortData}
+              plannedData={isCompliance ? plannedEffortData : undefined}
+              isCompliance={isCompliance}
+              compact={compact}
+            />
+          </div>
+        )
       )}
 
       {/* Coach insight - hidden in compact mode */}
       {!compact && coachInsight && (
         <div className="flex-shrink-0">
           <CoachInsight message={coachInsight.message} tone={coachInsight.tone} />
-        </div>
-      )}
-
-      {/* Execution notes strip - only in compact mode (Week view) */}
-      {compact && (
-        <div className="flex-shrink-0 h-6 border-t border-white/6 bg-white/3 flex items-center px-2">
-          <div className="flex items-center gap-1.5 flex-1 min-w-0">
-            {/* Icon - compass for planned, checkmark for completed */}
-            {phase === 'completed' || phase === 'compliance' ? (
-              <svg
-                className="flex-shrink-0 w-3 h-3 text-muted-foreground"
-                viewBox="0 0 16 16"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <path
-                  d="M13.5 4.5L6 12L2.5 8.5"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  fill="none"
-                />
-              </svg>
-            ) : (
-              <svg
-                className="flex-shrink-0 w-3 h-3 text-muted-foreground"
-                viewBox="0 0 16 16"
-                fill="none"
-                xmlns="http://www.w3.org/2000/svg"
-              >
-                <circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="1" fill="none" opacity="0.4" />
-                <path
-                  d="M8 2L8 8L12 10"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                  strokeLinecap="round"
-                  fill="none"
-                  opacity="0.6"
-                />
-                <circle cx="8" cy="8" r="1" fill="currentColor" opacity="0.6" />
-              </svg>
-            )}
-            {/* Text */}
-            <span
-              className={cn(
-                'text-[11px] leading-[1.2] text-muted-foreground truncate',
-                !executionNotes && 'opacity-40'
-              )}
-              style={{
-                display: '-webkit-box',
-                WebkitLineClamp: 2,
-                WebkitBoxOrient: 'vertical',
-                overflow: 'hidden',
-              }}
-            >
-              {executionNotes || '— No special instructions'}
-            </span>
-          </div>
         </div>
       )}
     </div>
