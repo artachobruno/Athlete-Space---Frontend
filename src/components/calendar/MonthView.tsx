@@ -252,7 +252,7 @@ export function MonthView({ currentDate, onActivityClick }: MonthViewProps) {
           items={allPlannedSessionIds}
           strategy={verticalListSortingStrategy}
         >
-          <div className="grid grid-cols-7 grid-rows-6 flex-1 min-h-0 overflow-visible">
+          <div className="grid grid-cols-7 grid-rows-6 flex-1 min-h-0" style={{ gridAutoRows: 'minmax(240px, 1fr)' }}>
             {days.map((day, idx) => {
               const isCurrentMonth = isSameMonth(day, currentDate);
               const isCurrentDay = isToday(day);
@@ -263,11 +263,12 @@ export function MonthView({ currentDate, onActivityClick }: MonthViewProps) {
                   key={idx}
                   date={day}
                   className={cn(
-                    'relative min-h-[240px] border-b border-r border-border/50 flex flex-col transition-colors overflow-visible',
+                    'relative border-b border-r border-border/50 flex flex-col transition-colors',
                     !isCurrentMonth && 'bg-muted/5',
                     isCurrentDay && 'bg-primary/5',
                     idx % 7 === 6 && 'border-r-0'
                   )}
+                  style={{ minHeight: '240px', overflow: 'visible' }}
                 >
                   {/* Day number */}
                   <div className="px-2 pt-1.5 pb-1">
@@ -284,7 +285,7 @@ export function MonthView({ currentDate, onActivityClick }: MonthViewProps) {
                   </div>
 
                   {/* Workout cards - vertical stack layout (no absolute positioning) */}
-                  <div className="flex-1 flex flex-col gap-1 p-1 overflow-y-auto min-h-0 overflow-x-visible">
+                  <div className="flex-1 flex flex-col gap-1 p-1 min-h-0" style={{ overflowY: 'auto', overflowX: 'visible' }}>
                     {items.length > 0 ? (() => {
                       const sortedItems = sortCalendarItems(items);
                       const visibleItems = sortedItems.slice(0, 3);
