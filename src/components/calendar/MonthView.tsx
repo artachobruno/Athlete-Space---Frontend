@@ -72,6 +72,7 @@ export function MonthView({ currentDate, onActivityClick }: MonthViewProps) {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [draggedSession, setDraggedSession] = useState<CalendarSession | null>(null);
   const [draggedItem, setDraggedItem] = useState<CalendarItem | null>(null);
+  const [dragSourceDate, setDragSourceDate] = useState<string | null>(null);
   const [recentlyDropped, setRecentlyDropped] = useState<string | null>(null);
 
   const monthStart = startOfMonth(currentDate);
@@ -145,6 +146,10 @@ export function MonthView({ currentDate, onActivityClick }: MonthViewProps) {
     setActiveId(event.active.id as string);
     setDraggedSession(session);
     setDraggedItem(item || null);
+    // Track source date for ghost placeholder
+    if (session?.date) {
+      setDragSourceDate(format(parseISO(session.date), 'yyyy-MM-dd'));
+    }
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
@@ -153,6 +158,7 @@ export function MonthView({ currentDate, onActivityClick }: MonthViewProps) {
     setActiveId(null);
     setDraggedSession(null);
     setDraggedItem(null);
+    setDragSourceDate(null);
 
     if (!over) return;
 
@@ -307,33 +313,57 @@ export function MonthView({ currentDate, onActivityClick }: MonthViewProps) {
                       const sortedItems = sortCalendarItems(items);
                       const visibleItems = sortedItems.slice(0, 3);
                       const remainingCount = sortedItems.length - 3;
+                      const dayStr = format(day, 'yyyy-MM-dd');
 
                       return (
                         <>
-                          {visibleItems.map((item) => (
-                            <div key={item.id} className="flex-shrink-0">
-                              <CalendarWorkoutStack
-                                items={[item]}
-                                variant="month"
-                                maxVisible={1}
-                                activityIdBySessionId={activityIdBySessionId}
-                                useNewCard
-                                onClick={(clickedItem) => {
-                                  if (!monthData) return;
-                                  const session =
-                                    [...monthData.planned_sessions, ...monthData.workouts]
-                                      .find((s) => s.id === clickedItem.id) ?? null;
-                                  const activity =
-                                    monthData.completed_activities.find(
-                                      (a) =>
-                                        a.planned_session_id === clickedItem.id ||
-                                        (session?.workout_id && a.workout_id === session.workout_id)
-                                    ) ?? null;
-                                  onActivityClick?.(null, activity, session ?? undefined);
-                                }}
-                              />
-                            </div>
-                          ))}
+                          {visibleItems.map((item) => {
+                            const isDragging = activeId === item.id;
+                            const isGhostSource = dragSourceDate === dayStr && isDragging;
+                            const isDropped = recentlyDropped === item.id;
+                            
+                            return (
+                              <div 
+                                key={item.id} 
+                                className={cn(
+                                  'flex-shrink-0 relative',
+                                  isDragging && 'opacity-30'
+                                )}
+                              >
+                                {/* Ghost placeholder - dashed border at original position */}
+                                {isGhostSource && (
+                                  <div className="absolute inset-0 rounded border-2 border-dashed border-primary/40 bg-primary/5 animate-pulse z-10" />
+                                )}
+                                <div
+                                  className={cn(
+                                    'transition-all duration-300',
+                                    isDropped && 'animate-scale-in ring-2 ring-primary/50 shadow-lg'
+                                  )}
+                                >
+                                  <CalendarWorkoutStack
+                                    items={[item]}
+                                    variant="month"
+                                    maxVisible={1}
+                                    activityIdBySessionId={activityIdBySessionId}
+                                    useNewCard
+                                    onClick={(clickedItem) => {
+                                      if (!monthData) return;
+                                      const session =
+                                        [...monthData.planned_sessions, ...monthData.workouts]
+                                          .find((s) => s.id === clickedItem.id) ?? null;
+                                      const activity =
+                                        monthData.completed_activities.find(
+                                          (a) =>
+                                            a.planned_session_id === clickedItem.id ||
+                                            (session?.workout_id && a.workout_id === session.workout_id)
+                                        ) ?? null;
+                                      onActivityClick?.(null, activity, session ?? undefined);
+                                    }}
+                                  />
+                                </div>
+                              </div>
+                            );
+                          })}
                           {remainingCount > 0 && (
                             <div className="flex-shrink-0 text-[9px] text-muted-foreground/60 text-center py-0.5">
                               +{remainingCount} more
