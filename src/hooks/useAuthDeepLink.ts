@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { Browser } from "@/lib/capacitor-stubs/browser";
 import { isNative } from "@/lib/platform";
 import { useAuth } from "@/context/AuthContext";
+import { storeAccessToken } from "@/lib/tokenStorage";
 
 /**
  * Hook to handle OAuth deep links in native apps.
@@ -11,21 +12,17 @@ import { useAuth } from "@/context/AuthContext";
  * the custom 'oauth-callback' event dispatched by the top-level listener.
  * 
  * When Google OAuth completes, the backend redirects to athletespace://auth/callback
- * This hook handles that URL and:
- * 1. Closes the in-app browser (if open)
- * 2. Explicitly triggers AuthContext to re-check authentication via /me
- * 3. Navigates to the home screen
+ * with access_token and expires_in query parameters. This hook handles that URL and:
+ * 1. Extracts access_token and expires_in from the URL
+ * 2. Stores the token securely in Capacitor Preferences (mobile) or localStorage (web)
+ * 3. Closes the in-app browser (if open)
+ * 4. Calls refreshUser() which uses the stored token to authenticate via /me
+ * 5. Navigates to the home screen
  * 
  * CRITICAL: For mobile OAuth with external browser (Browser.open()), cookies set in Safari
- * may not be immediately available in the WebView. We explicitly call refreshUser() to
- * ensure AuthContext checks authentication via /me endpoint, which will work if the
- * backend properly set the cookie with correct domain/path settings.
- * 
- * NOTE: Backend should set HTTP-only cookies during OAuth callback with:
- * - domain: backend domain (for cross-origin cookies)
- * - samesite: "none" (required for cross-origin)
- * - secure: true (HTTPS only)
- * - path: "/" (required for WKWebView)
+ * are NOT accessible to the WebView. The backend MUST include access_token in the redirect
+ * URL, which this hook extracts and stores. The API interceptor then uses this token
+ * to send Authorization: Bearer <token> headers for all API requests.
  */
 export function useAuthDeepLink(onDeepLink?: () => void) {
   const { refreshUser } = useAuth();
@@ -64,11 +61,13 @@ export function useAuthDeepLink(onDeepLink?: () => void) {
           console.log('[AuthDeepLink] Browser close skipped (not open or error):', error);
         }
 
-        // Parse URL to check for any error
+        // Parse URL to extract tokens and check for errors
         try {
           const parsed = new URL(url);
           const error = parsed.searchParams.get("error");
           const success = parsed.searchParams.get("success");
+          const accessToken = parsed.searchParams.get("access_token");
+          const expiresIn = parsed.searchParams.get("expires_in");
 
           if (error) {
             console.error('[AuthDeepLink] OAuth error:', error);
@@ -79,13 +78,42 @@ export function useAuthDeepLink(onDeepLink?: () => void) {
 
           // If success=true, OAuth completed successfully
           if (success === "true") {
-            console.log('[AuthDeepLink] OAuth success detected, refreshing auth state');
-            // CRITICAL: Explicitly refresh auth to check /me endpoint
-            // This ensures AuthContext picks up the cookie set by backend
+            console.log('[AuthDeepLink] OAuth success detected');
+            
+            // CRITICAL: For mobile, extract and store access token from URL
+            // Backend includes access_token and expires_in in the redirect URL
+            if (accessToken && expiresIn) {
+              const expiresInSeconds = parseInt(expiresIn, 10);
+              if (isNaN(expiresInSeconds) || expiresInSeconds <= 0) {
+                console.error('[AuthDeepLink] Invalid expires_in value:', expiresIn);
+                window.location.hash = `/login?error=invalid_token`;
+                return;
+              }
+              
+              console.log('[AuthDeepLink] Storing access token from OAuth callback');
+              try {
+                await storeAccessToken(accessToken, expiresInSeconds);
+                console.log('[AuthDeepLink] ✅ Access token stored successfully');
+              } catch (tokenError) {
+                console.error('[AuthDeepLink] ❌ Failed to store access token:', tokenError);
+                window.location.hash = `/login?error=token_storage_failed`;
+                return;
+              }
+            } else {
+              console.warn('[AuthDeepLink] OAuth success but no access_token in URL - this may fail for mobile');
+            }
+            
+            // CRITICAL: Refresh auth state after storing token
+            // This calls /me with the stored Bearer token
+            console.log('[AuthDeepLink] Refreshing auth state after token storage');
             await refreshUser();
           }
         } catch (parseError) {
           console.warn('[AuthDeepLink] Failed to parse URL:', parseError);
+          // If URL parsing fails, try to refresh anyway (might be a different URL format)
+          if (url.includes("success=true")) {
+            await refreshUser();
+          }
         }
 
         // Navigate to home using hash router
