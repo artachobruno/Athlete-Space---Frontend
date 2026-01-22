@@ -17,10 +17,6 @@ import { isPreviewMode } from '@/lib/preview';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { DailyDecisionCard } from '@/components/dashboard/DailyDecisionCard';
 import { TodayWorkoutCard } from '@/components/dashboard/TodayWorkoutCard';
-import { WeeklyLoadCard } from '@/components/dashboard/WeeklyLoadCard';
-import { RecentActivitiesCard } from '@/components/dashboard/RecentActivitiesCard';
-import { CoachChatWidget } from '@/components/dashboard/CoachChatWidget';
-import { TelemetryMetricsStrip } from '@/components/dashboard/TelemetryMetricsStrip';
 import { useSyncTodayWorkout } from '@/hooks/useSyncTodayWorkout';
 import { useDashboardData } from '@/hooks/useDashboardData';
 
@@ -47,27 +43,23 @@ function AthleteDashboard() {
 
   return (
     <AppLayout>
-      <div className="space-y-4">
+      <div className="space-y-6">
         {/* Header */}
         <div>
           <h1 className="text-[clamp(1.25rem,3vw,1.5rem)] font-semibold text-primary">Today</h1>
           <p className="text-muted-foreground mt-1">What you need to do now</p>
         </div>
 
-        {/* Telemetry Metrics Strip */}
-        <TelemetryMetricsStrip
-          overview60d={dashboardData.overview60d}
-          isLoading={dashboardData.overview60dLoading}
-        />
-
-        {/* 2×2 Operational Grid - Fixed row heights */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4" style={{ gridTemplateRows: 'minmax(180px, auto) minmax(200px, auto)' }}>
-          {/* Row 1: Decision + Today Session */}
+        {/* Daily Execution: AI Guidance + Today's Session */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          {/* AI Coach Guidance for Today */}
           <DailyDecisionCard
             todayIntelligence={dashboardData.todayIntelligence}
             isLoading={dashboardData.todayIntelligenceLoading}
             error={dashboardData.todayIntelligenceError}
           />
+          
+          {/* Today's Workout Session */}
           <TodayWorkoutCard
             todayData={dashboardData.todayData}
             isLoading={dashboardData.todayDataLoading}
@@ -76,28 +68,7 @@ function AthleteDashboard() {
             activities10={dashboardData.activities10}
             todayIntelligence={dashboardData.todayIntelligence}
           />
-
-          {/* Row 2: Weekly Load + Recent Activities */}
-          <WeeklyLoadCard
-            activities100={dashboardData.activities100}
-            activities100Loading={dashboardData.activities100Loading}
-            trainingLoad7d={dashboardData.trainingLoad7d}
-            trainingLoad7dLoading={dashboardData.trainingLoad7dLoading}
-            weekData={dashboardData.weekData}
-            weekDataLoading={dashboardData.weekDataLoading}
-            className="h-full"
-          />
-          <RecentActivitiesCard
-            activities10={dashboardData.activities10}
-            activities10Loading={dashboardData.activities10Loading}
-            activities10Error={dashboardData.activities10Error}
-            trainingLoad60d={dashboardData.trainingLoad60d}
-            className="h-full"
-          />
         </div>
-
-        {/* Docked Coach Chat - minimized by default */}
-        <CoachChatWidget minimized />
       </div>
     </AppLayout>
   );
