@@ -27,8 +27,8 @@ import {
   DragOverlay,
   DragStartEvent,
   closestCenter,
+  useDraggable,
 } from '@dnd-kit/core';
-import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 
 import { Card } from '@/components/ui/card';
 import {
@@ -52,7 +52,8 @@ import { DroppableDayCell } from './DroppableDayCell';
 import { CalendarWorkoutStack } from './cards/CalendarWorkoutStack';
 import { toCalendarItem, capitalizeTitle } from '@/adapters/calendarAdapter';
 import { sortCalendarItems } from './cards/sortCalendarItems';
-import { Loader2 } from 'lucide-react';
+import { SessionCard } from '@/components/sessions/SessionCard';
+import { Loader2, GripVertical } from 'lucide-react';
 
 interface MonthViewProps {
   currentDate: Date;
@@ -69,8 +70,9 @@ export function MonthView({ currentDate, onActivityClick }: MonthViewProps) {
   const updateWorkout = useUpdateWorkoutDate();
 
   const [activeId, setActiveId] = useState<string | null>(null);
-  const [draggedSession, setDraggedSession] =
-    useState<CalendarSession | null>(null);
+  const [draggedSession, setDraggedSession] = useState<CalendarSession | null>(null);
+  const [draggedItem, setDraggedItem] = useState<CalendarItem | null>(null);
+  const [recentlyDropped, setRecentlyDropped] = useState<string | null>(null);
 
   const monthStart = startOfMonth(currentDate);
   const monthEnd = endOfMonth(currentDate);
@@ -135,14 +137,14 @@ export function MonthView({ currentDate, onActivityClick }: MonthViewProps) {
   };
 
   const handleDragStart = (event: DragStartEvent) => {
-    const session = event.active.data.current?.session as
-      | CalendarSession
-      | undefined;
+    const session = event.active.data.current?.session as CalendarSession | undefined;
+    const item = event.active.data.current?.item as CalendarItem | undefined;
 
     if (!session?.planned_session_id) return;
 
     setActiveId(event.active.id as string);
     setDraggedSession(session);
+    setDraggedItem(item || null);
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
@@ -150,6 +152,7 @@ export function MonthView({ currentDate, onActivityClick }: MonthViewProps) {
 
     setActiveId(null);
     setDraggedSession(null);
+    setDraggedItem(null);
 
     if (!over) return;
 
@@ -186,6 +189,10 @@ export function MonthView({ currentDate, onActivityClick }: MonthViewProps) {
       return;
     }
 
+    // Trigger drop animation
+    setRecentlyDropped(session.id);
+    setTimeout(() => setRecentlyDropped(null), 600);
+
     if (session.workout_id) {
       updateWorkout.mutate(
         { workoutId: session.workout_id, scheduledDate: targetDate },
@@ -195,6 +202,10 @@ export function MonthView({ currentDate, onActivityClick }: MonthViewProps) {
             queryClient.invalidateQueries({
               queryKey: ['calendar'],
               exact: false,
+            });
+            toast({
+              title: 'Session moved',
+              description: `Moved to ${format(parseISO(targetDate), 'EEE, MMM d')}`,
             });
           },
         }
@@ -211,6 +222,10 @@ export function MonthView({ currentDate, onActivityClick }: MonthViewProps) {
             queryClient.invalidateQueries({
               queryKey: ['calendar'],
               exact: false,
+            });
+            toast({
+              title: 'Session moved',
+              description: `Moved to ${format(parseISO(targetDate), 'EEE, MMM d')}`,
             });
           },
         }
@@ -248,10 +263,6 @@ export function MonthView({ currentDate, onActivityClick }: MonthViewProps) {
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
       >
-        <SortableContext
-          items={allPlannedSessionIds}
-          strategy={verticalListSortingStrategy}
-        >
           {/* Month grid - fixed 6 rows, each row equal height */}
           <div className="grid grid-cols-7 flex-1 min-h-0" style={{ gridTemplateRows: 'repeat(6, minmax(0, 1fr))' }}>
             {days.map((day, idx) => {
@@ -336,11 +347,20 @@ export function MonthView({ currentDate, onActivityClick }: MonthViewProps) {
               );
             })}
           </div>
-        </SortableContext>
 
+        {/* Drag Overlay - follows cursor with smooth animation */}
         <DragOverlay>
-          {activeId && draggedSession && (
-            <div className="px-3 py-1.5 text-sm rounded-md bg-card border border-border shadow-lg">
+          {activeId && draggedItem && (
+            <div className="opacity-90 shadow-xl rounded-lg ring-2 ring-primary animate-scale-in">
+              <SessionCard
+                session={draggedItem}
+                density="compact"
+                className="w-[160px]"
+              />
+            </div>
+          )}
+          {activeId && draggedSession && !draggedItem && (
+            <div className="px-3 py-1.5 text-sm rounded-md bg-card border border-border shadow-lg animate-scale-in">
               {capitalizeTitle(draggedSession.title || 'Workout')}
             </div>
           )}
