@@ -12,12 +12,28 @@ import {
   format,
   isToday,
   startOfMonth,
+  parseISO,
+  isPast,
 } from 'date-fns';
 import { cn } from '@/lib/utils';
-import { Loader2 } from 'lucide-react';
+import { Loader2, GripVertical } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
+import {
+  DndContext,
+  DragEndEvent,
+  DragOverlay,
+  DragStartEvent,
+  closestCenter,
+  useDraggable,
+} from '@dnd-kit/core';
+
 import { CalendarWorkoutStack } from './cards/CalendarWorkoutStack';
 import { DayView } from './DayView';
+import { DroppableDayCell } from './DroppableDayCell';
 import { Card } from '@/components/ui/card';
+import { SessionCard } from '@/components/sessions/SessionCard';
+import { toast } from '@/hooks/use-toast';
+
 import type {
   CalendarItem,
   GroupedCalendarItem,
@@ -27,6 +43,11 @@ import {
 } from '@/types/calendar';
 import { fetchCalendarMonth, normalizeCalendarMonth } from '@/lib/calendar-month';
 import { useAuthenticatedQuery } from '@/hooks/useAuthenticatedQuery';
+import {
+  useUpdatePlannedSession,
+  useUpdateWorkoutDate,
+} from '@/hooks/useCalendarMutations';
+import { markDragOperationComplete } from '@/hooks/useAutoMatchSessions';
 import type { PlannedWorkout, CompletedActivity } from '@/types';
 import type { CalendarSession } from '@/lib/api';
 import { normalizeSportType, mapIntensityToIntent } from '@/lib/session-utils';
@@ -38,12 +59,83 @@ interface WeekCalendarProps {
 }
 
 /**
+ * DraggableSessionWrapper - Wraps a session card for drag-and-drop
+ */
+function DraggableSessionWrapper({
+  item,
+  session,
+  children,
+  onClick,
+}: {
+  item: CalendarItem;
+  session: CalendarSession | null;
+  children: React.ReactNode;
+  onClick?: () => void;
+}) {
+  // Only allow dragging planned sessions that aren't completed
+  const canDrag = session?.planned_session_id && !session?.completed_activity_id;
+  
+  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+    id: item.id,
+    disabled: !canDrag,
+    data: {
+      type: 'planned-session',
+      session,
+      item,
+    },
+  });
+
+  const style = transform ? {
+    transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
+  } : undefined;
+
+  return (
+    <div
+      ref={setNodeRef}
+      style={style}
+      className={cn(
+        'relative group transition-all duration-200',
+        isDragging && 'opacity-40 scale-95',
+        canDrag && 'cursor-grab active:cursor-grabbing'
+      )}
+      onClick={onClick}
+    >
+      {children}
+      {/* Drag handle indicator - visible on hover */}
+      {canDrag && (
+        <div
+          {...attributes}
+          {...listeners}
+          className={cn(
+            'absolute top-1 right-1 p-0.5 rounded opacity-0 group-hover:opacity-100',
+            'bg-background/80 backdrop-blur-sm border border-border/50',
+            'transition-opacity duration-150 cursor-grab active:cursor-grabbing'
+          )}
+          onClick={(e) => e.stopPropagation()}
+          aria-label="Drag to move session"
+        >
+          <GripVertical className="h-3 w-3 text-muted-foreground" />
+        </div>
+      )}
+    </div>
+  );
+}
+
+/**
  * WeekCalendar Component
  *
- * Expanded week view with vertical stacking and more readable spacing.
+ * Expanded week view with vertical stacking, drag-and-drop support,
+ * and smooth animations for session moves.
  */
 export function WeekCalendar({ currentDate, onActivityClick }: WeekCalendarProps) {
+  const queryClient = useQueryClient();
+  const updateSession = useUpdatePlannedSession();
+  const updateWorkout = useUpdateWorkoutDate();
+  
   const [selectedDay, setSelectedDay] = useState<Date | null>(null);
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const [draggedItem, setDraggedItem] = useState<CalendarItem | null>(null);
+  const [recentlyDropped, setRecentlyDropped] = useState<string | null>(null);
 
   const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
   const weekEnd = endOfWeek(currentDate, { weekStartsOn: 1 });
@@ -103,6 +195,15 @@ export function WeekCalendar({ currentDate, onActivityClick }: WeekCalendarProps
     return map;
   }, [monthData]);
 
+  // Build session lookup for drag-and-drop
+  const sessionById = useMemo(() => {
+    if (!monthData) return new Map<string, CalendarSession>();
+    const map = new Map<string, CalendarSession>();
+    for (const s of [...monthData.planned_sessions, ...monthData.workouts]) {
+      map.set(s.id, s);
+    }
+    return map;
+  }, [monthData]);
 
   const days = useMemo(() => {
     return eachDayOfInterval({ start: weekStart, end: weekEnd });
@@ -143,6 +244,86 @@ export function WeekCalendar({ currentDate, onActivityClick }: WeekCalendarProps
     }
   };
 
+  // Drag-and-drop handlers
+  const handleDragStart = (event: DragStartEvent) => {
+    const item = event.active.data.current?.item as CalendarItem | undefined;
+    if (!item) return;
+    
+    setActiveId(event.active.id as string);
+    setDraggedItem(item);
+  };
+
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { active, over } = event;
+    
+    setActiveId(null);
+    setDraggedItem(null);
+    
+    if (!over) return;
+    
+    const session = active.data.current?.session as CalendarSession | undefined;
+    const targetDate = over.data.current?.date as string | undefined;
+    
+    if (!session || !targetDate) return;
+    
+    const oldDate = session.date ? format(parseISO(session.date), 'yyyy-MM-dd') : '';
+    if (oldDate === targetDate) return;
+    
+    // Check if moving a past session
+    const sessionDate = session.date ? parseISO(session.date) : null;
+    const isPastSession = sessionDate && isPast(sessionDate) && !isToday(sessionDate);
+    
+    if (isPastSession) {
+      toast({
+        title: 'Session moved',
+        description: 'You moved a past session.',
+      });
+    }
+    
+    if (!session.planned_session_id) {
+      toast({
+        title: 'Move failed',
+        description: 'Missing planned session ID.',
+        variant: 'destructive',
+      });
+      return;
+    }
+    
+    // Trigger drop animation
+    setRecentlyDropped(session.id);
+    setTimeout(() => setRecentlyDropped(null), 600);
+    
+    // Perform the move
+    if (session.workout_id) {
+      updateWorkout.mutate(
+        { workoutId: session.workout_id, scheduledDate: targetDate },
+        {
+          onSuccess: () => {
+            markDragOperationComplete();
+            queryClient.invalidateQueries({ queryKey: ['calendar'], exact: false });
+            toast({
+              title: 'Session moved',
+              description: `Moved to ${format(parseISO(targetDate), 'EEEE, MMM d')}`,
+            });
+          },
+        }
+      );
+    } else {
+      updateSession.mutate(
+        { sessionId: session.planned_session_id, scheduledDate: targetDate },
+        {
+          onSuccess: () => {
+            markDragOperationComplete();
+            queryClient.invalidateQueries({ queryKey: ['calendar'], exact: false });
+            toast({
+              title: 'Session moved',
+              description: `Moved to ${format(parseISO(targetDate), 'EEEE, MMM d')}`,
+            });
+          },
+        }
+      );
+    }
+  };
 
   // Show day view if a day is selected
   if (selectedDay) {
@@ -169,82 +350,119 @@ export function WeekCalendar({ currentDate, onActivityClick }: WeekCalendarProps
   }
 
   return (
-    <div className="h-full flex flex-col min-h-0">
-      {/* Week Grid - 7 equal columns, fills available height */}
-      <div className="grid grid-cols-7 gap-2 flex-1 min-h-0">
-        {days.map((day, idx) => {
-          const groupedItems = getGroupedItemsForDay(day);
-          const isCurrentDay = isToday(day);
-          const dayItems = dayDataMap.get(format(day, 'yyyy-MM-dd')) || [];
-          const dayTotal = dayItems.reduce((sum, i) => sum + i.durationMin, 0);
+    <DndContext
+      collisionDetection={closestCenter}
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
+    >
+      <div className="h-full flex flex-col min-h-0">
+        {/* Week Grid - 7 equal columns, fills available height */}
+        <div className="grid grid-cols-7 gap-2 flex-1 min-h-0">
+          {days.map((day, idx) => {
+            const groupedItems = getGroupedItemsForDay(day);
+            const isCurrentDay = isToday(day);
+            const dayItems = dayDataMap.get(format(day, 'yyyy-MM-dd')) || [];
+            const dayTotal = dayItems.reduce((sum, i) => sum + i.durationMin, 0);
 
-          return (
-            <Card
-              key={idx}
-              className={cn(
-                'flex flex-col min-h-0 overflow-hidden transition-all duration-150',
-                // Hover state - subtle lift and highlight
-                'hover:shadow-md hover:border-border/80',
-                // Focus state - keyboard navigation
-                'focus-within:ring-2 focus-within:ring-primary/40 focus-within:shadow-md',
-                // Today highlight
-                isCurrentDay && 'ring-2 ring-primary/50 bg-primary/[0.02]',
-              )}
-              tabIndex={0}
-              role="gridcell"
-              aria-label={`${format(day, 'EEEE, MMMM d')}${dayTotal > 0 ? `, ${dayTotal} minutes planned` : ', rest day'}`}
-            >
-              {/* Day Header - fixed height, clickable */}
-              <div
+            return (
+              <DroppableDayCell
+                key={idx}
+                date={day}
                 className={cn(
-                  'flex-shrink-0 px-2 py-1.5 border-b border-border cursor-pointer hover:bg-muted/30 transition-colors',
-                  isCurrentDay && 'bg-primary/5',
+                  'rounded-lg border bg-card text-card-foreground shadow-sm',
+                  'flex flex-col min-h-0 overflow-hidden transition-all duration-150',
+                  // Hover state - subtle lift and highlight
+                  'hover:shadow-md hover:border-border/80',
+                  // Focus state - keyboard navigation
+                  'focus-within:ring-2 focus-within:ring-primary/40 focus-within:shadow-md',
+                  // Today highlight
+                  isCurrentDay && 'ring-2 ring-primary/50 bg-primary/[0.02]',
                 )}
-                onClick={() => setSelectedDay(day)}
               >
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
-                      {format(day, 'EEE')}
-                    </p>
-                    <p
-                      className={cn(
-                        'text-base font-semibold tabular-nums',
-                        isCurrentDay ? 'text-primary' : 'text-foreground',
-                      )}
-                    >
-                      {format(day, 'd')}
-                    </p>
+                {/* Day Header - fixed height, clickable */}
+                <div
+                  className={cn(
+                    'flex-shrink-0 px-2 py-1.5 border-b border-border cursor-pointer hover:bg-muted/30 transition-colors',
+                    isCurrentDay && 'bg-primary/5',
+                  )}
+                  onClick={() => setSelectedDay(day)}
+                >
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
+                        {format(day, 'EEE')}
+                      </p>
+                      <p
+                        className={cn(
+                          'text-base font-semibold tabular-nums',
+                          isCurrentDay ? 'text-primary' : 'text-foreground',
+                        )}
+                      >
+                        {format(day, 'd')}
+                      </p>
+                    </div>
+                    {dayTotal > 0 && (
+                      <span className="text-[10px] text-muted-foreground tabular-nums">{dayTotal}m</span>
+                    )}
                   </div>
-                  {dayTotal > 0 && (
-                    <span className="text-[10px] text-muted-foreground tabular-nums">{dayTotal}m</span>
+                </div>
+
+                {/* Workout Cards - scrollable content area with drag-and-drop */}
+                <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden p-1">
+                  {groupedItems.length === 0 ? (
+                    <div className="h-full flex items-center justify-center">
+                      <p className="text-[10px] text-muted-foreground/50">Rest</p>
+                    </div>
+                  ) : (
+                    <div className="flex flex-col gap-1">
+                      {groupedItems.flatMap((group) => group.items).map((item) => {
+                        const session = sessionById.get(item.id) || null;
+                        const isDropped = recentlyDropped === item.id;
+                        
+                        return (
+                          <DraggableSessionWrapper
+                            key={item.id}
+                            item={item}
+                            session={session}
+                            onClick={() => handleCardClick(item)}
+                          >
+                            <div
+                              className={cn(
+                                'transition-all duration-300',
+                                // Drop animation - scale and glow effect
+                                isDropped && 'animate-scale-in ring-2 ring-primary/50 shadow-lg'
+                              )}
+                            >
+                              <SessionCard
+                                session={item}
+                                density="standard"
+                                className="h-full"
+                              />
+                            </div>
+                          </DraggableSessionWrapper>
+                        );
+                      })}
+                    </div>
                   )}
                 </div>
-              </div>
-
-              {/* Workout Cards - scrollable content area */}
-              <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden">
-                {groupedItems.length === 0 ? (
-                  <div className="h-full flex items-center justify-center">
-                    <p className="text-[10px] text-muted-foreground/50">Rest</p>
-                  </div>
-                ) : (
-                  <div className="flex flex-col gap-0.5 p-1">
-                    <CalendarWorkoutStack
-                      items={groupedItems.flatMap((group) => group.items)}
-                      variant="week"
-                      onClick={handleCardClick}
-                      maxVisible={4}
-                      activityIdBySessionId={activityIdBySessionId}
-                      useNewCard
-                    />
-                  </div>
-                )}
-              </div>
-            </Card>
-          );
-        })}
+              </DroppableDayCell>
+            );
+          })}
+        </div>
       </div>
-    </div>
+
+      {/* Drag Overlay - follows cursor during drag */}
+      <DragOverlay>
+        {activeId && draggedItem && (
+          <div className="opacity-90 shadow-xl rounded-lg ring-2 ring-primary animate-scale-in">
+            <SessionCard
+              session={draggedItem}
+              density="standard"
+              className="w-[200px]"
+            />
+          </div>
+        )}
+      </DragOverlay>
+    </DndContext>
   );
 }
