@@ -5,31 +5,77 @@
 import { useMemo } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import type { WorkoutStep } from '@/lib/api';
-import { useUnitSystem } from '@/hooks/useUnitSystem';
-import { groupWorkoutSteps, type GroupedStep } from '@/lib/workout-grouping';
+import { WorkoutTimeline } from '@/components/workout/WorkoutTimeline';
+import type { StructuredWorkoutStep } from '@/api/workouts';
 
 interface WorkoutStepsCardProps {
   steps: WorkoutStep[];
   className?: string;
 }
 
-function formatStepDuration(durationMin: number | null): string {
-  if (!durationMin) return '';
-  if (durationMin < 60) {
-    return `${durationMin} min`;
+/**
+ * Convert WorkoutStep (from calendar API) to StructuredWorkoutStep (for WorkoutTimeline)
+ */
+function convertToStructuredStep(step: WorkoutStep, index: number): StructuredWorkoutStep {
+  // Infer step_type from intensity or default to 'steady'
+  const intensity = step.intensity?.toLowerCase() || '';
+  let stepType = 'steady';
+  
+  if (intensity.includes('warmup') || intensity.includes('warm')) {
+    stepType = 'warmup';
+  } else if (intensity.includes('cooldown') || intensity.includes('cool')) {
+    stepType = 'cooldown';
+  } else if (intensity.includes('recovery') || intensity.includes('rest')) {
+    stepType = 'recovery';
+  } else if (intensity.includes('interval') || intensity.includes('vo2')) {
+    stepType = 'interval';
+  } else if (intensity.includes('tempo') || intensity.includes('threshold')) {
+    stepType = 'tempo';
+  } else if (intensity.includes('easy')) {
+    stepType = 'easy';
+  } else if (intensity.includes('steady')) {
+    stepType = 'steady';
   }
-  const hours = Math.floor(durationMin / 60);
-  const mins = durationMin % 60;
-  if (mins === 0) {
-    return `${hours}h`;
-  }
-  return `${hours}h ${mins}min`;
+
+  return {
+    id: `step-${index}`,
+    order: step.order,
+    name: step.name,
+    type: stepType,
+    step_type: stepType,
+    kind: null,
+    intensity: step.intensity,
+    distance_meters: step.distance_km ? step.distance_km * 1000 : null,
+    duration_seconds: step.duration_min ? step.duration_min * 60 : null,
+    target: null,
+    target_type: null,
+    target_metric: null,
+    target_min: null,
+    target_max: null,
+    target_value: null,
+    repeat_group_id: null,
+    instructions: step.notes || null,
+    purpose: null,
+    inferred: false,
+  };
 }
 
 export function WorkoutStepsCard({ steps, className }: WorkoutStepsCardProps) {
-  const { convertDistance, formatDistance } = useUnitSystem();
+  const structuredSteps = useMemo(() => {
+    return steps.map((step, index) => convertToStructuredStep(step, index));
+  }, [steps]);
 
-  const groupedSteps = useMemo(() => groupWorkoutSteps(steps), [steps]);
+  const totalDistanceMeters = useMemo(() => {
+    return structuredSteps.reduce((sum, step) => {
+      return sum + (step.distance_meters || 0);
+    }, 0);
+  }, [structuredSteps]);
+
+  const totalDurationSeconds = useMemo(() => {
+    return structuredSteps.reduce((sum, step) => {
+      return sum + (step.duration_seconds || 0);
+    }, 0);
+  }, [structuredSteps]);
 
   if (!steps || steps.length === 0) {
     return null;
@@ -41,82 +87,11 @@ export function WorkoutStepsCard({ steps, className }: WorkoutStepsCardProps) {
         <CardTitle className="text-lg">Workout Steps</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="space-y-4">
-          {groupedSteps.map((group, index) => {
-            if (group.isRepeat && group.repeatSteps) {
-              // Render repeat pattern
-              return (
-                <div key={index} className="space-y-2">
-                  <div className="flex items-start gap-3">
-                    <div className="flex-1 min-w-0">
-                      <div className="font-medium text-foreground">{group.name}</div>
-                      {group.intensity && (
-                        <div className="text-xs text-muted-foreground mt-1">
-                          {group.intensity}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                  {group.repeatSteps.map((repeatStep, repeatIndex) => {
-                    const repeatDetails: string[] = [];
-                    if (repeatStep.durationMin) {
-                      repeatDetails.push(formatStepDuration(repeatStep.durationMin));
-                    }
-                    if (repeatStep.distanceKm) {
-                      const converted = convertDistance(repeatStep.distanceKm);
-                      repeatDetails.push(formatDistance(converted));
-                    }
-                    if (repeatStep.intensity) {
-                      repeatDetails.push(repeatStep.intensity);
-                    }
-
-                    return (
-                      <div key={repeatIndex} className="flex items-start gap-3 ml-4">
-                        <div className="flex-1 min-w-0">
-                          <div className="font-medium text-foreground">{repeatStep.name}</div>
-                          {repeatDetails.length > 0 && (
-                            <div className="text-xs text-muted-foreground mt-1">
-                              {repeatDetails.join(' • ')}
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              );
-            }
-
-            // Render single or grouped step
-            const details: string[] = [];
-            if (group.durationMin) {
-              details.push(formatStepDuration(group.durationMin));
-            }
-            if (group.totalDistanceKm) {
-              const converted = convertDistance(group.totalDistanceKm);
-              details.push(formatDistance(converted));
-            }
-            if (group.intensity) {
-              details.push(group.intensity);
-            }
-
-            return (
-              <div key={index} className="flex items-start gap-3">
-                <div className="flex-1 min-w-0">
-                  <div className="font-medium text-foreground">{group.name}</div>
-                  {details.length > 0 && (
-                    <div className="text-xs text-muted-foreground mt-1">
-                      {details.join(' • ')}
-                    </div>
-                  )}
-                  {group.notes && (
-                    <div className="text-sm text-foreground/80 mt-1">{group.notes}</div>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
+        <WorkoutTimeline
+          steps={structuredSteps}
+          totalDistanceMeters={totalDistanceMeters > 0 ? totalDistanceMeters : null}
+          totalDurationSeconds={totalDurationSeconds > 0 ? totalDurationSeconds : null}
+        />
       </CardContent>
     </Card>
   );

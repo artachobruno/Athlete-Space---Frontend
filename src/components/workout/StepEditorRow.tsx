@@ -4,6 +4,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { getIntensityColor } from '@/lib/workoutIntensity'
+import { useUnitSystem } from '@/hooks/useUnitSystem'
 import type { StructuredWorkoutStep } from '@/api/workouts'
 
 interface StepEditorRowProps {
@@ -17,28 +18,16 @@ interface StepEditorRowProps {
   }
 }
 
-const STEP_KINDS = [
-  { value: 'warmup', label: 'Warmup' },
-  { value: 'steady', label: 'Steady' },
-  { value: 'interval', label: 'Interval' },
-  { value: 'recovery', label: 'Recovery' },
-  { value: 'cooldown', label: 'Cooldown' },
-  { value: 'rest', label: 'Rest' },
-  { value: 'tempo', label: 'Tempo' },
-  { value: 'threshold', label: 'Threshold' },
-  { value: 'free', label: 'Free Run' },
-]
-
-const INTENSITIES = [
-  { value: 'easy', label: 'Easy' },
-  { value: 'recovery', label: 'Recovery' },
-  { value: 'rest', label: 'Rest' },
-  { value: 'steady', label: 'Steady' },
-  { value: 'tempo', label: 'Tempo' },
-  { value: 'lt2', label: 'LT2' },
-  { value: 'threshold', label: 'Threshold' },
-  { value: 'vo2', label: 'VO2' },
-  { value: 'flow', label: 'Flow' },
+const STEP_TYPES = [
+  { value: 'warmup', label: 'Warmup', intensity: 'easy' },
+  { value: 'steady', label: 'Steady', intensity: 'steady' },
+  { value: 'interval', label: 'Interval', intensity: 'vo2' },
+  { value: 'recovery', label: 'Recovery', intensity: 'recovery' },
+  { value: 'cooldown', label: 'Cooldown', intensity: 'easy' },
+  { value: 'rest', label: 'Rest', intensity: 'rest' },
+  { value: 'tempo', label: 'Tempo', intensity: 'tempo' },
+  { value: 'threshold', label: 'Threshold', intensity: 'threshold' },
+  { value: 'free', label: 'Free Run', intensity: 'flow' },
 ]
 
 const TARGET_TYPES = [
@@ -49,16 +38,16 @@ const TARGET_TYPES = [
 ]
 
 export function StepEditorRow({ step, onUpdate, onDelete, errors }: StepEditorRowProps) {
+  const { unitSystem, convertDistance } = useUnitSystem()
+  
   const handleNameChange = (name: string) => {
     onUpdate({ ...step, name })
   }
 
-  const handleKindChange = (kind: string) => {
-    onUpdate({ ...step, kind, type: kind })
-  }
-
-  const handleIntensityChange = (intensity: string) => {
-    onUpdate({ ...step, intensity })
+  const handleTypeChange = (type: string) => {
+    const stepType = STEP_TYPES.find(t => t.value === type)
+    const intensity = stepType?.intensity || step.intensity || null
+    onUpdate({ ...step, type, step_type: type, kind: type, intensity })
   }
 
   const handleDurationChange = (value: string) => {
@@ -67,8 +56,45 @@ export function StepEditorRow({ step, onUpdate, onDelete, errors }: StepEditorRo
   }
 
   const handleDistanceChange = (value: string) => {
-    const meters = value ? parseFloat(value) * 1000 : null
-    onUpdate({ ...step, distance_meters: meters, duration_seconds: null })
+    if (!value) {
+      onUpdate({ ...step, distance_meters: null, duration_seconds: null })
+      return
+    }
+    
+    const distanceValue = parseFloat(value)
+    if (isNaN(distanceValue)) {
+      return
+    }
+    
+    // Convert to meters based on unit system
+    let meters: number
+    if (unitSystem === 'imperial') {
+      // Input is in miles, convert to meters
+      meters = distanceValue * 1609.34
+    } else {
+      // Input is in km, convert to meters
+      meters = distanceValue * 1000
+    }
+    
+    // Calculate duration from distance and pace if pace target is set
+    let calculatedDuration: number | null = null
+    if (step.target?.type === 'pace' && step.target.value !== null && step.target.value !== undefined) {
+      // Pace is in min/km, convert to seconds per meter
+      const paceMinPerKm = step.target.value
+      const paceSecPerMeter = (paceMinPerKm * 60) / 1000
+      calculatedDuration = Math.round(meters * paceSecPerMeter)
+    } else if (step.target?.type === 'pace' && step.target.min !== null && step.target.min !== undefined) {
+      // Use min pace if available
+      const paceMinPerKm = step.target.min
+      const paceSecPerMeter = (paceMinPerKm * 60) / 1000
+      calculatedDuration = Math.round(meters * paceSecPerMeter)
+    }
+    
+    onUpdate({ 
+      ...step, 
+      distance_meters: meters, 
+      duration_seconds: calculatedDuration || step.duration_seconds 
+    })
   }
 
   const handleTargetTypeChange = (type: string) => {
@@ -88,30 +114,60 @@ export function StepEditorRow({ step, onUpdate, onDelete, errors }: StepEditorRo
 
   const handleTargetMinChange = (value: string) => {
     const min = value ? parseFloat(value) : null
-    onUpdate({
+    const updatedStep = {
       ...step,
       target: {
         ...step.target,
         min,
       },
       target_min: min ?? undefined,
-    })
+    }
+    
+    // Recalculate duration if distance and pace are set
+    if (step.distance_meters && step.target?.type === 'pace' && min !== null) {
+      const paceSecPerMeter = (min * 60) / 1000
+      const calculatedDuration = Math.round(step.distance_meters * paceSecPerMeter)
+      updatedStep.duration_seconds = calculatedDuration
+    }
+    
+    onUpdate(updatedStep)
   }
 
   const handleTargetMaxChange = (value: string) => {
     const max = value ? parseFloat(value) : null
-    onUpdate({
+    const updatedStep = {
       ...step,
       target: {
         ...step.target,
         max,
       },
       target_max: max ?? undefined,
-    })
+    }
+    
+    // Recalculate duration if distance and pace are set (use min if available, otherwise max)
+    if (step.distance_meters && step.target?.type === 'pace') {
+      const paceValue = step.target.min ?? max
+      if (paceValue !== null && paceValue !== undefined) {
+        const paceSecPerMeter = (paceValue * 60) / 1000
+        const calculatedDuration = Math.round(step.distance_meters * paceSecPerMeter)
+        updatedStep.duration_seconds = calculatedDuration
+      }
+    }
+    
+    onUpdate(updatedStep)
   }
 
   const durationMinutes = step.duration_seconds ? Math.round(step.duration_seconds / 60) : ''
-  const distanceKm = step.distance_meters ? (step.distance_meters / 1000).toFixed(2) : ''
+  
+  // Convert distance to user's preferred unit for display
+  let distanceDisplay = ''
+  let distanceUnit = ''
+  if (step.distance_meters) {
+    const converted = convertDistance(step.distance_meters / 1000)
+    distanceDisplay = converted.value.toFixed(2)
+    distanceUnit = converted.unit
+  }
+  
   const rawTargetType = step.target?.type || step.target_type || ''
   const targetType = rawTargetType || '__none__'
   const targetMin = step.target?.min ?? step.target_min ?? ''
@@ -134,39 +190,23 @@ export function StepEditorRow({ step, onUpdate, onDelete, errors }: StepEditorRo
         />
       </div>
 
-      <div className="col-span-2">
-        <Label htmlFor={`step-${step.id}-kind`} className="text-xs">Kind</Label>
-        <Select value={step.kind || step.type} onValueChange={handleKindChange}>
-          <SelectTrigger id={`step-${step.id}-kind`} className="mt-1">
-            <SelectValue placeholder="Kind" />
+      <div className="col-span-4">
+        <Label htmlFor={`step-${step.id}-type`} className="text-xs">Type</Label>
+        <Select value={step.type || step.step_type || step.kind || ''} onValueChange={handleTypeChange}>
+          <SelectTrigger id={`step-${step.id}-type`} className="mt-1">
+            <SelectValue placeholder="Type" />
           </SelectTrigger>
           <SelectContent>
-            {STEP_KINDS.map((kind) => (
-              <SelectItem key={kind.value} value={kind.value}>
-                {kind.label}
+            {STEP_TYPES.map((type) => (
+              <SelectItem key={type.value} value={type.value}>
+                {type.label}
               </SelectItem>
             ))}
           </SelectContent>
         </Select>
       </div>
 
-      <div className="col-span-2">
-        <Label htmlFor={`step-${step.id}-intensity`} className="text-xs">Intensity</Label>
-        <Select value={step.intensity || ''} onValueChange={handleIntensityChange}>
-          <SelectTrigger id={`step-${step.id}-intensity`} className="mt-1">
-            <SelectValue placeholder="Intensity" />
-          </SelectTrigger>
-          <SelectContent>
-            {INTENSITIES.map((intensity) => (
-              <SelectItem key={intensity.value} value={intensity.value}>
-                {intensity.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      <div className="col-span-2">
+      <div className="col-span-3">
         <Label htmlFor={`step-${step.id}-duration`} className="text-xs">Duration (min)</Label>
         <Input
           id={`step-${step.id}-duration`}
@@ -182,15 +222,15 @@ export function StepEditorRow({ step, onUpdate, onDelete, errors }: StepEditorRo
         )}
       </div>
 
-      <div className="col-span-2">
-        <Label htmlFor={`step-${step.id}-distance`} className="text-xs">Distance (km)</Label>
+      <div className="col-span-3">
+        <Label htmlFor={`step-${step.id}-distance`} className="text-xs">Distance ({distanceUnit || (unitSystem === 'imperial' ? 'mi' : 'km')})</Label>
         <Input
           id={`step-${step.id}-distance`}
           type="number"
           step="0.1"
-          value={distanceKm}
+          value={distanceDisplay}
           onChange={(e) => handleDistanceChange(e.target.value)}
-          placeholder="Kilometers"
+          placeholder={unitSystem === 'imperial' ? 'Miles' : 'Kilometers'}
           className="mt-1"
           disabled={!!step.duration_seconds}
         />
