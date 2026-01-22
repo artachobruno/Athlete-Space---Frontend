@@ -1,4 +1,3 @@
-import { PublicLayout } from '@/components/layout/PublicLayout';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { HelpCircle, ChevronDown, ChevronUp } from 'lucide-react';
@@ -142,8 +141,7 @@ export default function FAQ() {
   };
 
   return (
-    <PublicLayout>
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Header */}
         <div className="mb-8 text-center">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-4">
@@ -177,7 +175,6 @@ export default function FAQ() {
           </CardContent>
         </GlassCard>
       </div>
-    </PublicLayout>
   );
 }
 

@@ -7,6 +7,7 @@ import { isNative } from "@/lib/platform";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { RequireAuth } from "@/components/auth/RequireAuth";
 import { AuthLanding, PublicOnly } from "@/components/auth/AuthRedirects";
+import { SupportingPageLayout } from "@/components/layout/SupportingPageLayout";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { useSyncActivities } from "@/hooks/useSyncActivities";
 import { useTimezoneSync } from "@/hooks/useTimezoneSync";
@@ -257,12 +258,12 @@ const AppContent = () => {
         />
         <Route path="/onboarding" element={<Onboarding />} />
         <Route path="/connect-success" element={<ConnectSuccess />} />
-        <Route path="/privacy" element={<Privacy />} />
-        <Route path="/faq" element={<FAQ />} />
-        <Route path="/science" element={<ScienceAndAI />} />
+        <Route path="/privacy" element={<SupportingPageLayout><Privacy /></SupportingPageLayout>} />
+        <Route path="/faq" element={<SupportingPageLayout><FAQ /></SupportingPageLayout>} />
+        <Route path="/science" element={<SupportingPageLayout><ScienceAndAI /></SupportingPageLayout>} />
+        <Route path="/support" element={<SupportingPageLayout><Support /></SupportingPageLayout>} />
         <Route path="/about" element={<About />} />
         <Route path="/terms" element={<Terms />} />
-        <Route path="/support" element={<Support />} />
         <Route
           path="/today"
           element={

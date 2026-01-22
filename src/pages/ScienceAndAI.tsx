@@ -1,12 +1,10 @@
-import { PublicLayout } from '@/components/layout/PublicLayout';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Brain, Activity, LineChart, ShieldCheck } from 'lucide-react';
 
 export default function ScienceAndAI() {
   return (
-    <PublicLayout>
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
         {/* Header */}
         <div className="text-center mb-10">
           <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-primary/10 mb-4">
@@ -108,7 +106,6 @@ export default function ScienceAndAI() {
           </GlassCard>
         </div>
       </div>
-    </PublicLayout>
   );
 }
 

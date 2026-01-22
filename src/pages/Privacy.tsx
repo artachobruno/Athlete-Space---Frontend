@@ -1,4 +1,3 @@
-import { PublicLayout } from '@/components/layout/PublicLayout';
 import { GlassCard } from '@/components/ui/GlassCard';
 import {
   CardHeader,
@@ -9,8 +8,7 @@ import {
 
 export default function Privacy() {
   return (
-    <PublicLayout>
-      <div className="max-w-4xl mx-auto">
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-primary">Privacy Policy</h1>
@@ -108,7 +106,6 @@ export default function Privacy() {
           </CardContent>
         </GlassCard>
       </div>
-    </PublicLayout>
   );
 }
 

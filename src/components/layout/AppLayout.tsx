@@ -117,8 +117,21 @@ export function AppLayout({ children }: AppLayoutProps) {
             })}
           </nav>
 
-          {/* Footer */}
+          {/* Footer: Privacy, FAQ, Science, Support */}
           <div className="p-4 border-t space-y-1">
+            <Link
+              to="/privacy"
+              onClick={() => setSidebarOpen(false)}
+              className={cn(
+                'flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors w-full',
+                location.pathname === '/privacy'
+                  ? 'bg-accent text-accent-foreground'
+                  : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
+              )}
+            >
+              <Shield className="h-4 w-4" />
+              Privacy
+            </Link>
             <Link
               to="/faq"
               onClick={() => setSidebarOpen(false)}
@@ -133,6 +146,19 @@ export function AppLayout({ children }: AppLayoutProps) {
               FAQ
             </Link>
             <Link
+              to="/science"
+              onClick={() => setSidebarOpen(false)}
+              className={cn(
+                'flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors w-full',
+                location.pathname === '/science'
+                  ? 'bg-accent text-accent-foreground'
+                  : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
+              )}
+            >
+              <Brain className="h-4 w-4" />
+              Science
+            </Link>
+            <Link
               to="/support"
               onClick={() => setSidebarOpen(false)}
               className={cn(
@@ -144,19 +170,6 @@ export function AppLayout({ children }: AppLayoutProps) {
             >
               <LifeBuoy className="h-4 w-4" />
               Support
-            </Link>
-            <Link
-              to="/privacy"
-              onClick={() => setSidebarOpen(false)}
-              className={cn(
-                'flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors w-full',
-                location.pathname === '/privacy'
-                  ? 'bg-accent text-accent-foreground'
-                  : 'text-muted-foreground hover:bg-secondary hover:text-foreground'
-              )}
-            >
-              <Shield className="h-4 w-4" />
-              Privacy
             </Link>
             <Button
               variant="ghost"

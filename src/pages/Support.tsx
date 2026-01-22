@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { PublicLayout } from '@/components/layout/PublicLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -57,8 +56,7 @@ export default function Support() {
   };
 
   return (
-    <PublicLayout>
-      <div className="max-w-4xl mx-auto px-4 py-12">
+    <div className="max-w-4xl mx-auto px-4 py-12">
         <div className="text-center mb-10">
           <h1 className="text-3xl font-bold mb-3">Contact Support</h1>
           <p className="text-muted-foreground">
@@ -203,6 +201,5 @@ export default function Support() {
           </CardContent>
         </Card>
       </div>
-    </PublicLayout>
   );
 }
