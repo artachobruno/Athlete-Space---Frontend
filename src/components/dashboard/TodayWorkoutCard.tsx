@@ -294,7 +294,7 @@ export function TodayWorkoutCard(props: TodayWorkoutCardProps = {}) {
     );
   }
 
-  if (!todayWorkout || !workoutSession) {
+  if (!todayWorkout) {
     return (
       <Card className={cn('h-full flex flex-col', cardClassName)}>
         <CardHeader className="pb-2">
