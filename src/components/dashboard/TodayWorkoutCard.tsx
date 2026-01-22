@@ -418,7 +418,7 @@ export function TodayWorkoutCard(props: TodayWorkoutCardProps = {}) {
           <WorkoutSessionCard 
             session={workoutSession} 
             compact={false}
-            onGraphClick={todayWorkout.workout_id ? () => setShowWorkoutDetails(true) : undefined}
+            onGraphClick={todayWorkout.workout_id ? () => setShowWorkoutDetails(!showWorkoutDetails) : undefined}
           />
         </CardContent>
       </Card>

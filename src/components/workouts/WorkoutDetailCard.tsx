@@ -9,7 +9,8 @@
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Loader2, CheckCircle2, SkipForward, Trash2, ChevronDown, ChevronUp } from 'lucide-react';
+import { Loader2, CheckCircle2, SkipForward, Trash2, ChevronDown, ChevronUp, ArrowRight, ExternalLink } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { useStructuredWorkout } from '@/hooks/useStructuredWorkout';
 import { WorkoutHeader } from '@/components/workout/WorkoutHeader';
 import { WorkoutStepsTable } from '@/components/workout/WorkoutStepsTable';
@@ -40,6 +41,8 @@ interface WorkoutDetailCardProps {
   onToggleExpand: () => void;
   /** Optional callback when session status changes */
   onStatusChange?: () => void;
+  /** Show link to full workout page (default: true) */
+  showFullWorkoutLink?: boolean;
   /** Additional CSS classes */
   className?: string;
 }
@@ -57,8 +60,10 @@ export function WorkoutDetailCard({
   expanded,
   onToggleExpand,
   onStatusChange,
+  showFullWorkoutLink = true,
   className,
 }: WorkoutDetailCardProps) {
+  const navigate = useNavigate();
   const queryClient = useQueryClient();
   const updateStatus = useUpdateSessionStatus();
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
@@ -152,25 +157,44 @@ export function WorkoutDetailCard({
               </div>
             </div>
 
-            {/* Expand/Collapse button */}
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={onToggleExpand}
-              className="flex-shrink-0"
-            >
-              {expanded ? (
-                <>
-                  <ChevronUp className="h-4 w-4 mr-1" />
-                  Collapse
-                </>
-              ) : (
-                <>
-                  <ChevronDown className="h-4 w-4 mr-1" />
-                  Expand
-                </>
+            {/* Header Actions */}
+            <div className="flex items-center gap-2 flex-shrink-0">
+              {/* View Full Workout Link - only show when expanded and workout_id exists */}
+              {expanded && showFullWorkoutLink && session.workout_id && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={(e) => {
+                    e.stopPropagation(); // Prevent triggering parent click handlers
+                    navigate(`/workout/${session.workout_id}`);
+                  }}
+                  className="text-primary hover:text-primary/80"
+                >
+                  <ExternalLink className="h-4 w-4 mr-1" />
+                  View full workout
+                  <ArrowRight className="h-3 w-3 ml-1" />
+                </Button>
               )}
-            </Button>
+              
+              {/* Expand/Collapse button */}
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={onToggleExpand}
+              >
+                {expanded ? (
+                  <>
+                    <ChevronUp className="h-4 w-4 mr-1" />
+                    Collapse
+                  </>
+                ) : (
+                  <>
+                    <ChevronDown className="h-4 w-4 mr-1" />
+                    Expand
+                  </>
+                )}
+              </Button>
+            </div>
           </div>
         </CardHeader>
 
