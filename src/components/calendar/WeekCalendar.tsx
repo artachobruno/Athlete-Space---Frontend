@@ -170,8 +170,8 @@ export function WeekCalendar({ currentDate, onActivityClick }: WeekCalendarProps
 
   return (
     <div className="h-full flex flex-col min-h-0">
-      {/* Week Grid - Must fit in viewport without scrolling */}
-      <div className="grid grid-cols-7 gap-3 flex-1 min-h-0">
+      {/* Week Grid - 7 equal columns, fills available height */}
+      <div className="grid grid-cols-7 gap-2 flex-1 min-h-0">
         {days.map((day, idx) => {
           const groupedItems = getGroupedItemsForDay(day);
           const isCurrentDay = isToday(day);
@@ -182,27 +182,26 @@ export function WeekCalendar({ currentDate, onActivityClick }: WeekCalendarProps
             <Card
               key={idx}
               className={cn(
-                'overflow-hidden flex flex-col',
+                'flex flex-col min-h-0 overflow-hidden',
                 isCurrentDay && 'ring-2 ring-primary/50',
               )}
-              style={{ minHeight: '200px', maxHeight: '100%' }}
             >
-              {/* Day Header */}
+              {/* Day Header - fixed height, clickable */}
               <div
                 className={cn(
-                  'px-3 py-2 border-b border-border cursor-pointer hover:bg-muted/30 transition-colors',
+                  'flex-shrink-0 px-2 py-1.5 border-b border-border cursor-pointer hover:bg-muted/30 transition-colors',
                   isCurrentDay && 'bg-primary/5',
                 )}
                 onClick={() => setSelectedDay(day)}
               >
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                    <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
                       {format(day, 'EEE')}
                     </p>
                     <p
                       className={cn(
-                        'text-lg font-semibold',
+                        'text-base font-semibold tabular-nums',
                         isCurrentDay ? 'text-primary' : 'text-foreground',
                       )}
                     >
@@ -210,24 +209,24 @@ export function WeekCalendar({ currentDate, onActivityClick }: WeekCalendarProps
                     </p>
                   </div>
                   {dayTotal > 0 && (
-                    <span className="text-xs text-muted-foreground">{dayTotal}m</span>
+                    <span className="text-[10px] text-muted-foreground tabular-nums">{dayTotal}m</span>
                   )}
                 </div>
               </div>
 
-              {/* Workout Cards */}
-              <div className="flex-1 relative">
+              {/* Workout Cards - scrollable content area */}
+              <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden">
                 {groupedItems.length === 0 ? (
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <p className="text-xs text-muted-foreground/50">Rest day</p>
+                  <div className="h-full flex items-center justify-center">
+                    <p className="text-[10px] text-muted-foreground/50">Rest</p>
                   </div>
                 ) : (
-                  <div className="absolute top-0 left-0 right-0 bottom-0">
+                  <div className="flex flex-col gap-0.5 p-1">
                     <CalendarWorkoutStack
                       items={groupedItems.flatMap((group) => group.items)}
                       variant="week"
                       onClick={handleCardClick}
-                      maxVisible={3}
+                      maxVisible={4}
                       activityIdBySessionId={activityIdBySessionId}
                       useNewCard
                     />
