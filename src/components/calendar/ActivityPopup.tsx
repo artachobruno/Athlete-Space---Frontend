@@ -1022,6 +1022,7 @@ export function ActivityPopup({
               </div>
             )}
             {/* Workout expansion is now handled inline by WorkoutDetailCard */}
+            <div className="flex gap-2 mt-4">
               <Button
                 variant="outline"
                 className="flex-1"
@@ -1078,7 +1079,6 @@ export function ActivityPopup({
                 </Button>
               )}
             </div>
-          </div>
           </CardContent>
         </Card>
       </DialogContent>
