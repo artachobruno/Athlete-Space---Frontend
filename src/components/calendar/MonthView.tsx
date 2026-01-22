@@ -308,8 +308,8 @@ export function MonthView({ currentDate, onActivityClick }: MonthViewProps) {
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
       >
-          {/* Month grid - 6 rows with better height distribution */}
-          <div className="grid grid-cols-7 flex-1 min-h-0" style={{ gridTemplateRows: 'repeat(6, minmax(80px, 1fr))' }}>
+          {/* Month grid - 6 rows with taller cells for cards */}
+          <div className="grid grid-cols-7 flex-1 min-h-0" style={{ gridTemplateRows: 'repeat(6, minmax(100px, 1fr))' }}>
             {days.map((day, idx) => {
               const isCurrentMonth = isSameMonth(day, currentDate);
               const isCurrentDay = isToday(day);

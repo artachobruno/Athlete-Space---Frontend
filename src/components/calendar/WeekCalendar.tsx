@@ -391,9 +391,9 @@ export function WeekCalendar({ currentDate, onActivityClick }: WeekCalendarProps
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >
-      <div className="h-full flex flex-col min-h-0">
-        {/* Week Grid - 7 equal columns, content-fitted height */}
-        <div className="grid grid-cols-7 gap-1.5 flex-1 min-h-0">
+      <div className="flex flex-col min-h-0">
+        {/* Week Grid - 7 equal columns, auto-height that expands with content */}
+        <div className="grid grid-cols-7 gap-1.5">
           {days.map((day, idx) => {
             const groupedItems = getGroupedItemsForDay(day);
             const isCurrentDay = isToday(day);
@@ -443,10 +443,10 @@ export function WeekCalendar({ currentDate, onActivityClick }: WeekCalendarProps
                   </div>
                 </div>
 
-                {/* Workout Cards - scrollable content area with drag-and-drop */}
-                <div className="flex-1 min-h-0 overflow-y-auto overflow-x-hidden p-1">
+                {/* Workout Cards - content area with drag-and-drop */}
+                <div className="p-1 min-h-[60px]">
                   {groupedItems.length === 0 ? (
-                    <div className="h-full flex items-center justify-center">
+                    <div className="h-full flex items-center justify-center py-2">
                       <p className="text-[10px] text-muted-foreground/50">Rest</p>
                     </div>
                   ) : (
