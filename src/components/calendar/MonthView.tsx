@@ -264,11 +264,15 @@ export function MonthView({ currentDate, onActivityClick }: MonthViewProps) {
                   key={idx}
                   date={day}
                   className={cn(
-                    'relative border-b border-r border-border/50 flex flex-col transition-colors min-h-0 overflow-hidden',
-                    !isCurrentMonth && 'bg-muted/5',
-                    isCurrentDay && 'bg-primary/5',
+                    'relative border-b border-r border-border/50 flex flex-col transition-all duration-150 min-h-0 overflow-hidden',
+                    // Dimmed for non-current month
+                    !isCurrentMonth && 'bg-muted/5 opacity-60',
+                    // Hover state - subtle highlight
+                    isCurrentMonth && 'hover:bg-muted/50',
+                    // Today highlight
+                    isCurrentDay && 'bg-primary/5 ring-1 ring-inset ring-primary/30',
+                    // Grid borders
                     idx % 7 === 6 && 'border-r-0',
-                    // Bottom row no border
                     idx >= days.length - 7 && 'border-b-0'
                   )}
                 >
