@@ -166,6 +166,81 @@ export function TodayWorkoutCard(props: TodayWorkoutCardProps = {}) {
     );
   }
 
+  // Check if verdict/decision suggests modification (REST, MODIFY, or CANCEL)
+  const shouldSuggestModification = useMemo(() => {
+    if (!finalTodayIntelligence) return false;
+    
+    // Check for v2 format
+    if (typeof finalTodayIntelligence === 'object' && 'version' in finalTodayIntelligence) {
+      const v2 = finalTodayIntelligence as { version?: string; decision?: string };
+      if (v2.version === 'coach_decision_v2') {
+        const decision = v2.decision;
+        return decision === 'REST' || decision === 'MODIFY' || decision === 'CANCEL';
+      }
+    }
+    
+    // Check for v1 format
+    if (typeof finalTodayIntelligence === 'object' && 'recommendation' in finalTodayIntelligence) {
+      const rec = (finalTodayIntelligence as { recommendation?: string }).recommendation;
+      if (rec) {
+        const lower = rec.toLowerCase();
+        return lower === 'rest' || lower.includes('modify') || lower.includes('cancel');
+      }
+    }
+    
+    return false;
+  }, [finalTodayIntelligence]);
+
+  const getModificationSuggestion = useMemo(() => {
+    if (!finalTodayIntelligence) return null;
+    
+    // Check for v2 format
+    if (typeof finalTodayIntelligence === 'object' && 'version' in finalTodayIntelligence) {
+      const v2 = finalTodayIntelligence as { version?: string; decision?: string; explanation?: string };
+      if (v2.version === 'coach_decision_v2') {
+        const decision = v2.decision;
+        if (decision === 'REST') {
+          return {
+            type: 'rest' as const,
+            message: 'The coach suggests considering rest today based on your recovery signals. Would you like to modify or skip this workout?',
+            explanation: v2.explanation,
+          };
+        }
+        if (decision === 'MODIFY') {
+          return {
+            type: 'modify' as const,
+            message: 'The coach suggests modifying this workout based on your current state. Would you like to adjust the intensity or distance?',
+            explanation: v2.explanation,
+          };
+        }
+        if (decision === 'CANCEL') {
+          return {
+            type: 'cancel' as const,
+            message: 'The coach suggests canceling this workout today. Would you like to skip it?',
+            explanation: v2.explanation,
+          };
+        }
+      }
+    }
+    
+    // Check for v1 format
+    if (typeof finalTodayIntelligence === 'object' && 'recommendation' in finalTodayIntelligence) {
+      const rec = (finalTodayIntelligence as { recommendation?: string; explanation?: string }).recommendation;
+      if (rec) {
+        const lower = rec.toLowerCase();
+        if (lower === 'rest') {
+          return {
+            type: 'rest' as const,
+            message: 'The coach suggests considering rest today. Would you like to modify or skip this workout?',
+            explanation: (finalTodayIntelligence as { explanation?: string }).explanation,
+          };
+        }
+      }
+    }
+    
+    return null;
+  }, [finalTodayIntelligence]);
+
   // Detect if there's no planned session (rest day)
   const hasNoPlannedSession = !error && (!finalTodayData?.sessions || 
     finalTodayData.sessions.filter(s => s.status === 'planned' || s.status === 'completed').length === 0);
@@ -270,6 +345,35 @@ export function TodayWorkoutCard(props: TodayWorkoutCardProps = {}) {
 
   return (
     <div className={cn('space-y-4', cardClassName)}>
+      {/* Coach Suggestion Card - show if verdict suggests modification */}
+      {shouldSuggestModification && getModificationSuggestion && (
+        <Card className="border-yellow-500/30 bg-yellow-500/5">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2 text-yellow-600 dark:text-yellow-400">
+              <Brain className="h-4 w-4" />
+              Coach Suggestion
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-foreground mb-2">
+              {getModificationSuggestion.message}
+            </p>
+            {getModificationSuggestion.explanation && (
+              <p className="text-xs text-muted-foreground italic">
+                {getModificationSuggestion.explanation}
+              </p>
+            )}
+            <div className="flex flex-wrap gap-2 mt-3">
+              <Button variant="outline" size="sm" asChild>
+                <Link to="/coach">
+                  Discuss with coach
+                </Link>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Main workout card - non-compact mode to show effort graph */}
       <Card className="h-full flex flex-col">
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
