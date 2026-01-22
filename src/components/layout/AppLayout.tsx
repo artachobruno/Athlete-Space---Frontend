@@ -27,11 +27,11 @@ interface AppLayoutProps {
 }
 
 const navItems = [
-  { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { path: '/calendar', label: 'Calendar', icon: Calendar },
-  { path: '/plan', label: 'Training Plan', icon: ClipboardList },
-  { path: '/activities', label: 'Activities', icon: Activity },
-  { path: '/analytics', label: 'Analytics', icon: BarChart3 },
+  { path: '/today', label: 'Today', icon: LayoutDashboard },
+  { path: '/schedule', label: 'Schedule', icon: Calendar },
+  { path: '/plan', label: 'Plan', icon: ClipboardList },
+  { path: '/history', label: 'History', icon: Activity },
+  { path: '/insights', label: 'Insights', icon: BarChart3 },
   { path: '/coach', label: 'Coach', icon: Brain },
   { path: '/admin', label: 'Admin Ops', icon: Shield },
   { path: '/admin/ai', label: 'Admin AI', icon: Bot },

@@ -95,9 +95,9 @@ export default function Analytics() {
     <AppLayout>
       <div className="space-y-6">
         <div>
-          <h1 className="text-[clamp(1.25rem,3vw,1.5rem)] font-semibold text-primary">Analytics</h1>
+          <h1 className="text-[clamp(1.25rem,3vw,1.5rem)] font-semibold text-primary">Insights</h1>
           <p className="text-muted-foreground mt-1">
-            {isAdvanced ? 'Performance Management Chart' : 'Your training trends'}
+            {isAdvanced ? 'Performance Management Chart' : 'Your training progress'}
           </p>
         </div>
 

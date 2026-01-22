@@ -186,7 +186,7 @@ export function RecentActivitiesCard(props: RecentActivitiesCardProps = {}) {
             <RefreshCw className={cn('h-3 w-3', isSyncing && 'animate-spin')} />
           </Button>
           <Link
-            to="/activities"
+            to="/history"
             className="text-xs text-muted-foreground hover:text-primary transition-colors"
           >
             View all →

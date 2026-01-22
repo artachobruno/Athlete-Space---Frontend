@@ -51,9 +51,9 @@ export default function Login() {
       await new Promise(resolve => setTimeout(resolve, 100));
       
       // Step 4: Route based on onboarding status
-      // CRITICAL: Only navigate to dashboard if onboarding is complete
+      // CRITICAL: Only navigate to today if onboarding is complete
       // Otherwise, AuthLanding will redirect to onboarding
-      navigate('/dashboard');
+      navigate('/today');
     } catch (err: unknown) {
       const apiError = err as { status?: number; message?: string; details?: { error?: string; reason?: string } | string | unknown };
       

@@ -20,17 +20,17 @@ interface ErrorDisplayProps {
 }
 
 function ErrorDisplay({ error, onReset }: ErrorDisplayProps) {
-  const handleGoToDashboard = () => {
+  const handleGoToToday = () => {
     onReset();
     // Use hash navigation for HashRouter (native) - this won't cause a full reload
     // For BrowserRouter (web), this will still work but may cause a reload (acceptable for error recovery)
     if (isNative()) {
       // HashRouter uses hash-based routing
-      window.location.hash = '#/dashboard';
+      window.location.hash = '#/today';
     } else {
       // BrowserRouter - use Navigate component via window.location
       // Note: This will cause a reload, but it's acceptable for error recovery
-      window.location.href = '/dashboard';
+      window.location.href = '/today';
     }
   };
 
@@ -67,10 +67,10 @@ function ErrorDisplay({ error, onReset }: ErrorDisplayProps) {
             </Button>
             <Button
               variant="outline"
-              onClick={handleGoToDashboard}
+              onClick={handleGoToToday}
               className="flex-1"
             >
-              Go to Dashboard
+              Go to Today
             </Button>
           </div>
         </CardContent>
