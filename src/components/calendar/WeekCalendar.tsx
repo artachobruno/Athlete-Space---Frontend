@@ -391,8 +391,8 @@ export function WeekCalendar({ currentDate, onActivityClick }: WeekCalendarProps
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
     >
-      <div className="flex flex-col min-h-0">
-        {/* Week Grid - 7 equal columns, auto-height that expands with content */}
+      <div className="flex flex-col">
+        {/* Week Grid - 7 equal columns, content-driven height */}
         <div className="grid grid-cols-7 gap-1.5">
           {days.map((day, idx) => {
             const groupedItems = getGroupedItemsForDay(day);

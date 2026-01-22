@@ -18,14 +18,14 @@ export default function Calendar() {
 
   return (
     <AppLayout>
-      <div className="h-[calc(100vh-3rem-3.5rem)] flex flex-col">
+      <div className="flex flex-col h-full">
         {/* Header */}
         <div className="flex-shrink-0 mb-4">
           <h1 className="text-[clamp(1.25rem,3vw,1.5rem)] font-semibold text-primary">Schedule</h1>
           <p className="text-muted-foreground mt-1">Your training time structure</p>
         </div>
 
-        {/* Calendar - Must fit in viewport without vertical scrolling */}
+        {/* Calendar - flexible container */}
         <div className="flex-1 min-h-0">
           <TrainingCalendar />
         </div>
