@@ -30,6 +30,7 @@ export interface CalendarItem {
   compliance?: CalendarCompliance;
   description?: string; // Workout description or coach notes
   executionNotes?: string | null; // Execution guidance notes (max 120 chars)
+  mustDos?: string[]; // Unified must-do instructions (priority execution guidance)
   coachNote?: {
     text: string;
     tone: 'warning' | 'encouragement' | 'neutral';

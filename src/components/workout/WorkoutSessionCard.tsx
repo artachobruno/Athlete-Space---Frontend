@@ -162,7 +162,7 @@ export function WorkoutSessionCard({
       {/* Body area - execution notes in compact mode, effort graph otherwise */}
       {compact ? (
         /* Execution notes body - fills remaining space in compact mode */
-        <div className="flex-1 min-h-0 flex flex-col justify-center px-2 py-2">
+        <div className="flex-1 min-h-0 flex flex-col justify-center px-2 py-2 border-t border-border/40 bg-muted/5">
           {executionNotes ? (
             <div className="flex items-start gap-1.5">
               {/* Icon - compass for planned, checkmark for completed */}
@@ -215,7 +215,7 @@ export function WorkoutSessionCard({
               </p>
             </div>
           ) : (
-            /* Empty state - intentional silence, no fallback text */
+            /* Empty state - intentional silence, but space is visually reserved */
             <div className="h-full" />
           )}
         </div>

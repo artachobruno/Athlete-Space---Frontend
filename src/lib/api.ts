@@ -153,6 +153,7 @@ export interface CalendarSession {
   instructions?: string[];
   steps?: WorkoutStep[];
   coach_insight?: string | null;
+  must_dos?: string[];
 }
 
 export interface TodayResponse {

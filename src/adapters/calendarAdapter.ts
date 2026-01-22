@@ -118,5 +118,6 @@ export function toCalendarItem(
     compliance,
     description: session.notes || undefined,
     executionNotes: session.execution_notes || undefined,
+    mustDos: session.must_dos || undefined,
   };
 }

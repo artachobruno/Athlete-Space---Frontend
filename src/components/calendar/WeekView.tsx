@@ -227,17 +227,18 @@ function WeekView({ currentDate, onActivityClick }: WeekViewProps) {
                     const flatItems = groupedItems.flatMap((g) => g.items);
                     const stackItems = sortCalendarItems(flatItems);
                     const topItem = stackItems[0];
-                    const hasInstructions = topItem?.executionNotes || (monthData && (() => {
+                    // Priority: must_dos > execution_notes > instructions[0]
+                    const hasInstructions = topItem?.mustDos?.length || topItem?.executionNotes || (monthData && (() => {
                       const session = [...monthData.planned_sessions, ...monthData.workouts].find(
                         (s) => s.id === topItem.id
                       );
-                      return session?.instructions && session.instructions.length > 0;
+                      return session?.must_dos?.length || (session?.instructions && session.instructions.length > 0);
                     })());
-                    const instructionText = topItem?.executionNotes || (monthData && (() => {
+                    const instructionText = topItem?.mustDos?.[0] || topItem?.executionNotes || (monthData && (() => {
                       const session = [...monthData.planned_sessions, ...monthData.workouts].find(
                         (s) => s.id === topItem.id
                       );
-                      return session?.instructions?.[0];
+                      return session?.must_dos?.[0] || session?.instructions?.[0];
                     })());
 
                     return (

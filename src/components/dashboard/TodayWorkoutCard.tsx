@@ -11,6 +11,7 @@ import { useMemo } from 'react';
 import { getTssForDate, enrichActivitiesWithTss, type TrainingLoadData } from '@/lib/tss-utils';
 import { WorkoutSessionCard } from '@/components/workout/WorkoutSessionCard';
 import { toWorkoutSession } from '@/components/workout/workoutSessionAdapter';
+import { WorkoutStepsCard } from '@/components/today/WorkoutStepsCard';
 import { Link } from 'react-router-dom';
 import type { CompletedActivity } from '@/types';
 import type { TodayResponse } from '@/lib/api';
@@ -263,18 +264,98 @@ export function TodayWorkoutCard(props: TodayWorkoutCardProps = {}) {
     }
   }
 
+  // Get workout steps from todayWorkout (canonical source)
+  const workoutSteps = todayWorkout.steps || [];
+  const executionNotes = todayWorkout.execution_notes;
+  const mustDos = todayWorkout.must_dos || [];
+
   return (
-    <Card className={cn('h-full flex flex-col', cardClassName)}>
-      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-        <CardTitle className="text-lg">Today's Session</CardTitle>
-        <Badge variant={isCompleted ? 'default' : getIntentVariant(workoutIntent)}>
-          {isCompleted ? 'Completed' : (todayWorkout.intensity || workoutType || 'Planned')}
-        </Badge>
-      </CardHeader>
-      <CardContent className="flex-1 py-2">
-        {/* Full WorkoutSessionCard - metrics, effort graph, and coach insight */}
-        <WorkoutSessionCard session={workoutSession} />
-      </CardContent>
-    </Card>
+    <div className={cn('space-y-4', cardClassName)}>
+      {/* Main workout card - non-compact mode to show effort graph */}
+      <Card className="h-full flex flex-col">
+        <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardTitle className="text-lg">Today's Session</CardTitle>
+          <Badge variant={isCompleted ? 'default' : getIntentVariant(workoutIntent)}>
+            {isCompleted ? 'Completed' : (todayWorkout.intensity || workoutType || 'Planned')}
+          </Badge>
+        </CardHeader>
+        <CardContent className="flex-1 py-2">
+          {/* Full WorkoutSessionCard - non-compact to show effort graph */}
+          <WorkoutSessionCard session={workoutSession} compact={false} />
+        </CardContent>
+      </Card>
+
+      {/* Must-Dos Card - show unified must-do instructions (priority) */}
+      {mustDos.length > 0 && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <svg
+                className="w-4 h-4 text-muted-foreground"
+                viewBox="0 0 16 16"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  d="M13.5 4.5L6 12L2.5 8.5"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  fill="none"
+                />
+              </svg>
+              Must-Dos
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ul className="space-y-2">
+              {mustDos.map((mustDo, index) => (
+                <li key={index} className="text-sm leading-relaxed text-foreground flex items-start gap-2">
+                  <span className="text-primary mt-0.5">•</span>
+                  <span>{mustDo}</span>
+                </li>
+              ))}
+            </ul>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Execution Notes Card - show execution notes (secondary to must-dos) */}
+      {executionNotes && mustDos.length === 0 && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="text-base flex items-center gap-2">
+              <svg
+                className="w-4 h-4 text-muted-foreground"
+                viewBox="0 0 16 16"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <circle cx="8" cy="8" r="6" stroke="currentColor" strokeWidth="1" fill="none" opacity="0.4" />
+                <path
+                  d="M8 2L8 8L12 10"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  fill="none"
+                  opacity="0.6"
+                />
+                <circle cx="8" cy="8" r="1" fill="currentColor" opacity="0.6" />
+              </svg>
+              Execution Notes
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm leading-relaxed text-foreground">{executionNotes}</p>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Workout Steps Card - show structured steps from workout.steps */}
+      {workoutSteps.length > 0 && (
+        <WorkoutStepsCard steps={workoutSteps} />
+      )}
+    </div>
   );
 }
