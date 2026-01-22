@@ -30,9 +30,11 @@ import {
 import { CalendarWorkoutStack } from './cards/CalendarWorkoutStack';
 import { DayView } from './DayView';
 import { DroppableDayCell } from './DroppableDayCell';
+import { MobileDayList } from './MobileDayList';
 import { Card } from '@/components/ui/card';
 import { SessionCard } from '@/components/sessions/SessionCard';
 import { toast } from '@/hooks/use-toast';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 import type {
   CalendarItem,
@@ -131,6 +133,7 @@ export function WeekCalendar({ currentDate, onActivityClick }: WeekCalendarProps
   const queryClient = useQueryClient();
   const updateSession = useUpdatePlannedSession();
   const updateWorkout = useUpdateWorkoutDate();
+  const isMobile = useIsMobile();
   
   const [selectedDay, setSelectedDay] = useState<Date | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -356,6 +359,32 @@ export function WeekCalendar({ currentDate, onActivityClick }: WeekCalendarProps
     );
   }
 
+  // Mobile layout - stacked vertical list
+  if (isMobile) {
+    const getItemsForDay = (date: Date): CalendarItem[] => {
+      const dateStr = format(date, 'yyyy-MM-dd');
+      return dayDataMap.get(dateStr) || [];
+    };
+
+    const handleMobileItemClick = (item: CalendarItem) => {
+      handleCardClick(item);
+    };
+
+    return (
+      <div className="h-full overflow-hidden">
+        <MobileDayList
+          days={days}
+          getItemsForDay={getItemsForDay}
+          onDayClick={setSelectedDay}
+          onItemClick={handleMobileItemClick}
+          showEmptyDays={true}
+          className="h-full px-1"
+        />
+      </div>
+    );
+  }
+
+  // Desktop layout - 7-column grid with drag-and-drop
   return (
     <DndContext
       collisionDetection={closestCenter}
@@ -363,8 +392,8 @@ export function WeekCalendar({ currentDate, onActivityClick }: WeekCalendarProps
       onDragEnd={handleDragEnd}
     >
       <div className="h-full flex flex-col min-h-0">
-        {/* Week Grid - 7 equal columns, fills available height */}
-        <div className="grid grid-cols-7 gap-2 flex-1 min-h-0">
+        {/* Week Grid - 7 equal columns, content-fitted height */}
+        <div className="grid grid-cols-7 gap-1.5 flex-1 min-h-0">
           {days.map((day, idx) => {
             const groupedItems = getGroupedItemsForDay(day);
             const isCurrentDay = isToday(day);
@@ -386,30 +415,30 @@ export function WeekCalendar({ currentDate, onActivityClick }: WeekCalendarProps
                   isCurrentDay && 'ring-2 ring-primary/50 bg-primary/[0.02]',
                 )}
               >
-                {/* Day Header - fixed height, clickable */}
+                {/* Day Header - compact, clickable */}
                 <div
                   className={cn(
-                    'flex-shrink-0 px-2 py-1.5 border-b border-border cursor-pointer hover:bg-muted/30 transition-colors',
+                    'flex-shrink-0 px-1.5 py-1 border-b border-border cursor-pointer hover:bg-muted/30 transition-colors',
                     isCurrentDay && 'bg-primary/5',
                   )}
                   onClick={() => setSelectedDay(day)}
                 >
                   <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-[10px] font-medium text-muted-foreground uppercase tracking-wider">
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[9px] font-medium text-muted-foreground uppercase">
                         {format(day, 'EEE')}
-                      </p>
-                      <p
+                      </span>
+                      <span
                         className={cn(
-                          'text-base font-semibold tabular-nums',
+                          'text-sm font-semibold tabular-nums',
                           isCurrentDay ? 'text-primary' : 'text-foreground',
                         )}
                       >
                         {format(day, 'd')}
-                      </p>
+                      </span>
                     </div>
                     {dayTotal > 0 && (
-                      <span className="text-[10px] text-muted-foreground tabular-nums">{dayTotal}m</span>
+                      <span className="text-[9px] text-muted-foreground tabular-nums">{dayTotal}m</span>
                     )}
                   </div>
                 </div>
