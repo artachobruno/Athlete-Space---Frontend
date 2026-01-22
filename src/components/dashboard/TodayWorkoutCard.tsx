@@ -1,15 +1,17 @@
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { fetchCalendarToday, fetchTrainingLoad, fetchActivities, fetchActivityStreams } from '@/lib/api';
 import { getTodayIntelligence } from '@/lib/intelligence';
 import { format } from 'date-fns';
-import { Loader2, Moon } from 'lucide-react';
+import { Loader2, Moon, Brain, Calendar } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuthenticatedQuery } from '@/hooks/useAuthenticatedQuery';
 import { useMemo } from 'react';
 import { getTssForDate, enrichActivitiesWithTss, type TrainingLoadData } from '@/lib/tss-utils';
 import { WorkoutSessionCard } from '@/components/workout/WorkoutSessionCard';
 import { toWorkoutSession } from '@/components/workout/workoutSessionAdapter';
+import { Link } from 'react-router-dom';
 import type { CompletedActivity } from '@/types';
 import type { TodayResponse } from '@/lib/api';
 
@@ -189,15 +191,42 @@ export function TodayWorkoutCard(props: TodayWorkoutCardProps = {}) {
         <CardHeader className="pb-2">
           <CardTitle className="text-lg">Today's Session</CardTitle>
         </CardHeader>
-        <CardContent className="flex-1 flex items-center justify-center py-4">
-          <div className="flex flex-col items-center gap-3 text-center">
+        <CardContent className="flex-1 flex flex-col py-4">
+          <div className="space-y-4">
             <div className="flex items-center gap-2 text-muted-foreground">
               <Moon className="h-5 w-5" />
-              <span className="font-medium">Rest Day</span>
+              <span className="font-semibold text-foreground">REST DAY PROTOCOL</span>
             </div>
-            <p className="text-sm text-muted-foreground max-w-sm">
-              Recovery and adaptation are essential parts of training. Take this time to rest and let your body rebuild.
-            </p>
+            
+            <ul className="space-y-2">
+              <li className="text-sm text-foreground flex items-start gap-2">
+                <span className="text-muted-foreground/60 mt-1">•</span>
+                <span>No scheduled training</span>
+              </li>
+              <li className="text-sm text-foreground flex items-start gap-2">
+                <span className="text-muted-foreground/60 mt-1">•</span>
+                <span>Light movement optional</span>
+              </li>
+              <li className="text-sm text-foreground flex items-start gap-2">
+                <span className="text-muted-foreground/60 mt-1">•</span>
+                <span>Focus on recovery behaviors</span>
+              </li>
+            </ul>
+
+            <div className="flex flex-wrap gap-2 pt-2">
+              <Button variant="outline" size="sm" asChild>
+                <Link to="/coach">
+                  <Brain className="h-3.5 w-3.5 mr-1.5" />
+                  View recovery guidance
+                </Link>
+              </Button>
+              <Button variant="outline" size="sm" asChild>
+                <Link to="/schedule">
+                  <Calendar className="h-3.5 w-3.5 mr-1.5" />
+                  See week overview
+                </Link>
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>

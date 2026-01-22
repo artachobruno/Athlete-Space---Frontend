@@ -2,12 +2,12 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-    <key>CAPACITOR_DEBUG</key>
+	<key>CAPACITOR_DEBUG</key>
 	<string>$(CAPACITOR_DEBUG)</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
 	<key>CFBundleDisplayName</key>
-        <string>AthleteSpace</string>
+	<string>AthleteSpace</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -20,10 +20,36 @@
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
 	<string>$(MARKETING_VERSION)</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>com.athletespace.app</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>athletespace</string>
+			</array>
+		</dict>
+		<dict>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.googleusercontent.apps.951112451176-tossaqn3h3s89tbsq32buhf9c5tfe1hg</string>
+			</array>
+		</dict>
+	</array>
 	<key>CFBundleVersion</key>
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsArbitraryLoads</key>
+		<true/>
+	</dict>
+	<key>NSHealthShareUsageDescription</key>
+	<string>This app reads your workouts, heart rate, and activity data from Apple Health to provide insights and track your training progress.</string>
+	<key>NSHealthUpdateUsageDescription</key>
+	<string>This app saves completed workouts and training metrics to Apple Health so users can keep a complete and accurate record of their activities across devices. </string>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>
@@ -47,30 +73,5 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
-	<!-- App Transport Security - DIAGNOSTIC: Nuclear test to isolate ATS vs network issue -->
-	<key>NSAppTransportSecurity</key>
-	<dict>
-		<key>NSAllowsArbitraryLoads</key>
-		<true/>
-	</dict>
-	<!-- URL Schemes for OAuth deep linking -->
-	<key>CFBundleURLTypes</key>
-	<array>
-		<dict>
-			<key>CFBundleURLName</key>
-			<string>com.athletespace.app</string>
-			<key>CFBundleURLSchemes</key>
-			<array>
-				<string>athletespace</string>
-			</array>
-		</dict>
-		<!-- Google Sign-In reversed client ID - REPLACE with your iOS Client ID reversed -->
-		<dict>
-			<key>CFBundleURLSchemes</key>
-			<array>
-				<string>com.googleusercontent.apps.951112451176-tossaqn3h3s89tbsq32buhf9c5tfe1hg</string>
-			</array>
-		</dict>
-	</array>
 </dict>
 </plist>

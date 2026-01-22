@@ -51,11 +51,6 @@ function AthleteDashboard() {
     );
   }, [dashboardData.todayData]);
 
-  // Determine layout class based on whether there's a planned session
-  const layoutClass = hasPlannedSessionToday
-    ? 'grid grid-cols-1 lg:grid-cols-2 gap-6'
-    : 'flex flex-col gap-6';
-
   return (
     <AppLayout>
       <div className="space-y-6">
@@ -65,8 +60,8 @@ function AthleteDashboard() {
           <p className="text-muted-foreground mt-1">What you need to do now</p>
         </div>
 
-        {/* Daily Execution: AI Guidance + Today's Session */}
-        <div className={`${layoutClass} transition-all duration-300 ease-in-out ${!hasPlannedSessionToday ? 'max-w-2xl' : ''}`}>
+        {/* Daily Execution: AI Guidance + Today's Session - Always stacked */}
+        <div className="flex flex-col gap-6 max-w-4xl mx-auto">
           {/* AI Coach Guidance for Today */}
           <DailyDecisionCard
             todayIntelligence={dashboardData.todayIntelligence}

@@ -4,11 +4,12 @@ import { format } from 'date-fns';
 import { useMemo } from 'react';
 import type { CompletedActivity } from '@/types';
 import type { TodayResponse, CalendarSession } from '@/lib/api';
+import type { CoachDecision } from '@/types/coachDecision';
 
 interface TodayCompletionStatusProps {
   todayData?: TodayResponse | null;
   activities10?: CompletedActivity[] | null;
-  todayIntelligence?: { recommendation?: string | null } | null;
+  todayIntelligence?: CoachDecision | { recommendation?: string | null } | null;
 }
 
 interface CompletionRow {
@@ -75,7 +76,19 @@ export function TodayCompletionStatus({ todayData, activities10, todayIntelligen
     if (!todayIntelligence || typeof todayIntelligence !== 'object') {
       return 'proceed';
     }
-    return mapRecommendationToDecision(todayIntelligence.recommendation);
+    // Handle CoachDecisionV2 format
+    if ('version' in todayIntelligence && todayIntelligence.version === 'coach_decision_v2' && 'decision' in todayIntelligence) {
+      const v2Decision = todayIntelligence.decision.toLowerCase();
+      if (v2Decision === 'rest') return 'rest';
+      if (v2Decision === 'modify') return 'modify';
+      if (v2Decision === 'cancel') return 'replace';
+      return 'proceed';
+    }
+    // Handle legacy format with recommendation
+    if ('recommendation' in todayIntelligence) {
+      return mapRecommendationToDecision(todayIntelligence.recommendation);
+    }
+    return 'proceed';
   }, [todayIntelligence]);
   
   const plannedSessions = useMemo(() => {
