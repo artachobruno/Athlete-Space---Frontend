@@ -51,6 +51,7 @@ import type { CalendarItem } from '@/types/calendar';
 import { DroppableDayCell } from './DroppableDayCell';
 import { CalendarWorkoutStack } from './cards/CalendarWorkoutStack';
 import { MobileDayList } from './MobileDayList';
+import { SwipeIndicator } from './SwipeIndicator';
 import { toCalendarItem, capitalizeTitle } from '@/adapters/calendarAdapter';
 import { sortCalendarItems } from './cards/sortCalendarItems';
 import { SessionCard } from '@/components/sessions/SessionCard';
@@ -274,6 +275,7 @@ export function MonthView({ currentDate, onActivityClick }: MonthViewProps) {
             {format(currentDate, 'MMMM yyyy')}
           </h3>
         </div>
+        <SwipeIndicator label="month" className="flex-shrink-0 border-b border-border/50" />
         <MobileDayList
           days={currentMonthDays}
           getItemsForDay={getCalendarItemsForDay}
