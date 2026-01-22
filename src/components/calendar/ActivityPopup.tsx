@@ -923,8 +923,9 @@ export function ActivityPopup({
             </div>
           )}
 
-          {/* Expandable Workout Details */}
-          {session && (
+          {/* Expandable Workout Details - only show for planned sessions without activity */}
+          {/* For completed sessions with activity, show activity tabs above instead */}
+          {session && isPlannedSession && !activity && (
             <div className="mt-4">
               <WorkoutDetailCard
                 session={session}

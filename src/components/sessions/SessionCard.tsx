@@ -226,10 +226,11 @@ export function SessionCard({
   const StatusIcon = getStatusIcon(session.status);
   const sportIcon = sportIcons[session.type?.toLowerCase() as keyof typeof sportIcons] || sportIcons.other;
 
-  // Generate effort data for graph
+  // Generate effort data for graph - always generate for compact density
   const effortData = density === 'compact' 
     ? generatePlannedEffort(session.intensity || session.type, 10)
     : null;
+  // Show actual data only for completed sessions, otherwise show planned (muted)
   const showEffortData = density === 'compact' && session.status === 'completed';
 
   return (
@@ -241,7 +242,7 @@ export function SessionCard({
         statusColors.background,
         onClick && 'cursor-pointer hover:shadow-md transition-shadow',
         // Fixed height for compact density - adjusted to accommodate graph properly
-        density === 'compact' && 'h-[100px] flex flex-col overflow-hidden',
+        density === 'compact' && 'h-[88px] flex flex-col overflow-hidden',
         className
       )}
       onClick={onClick}
@@ -353,9 +354,9 @@ export function SessionCard({
         )}
       </div>
 
-      {/* Effort graph for compact density */}
+      {/* Effort graph for compact density - always show if data exists */}
       {density === 'compact' && effortData && effortData.length > 0 && (
-        <div className="h-[24px] mt-1.5 -mx-2 -mb-2 flex-shrink-0">
+        <div className="h-[20px] mt-1.5 -mx-2 -mb-2 flex-shrink-0" style={{ minHeight: '20px' }}>
           <EffortGraph
             data={effortData}
             showData={showEffortData}

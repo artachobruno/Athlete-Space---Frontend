@@ -133,11 +133,20 @@ export function WorkoutDetailCard({
   const coachVerdict = session.coach_verdict;
 
   // Phase 5A: Only allow coach modification for today or future sessions
-  const sessionDate = new Date(session.date);
+  // Parse date string (format: YYYY-MM-DD) and compare properly
+  const sessionDateStr = session.date;
   const today = new Date();
   today.setHours(0, 0, 0, 0);
-  sessionDate.setHours(0, 0, 0, 0);
-  const isTodayOrFuture = sessionDate >= today;
+  
+  let isTodayOrFuture = false;
+  if (sessionDateStr) {
+    // Parse date string (YYYY-MM-DD format)
+    const [year, month, day] = sessionDateStr.split('-').map(Number);
+    const sessionDate = new Date(year, month - 1, day);
+    sessionDate.setHours(0, 0, 0, 0);
+    // Compare dates (not time)
+    isTodayOrFuture = sessionDate.getTime() >= today.getTime();
+  }
 
   /**
    * Phase 5A: Generate draft message based on coach verdict
