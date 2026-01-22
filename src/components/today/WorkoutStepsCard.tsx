@@ -2,8 +2,11 @@
 // All workout structure must come from workout.steps
 // Never use regex, split(), match(), or pattern logic to extract workout data
 
+import { useMemo } from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import type { WorkoutStep } from '@/lib/api';
+import { useUnitSystem } from '@/hooks/useUnitSystem';
+import { groupWorkoutSteps, type GroupedStep } from '@/lib/workout-grouping';
 
 interface WorkoutStepsCardProps {
   steps: WorkoutStep[];
@@ -23,12 +26,11 @@ function formatStepDuration(durationMin: number | null): string {
   return `${hours}h ${mins}min`;
 }
 
-function formatStepDistance(distanceKm: number | null): string {
-  if (!distanceKm) return '';
-  return `${distanceKm.toFixed(1)} km`;
-}
-
 export function WorkoutStepsCard({ steps, className }: WorkoutStepsCardProps) {
+  const { convertDistance, formatDistance } = useUnitSystem();
+
+  const groupedSteps = useMemo(() => groupWorkoutSteps(steps), [steps]);
+
   if (!steps || steps.length === 0) {
     return null;
   }
@@ -40,32 +42,75 @@ export function WorkoutStepsCard({ steps, className }: WorkoutStepsCardProps) {
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
-          {steps.map((step, index) => {
+          {groupedSteps.map((group, index) => {
+            if (group.isRepeat && group.repeatSteps) {
+              // Render repeat pattern
+              return (
+                <div key={index} className="space-y-2">
+                  <div className="flex items-start gap-3">
+                    <div className="flex-1 min-w-0">
+                      <div className="font-medium text-foreground">{group.name}</div>
+                      {group.intensity && (
+                        <div className="text-xs text-muted-foreground mt-1">
+                          {group.intensity}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  {group.repeatSteps.map((repeatStep, repeatIndex) => {
+                    const repeatDetails: string[] = [];
+                    if (repeatStep.durationMin) {
+                      repeatDetails.push(formatStepDuration(repeatStep.durationMin));
+                    }
+                    if (repeatStep.distanceKm) {
+                      const converted = convertDistance(repeatStep.distanceKm);
+                      repeatDetails.push(formatDistance(converted));
+                    }
+                    if (repeatStep.intensity) {
+                      repeatDetails.push(repeatStep.intensity);
+                    }
+
+                    return (
+                      <div key={repeatIndex} className="flex items-start gap-3 ml-4">
+                        <div className="flex-1 min-w-0">
+                          <div className="font-medium text-foreground">{repeatStep.name}</div>
+                          {repeatDetails.length > 0 && (
+                            <div className="text-xs text-muted-foreground mt-1">
+                              {repeatDetails.join(' • ')}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            }
+
+            // Render single or grouped step
             const details: string[] = [];
-            if (step.duration_min) {
-              details.push(formatStepDuration(step.duration_min));
+            if (group.durationMin) {
+              details.push(formatStepDuration(group.durationMin));
             }
-            if (step.distance_km) {
-              details.push(formatStepDistance(step.distance_km));
+            if (group.totalDistanceKm) {
+              const converted = convertDistance(group.totalDistanceKm);
+              details.push(formatDistance(converted));
             }
-            if (step.intensity) {
-              details.push(step.intensity);
+            if (group.intensity) {
+              details.push(group.intensity);
             }
 
             return (
               <div key={index} className="flex items-start gap-3">
-                <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-sm font-semibold text-primary">
-                  {step.order}
-                </div>
                 <div className="flex-1 min-w-0">
-                  <div className="font-medium text-foreground">{step.name}</div>
+                  <div className="font-medium text-foreground">{group.name}</div>
                   {details.length > 0 && (
                     <div className="text-xs text-muted-foreground mt-1">
                       {details.join(' • ')}
                     </div>
                   )}
-                  {step.notes && (
-                    <div className="text-sm text-foreground/80 mt-1">{step.notes}</div>
+                  {group.notes && (
+                    <div className="text-sm text-foreground/80 mt-1">{group.notes}</div>
                   )}
                 </div>
               </div>

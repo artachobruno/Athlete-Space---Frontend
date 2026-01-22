@@ -74,7 +74,7 @@ export function useCreatePlannedWeek() {
     mutationFn: ({ weekStart, sessions }: { weekStart: string; sessions: Array<{
       date: string;
       sport: 'Run' | 'Bike' | 'Swim' | 'Triathlon' | 'Crossfit' | 'Strength' | 'Walk';
-      type: 'easy' | 'workout' | 'long' | 'rest';
+      type: 'easy' | 'workout' | 'long' | 'rest' | 'threshold' | 'vo2' | 'tempo' | 'recovery' | 'race' | 'cross';
       distance_km?: number | null;
       duration_minutes?: number | null;
       notes?: string | null;

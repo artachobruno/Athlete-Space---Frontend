@@ -12,7 +12,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface SessionData {
   date: string;
-  type: 'easy' | 'workout' | 'long' | 'rest';
+  type: 'easy' | 'workout' | 'long' | 'rest' | 'threshold' | 'vo2' | 'tempo' | 'recovery' | 'race' | 'cross';
   distance_km?: number | null;
   duration_minutes?: number | null;
   notes?: string | null;
@@ -51,8 +51,8 @@ export function ImportSeasonModal({ open, onOpenChange, onSuccess }: ImportSeaso
             throw new Error('Each session must have a date (YYYY-MM-DD)');
           }
           
-          if (!item.type || !['easy', 'workout', 'long', 'rest'].includes(item.type)) {
-            throw new Error('Each session must have a type (easy, workout, long, or rest)');
+          if (!item.type || !['easy', 'workout', 'long', 'rest', 'threshold', 'vo2', 'tempo', 'recovery', 'race', 'cross'].includes(item.type)) {
+            throw new Error('Each session must have a valid type');
           }
 
           sessions.push({
@@ -78,8 +78,8 @@ export function ImportSeasonModal({ open, onOpenChange, onSuccess }: ImportSeaso
             throw new Error('Each session must have a date (YYYY-MM-DD)');
           }
           
-          if (!item.type || !['easy', 'workout', 'long', 'rest'].includes(item.type)) {
-            throw new Error('Each session must have a type (easy, workout, long, or rest)');
+          if (!item.type || !['easy', 'workout', 'long', 'rest', 'threshold', 'vo2', 'tempo', 'recovery', 'race', 'cross'].includes(item.type)) {
+            throw new Error('Each session must have a valid type');
           }
 
           sessions.push({

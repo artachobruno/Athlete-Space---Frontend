@@ -25,6 +25,7 @@ import { normalizeSportType } from '@/lib/session-utils';
 import { ActivityCharts } from '@/components/activities/ActivityCharts';
 import { ActivityMap } from '@/components/activities/ActivityMap';
 import { normalizeRoutePointsFromStreams } from '@/lib/route-utils';
+import { groupWorkoutSteps } from '@/lib/workout-grouping';
 
 interface ActivityPopupProps {
   open: boolean;
@@ -149,7 +150,7 @@ export function ActivityPopup({
     proposal: ProposalOnlyResponse;
     status: 'completed' | 'skipped' | 'cancelled';
   } | null>(null);
-  const { convertDistance, convertElevation, convertPace } = useUnitSystem();
+  const { convertDistance, convertElevation, convertPace, formatDistance } = useUnitSystem();
   const workout = plannedWorkout;
   const activity = completedActivity;
   const SportIcon = sportIcons[workout?.sport || activity?.sport || 'running'];
@@ -324,47 +325,67 @@ export function ActivityPopup({
   const displayTss = enrichedActivity?.trainingLoad || 
     (activity?.date ? getTssForDate(activity.date, trainingLoadData) : null);
 
-  // Generate lightweight structured workout preview (recognition, not duplication)
+  // Generate lightweight structured workout preview with grouping
   const workoutPreview = useMemo(() => {
     if (!structuredWorkout?.steps || structuredWorkout.steps.length === 0) {
       return null;
     }
 
     const sortedSteps = [...structuredWorkout.steps].sort((a, b) => a.order - b.order);
-    const groups = structuredWorkout.groups || [];
     
-    // Build a map of step IDs to group info
-    const stepToGroup: Map<string, { groupId: string; repeat: number; stepIds: string[] }> = new Map();
-    for (const group of groups) {
-      for (const stepId of group.step_ids) {
-        stepToGroup.set(stepId, { groupId: group.group_id, repeat: group.repeat, stepIds: group.step_ids });
-      }
-    }
+    // Use the grouping utility to group steps
+    const grouped = groupWorkoutSteps(sortedSteps);
     
-    // Generate compact summary with grouping support
+    // Generate summary from grouped steps
     const summaryParts: string[] = [];
-    const processedStepIds = new Set<string>();
     
-    for (const step of sortedSteps) {
-      if (processedStepIds.has(step.id)) continue;
-      
-      const group = stepToGroup.get(step.id);
-      if (group) {
-        // This step is part of a group
-        const groupSteps = group.stepIds
-          .map(id => sortedSteps.find(s => s.id === id))
-          .filter((s): s is typeof step => s !== undefined)
-          .sort((a, b) => a.order - b.order);
+    for (const group of grouped) {
+      if (group.isRepeat && group.repeatSteps) {
+        // Format: "Repeat N times: intensity Step1 → Step2"
+        const parts: string[] = [];
         
-        if (groupSteps.length > 0) {
-          const groupNames = groupSteps.map(s => s.name || s.step_type || 'Step');
-          summaryParts.push(`${group.repeat}× (${groupNames.join(' + ')})`);
-          groupSteps.forEach(s => processedStepIds.add(s.id));
+        if (group.intensity) {
+          parts.push(group.intensity);
         }
+        
+        group.repeatSteps.forEach((step) => {
+          const stepParts: string[] = [step.name];
+          
+          if (step.durationMin) {
+            stepParts.push(`${step.durationMin} min`);
+          }
+          
+          if (step.distanceKm) {
+            const converted = convertDistance(step.distanceKm);
+            stepParts.push(formatDistance(converted));
+          }
+          
+          if (step.intensity) {
+            stepParts.push(step.intensity);
+          }
+          
+          parts.push(stepParts.join(' '));
+        });
+        
+        summaryParts.push(`Repeat ${group.count} times: ${parts.join(' → ')}`);
       } else {
-        // Single step
-        summaryParts.push(step.name || step.step_type || 'Step');
-        processedStepIds.add(step.id);
+        // Format single or grouped step
+        const parts: string[] = [group.name];
+        
+        if (group.durationMin) {
+          parts.push(`${group.durationMin} min`);
+        }
+        
+        if (group.totalDistanceKm) {
+          const converted = convertDistance(group.totalDistanceKm);
+          parts.push(formatDistance(converted));
+        }
+        
+        if (group.intensity) {
+          parts.push(group.intensity);
+        }
+        
+        summaryParts.push(parts.join(' • '));
       }
     }
     
@@ -382,7 +403,7 @@ export function ActivityPopup({
       stepTypes: sortedSteps.map((step) => step.step_type || step.type),
       stepCount: sortedSteps.length,
     };
-  }, [structuredWorkout]);
+  }, [structuredWorkout, convertDistance, formatDistance]);
 
   const handleViewDetails = () => {
     onOpenChange(false);

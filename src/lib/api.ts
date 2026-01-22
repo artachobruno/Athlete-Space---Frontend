@@ -2248,7 +2248,7 @@ export const fetchCalendarSessions = async (params?: { limit?: number; offset?: 
 export const createManualSession = async (session: {
   date: string;
   sport: 'Run' | 'Bike' | 'Swim' | 'Triathlon' | 'Crossfit' | 'Strength' | 'Walk' | 'Race';
-  type: 'easy' | 'workout' | 'long' | 'rest';
+  type: 'easy' | 'workout' | 'long' | 'rest' | 'threshold' | 'vo2' | 'tempo' | 'recovery' | 'race' | 'cross';
   distance_km?: number | null;
   duration_minutes?: number | null;
   notes?: string | null;
@@ -2272,7 +2272,7 @@ export const createManualSession = async (session: {
 export const createManualWeek = async (weekStart: string, sessions: Array<{
   date: string;
   sport: 'Run' | 'Bike' | 'Swim' | 'Triathlon' | 'Crossfit' | 'Strength' | 'Walk' | 'Race';
-  type: 'easy' | 'workout' | 'long' | 'rest';
+  type: 'easy' | 'workout' | 'long' | 'rest' | 'threshold' | 'vo2' | 'tempo' | 'recovery' | 'race' | 'cross';
   distance_km?: number | null;
   duration_minutes?: number | null;
   notes?: string | null;
@@ -2304,7 +2304,7 @@ export const createManualWeek = async (weekStart: string, sessions: Array<{
  */
 export const createManualSeason = async (sessions: Array<{
   date: string;
-  type: 'easy' | 'workout' | 'long' | 'rest';
+  type: 'easy' | 'workout' | 'long' | 'rest' | 'threshold' | 'vo2' | 'tempo' | 'recovery' | 'race' | 'cross';
   distance_km?: number | null;
   duration_minutes?: number | null;
   notes?: string | null;
@@ -2359,7 +2359,7 @@ export interface ParsedWorkout {
 
 export const parseWorkoutNotes = async (
   notes: string,
-  sessionType: 'easy' | 'workout' | 'long' | 'rest',
+  sessionType: 'easy' | 'workout' | 'long' | 'rest' | 'threshold' | 'vo2' | 'tempo' | 'recovery' | 'race' | 'cross',
   distanceKm?: number | null,
   durationMinutes?: number | null
 ): Promise<ParsedWorkout> => {

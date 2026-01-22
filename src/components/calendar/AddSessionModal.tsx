@@ -32,7 +32,7 @@ export function AddSessionModal({ open, onOpenChange, initialDate, onSuccess }: 
   const navigate = useNavigate();
   const [date, setDate] = useState(initialDate ? format(initialDate, 'yyyy-MM-dd') : format(new Date(), 'yyyy-MM-dd'));
   const [sport, setSport] = useState<'Run' | 'Bike' | 'Swim' | 'Triathlon' | 'Crossfit' | 'Strength' | 'Walk' | ''>('');
-  const [type, setType] = useState<'easy' | 'workout' | 'long' | 'rest' | ''>('');
+  const [type, setType] = useState<'easy' | 'workout' | 'long' | 'rest' | 'threshold' | 'vo2' | 'tempo' | 'recovery' | 'race' | 'cross' | ''>('');
   const [distanceInput, setDistanceInput] = useState<string>('');
   const [durationMinutes, setDurationMinutes] = useState<string>('');
   const [notes, setNotes] = useState<string>('');
@@ -74,7 +74,7 @@ export function AddSessionModal({ open, onOpenChange, initialDate, onSuccess }: 
       const duration = durationMinutes ? parseInt(durationMinutes, 10) : null;
       const result = await parseWorkoutNotes(
         notes,
-        type as 'easy' | 'workout' | 'long' | 'rest',
+        type as 'easy' | 'workout' | 'long' | 'rest' | 'threshold' | 'vo2' | 'tempo' | 'recovery' | 'race' | 'cross',
         distanceKm,
         duration && !isNaN(duration) && duration > 0 ? duration : null
       );
@@ -313,7 +313,7 @@ export function AddSessionModal({ open, onOpenChange, initialDate, onSuccess }: 
 
           <div className="space-y-2">
             <Label htmlFor="type">Session Type *</Label>
-            <Select value={type} onValueChange={(value) => setType(value as 'easy' | 'workout' | 'long' | 'rest')} disabled={createSession.isPending}>
+            <Select value={type} onValueChange={(value) => setType(value as 'easy' | 'workout' | 'long' | 'rest' | 'threshold' | 'vo2' | 'tempo' | 'recovery' | 'race' | 'cross')} disabled={createSession.isPending}>
               <SelectTrigger id="type">
                 <SelectValue placeholder="Select session type" />
               </SelectTrigger>
@@ -321,6 +321,12 @@ export function AddSessionModal({ open, onOpenChange, initialDate, onSuccess }: 
                 <SelectItem value="easy">Easy</SelectItem>
                 <SelectItem value="workout">Workout</SelectItem>
                 <SelectItem value="long">Long</SelectItem>
+                <SelectItem value="threshold">Threshold</SelectItem>
+                <SelectItem value="vo2">VO2</SelectItem>
+                <SelectItem value="tempo">Tempo</SelectItem>
+                <SelectItem value="recovery">Recovery</SelectItem>
+                <SelectItem value="race">Race</SelectItem>
+                <SelectItem value="cross">Cross</SelectItem>
                 <SelectItem value="rest">Rest</SelectItem>
               </SelectContent>
             </Select>

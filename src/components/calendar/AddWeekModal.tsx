@@ -14,7 +14,7 @@ type UnitSystem = 'imperial' | 'metric';
 
 interface SessionFormData {
   sport: 'Run' | 'Bike' | 'Swim' | 'Triathlon' | 'Crossfit' | 'Strength' | 'Walk' | '';
-  type: 'easy' | 'workout' | 'long' | 'rest' | '';
+  type: 'easy' | 'workout' | 'long' | 'rest' | 'threshold' | 'vo2' | 'tempo' | 'recovery' | 'race' | 'cross' | '';
   distance: string;
   duration_minutes: string;
   notes: string;
@@ -120,7 +120,7 @@ export function AddWeekModal({ open, onOpenChange, initialDate, onSuccess }: Add
   const validateAndPrepareSessions = (): Array<{
     date: string;
     sport: 'Run' | 'Bike' | 'Swim' | 'Triathlon' | 'Crossfit' | 'Strength' | 'Walk';
-    type: 'easy' | 'workout' | 'long' | 'rest';
+    type: 'easy' | 'workout' | 'long' | 'rest' | 'threshold' | 'vo2' | 'tempo' | 'recovery' | 'race' | 'cross';
     distance_km?: number | null;
     duration_minutes?: number | null;
     notes?: string | null;
@@ -128,7 +128,7 @@ export function AddWeekModal({ open, onOpenChange, initialDate, onSuccess }: Add
     const sessions: Array<{
       date: string;
       sport: 'Run' | 'Bike' | 'Swim' | 'Triathlon' | 'Crossfit' | 'Strength' | 'Walk';
-      type: 'easy' | 'workout' | 'long' | 'rest';
+      type: 'easy' | 'workout' | 'long' | 'rest' | 'threshold' | 'vo2' | 'tempo' | 'recovery' | 'race' | 'cross';
       distance_km?: number | null;
       duration_minutes?: number | null;
       notes?: string | null;
@@ -374,6 +374,12 @@ export function AddWeekModal({ open, onOpenChange, initialDate, onSuccess }: Add
                                 <SelectItem value="easy">Easy</SelectItem>
                                 <SelectItem value="workout">Workout</SelectItem>
                                 <SelectItem value="long">Long</SelectItem>
+                                <SelectItem value="threshold">Threshold</SelectItem>
+                                <SelectItem value="vo2">VO2</SelectItem>
+                                <SelectItem value="tempo">Tempo</SelectItem>
+                                <SelectItem value="recovery">Recovery</SelectItem>
+                                <SelectItem value="race">Race</SelectItem>
+                                <SelectItem value="cross">Cross</SelectItem>
                                 <SelectItem value="rest">Rest</SelectItem>
                               </SelectContent>
                             </Select>
