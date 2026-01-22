@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Send, Brain, User, Loader2 } from 'lucide-react';
@@ -53,13 +53,23 @@ const hasPlanIntent = (message: string): boolean => {
   );
 };
 
+interface CoachNavigationState {
+  context?: 'modify_today_session';
+  session_id?: string | null;
+  suggested_action?: 'generic' | 'skip' | 'reduce_volume' | 'convert_to_recovery';
+  draft_message?: string;
+}
+
 export function CoachChat() {
   const navigate = useNavigate();
+  const location = useLocation();
   const [mode, setMode] = useState<CoachMode>('idle');
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isTyping, setIsTyping] = useState(false);
   const [conversationId, setConversationId] = useState<string | null>(null);
+  const [hasEditedDraft, setHasEditedDraft] = useState(false);
+  const [draftContext, setDraftContext] = useState<CoachNavigationState | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const isSendingRef = useRef<boolean>(false);
   const finalPlanRef = useRef<Message | null>(null);
@@ -78,6 +88,18 @@ export function CoachChat() {
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  // Handle navigation state with draft message
+  useEffect(() => {
+    const state = location.state as CoachNavigationState | null;
+    if (state?.context === 'modify_today_session' && state.draft_message) {
+      setDraftContext(state);
+      setInput(state.draft_message);
+      setHasEditedDraft(false);
+      // Clear location state to prevent re-applying on re-renders
+      navigate(location.pathname, { replace: true, state: {} });
+    }
+  }, [location.state, navigate, location.pathname]);
 
   // Set initial greeting on mount - only once when idle and no messages
   useEffect(() => {
@@ -227,6 +249,12 @@ export function CoachChat() {
 
     // F06: Clear input immediately after send starts
     setInput('');
+    
+    // Clear draft context when message is sent
+    if (draftContext) {
+      setDraftContext(null);
+      setHasEditedDraft(false);
+    }
     
     // F02: Set send lock immediately
     isSendingRef.current = true;
@@ -565,6 +593,15 @@ export function CoachChat() {
 
   return (
     <div className="flex-1 flex flex-col bg-card rounded-lg border border-border overflow-hidden">
+      {/* Draft Context Banner */}
+      {draftContext?.context === 'modify_today_session' && (
+        <div className="border-b border-yellow-500/30 bg-yellow-500/5 px-4 py-2">
+          <p className="text-sm text-yellow-600 dark:text-yellow-400">
+            Draft prepared for today's session
+          </p>
+        </div>
+      )}
+      
       {/* Messages */}
       <div className="flex-1 overflow-y-auto p-4 space-y-4">
         {/* Planning Progress Panel - shows real-time planning phase progress */}
@@ -795,7 +832,13 @@ export function CoachChat() {
         <form onSubmit={handleSubmit} className="flex gap-2">
           <Textarea
             value={input}
-            onChange={(e) => setInput(e.target.value)}
+            onChange={(e) => {
+              setInput(e.target.value);
+              // Mark as edited if user changes the draft message
+              if (draftContext && !hasEditedDraft && e.target.value !== draftContext.draft_message) {
+                setHasEditedDraft(true);
+              }
+            }}
             onKeyDown={handleKeyDown}
             placeholder="Ask your coach anything..."
             className="min-h-[44px] max-h-32 resize-none"
@@ -803,16 +846,23 @@ export function CoachChat() {
           />
           <Button
             type="submit"
-            disabled={!input.trim() || isTyping || isSendingRef.current}
+            disabled={!input.trim() || isTyping || isSendingRef.current || (draftContext && !hasEditedDraft)}
             size="icon"
             className="shrink-0 bg-coach hover:bg-coach/90 text-coach-foreground"
           >
             <Send className="h-4 w-4" />
           </Button>
         </form>
-        <p className="text-xs text-muted-foreground mt-2">
-          Press Enter to send, Shift+Enter for new line
-        </p>
+        {draftContext && !hasEditedDraft && (
+          <p className="text-xs text-yellow-600 dark:text-yellow-400 mt-2">
+            Draft prepared for today's session. Please review and edit before sending.
+          </p>
+        )}
+        {(!draftContext || hasEditedDraft) && (
+          <p className="text-xs text-muted-foreground mt-2">
+            Press Enter to send, Shift+Enter for new line
+          </p>
+        )}
       </div>
     </div>
   );

@@ -11,7 +11,7 @@ import { useMemo } from 'react';
 import { getTssForDate, enrichActivitiesWithTss, type TrainingLoadData } from '@/lib/tss-utils';
 import { WorkoutSessionCard } from '@/components/workout/WorkoutSessionCard';
 import { toWorkoutSession } from '@/components/workout/workoutSessionAdapter';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import type { CompletedActivity } from '@/types';
 import type { TodayResponse } from '@/lib/api';
 
@@ -43,6 +43,7 @@ interface TodayWorkoutCardProps {
 
 export function TodayWorkoutCard(props: TodayWorkoutCardProps = {}) {
   const today = format(new Date(), 'yyyy-MM-dd');
+  const navigate = useNavigate();
 
   // Use props if provided, otherwise fetch (backward compatibility)
   const propsTodayData = props.todayData;
@@ -344,6 +345,26 @@ export function TodayWorkoutCard(props: TodayWorkoutCardProps = {}) {
   const executionNotes = todayWorkout.execution_notes;
   const mustDos = todayWorkout.must_dos || [];
 
+  // Generate draft message for modification request
+  const getGenericDraftMessage = (): string => {
+    return "Today was marked as a REST day based on my recovery signals.\nCan you modify today's planned session accordingly (e.g., reduce volume, replace with recovery, or skip)?";
+  };
+
+  // Handle navigation to coach with pre-filled message
+  const handleModifyRequest = () => {
+    const sessionId = todayWorkout.id || null;
+    const draftMessage = getGenericDraftMessage();
+    
+    navigate('/coach', {
+      state: {
+        context: 'modify_today_session',
+        session_id: sessionId,
+        suggested_action: 'generic',
+        draft_message: draftMessage,
+      },
+    });
+  };
+
   return (
     <div className={cn('space-y-4', cardClassName)}>
       {/* Coach Suggestion Card - show if verdict suggests modification */}
@@ -365,9 +386,16 @@ export function TodayWorkoutCard(props: TodayWorkoutCardProps = {}) {
               </p>
             )}
             <div className="flex flex-wrap gap-2 mt-3">
+              <Button 
+                onClick={handleModifyRequest}
+                size="sm"
+                className="bg-coach hover:bg-coach/90 text-coach-foreground"
+              >
+                Ask Coach to Modify Today's Session
+              </Button>
               <Button variant="outline" size="sm" asChild>
                 <Link to="/coach">
-                  Discuss with coach
+                  Discuss with Coach
                 </Link>
               </Button>
             </div>
