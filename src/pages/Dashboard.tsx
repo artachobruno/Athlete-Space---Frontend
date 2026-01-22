@@ -17,6 +17,7 @@ import { isPreviewMode } from '@/lib/preview';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { DailyDecisionCard } from '@/components/dashboard/DailyDecisionCard';
 import { TodayWorkoutCard } from '@/components/dashboard/TodayWorkoutCard';
+import { TodayCompletionStatus } from '@/components/today/TodayCompletionStatus';
 import { useSyncTodayWorkout } from '@/hooks/useSyncTodayWorkout';
 import { useDashboardData } from '@/hooks/useDashboardData';
 
@@ -69,6 +70,13 @@ function AthleteDashboard() {
             todayIntelligence={dashboardData.todayIntelligence}
           />
         </div>
+
+        {/* Completion Status */}
+        <TodayCompletionStatus
+          todayData={dashboardData.todayData}
+          activities10={dashboardData.activities10}
+          todayIntelligence={dashboardData.todayIntelligence}
+        />
       </div>
     </AppLayout>
   );
