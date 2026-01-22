@@ -153,20 +153,8 @@ export function TodayWorkoutCard(props: TodayWorkoutCardProps = {}) {
     });
   }, [todayWorkout, matchingActivity, activityStreams, finalTodayIntelligence]);
 
-  if (isLoading) {
-    return (
-      <Card className={cn('h-full flex flex-col', cardClassName)}>
-        <CardHeader className="pb-2">
-          <CardTitle className="text-lg">Today's Session</CardTitle>
-        </CardHeader>
-        <CardContent className="flex-1 flex items-center justify-center py-4">
-          <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-        </CardContent>
-      </Card>
-    );
-  }
-
   // Check if verdict/decision suggests modification (REST, MODIFY, or CANCEL)
+  // MUST be called before any early returns to follow Rules of Hooks
   const shouldSuggestModification = useMemo(() => {
     if (!finalTodayIntelligence) return false;
     
@@ -240,6 +228,19 @@ export function TodayWorkoutCard(props: TodayWorkoutCardProps = {}) {
     
     return null;
   }, [finalTodayIntelligence]);
+
+  if (isLoading) {
+    return (
+      <Card className={cn('h-full flex flex-col', cardClassName)}>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-lg">Today's Session</CardTitle>
+        </CardHeader>
+        <CardContent className="flex-1 flex items-center justify-center py-4">
+          <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+        </CardContent>
+      </Card>
+    );
+  }
 
   // Detect if there's no planned session (rest day)
   const hasNoPlannedSession = !error && (!finalTodayData?.sessions || 
