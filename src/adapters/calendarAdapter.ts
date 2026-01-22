@@ -117,5 +117,6 @@ export function toCalendarItem(
     isPaired,
     compliance,
     description: session.notes || undefined,
+    executionNotes: session.execution_notes || undefined,
   };
 }

@@ -221,7 +221,7 @@ function WeekView({ currentDate, onActivityClick }: WeekViewProps) {
                 <div className="absolute top-0 left-0 right-0 bottom-0">
                   {groupedItems.length === 0 ? (
                     <div className="h-full flex items-center justify-center">
-                      <p className="text-[9px] text-muted-foreground/30 uppercase tracking-wider">Rest</p>
+                      <p className="text-[9px] text-muted-foreground/50 uppercase tracking-wider opacity-50">🧠 Adaptation day</p>
                     </div>
                   ) : (() => {
                     const flatItems = groupedItems.flatMap((g) => g.items);

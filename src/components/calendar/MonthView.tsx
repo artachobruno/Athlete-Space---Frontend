@@ -287,6 +287,8 @@ export function MonthView({ currentDate, onActivityClick }: MonthViewProps) {
                   <div className="relative flex-1">
                     {items.length > 0 && (() => {
                       const stackItems = sortCalendarItems(items);
+                      const topItem = stackItems[0];
+                      const hasExecutionNotes = topItem?.executionNotes;
                       return (
                         <div className="absolute top-0 left-0 right-0 bottom-0">
                           <CalendarWorkoutStack
@@ -314,6 +316,15 @@ export function MonthView({ currentDate, onActivityClick }: MonthViewProps) {
                             onActivityClick?.(null, activity, session ?? undefined);
                           }}
                         />
+                          {/* Execution notes indicator - tiny dot in top-right corner */}
+                          {hasExecutionNotes && (
+                            <div
+                              className="absolute top-1 right-1 z-10"
+                              title={topItem.executionNotes || undefined}
+                            >
+                              <div className="w-1.5 h-1.5 rounded-full bg-muted-foreground/60" />
+                            </div>
+                          )}
                         </div>
                       );
                     })()}

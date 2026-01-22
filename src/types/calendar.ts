@@ -29,6 +29,7 @@ export interface CalendarItem {
   isPaired?: boolean;
   compliance?: CalendarCompliance;
   description?: string; // Workout description or coach notes
+  executionNotes?: string | null; // Execution guidance notes (max 120 chars)
   coachNote?: {
     text: string;
     tone: 'warning' | 'encouragement' | 'neutral';

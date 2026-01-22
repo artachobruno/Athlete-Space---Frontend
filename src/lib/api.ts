@@ -130,6 +130,7 @@ export interface CalendarSession {
   intensity: string | null;
   status: "planned" | "completed" | "skipped" | "cancelled" | "missed";
   notes: string | null;
+  execution_notes?: string | null;
   // PHASE F3: Calendar API should return workout_id
   workout_id?: string | null;
   // Pairing: session is paired if this is non-null

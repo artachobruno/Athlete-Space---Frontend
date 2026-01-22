@@ -36,4 +36,5 @@ export interface WorkoutSession {
   plannedEffortData?: number[];
 
   coachInsight?: CoachInsightData;
+  executionNotes?: string | null;
 }

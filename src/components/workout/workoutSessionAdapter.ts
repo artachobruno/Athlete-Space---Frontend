@@ -364,5 +364,6 @@ export function calendarItemToWorkoutSession(
     effortData: effortData && effortData.length > 0 ? effortData : plannedEffortData,
     plannedEffortData,
     coachInsight,
+    executionNotes: item.executionNotes || undefined,
   };
 }
