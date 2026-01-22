@@ -7,13 +7,14 @@ import { format } from 'date-fns';
 import { Loader2, Moon, Brain, Calendar } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuthenticatedQuery } from '@/hooks/useAuthenticatedQuery';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { getTssForDate, enrichActivitiesWithTss, type TrainingLoadData } from '@/lib/tss-utils';
 import { WorkoutSessionCard } from '@/components/workout/WorkoutSessionCard';
 import { toWorkoutSession } from '@/components/workout/workoutSessionAdapter';
 import { Link, useNavigate } from 'react-router-dom';
 import type { CompletedActivity } from '@/types';
 import type { TodayResponse } from '@/lib/api';
+import { ExpandableWorkoutCard } from '@/components/workout/ExpandableWorkoutCard';
 
 // Map workout intent to status for badge display
 type WorkoutIntent = 'aerobic' | 'threshold' | 'vo2' | 'endurance' | 'recovery';
@@ -44,6 +45,7 @@ interface TodayWorkoutCardProps {
 export function TodayWorkoutCard(props: TodayWorkoutCardProps = {}) {
   const today = format(new Date(), 'yyyy-MM-dd');
   const navigate = useNavigate();
+  const [showWorkoutDetails, setShowWorkoutDetails] = useState(false);
 
   // Use props if provided, otherwise fetch (backward compatibility)
   const propsTodayData = props.todayData;
@@ -413,9 +415,28 @@ export function TodayWorkoutCard(props: TodayWorkoutCardProps = {}) {
         </CardHeader>
         <CardContent className="flex-1 py-2">
           {/* Full WorkoutSessionCard - non-compact to show effort graph */}
-          <WorkoutSessionCard session={workoutSession} compact={false} />
+          <WorkoutSessionCard 
+            session={workoutSession} 
+            compact={false}
+            onGraphClick={todayWorkout.workout_id ? () => setShowWorkoutDetails(true) : undefined}
+          />
         </CardContent>
       </Card>
+
+      {/* Expandable Workout Details */}
+      {showWorkoutDetails && todayWorkout.workout_id && (
+        <div className="relative">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setShowWorkoutDetails(false)}
+            className="absolute top-2 right-2 z-10"
+          >
+            Close
+          </Button>
+          <ExpandableWorkoutCard workoutId={todayWorkout.workout_id} defaultExpanded={true} />
+        </div>
+      )}
 
       {/* Must-Dos Card - show unified must-do instructions (priority) */}
       {mustDos.length > 0 && (

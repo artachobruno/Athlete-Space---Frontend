@@ -28,6 +28,7 @@ import { normalizeRoutePointsFromStreams } from '@/lib/route-utils';
 import { groupWorkoutSteps } from '@/lib/workout-grouping';
 import { getTodayIntelligence } from '@/lib/intelligence';
 import { Alert, AlertDescription } from '@/components/ui/alert';
+import { ExpandableWorkoutCard } from '@/components/workout/ExpandableWorkoutCard';
 
 interface ActivityPopupProps {
   open: boolean;
@@ -450,10 +451,11 @@ export function ActivityPopup({
     }
   };
 
+  const [showWorkoutDetails, setShowWorkoutDetails] = useState(false);
+
   const handleViewWorkout = () => {
     if (session?.workout_id) {
-      onOpenChange(false);
-      navigate(`/workout/${session.workout_id}`);
+      setShowWorkoutDetails(true);
     }
   };
 
@@ -911,7 +913,7 @@ export function ActivityPopup({
                 onClick={handleViewWorkout}
                 className="text-sm text-primary hover:text-primary/80 underline flex items-center gap-1 mt-1"
               >
-                View full workout
+                {showWorkoutDetails ? 'Hide workout details' : 'View full workout'}
                 <ArrowRight className="h-3 w-3" />
               </button>
             </div>
@@ -945,6 +947,13 @@ export function ActivityPopup({
                   </div>
                 ))}
               </div>
+            </div>
+          )}
+
+          {/* Expandable Workout Details */}
+          {showWorkoutDetails && session?.workout_id && (
+            <div className="mt-4">
+              <ExpandableWorkoutCard workoutId={session.workout_id} defaultExpanded={true} />
             </div>
           )}
 
@@ -1034,7 +1043,7 @@ export function ActivityPopup({
               </div>
             )}
             <div className="flex gap-2">
-              {session?.workout_id && (
+              {session?.workout_id && !showWorkoutDetails && (
                 <Button
                   variant="default"
                   className="flex-1"
@@ -1042,6 +1051,16 @@ export function ActivityPopup({
                 >
                   <ExternalLink className="h-4 w-4 mr-2" />
                   View Workout
+                </Button>
+              )}
+              {session?.workout_id && showWorkoutDetails && (
+                <Button
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => setShowWorkoutDetails(false)}
+                >
+                  <X className="h-4 w-4 mr-2" />
+                  Hide Workout Details
                 </Button>
               )}
               <Button

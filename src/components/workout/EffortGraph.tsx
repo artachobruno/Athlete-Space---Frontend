@@ -26,6 +26,8 @@ interface EffortGraphProps {
   compact?: boolean;
   /** Additional CSS classes */
   className?: string;
+  /** Click handler for the graph */
+  onClick?: () => void;
 }
 
 export function EffortGraph({
@@ -35,6 +37,7 @@ export function EffortGraph({
   isCompliance = false,
   compact = false,
   className,
+  onClick,
 }: EffortGraphProps) {
   const maxEffort = data.length > 0 ? Math.max(...data) : 10;
   const peakIndex = data.indexOf(maxEffort);
@@ -44,11 +47,13 @@ export function EffortGraph({
       className={cn(
         'relative rounded-lg overflow-hidden h-full',
         compact ? 'mx-1.5 mb-1.5' : 'mx-3 mb-3',
+        onClick && 'cursor-pointer hover:opacity-90 transition-opacity',
         className
       )}
       style={{
         boxShadow: 'inset 0 2px 4px rgba(0, 0, 0, 0.35)',
       }}
+      onClick={onClick}
     >
       {/* Dark inset background */}
       <div className="absolute inset-0 bg-gradient-to-b from-[hsl(var(--card))] to-[hsl(var(--background))] opacity-80" />

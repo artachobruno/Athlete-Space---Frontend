@@ -35,6 +35,8 @@ interface WorkoutSessionCardProps {
   compact?: boolean;
   /** Additional CSS classes */
   className?: string;
+  /** Click handler for the effort graph */
+  onGraphClick?: () => void;
 }
 
 /**
@@ -103,6 +105,7 @@ export function WorkoutSessionCard({
   session,
   compact = false,
   className,
+  onGraphClick,
 }: WorkoutSessionCardProps) {
   const { phase, type, title, planned, completed, effortData, plannedEffortData, coachInsight, executionNotes } = session;
 
@@ -229,6 +232,7 @@ export function WorkoutSessionCard({
               plannedData={isCompliance ? plannedEffortData : undefined}
               isCompliance={isCompliance}
               compact={compact}
+              onClick={onGraphClick}
             />
           </div>
         )
