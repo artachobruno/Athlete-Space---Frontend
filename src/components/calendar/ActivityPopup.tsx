@@ -26,6 +26,8 @@ import { ActivityCharts } from '@/components/activities/ActivityCharts';
 import { ActivityMap } from '@/components/activities/ActivityMap';
 import { normalizeRoutePointsFromStreams } from '@/lib/route-utils';
 import { groupWorkoutSteps } from '@/lib/workout-grouping';
+import { getTodayIntelligence } from '@/lib/intelligence';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 
 interface ActivityPopupProps {
   open: boolean;
@@ -163,6 +165,40 @@ export function ActivityPopup({
   
   // Check if session is completed but has no linked activity
   const isCompletedWithoutActivity = session && session.status === 'completed' && !session.completed_activity_id && !activity;
+
+  // Fetch today's intelligence to determine recovery verdict
+  const { data: todayIntelligence } = useAuthenticatedQuery({
+    queryKey: ['todayIntelligence'],
+    queryFn: () => getTodayIntelligence(),
+    enabled: open && isPlannedSession,
+    retry: 1,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+  });
+
+  // Check if verdict suggests modification (REST, MODIFY, or CAUTION/CANCEL)
+  const shouldShowRecoveryBanner = useMemo(() => {
+    if (!todayIntelligence || !isPlannedSession) return false;
+    
+    // Check for v2 format
+    if (typeof todayIntelligence === 'object' && 'version' in todayIntelligence) {
+      const v2 = todayIntelligence as { version?: string; decision?: string };
+      if (v2.version === 'coach_decision_v2') {
+        const decision = v2.decision;
+        return decision === 'REST' || decision === 'MODIFY' || decision === 'CANCEL';
+      }
+    }
+    
+    // Check for v1 format
+    if (typeof todayIntelligence === 'object' && 'recommendation' in todayIntelligence) {
+      const rec = (todayIntelligence as { recommendation?: string }).recommendation;
+      if (rec) {
+        const lower = rec.toLowerCase();
+        return lower === 'rest' || lower.includes('modify') || lower.includes('cancel') || lower.includes('caution');
+      }
+    }
+    
+    return false;
+  }, [todayIntelligence, isPlannedSession]);
   
   // Fetch activities for the same date when showing link selector
   const sessionDate = session?.date ? parseISO(session.date) : null;
@@ -583,6 +619,18 @@ export function ActivityPopup({
           </CardHeader>
 
           <CardContent className="space-y-4 pt-0">
+          {/* Recovery Context Banner */}
+          {shouldShowRecoveryBanner && (
+            <Alert className="bg-amber-500/10 border-amber-500/30">
+              <Info className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+              <AlertDescription className="text-sm text-foreground">
+                <span className="font-semibold">Recovery Suggestion</span>
+                <br />
+                Today is flagged as a low-readiness day. Consider modifying or skipping this session.
+              </AlertDescription>
+            </Alert>
+          )}
+
           {/* Metrics row */}
           <div className="flex items-center gap-4 text-sm text-muted-foreground">
             <span className="flex items-center gap-1.5">
@@ -922,15 +970,6 @@ export function ActivityPopup({
                   <SkipForward className="h-4 w-4 mr-2" />
                   Skip
                 </Button>
-                <Button
-                  variant="outline"
-                  className="flex-1"
-                  onClick={() => handleStatusUpdate('cancelled')}
-                  disabled={updateStatus.isPending}
-                >
-                  <X className="h-4 w-4 mr-2" />
-                  Cancel
-                </Button>
               </div>
             )}
             {isCompletedWithoutActivity && (
@@ -1009,12 +1048,26 @@ export function ActivityPopup({
                 variant="outline"
                 className="flex-1"
                 onClick={() => {
-                  onAskCoach?.(workout?.title || activity?.title || '');
+                  if (isPlannedSession && session?.id) {
+                    // Navigate to coach with pre-filled draft message for modification
+                    const draftMessage = "Today was marked as a REST day based on my recovery signals.\nCan you modify today's planned session accordingly (e.g., reduce volume, replace with recovery, or skip)?";
+                    navigate('/coach', {
+                      state: {
+                        context: 'modify_today_session',
+                        session_id: session.id,
+                        suggested_action: 'generic',
+                        draft_message: draftMessage,
+                      },
+                    });
+                  } else {
+                    // Fallback for non-planned sessions
+                    onAskCoach?.(workout?.title || activity?.title || '');
+                  }
                   onOpenChange(false);
                 }}
               >
                 <MessageCircle className="h-4 w-4 mr-2" />
-                Ask Coach
+                Ask Coach to Modify
               </Button>
               {canExport && (
                 <Button
