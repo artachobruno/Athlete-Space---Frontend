@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>AthleteSpace | AI Endurance Coaching</title>
+    <meta name="description" content="AthleteSpace - Your AI-powered endurance training coach. Personalized plans, intelligent analysis, and calm guidance for serious athletes." />
+    <meta name="author" content="AthleteSpace" />
+    <link rel="canonical" href="https://athletespace.ai" />
+
+    <meta property="og:title" content="AthleteSpace | AI Endurance Coaching" />
+    <meta property="og:description" content="Your AI-powered endurance training coach. Personalized plans, intelligent analysis, and calm guidance for serious athletes." />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://athletespace.ai" />
+    <meta property="og:image" content="https://athletespace.ai/og-image.png" />
+    <meta property="og:site_name" content="AthleteSpace" />
+
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:site" content="@athletespace" />
+    <meta name="twitter:title" content="AthleteSpace | AI Endurance Coaching" />
+    <meta name="twitter:description" content="Your AI-powered endurance training coach. Personalized plans and intelligent analysis." />
+    <meta name="twitter:image" content="https://athletespace.ai/og-image.png" />
+    <link rel="icon" type="image/jpeg" href="/AthleteSpace_logo_dark.jpg" />
+    <link rel="apple-touch-icon" href="/AthleteSpace_logo_dark.jpg" />
+    <script>
+      // Apply theme immediately on page load to prevent flash
+      (function() {
+        const stored = localStorage.getItem('theme');
+        const theme = stored && ['light', 'dark', 'system'].includes(stored) ? stored : 
+          (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'system' : 'light');
+        
+        const root = document.documentElement;
+        root.classList.remove('light', 'dark');
+        
+        if (theme === 'system') {
+          const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+          root.classList.add(systemTheme);
+        } else {
+          root.classList.add(theme);
+        }
+      })();
+    </script>
+    <script type="module" crossorigin src="/assets/index-wAqt7xCg.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-Dh_l60zz.css">
+  </head>
+
+  <body>
+    <div id="root"></div>
+  </body>
+</html>

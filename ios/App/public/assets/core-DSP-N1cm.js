@@ -1,0 +1,1 @@
+function o(r,i){const e={get(t,n){if(typeof n=="string")return()=>{throw new Error(`${r}.${n}() is not available in web builds. This plugin only works on iOS/Android.`)}}};return new Proxy({},e)}export{o as r};

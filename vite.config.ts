@@ -17,6 +17,7 @@ export default defineConfig(({ mode }) => ({
       "@capacitor/core": path.resolve(__dirname, "./src/lib/capacitor-stubs/core.ts"),
       "@capacitor/browser": path.resolve(__dirname, "./src/lib/capacitor-stubs/browser.ts"),
       "@capacitor/app": path.resolve(__dirname, "./src/lib/capacitor-stubs/app.ts"),
+      "@capacitor/preferences": path.resolve(__dirname, "./src/lib/capacitor-stubs/preferences.ts"),
     },
   },
 }));

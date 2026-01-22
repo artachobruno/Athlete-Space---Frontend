@@ -1,0 +1,28 @@
+{
+  "appId": "com.athletespace.app",
+  "appName": "AthleteSpace",
+  "webDir": "dist",
+  "plugins": {
+    "App": {},
+    "SocialLogin": {
+      "providers": {
+        "google": true
+      }
+    }
+  },
+  "server": {
+    "allowNavigation": [
+      "accounts.google.com",
+      "www.strava.com",
+      "athletespace.ai",
+      "api.athletespace.ai",
+      "virtus-ai.onrender.com"
+    ]
+  },
+  "ios": {
+    "scheme": "athletespace"
+  },
+  "android": {
+    "appendUserAgent": "AthleteSpace-App"
+  }
+}
