@@ -24,6 +24,7 @@ import {
   sessionIntentColors,
   sessionFontSizes,
 } from '@/styles/sessionTokens';
+import { EffortGraph } from '@/components/workout/EffortGraph';
 import type { CalendarSession } from '@/lib/api';
 import type { CalendarItem } from '@/types/calendar';
 
@@ -147,6 +148,41 @@ function getStatusIcon(status: SessionCardData['status']) {
   }
 }
 
+/**
+ * Generates effort profile based on workout intent/intensity
+ * Same logic as DailyWorkoutCard for consistency
+ */
+function generatePlannedEffort(intent: string | null | undefined, numBars: number = 10): number[] {
+  if (!intent) return Array.from({ length: numBars }, () => 3 + Math.random() * 2);
+  
+  const lower = intent.toLowerCase();
+  
+  if (lower.includes('interval') || lower.includes('vo2')) {
+    return Array.from({ length: numBars }, (_, i) => 
+      i % 2 === 0 ? 3 + Math.random() * 2 : 7 + Math.random() * 2
+    );
+  }
+  
+  if (lower.includes('tempo') || lower.includes('threshold')) {
+    return Array.from({ length: numBars }, (_, i) => {
+      if (i < 2) return 3 + Math.random() * 2;
+      if (i >= numBars - 2) return 3 + Math.random() * 2;
+      return 6 + Math.random() * 2;
+    });
+  }
+  
+  if (lower.includes('long') || lower.includes('endurance')) {
+    return Array.from({ length: numBars }, (_, i) => {
+      const progress = i / numBars;
+      if (progress < 0.2) return 4 + progress * 5;
+      if (progress > 0.8) return 5 + (1 - progress) * 3;
+      return 5 + Math.random() * 1.5;
+    });
+  }
+  
+  return Array.from({ length: numBars }, () => 3 + Math.random() * 2);
+}
+
 export function SessionCard({
   session: sessionOrItem,
   density = 'standard',
@@ -190,6 +226,12 @@ export function SessionCard({
   const StatusIcon = getStatusIcon(session.status);
   const sportIcon = sportIcons[session.type?.toLowerCase() as keyof typeof sportIcons] || sportIcons.other;
 
+  // Generate effort data for graph
+  const effortData = density === 'compact' 
+    ? generatePlannedEffort(session.intensity || session.type, 10)
+    : null;
+  const showEffortData = density === 'compact' && session.status === 'completed';
+
   return (
     <Card
       className={cn(
@@ -198,13 +240,24 @@ export function SessionCard({
         statusColors.border,
         statusColors.background,
         onClick && 'cursor-pointer hover:shadow-md transition-shadow',
+        // Fixed height for compact density - increased to accommodate graph
+        density === 'compact' && 'h-[100px] flex flex-col',
         className
       )}
       onClick={onClick}
     >
-      <div className={cn('flex items-start justify-between', spacing.gap)}>
+      <div className={cn(
+        'flex items-center justify-between',
+        spacing.gap,
+        // In compact mode, this is the top section above the graph
+        density === 'compact' && 'flex-shrink-0'
+      )}>
         {/* Left: Main content */}
-        <div className="flex-1 min-w-0 space-y-1.5">
+        <div className={cn(
+          'flex-1 min-w-0 flex flex-col justify-center',
+          // Use consistent spacing for compact, tighter for others
+          density === 'compact' ? 'space-y-1' : 'space-y-1.5'
+        )}>
           {/* Title row */}
           <div className="flex items-center gap-2 flex-wrap">
             <h3 className={cn('font-semibold truncate', fonts.title, statusColors.text)}>
@@ -215,13 +268,19 @@ export function SessionCard({
                 {getIntentLabel(intensity, session.type)}
               </Badge>
             )}
-            {StatusIcon && (
+            {StatusIcon && density !== 'compact' && (
               <StatusIcon className={cn('h-4 w-4', statusColors.text)} />
             )}
           </div>
 
           {/* Metadata row */}
-          <div className={cn('flex items-center gap-3', fonts.metadata, 'text-muted-foreground')}>
+          <div className={cn(
+            'flex items-center gap-3',
+            fonts.metadata,
+            'text-muted-foreground',
+            // Fixed height for metadata row in compact mode
+            density === 'compact' && 'h-4'
+          )}>
             {session.duration_minutes && (
               <div className="flex items-center gap-1.5">
                 <Clock className="h-3.5 w-3.5" />
@@ -277,7 +336,10 @@ export function SessionCard({
           )}
         </div>
 
-        {/* Right: Status badge (compact density only shows icon, others show badge) */}
+        {/* Right: Status indicator (compact shows icon only, others show badge) */}
+        {density === 'compact' && StatusIcon && (
+          <StatusIcon className={cn('h-4 w-4 shrink-0', statusColors.text)} />
+        )}
         {density !== 'compact' && (
           <Badge variant="outline" className={cn('text-xs shrink-0', statusColors.badge)}>
             {session.status === 'completed' && 'Completed'}
@@ -288,6 +350,18 @@ export function SessionCard({
           </Badge>
         )}
       </div>
+
+      {/* Effort graph for compact density */}
+      {density === 'compact' && effortData && effortData.length > 0 && (
+        <div className="flex-1 min-h-0 mt-1.5">
+          <EffortGraph
+            data={effortData}
+            showData={showEffortData}
+            compact={true}
+            onClick={onClick}
+          />
+        </div>
+      )}
     </Card>
   );
 }
