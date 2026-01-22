@@ -1,3 +1,10 @@
+// Month view rules:
+// - Must fit entirely in viewport (no vertical scrolling)
+// - Pattern recognition only
+// - Icons + labels
+// - No detailed stats
+// - No editing inside cells
+
 import { useMemo, useState } from 'react';
 import {
   startOfMonth,
@@ -223,9 +230,9 @@ export function MonthView({ currentDate, onActivityClick }: MonthViewProps) {
   const weekDays = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
 
   return (
-    <Card className="overflow-hidden">
+    <Card className="overflow-hidden h-full flex flex-col">
       {/* Header row - consistent with dashboard card headers */}
-      <div className="grid grid-cols-7 border-b border-border bg-muted/30">
+      <div className="grid grid-cols-7 border-b border-border bg-muted/30 flex-shrink-0">
         {weekDays.map((d) => (
           <div
             key={d}
@@ -245,7 +252,7 @@ export function MonthView({ currentDate, onActivityClick }: MonthViewProps) {
           items={allPlannedSessionIds}
           strategy={verticalListSortingStrategy}
         >
-          <div className="grid grid-cols-7 grid-rows-6 min-h-[960px]">
+          <div className="grid grid-cols-7 grid-rows-6 flex-1 min-h-0">
             {days.map((day, idx) => {
               const isCurrentMonth = isSameMonth(day, currentDate);
               const isCurrentDay = isToday(day);

@@ -1,3 +1,9 @@
+// Season view rules:
+// - May scroll horizontally only (never vertically)
+// - Macro blocks only (phases, races)
+// - No sessions rendered
+// - No coaching logic, no analytics
+
 import { useMemo } from 'react';
 import {
   startOfMonth,
@@ -11,7 +17,6 @@ import {
 } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { fetchCalendarSeason, fetchActivities, fetchOverview } from '@/lib/api';
-import { getSeasonIntelligence } from '@/lib/intelligence';
 import { normalizeSportType } from '@/lib/session-utils';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -134,15 +139,6 @@ export function SeasonView({ currentDate }: SeasonViewProps) {
     enabled: authStatus === "authenticated",
   });
 
-  const { data: seasonIntelligence } = useQuery({
-    queryKey: ['intelligence', 'season'],
-    queryFn: () => getSeasonIntelligence(),
-    retry: 1,
-    staleTime: 30 * 60 * 1000, // 30 minutes - intelligence is expensive LLM call
-    gcTime: 60 * 60 * 1000, // Keep in cache for 1 hour
-    // CRITICAL: Only execute when authenticated
-    enabled: authStatus === "authenticated",
-  });
 
   const isLoading = seasonLoading || activitiesLoading || overviewLoading;
   
@@ -268,57 +264,10 @@ export function SeasonView({ currentDate }: SeasonViewProps) {
 
   const maxLoad = Math.max(...weeks.map(w => getWeekStats(w).totalLoad), 1);
 
-  // Get phase and race marker for a week
-  const getWeekPhase = (weekNumber: number) => {
-    if (!seasonIntelligence?.phases) return null;
-    return seasonIntelligence.phases.find(
-      phase => weekNumber >= phase.week_start && weekNumber <= phase.week_end
-    );
-  };
-
-  const getWeekRaceMarkers = (weekNumber: number) => {
-    if (!seasonIntelligence?.race_markers) return [];
-    return seasonIntelligence.race_markers.filter(marker => marker.week === weekNumber);
-  };
-
-  const raceMarkerIcons = {
-    race: Flag,
-    milestone: Target,
-    recovery: RefreshCw,
-  };
-
-  const raceMarkerColors = {
-    race: 'bg-red-500/20 text-red-600 dark:text-red-400 border-red-500/30',
-    milestone: 'bg-blue-500/20 text-blue-600 dark:text-blue-400 border-blue-500/30',
-    recovery: 'bg-green-500/20 text-green-600 dark:text-green-400 border-green-500/30',
-  };
-
   return (
-    <div className="space-y-4">
-      {/* Season Intelligence Summary */}
-      {seasonIntelligence && (
-        <Card className="p-4">
-          <div className="space-y-2">
-            {seasonIntelligence.explanation && (
-              <p className="text-sm text-muted-foreground leading-relaxed">
-                {seasonIntelligence.explanation}
-              </p>
-            )}
-            {seasonIntelligence.phases && seasonIntelligence.phases.length > 0 && (
-              <div className="flex flex-wrap gap-2">
-                {seasonIntelligence.phases.map((phase, idx) => (
-                  <Badge key={idx} variant="outline" className="text-xs uppercase tracking-wider">
-                    {phase.label} W{phase.week_start}-{phase.week_end}
-                  </Badge>
-                ))}
-              </div>
-            )}
-          </div>
-        </Card>
-      )}
-
-      {/* Legend - consistent with dashboard styling */}
-      <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground uppercase tracking-wider">
+    <div className="h-full flex flex-col">
+      {/* Legend - pattern recognition only */}
+      <div className="flex flex-wrap items-center gap-4 text-xs text-muted-foreground uppercase tracking-wider mb-4 flex-shrink-0">
         <div className="flex items-center gap-1.5">
           <div className="w-2 h-2 rounded-sm bg-accent/60" />
           <span>Load</span>
@@ -331,27 +280,11 @@ export function SeasonView({ currentDate }: SeasonViewProps) {
           <div className="w-2 h-2 rounded-sm bg-muted/60" />
           <span>Plan</span>
         </div>
-        {seasonIntelligence?.race_markers && seasonIntelligence.race_markers.length > 0 && (
-          <>
-            <span className="text-muted-foreground/20">|</span>
-            <div className="flex items-center gap-1.5">
-              <Flag className="w-2.5 h-2.5 text-destructive/60" />
-              <span>Race</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <Target className="w-2.5 h-2.5 text-accent/60" />
-              <span>Goal</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <RefreshCw className="w-2.5 h-2.5 text-load-fresh/60" />
-              <span>Recovery</span>
-            </div>
-          </>
-        )}
       </div>
 
-      {/* Weeks Grid - tighter */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
+      {/* Weeks Grid - horizontal scroll only, no vertical scroll */}
+      <div className="flex-1 min-h-0 overflow-x-auto overflow-y-hidden">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 min-w-max">
         {weeks.map((weekStart) => {
           const stats = getWeekStats(weekStart);
           const weekEnd = endOfWeek(weekStart, { weekStartsOn: 1 });
@@ -360,12 +293,10 @@ export function SeasonView({ currentDate }: SeasonViewProps) {
             end: weekEnd,
           });
           const weekNumber = getWeek(weekStart);
-          const phase = getWeekPhase(weekNumber);
-          const raceMarkers = getWeekRaceMarkers(weekNumber);
           const dateRange = `${format(weekStart, 'MMM d')} – ${format(weekEnd, 'MMM d')}`;
 
           return (
-            <div key={weekStart.toString()} className="space-y-1.5">
+            <div key={weekStart.toString()}>
               <SeasonWeekCard
                 weekLabel={`Week ${weekNumber}`}
                 dateRange={dateRange}
@@ -377,31 +308,10 @@ export function SeasonView({ currentDate }: SeasonViewProps) {
                 ctl={stats.avgCtl}
                 isCurrent={isCurrentWeek}
               />
-              {(phase || raceMarkers.length > 0) && (
-                <div className="flex flex-wrap gap-1 text-[9px]">
-                  {phase && (
-                    <Badge variant="outline" className="text-[8px] uppercase tracking-wider px-1 py-0">
-                      {phase.label}
-                    </Badge>
-                  )}
-                  {raceMarkers.map((marker, idx) => {
-                    const Icon = raceMarkerIcons[marker.type];
-                    return (
-                      <Badge
-                        key={idx}
-                        variant="outline"
-                        className={cn('text-[8px] uppercase tracking-wider px-1 py-0', raceMarkerColors[marker.type])}
-                      >
-                        <Icon className="h-2 w-2 mr-0.5" />
-                        {marker.label}
-                      </Badge>
-                    );
-                  })}
-                </div>
-              )}
             </div>
           );
         })}
+        </div>
       </div>
     </div>
   );

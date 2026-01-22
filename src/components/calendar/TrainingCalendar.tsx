@@ -1,13 +1,12 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ChevronLeft, ChevronRight, MessageCircle, Download, Plus } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Download, Plus } from 'lucide-react';
 import { format, addMonths, subMonths, addWeeks, subWeeks } from 'date-fns';
 
 import { MonthView } from './MonthView';
 import { WeekCalendar } from './WeekCalendar';
 import { SeasonView } from './SeasonView';
-import { CoachDrawer } from './CoachDrawer';
 import { ActivityPopup } from './ActivityPopup';
 import { AddSessionModal } from './AddSessionModal';
 import { AddWeekModal } from './AddWeekModal';
@@ -20,13 +19,18 @@ import { useAuthenticatedQuery } from '@/hooks/useAuthenticatedQuery';
 
 import type { PlannedWorkout, CompletedActivity } from '@/types';
 
+// Schedule page rules:
+// - No coaching logic
+// - No analytics
+// - No vertical scrolling
+// - Week view is default
+// - This page answers: "When am I training?"
+
 type ViewType = 'month' | 'week' | 'season';
 
 export function TrainingCalendar() {
   const [currentDate, setCurrentDate] = useState(new Date());
-  const [view, setView] = useState<ViewType>('month');
-
-  const [coachOpen, setCoachOpen] = useState(false);
+  const [view, setView] = useState<ViewType>('week');
 
   const [activityPopupOpen, setActivityPopupOpen] = useState(false);
   const [selectedPlannedWorkout, setSelectedPlannedWorkout] =
@@ -75,10 +79,6 @@ export function TrainingCalendar() {
     return `Q${quarter} ${format(currentDate, 'yyyy')}`;
   };
 
-  const handleAskCoach = () => {
-    setCoachOpen(true);
-  };
-
   const handleActivityClick = (
     planned: PlannedWorkout | null,
     completed: CompletedActivity | null,
@@ -110,9 +110,9 @@ export function TrainingCalendar() {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="flex flex-col h-full">
       {/* Controls */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 flex-shrink-0 mb-4">
         {/* Navigation */}
         <div className="flex items-center gap-2">
           <Button variant="outline" size="icon" onClick={navigatePrevious}>
@@ -129,7 +129,7 @@ export function TrainingCalendar() {
           </span>
         </div>
 
-        {/* Actions */}
+        {/* Actions - Planning tools only (no coaching, no analytics) */}
         <div className="flex items-center gap-3">
           <Button size="sm" onClick={() => setAddSessionOpen(true)}>
             <Plus className="h-4 w-4 mr-1.5" />
@@ -144,16 +144,6 @@ export function TrainingCalendar() {
           <Button variant="outline" size="sm" onClick={() => setAddRaceOpen(true)}>
             <Plus className="h-4 w-4 mr-1.5" />
             Add Race
-          </Button>
-
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={handleAskCoach}
-            className="text-muted-foreground hover:text-foreground"
-          >
-            <MessageCircle className="h-4 w-4 mr-1.5" />
-            Ask Coach
           </Button>
 
           <Button
@@ -176,36 +166,34 @@ export function TrainingCalendar() {
         </div>
       </div>
 
-      {/* Views */}
-      {view === 'month' && (
-        <MonthView
-          currentDate={currentDate}
-          onActivityClick={handleActivityClick}
-        />
-      )}
+      {/* Views - Must fit in viewport without vertical scrolling */}
+      <div className="flex-1 min-h-0 overflow-hidden">
+        {view === 'month' && (
+          <MonthView
+            currentDate={currentDate}
+            onActivityClick={handleActivityClick}
+          />
+        )}
 
-      {view === 'week' && (
-        <WeekCalendar
-          currentDate={currentDate}
-          onActivityClick={handleActivityClick}
-        />
-      )}
+        {view === 'week' && (
+          <WeekCalendar
+            currentDate={currentDate}
+            onActivityClick={handleActivityClick}
+          />
+        )}
 
-      {view === 'season' && <SeasonView currentDate={currentDate} />}
+        {view === 'season' && <SeasonView currentDate={currentDate} />}
+      </div>
 
-      {/* Activity Popup (Month only) */}
+      {/* Activity Popup */}
       <ActivityPopup
         open={activityPopupOpen}
         onOpenChange={setActivityPopupOpen}
         plannedWorkout={selectedPlannedWorkout}
         completedActivity={selectedCompletedActivity}
         session={selectedSession}
-        onAskCoach={handleAskCoach}
         onStatusChange={invalidateCalendar}
       />
-
-      {/* Coach Drawer */}
-      <CoachDrawer open={coachOpen} onOpenChange={setCoachOpen} />
 
       {/* Modals */}
       <AddSessionModal

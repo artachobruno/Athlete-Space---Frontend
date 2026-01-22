@@ -1,3 +1,9 @@
+// Week view rules:
+// - Must fit entirely in viewport (no vertical scrolling)
+// - Editable and drag/reorder enabled
+// - Shows completion overlay
+// - No metrics, no coaching text, no analytics
+
 import { useMemo, useState } from 'react';
 import {
   startOfWeek,
@@ -8,42 +14,23 @@ import {
   startOfMonth,
 } from 'date-fns';
 import { cn } from '@/lib/utils';
-import { Loader2, Zap, Clock, TrendingUp, Share2, Copy, Download, Sparkles } from 'lucide-react';
+import { Loader2 } from 'lucide-react';
 import { CalendarWorkoutStack } from './cards/CalendarWorkoutStack';
 import { DayView } from './DayView';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
+import { Card } from '@/components/ui/card';
 import type {
   CalendarItem,
   GroupedCalendarItem,
 } from '@/types/calendar';
 import {
   groupDuplicateSessions,
-  normalizeCalendarSport,
-  normalizeCalendarIntent,
 } from '@/types/calendar';
 import { fetchCalendarMonth, normalizeCalendarMonth } from '@/lib/calendar-month';
-import { fetchOverview } from '@/lib/api';
 import { useAuthenticatedQuery } from '@/hooks/useAuthenticatedQuery';
-import { useQuery } from '@tanstack/react-query';
-import type { PlannedWorkout, CompletedActivity, TrainingLoad } from '@/types';
+import type { PlannedWorkout, CompletedActivity } from '@/types';
 import type { CalendarSession } from '@/lib/api';
-import { toast } from '@/hooks/use-toast';
 import { normalizeSportType, mapIntensityToIntent } from '@/lib/session-utils';
 import { toCalendarItem, capitalizeTitle } from '@/adapters/calendarAdapter';
-import {
-  generateWeeklySummaryText,
-  generateWeeklySummaryMarkdown,
-  copyToClipboard,
-  downloadTextFile,
-  shareContent,
-} from '@/lib/weekly-summary';
 
 interface WeekCalendarProps {
   currentDate: Date;
@@ -57,7 +44,6 @@ interface WeekCalendarProps {
  */
 export function WeekCalendar({ currentDate, onActivityClick }: WeekCalendarProps) {
   const [selectedDay, setSelectedDay] = useState<Date | null>(null);
-  const [isSharing, setIsSharing] = useState(false);
 
   const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
   const weekEnd = endOfWeek(currentDate, { weekStartsOn: 1 });
@@ -70,13 +56,6 @@ export function WeekCalendar({ currentDate, onActivityClick }: WeekCalendarProps
     queryKey: ['calendar', 'month', monthKey],
     queryFn: () => fetchCalendarMonth(currentDate),
     retry: 1,
-  });
-
-  const { data: overview } = useQuery({
-    queryKey: ['overview', 14],
-    queryFn: () => fetchOverview(14),
-    retry: 1,
-    staleTime: 0,
   });
 
   // Convert to CalendarItems grouped by day
@@ -124,59 +103,6 @@ export function WeekCalendar({ currentDate, onActivityClick }: WeekCalendarProps
     return map;
   }, [monthData]);
 
-  // Weekly summary data
-  const weeklySummary = useMemo(() => {
-    let totalDuration = 0;
-    let totalLoad = 0;
-    let completedSessions = 0;
-    let plannedSessions = 0;
-
-    dayDataMap.forEach((items) => {
-      for (const item of items) {
-        totalDuration += item.durationMin;
-        totalLoad += item.load || 0;
-        if (item.kind === 'completed') completedSessions++;
-        else plannedSessions++;
-      }
-    });
-
-    return { totalDuration, totalLoad, completedSessions, plannedSessions };
-  }, [dayDataMap]);
-
-  // Weekly insight from training load
-  const weeklyInsight = useMemo(() => {
-    if (!overview?.metrics) return null;
-
-    const ctlData = Array.isArray(overview.metrics.ctl) ? overview.metrics.ctl : [];
-    const tsbData = Array.isArray(overview.metrics.tsb) ? overview.metrics.tsb : [];
-
-    if (ctlData.length < 7) return null;
-
-    const latest = tsbData[tsbData.length - 1];
-    const tsbCurrent = Array.isArray(latest) ? latest[1] : 0;
-
-    let insight = '';
-    let color = 'text-muted-foreground';
-
-    if (tsbCurrent > 15) {
-      insight = "You're well-rested and ready for hard training.";
-      color = 'text-emerald-600 dark:text-emerald-400';
-    } else if (tsbCurrent > 0) {
-      insight = "You're in good form with balanced recovery.";
-      color = 'text-blue-600 dark:text-blue-400';
-    } else if (tsbCurrent > -15) {
-      insight = "You're productively fatigued from training.";
-      color = 'text-muted-foreground';
-    } else if (tsbCurrent > -25) {
-      insight = 'Consider recovery - significant fatigue accumulated.';
-      color = 'text-amber-600 dark:text-amber-400';
-    } else {
-      insight = 'Prioritize recovery this week.';
-      color = 'text-red-600 dark:text-red-400';
-    }
-
-    return { insight, color };
-  }, [overview]);
 
   const days = useMemo(() => {
     return eachDayOfInterval({ start: weekStart, end: weekEnd });
@@ -217,57 +143,6 @@ export function WeekCalendar({ currentDate, onActivityClick }: WeekCalendarProps
     }
   };
 
-  const handleShare = async () => {
-    setIsSharing(true);
-    const summaryData = {
-      weekStart: weekStartStr,
-      weekEnd: weekEndStr,
-      plannedSessions: weeklySummary.plannedSessions,
-      completedSessions: weeklySummary.completedSessions,
-      totalLoad: weeklySummary.totalLoad,
-      insight: weeklyInsight?.insight || '',
-    };
-    const text = generateWeeklySummaryText(summaryData);
-    const success = await shareContent('Weekly Training Summary', text);
-    if (!success) {
-      const copied = await copyToClipboard(text);
-      if (copied) {
-        toast({ title: 'Copied to clipboard' });
-      }
-    }
-    setIsSharing(false);
-  };
-
-  const handleCopy = async () => {
-    const summaryData = {
-      weekStart: weekStartStr,
-      weekEnd: weekEndStr,
-      plannedSessions: weeklySummary.plannedSessions,
-      completedSessions: weeklySummary.completedSessions,
-      totalLoad: weeklySummary.totalLoad,
-      insight: weeklyInsight?.insight || '',
-    };
-    const text = generateWeeklySummaryText(summaryData);
-    const copied = await copyToClipboard(text);
-    if (copied) {
-      toast({ title: 'Copied to clipboard' });
-    }
-  };
-
-  const handleDownload = () => {
-    const summaryData = {
-      weekStart: weekStartStr,
-      weekEnd: weekEndStr,
-      plannedSessions: weeklySummary.plannedSessions,
-      completedSessions: weeklySummary.completedSessions,
-      totalLoad: weeklySummary.totalLoad,
-      insight: weeklyInsight?.insight || '',
-    };
-    const markdown = generateWeeklySummaryMarkdown(summaryData);
-    const filename = `weekly-summary-${weekStartStr}.md`;
-    downloadTextFile(markdown, filename, 'text/markdown');
-    toast({ title: 'Downloaded' });
-  };
 
   // Show day view if a day is selected
   if (selectedDay) {
@@ -294,86 +169,9 @@ export function WeekCalendar({ currentDate, onActivityClick }: WeekCalendarProps
   }
 
   return (
-    <div className="space-y-4">
-      {/* Weekly Summary Card - consistent with Dashboard cards */}
-      <Card className="p-4">
-        <div className="flex items-center justify-between flex-wrap gap-4">
-          <div className="flex items-center gap-6 sm:gap-8">
-            <div className="flex items-center gap-3">
-              <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-primary/10">
-                <Clock className="h-5 w-5 text-primary" />
-              </div>
-              <div>
-                <p className="text-2xl font-semibold text-foreground">{weeklySummary.totalDuration}</p>
-                <p className="text-xs uppercase tracking-wider text-muted-foreground">minutes</p>
-              </div>
-            </div>
-
-            {weeklySummary.totalLoad > 0 && (
-              <>
-                <div className="w-px h-10 bg-border hidden sm:block" />
-                <div className="flex items-center gap-3">
-                  <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-amber-500/10">
-                    <Zap className="h-5 w-5 text-amber-600 dark:text-amber-400" />
-                  </div>
-                  <div>
-                    <p className="text-2xl font-semibold text-foreground">{Math.round(weeklySummary.totalLoad)}</p>
-                    <p className="text-xs uppercase tracking-wider text-muted-foreground">TSS</p>
-                  </div>
-                </div>
-              </>
-            )}
-
-            <div className="w-px h-10 bg-border hidden sm:block" />
-            <div className="flex items-center gap-3">
-              <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-green-500/10">
-                <TrendingUp className="h-5 w-5 text-green-600 dark:text-green-400" />
-              </div>
-              <div>
-                <p className="text-2xl font-semibold text-foreground">
-                  {weeklySummary.completedSessions}/{weeklySummary.completedSessions + weeklySummary.plannedSessions}
-                </p>
-                <p className="text-xs uppercase tracking-wider text-muted-foreground">completed</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-4">
-            {weeklyInsight && (
-              <div className="flex items-center gap-2 max-w-xs">
-                <Sparkles className={cn('h-4 w-4 flex-shrink-0', weeklyInsight.color)} />
-                <p className={cn('text-sm', weeklyInsight.color)}>{weeklyInsight.insight}</p>
-              </div>
-            )}
-
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm" disabled={isSharing}>
-                  <Share2 className="h-4 w-4 mr-1.5" />
-                  Share
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={handleShare}>
-                  <Share2 className="h-4 w-4 mr-2" />
-                  Share
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={handleCopy}>
-                  <Copy className="h-4 w-4 mr-2" />
-                  Copy
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={handleDownload}>
-                  <Download className="h-4 w-4 mr-2" />
-                  Download
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        </div>
-      </Card>
-
-      {/* Week Grid */}
-      <div className="grid grid-cols-7 gap-3">
+    <div className="h-full flex flex-col">
+      {/* Week Grid - Must fit in viewport without scrolling */}
+      <div className="grid grid-cols-7 gap-3 flex-1 min-h-0">
         {days.map((day, idx) => {
           const groupedItems = getGroupedItemsForDay(day);
           const isCurrentDay = isToday(day);
@@ -384,7 +182,7 @@ export function WeekCalendar({ currentDate, onActivityClick }: WeekCalendarProps
             <Card
               key={idx}
               className={cn(
-                'overflow-hidden min-h-[340px] flex flex-col',
+                'overflow-hidden flex flex-col h-full',
                 isCurrentDay && 'ring-2 ring-primary/50',
               )}
             >
