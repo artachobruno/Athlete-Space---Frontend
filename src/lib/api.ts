@@ -385,7 +385,19 @@ export const initiateStravaConnect = async (): Promise<void> => {
     if (isCapacitor) {
       const { Browser } = await import('@capacitor/browser');
       console.log("[API] Opening Strava OAuth in external browser (native)");
-      await Browser.open({ url: oauthUrl });
+      console.log("[API] Browser.open() URL:", oauthUrl);
+      try {
+        await Browser.open({ 
+          url: oauthUrl,
+          presentationStyle: 'popover' // iOS-safe presentation style
+        });
+        console.log("[API] Browser.open() completed successfully");
+      } catch (error) {
+        console.error("[API] Browser.open() failed:", error);
+        // Fallback: try window.location as last resort (will cause WebView reload but better than nothing)
+        console.warn("[API] Falling back to window.location.href");
+        window.location.href = oauthUrl;
+      }
     } else {
       // Web: Use standard redirect
       console.log("[API] Redirecting to Strava OAuth URL (web)");
@@ -513,7 +525,19 @@ export const initiateGoogleConnect = async (): Promise<void> => {
     if (isCapacitor) {
       const { Browser } = await import('@capacitor/browser');
       console.log("[API] Opening Google OAuth in external browser (native)");
-      await Browser.open({ url });
+      console.log("[API] Browser.open() URL:", url);
+      try {
+        await Browser.open({ 
+          url,
+          presentationStyle: 'popover' // iOS-safe presentation style
+        });
+        console.log("[API] Browser.open() completed successfully");
+      } catch (error) {
+        console.error("[API] Browser.open() failed:", error);
+        // Fallback: try window.location as last resort (will cause WebView reload but better than nothing)
+        console.warn("[API] Falling back to window.location.href");
+        window.location.href = url;
+      }
     } else {
       // Web: Use standard redirect
       console.log("[API] Redirecting to Google OAuth URL (web):", url);

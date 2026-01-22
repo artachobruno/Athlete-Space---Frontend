@@ -3,11 +3,28 @@
 // This stub checks for the real plugin and uses it if available
 
 // Try to get the real Browser plugin from Capacitor if available (native builds)
+// Capacitor plugins can be accessed via window.Capacitor.Plugins.PluginName
 const getRealBrowser = () => {
   if (typeof window !== 'undefined') {
-    const Capacitor = (window as { Capacitor?: { Plugins?: { Browser?: typeof BrowserStub } } }).Capacitor;
-    if (Capacitor?.Plugins?.Browser) {
-      return Capacitor.Plugins.Browser;
+    // Try multiple ways Capacitor might expose the plugin
+    const win = window as {
+      Capacitor?: {
+        Plugins?: { Browser?: typeof BrowserStub };
+        getPlugin?: (name: string) => typeof BrowserStub | undefined;
+      };
+    };
+    
+    // Method 1: Direct plugin access
+    if (win.Capacitor?.Plugins?.Browser) {
+      return win.Capacitor.Plugins.Browser;
+    }
+    
+    // Method 2: Via getPlugin (if available)
+    if (win.Capacitor?.getPlugin) {
+      const plugin = win.Capacitor.getPlugin('Browser');
+      if (plugin) {
+        return plugin as typeof BrowserStub;
+      }
     }
   }
   return null;

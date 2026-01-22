@@ -28,12 +28,20 @@ export function useAuthDeepLink(onDeepLink?: () => void) {
   const { refreshUser } = useAuth();
 
   useEffect(() => {
-    if (!isNative()) return;
+    if (!isNative()) {
+      console.log('[AuthDeepLink] Skipping deep link handler (not native)');
+      return;
+    }
 
+    console.log('[AuthDeepLink] Registering appUrlOpen listener for native app');
+    
     const sub = App.addListener("appUrlOpen", async ({ url }) => {
-      if (!url) return;
+      if (!url) {
+        console.warn('[AuthDeepLink] Received appUrlOpen event but URL is empty');
+        return;
+      }
 
-      console.log('[AuthDeepLink] Received deep link:', url);
+      console.log('[AuthDeepLink] ✅ Received deep link:', url);
 
       // Handle OAuth callback URLs:
       // - athletespace://auth/callback (custom URL scheme)
