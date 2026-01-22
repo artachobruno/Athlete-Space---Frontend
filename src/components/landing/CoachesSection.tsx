@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion';
+import { Link } from 'react-router-dom';
 import { VideoFrame } from './VideoFrame';
 
 export const CoachesSection = () => {
@@ -117,12 +118,12 @@ export const CoachesSection = () => {
 
             {/* CTAs */}
             <div className="flex items-center gap-6">
-              <a 
-                href="/login"
+              <Link 
+                to="/login"
                 className="text-sm font-mono tracking-[0.1em] text-slate-400 hover:text-slate-200 transition-colors border-b border-slate-700 hover:border-slate-500 pb-1"
               >
                 Enter Coach View
-              </a>
+              </Link>
               <span className="text-slate-700">|</span>
               <a 
                 href="#system"

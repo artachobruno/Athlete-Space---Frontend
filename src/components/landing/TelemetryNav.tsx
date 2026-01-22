@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion';
+import { Link } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { Menu, X } from 'lucide-react';
 
@@ -57,9 +58,9 @@ export const TelemetryNav = () => {
       <div className="relative container mx-auto px-6">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <a href="/" className="flex items-center gap-2">
+          <Link to="/" className="flex items-center gap-2">
             <NavLogo />
-          </a>
+          </Link>
 
           {/* Desktop nav */}
           <div className="hidden md:flex items-center gap-8 text-[11px] font-mono tracking-[0.12em] uppercase">
@@ -72,21 +73,21 @@ export const TelemetryNav = () => {
             <a href="#coaches" className="text-slate-500 hover:text-slate-300 transition-colors">
               Coaches
             </a>
-            <a href="/about" className="text-slate-500 hover:text-slate-300 transition-colors">
+            <Link to="/about" className="text-slate-500 hover:text-slate-300 transition-colors">
               About
-            </a>
-            <a href="/science" className="text-slate-500 hover:text-slate-300 transition-colors">
+            </Link>
+            <Link to="/science" className="text-slate-500 hover:text-slate-300 transition-colors">
               Science & AI
-            </a>
-            <a href="/faq" className="text-slate-500 hover:text-slate-300 transition-colors">
+            </Link>
+            <Link to="/faq" className="text-slate-500 hover:text-slate-300 transition-colors">
               FAQ
-            </a>
-            <a href="/support" className="text-slate-500 hover:text-slate-300 transition-colors">
+            </Link>
+            <Link to="/support" className="text-slate-500 hover:text-slate-300 transition-colors">
               Support
-            </a>
-            <a href="/login" className="text-slate-400 hover:text-slate-200 transition-colors">
+            </Link>
+            <Link to="/login" className="text-slate-400 hover:text-slate-200 transition-colors">
               Sign In
-            </a>
+            </Link>
           </div>
 
           {/* Mobile menu button */}
@@ -118,21 +119,21 @@ export const TelemetryNav = () => {
             <a href="#coaches" className="text-slate-500 hover:text-slate-300 transition-colors py-2">
               Coaches
             </a>
-            <a href="/about" className="text-slate-500 hover:text-slate-300 transition-colors py-2">
+            <Link to="/about" className="text-slate-500 hover:text-slate-300 transition-colors py-2">
               About
-            </a>
-            <a href="/science" className="text-slate-500 hover:text-slate-300 transition-colors py-2">
+            </Link>
+            <Link to="/science" className="text-slate-500 hover:text-slate-300 transition-colors py-2">
               Science & AI
-            </a>
-            <a href="/faq" className="text-slate-500 hover:text-slate-300 transition-colors py-2">
+            </Link>
+            <Link to="/faq" className="text-slate-500 hover:text-slate-300 transition-colors py-2">
               FAQ
-            </a>
-            <a href="/support" className="text-slate-500 hover:text-slate-300 transition-colors py-2">
+            </Link>
+            <Link to="/support" className="text-slate-500 hover:text-slate-300 transition-colors py-2">
               Support
-            </a>
-            <a href="/login" className="text-slate-400 hover:text-slate-200 transition-colors py-2">
+            </Link>
+            <Link to="/login" className="text-slate-400 hover:text-slate-200 transition-colors py-2">
               Sign In
-            </a>
+            </Link>
           </div>
         </motion.div>
       )}

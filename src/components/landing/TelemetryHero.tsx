@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { TelemetrySignal } from './TelemetrySignal';
 import { TelemetryStatusBand } from './TelemetryStatusBand';
@@ -80,12 +81,12 @@ export const TelemetryHero = () => {
             </h2>
             
             {/* Get Started CTA */}
-            <a 
-              href="/signup"
+            <Link 
+              to="/signup"
               className="flex-shrink-0 px-8 py-3 text-xs font-mono tracking-[0.1em] uppercase bg-slate-200 text-slate-950 hover:bg-white transition-colors"
             >
               Get Started
-            </a>
+            </Link>
           </div>
           
           {/* Optional inline system label */}
@@ -118,12 +119,12 @@ export const TelemetryHero = () => {
           animate={{ opacity: 1 }}
           transition={{ delay: 4, duration: 0.8 }}
         >
-          <a 
-            href="/login"
+          <Link 
+            to="/login"
             className="text-sm font-mono tracking-[0.1em] text-slate-400 hover:text-slate-200 transition-colors border-b border-slate-700 hover:border-slate-500 pb-1"
           >
             Enter the Performance System
-          </a>
+          </Link>
           <span className="text-slate-700">|</span>
           <a 
             href="#system"

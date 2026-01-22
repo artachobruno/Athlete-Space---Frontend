@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { Label } from '@/components/ui/label';
@@ -26,6 +27,7 @@ import { fetchPrivacySettings, updatePrivacySettings, changePassword, changeEmai
 
 export function PrivacySecuritySection() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [newEmail, setNewEmail] = useState('');
   const [emailPassword, setEmailPassword] = useState('');
   const [showEmailPassword, setShowEmailPassword] = useState(false);
@@ -246,7 +248,7 @@ export function PrivacySecuritySection() {
         title: 'Account deleted',
         description: 'Your account has been permanently deleted',
       });
-      window.location.href = '/';
+      navigate('/', { replace: true });
     } catch (error) {
       console.error('Failed to delete account:', error);
       toast({

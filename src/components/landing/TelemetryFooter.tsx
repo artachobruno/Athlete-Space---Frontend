@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion';
+import { Link } from 'react-router-dom';
 
 export const TelemetryFooter = () => {
   return (
@@ -19,11 +20,11 @@ export const TelemetryFooter = () => {
 
           {/* Links */}
           <div className="flex flex-wrap items-center gap-8 text-[10px] font-mono tracking-[0.15em] text-slate-600 uppercase">
-            <a href="/about" className="hover:text-slate-400 transition-colors">About</a>
-            <a href="/science" className="hover:text-slate-400 transition-colors">Science & AI</a>
-            <a href="/privacy" className="hover:text-slate-400 transition-colors">Privacy</a>
-            <a href="/faq" className="hover:text-slate-400 transition-colors">FAQ</a>
-            <a href="/login" className="hover:text-slate-400 transition-colors">Sign In</a>
+            <Link to="/about" className="hover:text-slate-400 transition-colors">About</Link>
+            <Link to="/science" className="hover:text-slate-400 transition-colors">Science & AI</Link>
+            <Link to="/privacy" className="hover:text-slate-400 transition-colors">Privacy</Link>
+            <Link to="/faq" className="hover:text-slate-400 transition-colors">FAQ</Link>
+            <Link to="/login" className="hover:text-slate-400 transition-colors">Sign In</Link>
           </div>
         </div>
 
@@ -35,12 +36,12 @@ export const TelemetryFooter = () => {
           viewport={{ once: true }}
           transition={{ duration: 0.8 }}
         >
-          <a 
-            href="/login"
+          <Link 
+            to="/login"
             className="inline-block text-sm font-mono tracking-[0.1em] text-slate-300 hover:text-slate-200 transition-colors border-b border-slate-700 hover:border-slate-500 pb-1 mb-4"
           >
             Enter the Performance System
-          </a>
+          </Link>
           <p className="text-xs font-mono tracking-wider text-slate-600 mt-3">
             Built for endurance athletes who train by signal, not guesswork.
           </p>

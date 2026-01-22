@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { PublicLayout } from '@/components/layout/PublicLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -99,12 +100,12 @@ export default function Support() {
               <CardTitle className="text-base">Help Center</CardTitle>
             </CardHeader>
             <CardContent>
-              <a 
-                href="/faq" 
+              <Link 
+                to="/faq" 
                 className="text-sm text-primary hover:underline"
               >
                 Browse FAQ
-              </a>
+              </Link>
             </CardContent>
           </Card>
         </div>

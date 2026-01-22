@@ -1,10 +1,12 @@
 import { motion } from 'framer-motion';
+import { Link, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Menu, X } from 'lucide-react';
 import { useState } from 'react';
 
 export const LandingNav = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const navigate = useNavigate();
 
   const navItems = [
     { label: 'Features', href: '#features' },
@@ -26,17 +28,18 @@ export const LandingNav = () => {
       <div className="relative container mx-auto px-6">
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
-          <motion.a
-            href="/"
+          <motion.div
             className="flex items-center gap-2"
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
           >
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-emerald-500 flex items-center justify-center">
-              <span className="text-white font-bold text-sm">A</span>
-            </div>
-            <span className="font-semibold text-white text-lg tracking-tight">Athlete Space</span>
-          </motion.a>
+            <Link to="/" className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-emerald-500 flex items-center justify-center">
+                <span className="text-white font-bold text-sm">A</span>
+              </div>
+              <span className="font-semibold text-white text-lg tracking-tight">Athlete Space</span>
+            </Link>
+          </motion.div>
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center gap-8">
@@ -64,6 +67,7 @@ export const LandingNav = () => {
               <Button
                 variant="ghost"
                 className="text-slate-300 hover:text-white hover:bg-white/[0.05]"
+                onClick={() => navigate('/login')}
               >
                 Log In
               </Button>
@@ -75,6 +79,7 @@ export const LandingNav = () => {
             >
               <Button
                 className="bg-white text-slate-900 hover:bg-white/90 font-medium"
+                onClick={() => navigate('/signup')}
               >
                 Get Started
               </Button>
@@ -118,11 +123,19 @@ export const LandingNav = () => {
               <Button
                 variant="ghost"
                 className="justify-center text-slate-300 hover:text-white hover:bg-white/[0.05]"
+                onClick={() => {
+                  navigate('/login');
+                  setIsOpen(false);
+                }}
               >
                 Log In
               </Button>
               <Button
                 className="justify-center bg-white text-slate-900 hover:bg-white/90"
+                onClick={() => {
+                  navigate('/signup');
+                  setIsOpen(false);
+                }}
               >
                 Get Started
               </Button>
