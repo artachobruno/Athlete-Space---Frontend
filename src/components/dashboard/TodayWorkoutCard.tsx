@@ -14,7 +14,7 @@ import { toWorkoutSession } from '@/components/workout/workoutSessionAdapter';
 import { Link, useNavigate } from 'react-router-dom';
 import type { CompletedActivity } from '@/types';
 import type { TodayResponse } from '@/lib/api';
-import { ExpandableWorkoutCard } from '@/components/workout/ExpandableWorkoutCard';
+import { WorkoutDetailCard } from '@/components/workouts/WorkoutDetailCard';
 
 // Map workout intent to status for badge display
 type WorkoutIntent = 'aerobic' | 'threshold' | 'vo2' | 'endurance' | 'recovery';
@@ -424,18 +424,12 @@ export function TodayWorkoutCard(props: TodayWorkoutCardProps = {}) {
       </Card>
 
       {/* Expandable Workout Details */}
-      {showWorkoutDetails && todayWorkout.workout_id && (
-        <div className="relative">
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setShowWorkoutDetails(false)}
-            className="absolute top-2 right-2 z-10"
-          >
-            Close
-          </Button>
-          <ExpandableWorkoutCard workoutId={todayWorkout.workout_id} defaultExpanded={true} />
-        </div>
+      {todayWorkout && (
+        <WorkoutDetailCard
+          session={todayWorkout}
+          expanded={showWorkoutDetails}
+          onToggleExpand={() => setShowWorkoutDetails(!showWorkoutDetails)}
+        />
       )}
 
       {/* Must-Dos Card - show unified must-do instructions (priority) */}

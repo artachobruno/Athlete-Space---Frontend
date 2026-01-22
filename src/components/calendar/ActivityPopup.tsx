@@ -28,7 +28,7 @@ import { normalizeRoutePointsFromStreams } from '@/lib/route-utils';
 import { groupWorkoutSteps } from '@/lib/workout-grouping';
 import { getTodayIntelligence } from '@/lib/intelligence';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { ExpandableWorkoutCard } from '@/components/workout/ExpandableWorkoutCard';
+import { WorkoutDetailCard } from '@/components/workouts/WorkoutDetailCard';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -463,12 +463,6 @@ export function ActivityPopup({
   };
 
   const [showWorkoutDetails, setShowWorkoutDetails] = useState(false);
-
-  const handleViewWorkout = () => {
-    if (session?.workout_id) {
-      setShowWorkoutDetails(true);
-    }
-  };
 
   const handleLinkActivity = async () => {
     if (!session || !selectedActivityId) return;
@@ -919,14 +913,7 @@ export function ActivityPopup({
                   );
                 })}
               </div>
-              <button
-                type="button"
-                onClick={handleViewWorkout}
-                className="text-sm text-primary hover:text-primary/80 underline flex items-center gap-1 mt-1"
-              >
-                {showWorkoutDetails ? 'Hide workout details' : 'View full workout'}
-                <ArrowRight className="h-3 w-3" />
-              </button>
+              {/* Workout expansion is now handled inline by WorkoutDetailCard */}
             </div>
           )}
 
@@ -962,45 +949,18 @@ export function ActivityPopup({
           )}
 
           {/* Expandable Workout Details */}
-          {showWorkoutDetails && session?.workout_id && (
+          {session && (
             <div className="mt-4">
-              <ExpandableWorkoutCard workoutId={session.workout_id} defaultExpanded={true} />
+              <WorkoutDetailCard
+                session={session}
+                expanded={showWorkoutDetails}
+                onToggleExpand={() => setShowWorkoutDetails(!showWorkoutDetails)}
+                onStatusChange={onStatusChange}
+              />
             </div>
           )}
 
-          {/* Action buttons */}
-          <div className="flex gap-2 flex-col">
-            {isPlannedSession && (
-              <div className="flex gap-2">
-                <Button
-                  variant="default"
-                  className="flex-1"
-                  onClick={() => handleStatusUpdate('completed')}
-                  disabled={updateStatus.isPending}
-                >
-                  <CheckCircle2 className="h-4 w-4 mr-2" />
-                  {activity ? 'Confirm Completion' : 'Mark Completed'}
-                </Button>
-                <Button
-                  variant="outline"
-                  className="flex-1"
-                  onClick={() => handleStatusUpdate('skipped')}
-                  disabled={updateStatus.isPending}
-                >
-                  <SkipForward className="h-4 w-4 mr-2" />
-                  Skip
-                </Button>
-                <Button
-                  variant="outline"
-                  className="flex-1 text-destructive hover:text-destructive"
-                  onClick={() => setShowDeleteDialog(true)}
-                  disabled={updateStatus.isPending}
-                >
-                  <Trash2 className="h-4 w-4 mr-2" />
-                  Delete Session
-                </Button>
-              </div>
-            )}
+          {/* Action buttons - Note: WorkoutDetailCard includes action buttons for planned sessions */}
             {isCompletedWithoutActivity && (
               <div className="flex gap-2 flex-col">
                 {!showLinkActivity ? (
@@ -1061,27 +1021,7 @@ export function ActivityPopup({
                 )}
               </div>
             )}
-            <div className="flex gap-2">
-              {session?.workout_id && !showWorkoutDetails && (
-                <Button
-                  variant="default"
-                  className="flex-1"
-                  onClick={handleViewWorkout}
-                >
-                  <ExternalLink className="h-4 w-4 mr-2" />
-                  View Workout
-                </Button>
-              )}
-              {session?.workout_id && showWorkoutDetails && (
-                <Button
-                  variant="outline"
-                  className="flex-1"
-                  onClick={() => setShowWorkoutDetails(false)}
-                >
-                  <X className="h-4 w-4 mr-2" />
-                  Hide Workout Details
-                </Button>
-              )}
+            {/* Workout expansion is now handled inline by WorkoutDetailCard */}
               <Button
                 variant="outline"
                 className="flex-1"
