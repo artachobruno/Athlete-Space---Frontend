@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { App } from "@/lib/capacitor-stubs/app";
 import { Browser } from "@/lib/capacitor-stubs/browser";
 import { isNative } from "@/lib/platform";
+import { useAuth } from "@/context/AuthContext";
 
 /**
  * Hook to handle OAuth deep links in native apps.
@@ -9,12 +10,23 @@ import { isNative } from "@/lib/platform";
  * When Google OAuth completes, the backend redirects to athletespace://auth/callback
  * This hook listens for that URL and:
  * 1. Closes the in-app browser (if open)
- * 2. Navigates to the home screen
- * 3. Triggers AuthContext to re-check authentication via /me
+ * 2. Explicitly triggers AuthContext to re-check authentication via /me
+ * 3. Navigates to the home screen
  * 
- * NOTE: Backend should set HTTP-only cookies during OAuth callback.
+ * CRITICAL: For mobile OAuth with external browser (Browser.open()), cookies set in Safari
+ * may not be immediately available in the WebView. We explicitly call refreshUser() to
+ * ensure AuthContext checks authentication via /me endpoint, which will work if the
+ * backend properly set the cookie with correct domain/path settings.
+ * 
+ * NOTE: Backend should set HTTP-only cookies during OAuth callback with:
+ * - domain: backend domain (for cross-origin cookies)
+ * - samesite: "none" (required for cross-origin)
+ * - secure: true (HTTPS only)
+ * - path: "/" (required for WKWebView)
  */
 export function useAuthDeepLink(onDeepLink?: () => void) {
+  const { refreshUser } = useAuth();
+
   useEffect(() => {
     if (!isNative()) return;
 
@@ -38,11 +50,11 @@ export function useAuthDeepLink(onDeepLink?: () => void) {
           console.log('[AuthDeepLink] Browser close skipped (not open or error):', error);
         }
 
-        // Parse URL to check for any error or token
+        // Parse URL to check for any error
         try {
           const parsed = new URL(url);
           const error = parsed.searchParams.get("error");
-          const token = parsed.searchParams.get("token");
+          const success = parsed.searchParams.get("success");
 
           if (error) {
             console.error('[AuthDeepLink] OAuth error:', error);
@@ -51,16 +63,19 @@ export function useAuthDeepLink(onDeepLink?: () => void) {
             return;
           }
 
-          // If token is in URL, log a warning (backend should set cookies instead)
-          if (token) {
-            console.warn('[AuthDeepLink] Token in URL detected - backend should set HTTP-only cookies instead');
+          // If success=true, OAuth completed successfully
+          if (success === "true") {
+            console.log('[AuthDeepLink] OAuth success detected, refreshing auth state');
+            // CRITICAL: Explicitly refresh auth to check /me endpoint
+            // This ensures AuthContext picks up the cookie set by backend
+            await refreshUser();
           }
         } catch (parseError) {
           console.warn('[AuthDeepLink] Failed to parse URL:', parseError);
         }
 
         // Navigate to home using hash router
-        // AuthContext will automatically check authentication via /me endpoint
+        // AuthContext should now have updated auth state from refreshUser()
         window.location.hash = "/";
         
         // Call optional callback if provided
@@ -75,5 +90,5 @@ export function useAuthDeepLink(onDeepLink?: () => void) {
         // Ignore errors during cleanup (stub implementation)
       });
     };
-  }, [onDeepLink]);
+  }, [onDeepLink, refreshUser]);
 }

@@ -1,9 +1,48 @@
 // Stub for @capacitor/browser - used in web builds where Capacitor is not installed
-export const Browser = {
-  open: async (_options: { url: string; presentationStyle?: string }) => {
-    throw new Error('Browser plugin not available in web builds');
+// In native builds, Capacitor will provide the real implementation at runtime
+// This stub checks for the real plugin and uses it if available
+
+// Try to get the real Browser plugin from Capacitor if available (native builds)
+const getRealBrowser = () => {
+  if (typeof window !== 'undefined') {
+    const Capacitor = (window as { Capacitor?: { Plugins?: { Browser?: typeof BrowserStub } } }).Capacitor;
+    if (Capacitor?.Plugins?.Browser) {
+      return Capacitor.Plugins.Browser;
+    }
+  }
+  return null;
+};
+
+interface BrowserStub {
+  open: (options: { url: string; presentationStyle?: string }) => Promise<void>;
+  close: () => Promise<void>;
+}
+
+const BrowserStub: BrowserStub = {
+  open: async (options: { url: string; presentationStyle?: string }) => {
+    // Try to use real plugin first (native builds)
+    const realBrowser = getRealBrowser();
+    if (realBrowser) {
+      return realBrowser.open(options);
+    }
+    
+    // Fallback to window.location for web builds
+    if (typeof window !== 'undefined') {
+      window.location.href = options.url;
+      return;
+    }
+    throw new Error('Browser plugin not available');
   },
   close: async () => {
-    throw new Error('Browser plugin not available in web builds');
+    // Try to use real plugin first (native builds)
+    const realBrowser = getRealBrowser();
+    if (realBrowser) {
+      return realBrowser.close();
+    }
+    
+    // No-op in web builds
+    return;
   },
 };
+
+export const Browser = BrowserStub;

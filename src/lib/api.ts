@@ -359,6 +359,9 @@ export const getStravaConnectUrl = (): string => {
 /**
  * Initiates Strava OAuth connection.
  * Fetches OAuth URL from backend and redirects to Strava.
+ * 
+ * CRITICAL: For native apps, uses Browser.open() to open OAuth in external browser.
+ * This prevents WebView reloads.
  */
 export const initiateStravaConnect = async (): Promise<void> => {
   console.log("[API] Initiating Strava connect");
@@ -373,8 +376,21 @@ export const initiateStravaConnect = async (): Promise<void> => {
       throw new Error("Backend did not return OAuth URL");
     }
 
-    console.log("[API] Redirecting to Strava OAuth URL");
-    window.location.href = oauthUrl;
+    // Check if running in native app (Capacitor)
+    const { isNative } = await import('./platform');
+    const isCapacitor = isNative();
+    
+    // CRITICAL: For native apps, use Browser.open() to open OAuth in external browser
+    // This prevents WebView reloads
+    if (isCapacitor) {
+      const { Browser } = await import('@capacitor/browser');
+      console.log("[API] Opening Strava OAuth in external browser (native)");
+      await Browser.open({ url: oauthUrl });
+    } else {
+      // Web: Use standard redirect
+      console.log("[API] Redirecting to Strava OAuth URL (web)");
+      window.location.href = oauthUrl;
+    }
   } catch (error) {
     console.error("[API] Failed to initiate Strava connect:", error);
     throw error;
@@ -447,6 +463,9 @@ export const disconnectStrava = async (): Promise<void> => {
  * 
  * For mobile apps, includes redirect_uri=athletespace://auth/callback to deep link
  * back into the app after OAuth completes.
+ * 
+ * CRITICAL: For native apps, uses Browser.open() to open OAuth in external browser.
+ * This prevents WebView reloads and avoids Google's "disallowed_useragent" error.
  */
 export const initiateGoogleConnect = async (): Promise<void> => {
   console.log("[API] Initiating Google connect");
@@ -456,11 +475,8 @@ export const initiateGoogleConnect = async (): Promise<void> => {
     const API = getBaseURL();
     
     // Check if running in native app (Capacitor)
-    const isCapacitor = typeof window !== 'undefined' && (
-      window.location.protocol === 'capacitor:' ||
-      window.location.origin === 'capacitor://localhost' ||
-      window.location.href.startsWith('capacitor://')
-    );
+    const { isNative } = await import('./platform');
+    const isCapacitor = isNative();
     
     // Build OAuth URL with platform and redirect_uri for mobile
     const params = new URLSearchParams();
@@ -492,8 +508,17 @@ export const initiateGoogleConnect = async (): Promise<void> => {
       }
     }
     
-    console.log("[API] Redirecting to Google OAuth URL:", url);
-    window.location.href = url;
+    // CRITICAL: For native apps, use Browser.open() to open OAuth in external browser
+    // This prevents WebView reloads and avoids Google's "disallowed_useragent" error
+    if (isCapacitor) {
+      const { Browser } = await import('@capacitor/browser');
+      console.log("[API] Opening Google OAuth in external browser (native)");
+      await Browser.open({ url });
+    } else {
+      // Web: Use standard redirect
+      console.log("[API] Redirecting to Google OAuth URL (web):", url);
+      window.location.href = url;
+    }
   } catch (error) {
     console.error("[API] Failed to initiate Google connect:", error);
     throw error;
