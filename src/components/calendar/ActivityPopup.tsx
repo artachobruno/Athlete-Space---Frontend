@@ -25,10 +25,10 @@ import { normalizeSportType } from '@/lib/session-utils';
 import { ActivityCharts } from '@/components/activities/ActivityCharts';
 import { ActivityMap } from '@/components/activities/ActivityMap';
 import { normalizeRoutePointsFromStreams } from '@/lib/route-utils';
-import { groupWorkoutSteps } from '@/lib/workout-grouping';
 import { getTodayIntelligence } from '@/lib/intelligence';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { WorkoutDetailCard } from '@/components/workouts/WorkoutDetailCard';
+import { EffortGraph } from '@/components/workout/EffortGraph';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -373,85 +373,84 @@ export function ActivityPopup({
   const displayTss = enrichedActivity?.trainingLoad || 
     (activity?.date ? getTssForDate(activity.date, trainingLoadData) : null);
 
-  // Generate lightweight structured workout preview with grouping
-  const workoutPreview = useMemo(() => {
+  // Convert structured workout steps to effort data for EffortGraph
+  const effortDataFromWorkout = useMemo(() => {
     if (!structuredWorkout?.steps || structuredWorkout.steps.length === 0) {
       return null;
     }
 
     const sortedSteps = [...structuredWorkout.steps].sort((a, b) => a.order - b.order);
-    
-    // Use the grouping utility to group steps
-    const grouped = groupWorkoutSteps(sortedSteps);
-    
-    // Generate summary from grouped steps
-    const summaryParts: string[] = [];
-    
-    for (const group of grouped) {
-      if (group.isRepeat && group.repeatSteps) {
-        // Format: "Repeat N times: intensity Step1 → Step2"
-        const parts: string[] = [];
-        
-        if (group.intensity) {
-          parts.push(group.intensity);
-        }
-        
-        group.repeatSteps.forEach((step) => {
-          const stepParts: string[] = [step.name];
-          
-          if (step.durationMin) {
-            stepParts.push(`${step.durationMin} min`);
-          }
-          
-          if (step.distanceKm) {
-            const converted = convertDistance(step.distanceKm);
-            stepParts.push(formatDistance(converted));
-          }
-          
-          if (step.intensity) {
-            stepParts.push(step.intensity);
-          }
-          
-          parts.push(stepParts.join(' '));
-        });
-        
-        summaryParts.push(`Repeat ${group.count} times: ${parts.join(' → ')}`);
-      } else {
-        // Format single or grouped step
-        const parts: string[] = [group.name];
-        
-        if (group.durationMin) {
-          parts.push(`${group.durationMin} min`);
-        }
-        
-        if (group.totalDistanceKm) {
-          const converted = convertDistance(group.totalDistanceKm);
-          parts.push(formatDistance(converted));
-        }
-        
-        if (group.intensity) {
-          parts.push(group.intensity);
-        }
-        
-        summaryParts.push(parts.join(' • '));
-      }
-    }
-    
-    // Limit to ~6 items then add "+N"
-    const maxItems = 6;
-    let summary: string;
-    if (summaryParts.length > maxItems) {
-      summary = summaryParts.slice(0, maxItems).join(' → ') + ` +${summaryParts.length - maxItems}`;
-    } else {
-      summary = summaryParts.join(' → ');
+    const numBars = 10;
+    const effortData: number[] = [];
+
+    // Calculate total duration to distribute bars proportionally
+    const totalDuration = sortedSteps.reduce((sum, step) => {
+      return sum + (step.duration_seconds || 0);
+    }, 0);
+
+    if (totalDuration === 0) {
+      // Fallback: equal distribution if no duration data
+      return sortedSteps.map(() => {
+        const stepType = (sortedSteps[0]?.step_type || sortedSteps[0]?.type || '').toLowerCase();
+        if (stepType.includes('interval') || stepType.includes('vo2')) return 8;
+        if (stepType.includes('tempo') || stepType.includes('threshold')) return 6;
+        if (stepType.includes('warmup') || stepType.includes('cooldown') || stepType.includes('recovery')) return 3;
+        return 5;
+      }).slice(0, numBars);
     }
 
-    return {
-      summary,
-      stepTypes: sortedSteps.map((step) => step.step_type || step.type),
-      stepCount: sortedSteps.length,
+    // Map step type/intensity to effort value (0-10 scale)
+    const getEffortValue = (step: typeof sortedSteps[0]): number => {
+      const stepType = (step.step_type || step.type || '').toLowerCase();
+      const intensity = (step.intensity || '').toLowerCase();
+
+      // High intensity intervals
+      if (stepType.includes('interval') || stepType.includes('vo2') || intensity.includes('vo2')) {
+        return 8.5;
+      }
+      // Threshold/tempo efforts
+      if (stepType.includes('tempo') || stepType.includes('threshold') || intensity.includes('threshold') || intensity.includes('tempo')) {
+        return 6.5;
+      }
+      // Steady/aerobic
+      if (stepType.includes('steady') || stepType.includes('aerobic') || intensity.includes('aerobic')) {
+        return 5;
+      }
+      // Warmup/cooldown/recovery
+      if (stepType.includes('warmup') || stepType.includes('cooldown') || stepType.includes('recovery') || stepType.includes('rest')) {
+        return 3;
+      }
+      // Default moderate effort
+      return 5;
     };
-  }, [structuredWorkout, convertDistance, formatDistance]);
+
+    // Distribute bars proportionally across workout duration
+    let currentTime = 0;
+    let stepIndex = 0;
+    let stepStartTime = 0;
+    let currentStep = sortedSteps[stepIndex];
+    let currentStepDuration = currentStep?.duration_seconds || 0;
+
+    for (let i = 0; i < numBars; i++) {
+      const barTime = (i / numBars) * totalDuration;
+
+      // Find which step this bar belongs to
+      while (stepIndex < sortedSteps.length - 1 && barTime >= stepStartTime + currentStepDuration) {
+        stepStartTime += currentStepDuration;
+        stepIndex++;
+        currentStep = sortedSteps[stepIndex];
+        currentStepDuration = currentStep?.duration_seconds || 0;
+      }
+
+      if (currentStep) {
+        effortData.push(getEffortValue(currentStep));
+      } else {
+        effortData.push(5); // Default if no step found
+      }
+    }
+
+    return effortData;
+  }, [structuredWorkout]);
 
   const handleViewDetails = () => {
     onOpenChange(false);
@@ -877,48 +876,24 @@ export function ActivityPopup({
             </div>
           )}
 
-          {/* Structured workout preview (recognition, not duplication) */}
-          {workoutPreview && session?.workout_id && (
+          {/* Structured workout effort graph */}
+          {effortDataFromWorkout && session?.workout_id && (
             <div className="mt-3 rounded-md bg-muted/50 p-3 border border-border/50">
-              <div className="text-xs text-muted-foreground mb-1.5 uppercase tracking-wide">
+              <div className="text-xs text-muted-foreground mb-2 uppercase tracking-wide">
                 Structured workout
               </div>
-              <div className="text-sm font-medium text-foreground mb-2">
-                {workoutPreview.summary}
+              <div className="h-16">
+                <EffortGraph
+                  data={effortDataFromWorkout}
+                  showData={true}
+                  compact={false}
+                />
               </div>
-              <div className="flex items-center gap-1.5 flex-wrap mb-2">
-                {workoutPreview.stepTypes.map((stepType, idx) => {
-                  const stepLabels: Record<string, string> = {
-                    warmup: 'WU',
-                    steady: 'Steady',
-                    interval: 'Interval',
-                    cooldown: 'CD',
-                    rest: 'Rest',
-                  };
-                  const stepColors: Record<string, string> = {
-                    warmup: 'bg-training-recovery/20 text-training-recovery border-training-recovery/30',
-                    steady: 'bg-training-aerobic/20 text-training-aerobic border-training-aerobic/30',
-                    interval: 'bg-training-vo2/20 text-training-vo2 border-training-vo2/30',
-                    cooldown: 'bg-training-recovery/20 text-training-recovery border-training-recovery/30',
-                    rest: 'bg-muted text-muted-foreground border-muted-foreground/30',
-                  };
-                  return (
-                    <Badge
-                      key={idx}
-                      variant="outline"
-                      className={cn('text-xs', stepColors[stepType] || 'bg-muted text-muted-foreground')}
-                    >
-                      {stepLabels[stepType] || stepType}
-                    </Badge>
-                  );
-                })}
-              </div>
-              {/* Workout expansion is now handled inline by WorkoutDetailCard */}
             </div>
           )}
 
           {/* Legacy workout structure (keep for backward compatibility) */}
-          {workout?.structure && workout.structure.length > 0 && !workoutPreview && (
+          {workout?.structure && workout.structure.length > 0 && !effortDataFromWorkout && (
             <div className="space-y-2">
               <h4 className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
                 Structure
