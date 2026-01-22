@@ -128,6 +128,13 @@ export interface WorkoutStep {
   notes: string | null;
 }
 
+export interface CoachVerdict {
+  type: "ok" | "modify" | "rest" | "caution";
+  reason: string;
+  confidence?: number;
+  generated_at: string;
+}
+
 export interface CalendarSession {
   id: string;
   date: string;
@@ -154,6 +161,8 @@ export interface CalendarSession {
   steps?: WorkoutStep[];
   coach_insight?: string | null;
   must_dos?: string[];
+  // Phase 5A: Coach verdict (read-only, advisory)
+  coach_verdict?: CoachVerdict | null;
 }
 
 export interface TodayResponse {

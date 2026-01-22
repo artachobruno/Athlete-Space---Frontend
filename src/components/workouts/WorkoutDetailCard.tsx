@@ -9,7 +9,7 @@
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Loader2, CheckCircle2, SkipForward, Trash2, ChevronDown, ChevronUp, ArrowRight, ExternalLink } from 'lucide-react';
+import { Loader2, CheckCircle2, SkipForward, Trash2, ChevronDown, ChevronUp, ArrowRight, ExternalLink, Brain, MessageCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { useStructuredWorkout } from '@/hooks/useStructuredWorkout';
 import { WorkoutHeader } from '@/components/workout/WorkoutHeader';
@@ -128,6 +128,59 @@ export function WorkoutDetailCard({
     ? intentColors[intent as keyof typeof intentColors]
     : 'bg-muted text-muted-foreground border-border';
 
+  // Phase 5A: Coach verdict check
+  const hasCoachVerdict = session.coach_verdict && session.coach_verdict.type !== 'ok';
+  const coachVerdict = session.coach_verdict;
+
+  /**
+   * Phase 5A: Generate draft message based on coach verdict
+   */
+  const generateDraftMessage = (verdictType: string): string => {
+    const baseMessage = "Today's workout was flagged based on recovery signals.\n\n";
+    
+    switch (verdictType) {
+      case 'rest':
+        return `${baseMessage}Can we adjust today's session?\nOptions I'm considering:\n- Skip today\n- Convert to recovery\n- Light movement only\n\nHappy to follow your guidance.`;
+      case 'modify':
+        return `${baseMessage}Can we adjust today's session?\nOptions I'm considering:\n- Reduce volume\n- Convert to recovery\n- Skip\n\nHappy to follow your guidance.`;
+      case 'caution':
+        return `${baseMessage}This session may need adjustment based on my recovery signals.\n\nCan we discuss the best approach for today?\n\nHappy to follow your guidance.`;
+      default:
+        return `${baseMessage}Can we adjust today's session?\nOptions I'm considering:\n- Reduce volume\n- Convert to recovery\n- Skip\n\nHappy to follow your guidance.`;
+    }
+  };
+
+  /**
+   * Phase 5A: Navigate to coach with draft message
+   */
+  const handleAskCoachToModify = () => {
+    const draftMessage = coachVerdict 
+      ? generateDraftMessage(coachVerdict.type)
+      : generateDraftMessage('modify');
+    
+    navigate('/coach', {
+      state: {
+        context: 'modify_today_session',
+        session_id: session.id,
+        suggested_action: coachVerdict?.type === 'rest' ? 'skip' : 'generic',
+        draft_message: draftMessage,
+      },
+    });
+  };
+
+  const handleDiscussWithCoach = () => {
+    navigate('/coach', {
+      state: {
+        context: 'modify_today_session',
+        session_id: session.id,
+        suggested_action: 'generic',
+        draft_message: coachVerdict?.reason 
+          ? `I saw your suggestion about today's session: "${coachVerdict.reason}"\n\nCan we discuss this further?`
+          : "I'd like to discuss today's session with you.",
+      },
+    });
+  };
+
   return (
     <>
       <Card className={cn('overflow-hidden', className)}>
@@ -200,8 +253,47 @@ export function WorkoutDetailCard({
 
         {expanded && (
           <CardContent className="space-y-6 pt-0">
-            {/* Coach Insight */}
-            {session.coach_insight && (
+            {/* Phase 5A: Coach Verdict Insight (only when verdict !== "ok") */}
+            {hasCoachVerdict && coachVerdict && (
+              <Card className="border-amber-500/30 bg-amber-500/5">
+                <CardHeader className="pb-3">
+                  <div className="flex items-center gap-2">
+                    <Brain className="h-4 w-4 text-amber-600 dark:text-amber-400" />
+                    <h4 className="text-sm font-semibold text-foreground">Coach Suggestion</h4>
+                  </div>
+                </CardHeader>
+                <CardContent className="pt-0 space-y-4">
+                  <p className="text-sm text-foreground leading-relaxed">
+                    {coachVerdict.reason}
+                  </p>
+                  
+                  {/* Phase 5A: Action Buttons */}
+                  <div className="flex gap-2 pt-2 border-t border-border/50">
+                    <Button
+                      variant="default"
+                      size="sm"
+                      onClick={handleAskCoachToModify}
+                      className="flex-1"
+                    >
+                      <MessageCircle className="h-4 w-4 mr-2" />
+                      Ask Coach to Modify Today's Session
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleDiscussWithCoach}
+                      className="flex-1"
+                    >
+                      <Brain className="h-4 w-4 mr-2" />
+                      Discuss with Coach
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+
+            {/* Coach Insight (legacy - general insight, not verdict-based) */}
+            {session.coach_insight && !hasCoachVerdict && (
               <div className="rounded-lg border bg-muted/30 p-4">
                 <h4 className="text-sm font-semibold mb-2">Coach Insight</h4>
                 <p className="text-sm text-muted-foreground">{session.coach_insight}</p>
