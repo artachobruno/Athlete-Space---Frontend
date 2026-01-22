@@ -104,6 +104,23 @@ export function buildExecutionSummaries(
   const usedActivityIds = new Set<string>();
   const usedPlannedIds = new Set<string>();
 
+  // Build pairing maps for efficient lookup
+  // Map: activity_id -> planned_session_id (from activities)
+  const activityToPlannedMap = new Map<string, string>();
+  for (const activity of activities) {
+    if (activity.planned_session_id && activity.date === date) {
+      activityToPlannedMap.set(activity.id, activity.planned_session_id);
+    }
+  }
+
+  // Map: planned_session_id -> activity_id (from planned sessions with completed_activity_id)
+  const plannedToActivityMap = new Map<string, string>();
+  for (const planned of plannedSessions) {
+    if (planned.completed_activity_id && planned.date === date) {
+      plannedToActivityMap.set(planned.id, planned.completed_activity_id);
+    }
+  }
+
   // First pass: Handle paired items
   for (const planned of plannedSessions) {
     // Skip cancelled/deleted
@@ -111,10 +128,22 @@ export function buildExecutionSummaries(
       continue;
     }
 
-    // Find paired activity
-    const pairedActivity = activities.find(
-      (a) => a.planned_session_id === planned.id && a.date === date
-    );
+    // Find paired activity (check both directions)
+    let pairedActivity: CompletedActivity | undefined;
+    
+    // Check if planned has completed_activity_id
+    if (planned.completed_activity_id) {
+      pairedActivity = activities.find(
+        (a) => a.id === planned.completed_activity_id && a.date === date
+      );
+    }
+    
+    // Also check if any activity has this planned_session_id
+    if (!pairedActivity) {
+      pairedActivity = activities.find(
+        (a) => a.planned_session_id === planned.id && a.date === date
+      );
+    }
 
     if (pairedActivity) {
       const executionState = computeExecutionState(planned, pairedActivity, date);
