@@ -1,46 +1,36 @@
-import { useCallback, useState } from 'react';
+import { useState } from 'react';
 import { AppLayout } from '@/components/layout/AppLayout';
-import { WeeklyPlanOverview } from '@/components/plan/WeeklyPlanOverview';
-import { WeeklyStructureStrip } from '@/components/plan/WeeklyStructureStrip';
-import { DailyWorkoutList } from '@/components/plan/DailyWorkoutList';
 import { PlanChangeHistory } from '@/components/plan/PlanChangeHistory';
 import { PlanCoachChat } from '@/components/plan/PlanCoachChat';
-import { ComplianceDashboard } from '@/components/calendar/ComplianceDashboard';
+import { SeasonView } from '@/components/calendar/SeasonView';
 import { useSyncTodayWorkout } from '@/hooks/useSyncTodayWorkout';
 import { Button } from '@/components/ui/button';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { format, addWeeks, subWeeks, startOfWeek } from 'date-fns';
+import { addMonths, subMonths, format, startOfMonth } from 'date-fns';
 
 export default function TrainingPlan() {
   useSyncTodayWorkout();
   const [currentDate, setCurrentDate] = useState(new Date());
   
-  const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
-  
-  const navigatePrevious = () => {
-    setCurrentDate(subWeeks(currentDate, 1));
+  // Quarter-based navigation for strategic view
+  const navigatePreviousQuarter = () => {
+    setCurrentDate(subMonths(currentDate, 3));
   };
 
-  const navigateNext = () => {
-    setCurrentDate(addWeeks(currentDate, 1));
+  const navigateNextQuarter = () => {
+    setCurrentDate(addMonths(currentDate, 3));
   };
 
-  const goToToday = () => {
+  const goToCurrentQuarter = () => {
     setCurrentDate(new Date());
   };
 
-  const getNavigationLabel = () => {
-    const weekEnd = new Date(weekStart);
-    weekEnd.setDate(weekEnd.getDate() + 6);
-    return `Week of ${format(weekStart, 'MMM d, yyyy')}`;
+  const getQuarterLabel = () => {
+    const quarterStart = startOfMonth(new Date(currentDate.getFullYear(), Math.floor(currentDate.getMonth() / 3) * 3, 1));
+    const quarterEnd = new Date(quarterStart);
+    quarterEnd.setMonth(quarterEnd.getMonth() + 2);
+    return `${format(quarterStart, 'MMM')} – ${format(quarterEnd, 'MMM yyyy')}`;
   };
-
-  const handleDayClick = useCallback((dateStr: string) => {
-    const element = document.getElementById(`workout-${dateStr}`);
-    if (element) {
-      element.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-  }, []);
 
   return (
     <AppLayout>
@@ -51,36 +41,27 @@ export default function TrainingPlan() {
             <p className="text-muted-foreground mt-1">Your training strategy</p>
           </div>
           
-          {/* Week Navigation */}
+          {/* Quarter Navigation for strategic overview */}
           <div className="flex items-center gap-2">
-            <Button variant="outline" size="icon" onClick={navigatePrevious}>
+            <Button variant="outline" size="icon" onClick={navigatePreviousQuarter}>
               <ChevronLeft className="h-4 w-4" />
             </Button>
-            <Button variant="outline" size="icon" onClick={navigateNext}>
+            <Button variant="outline" size="icon" onClick={navigateNextQuarter}>
               <ChevronRight className="h-4 w-4" />
             </Button>
-            <Button variant="ghost" onClick={goToToday} className="text-sm">
-              Today
+            <Button variant="ghost" onClick={goToCurrentQuarter} className="text-sm">
+              Current
             </Button>
             <span className="font-semibold text-foreground ml-2">
-              {getNavigationLabel()}
+              {getQuarterLabel()}
             </span>
           </div>
         </div>
 
-        {/* Compliance Dashboard */}
-        <ComplianceDashboard showWeekly={true} showSeason={true} />
+        {/* Season View - Training phases, goal races, strategic overview */}
+        <SeasonView currentDate={currentDate} />
 
-        {/* Weekly Overview */}
-        <WeeklyPlanOverview currentDate={currentDate} />
-
-        {/* Weekly Structure Strip */}
-        <WeeklyStructureStrip currentDate={currentDate} onDayClick={handleDayClick} />
-
-        {/* Daily Workout List */}
-        <DailyWorkoutList currentDate={currentDate} />
-
-        {/* Plan Change History */}
+        {/* Plan Change History - Strategic rationale */}
         <PlanChangeHistory />
 
         {/* Floating Coach Chat */}
