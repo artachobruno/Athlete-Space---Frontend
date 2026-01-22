@@ -156,16 +156,34 @@ export async function loginWithEmail(email: string, password: string): Promise<v
     // For mobile: Store token in secure storage
     // For web: Cookie is automatically set by backend with credentials: 'include'
     const { isNative } = await import('./platform');
-    if (isNative()) {
+    const isMobile = isNative();
+    console.log("[LOGIN] Platform detection:", { isMobile, responseKeys: Object.keys(response || {}) });
+    
+    if (isMobile) {
       const { storeAccessToken } = await import('./tokenStorage');
       const accessToken = (response as { access_token?: string }).access_token;
       const expiresIn = (response as { expires_in?: number }).expires_in || 2592000; // Default 30 days in seconds
       
+      console.log("[LOGIN] Mobile login - token extraction:", {
+        hasAccessToken: !!accessToken,
+        accessTokenLength: accessToken?.length,
+        expiresIn,
+        fullResponse: response,
+      });
+      
       if (accessToken) {
-        await storeAccessToken(accessToken, expiresIn);
-        console.log("[LOGIN] ✅ Token stored securely for mobile");
+        try {
+          await storeAccessToken(accessToken, expiresIn);
+          console.log("[LOGIN] ✅ Token stored securely for mobile");
+        } catch (error) {
+          console.error("[LOGIN] ❌ Failed to store token:", error);
+          throw error;
+        }
       } else {
         console.warn("[LOGIN] ⚠️ Mobile login: No access_token in response");
+        console.warn("[LOGIN] Response structure:", JSON.stringify(response, null, 2));
+        // Don't throw - backend might not be deployed with token changes yet
+        // User can still try to use cookies as fallback
       }
     } else {
       console.log("[LOGIN] ✅ Authentication cookie set successfully (web)");

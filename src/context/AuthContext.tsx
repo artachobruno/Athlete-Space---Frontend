@@ -106,6 +106,19 @@ export function AuthProvider({ children }: AuthProviderProps) {
   // CRITICAL: Never set status to "unauthenticated" before /me completes
   // This prevents redirect loops on refresh/deep-link
   useEffect(() => {
+    let isResolved = false;
+    
+    const resolveAuth = (newStatus: AuthStatus, newUser: AuthUser | null) => {
+      if (isResolved) {
+        return;
+      }
+      isResolved = true;
+      setUser(newUser);
+      setStatus(newStatus);
+      setLoading(false);
+      console.log(`[AuthContext] Auth resolved: ${newStatus}`);
+    };
+    
     const bootstrapAuth = async () => {
       console.log("[AuthContext] Bootstrapping auth...");
       
@@ -122,9 +135,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         
         if (!hasToken) {
           console.log("[AuthContext] No valid token found for mobile, setting unauthenticated");
-          setUser(null);
-          setStatus("unauthenticated");
-          setLoading(false);
+          resolveAuth("unauthenticated", null);
           return;
         }
         console.log("[AuthContext] Valid token found for mobile, checking /me");
@@ -138,26 +149,30 @@ export function AuthProvider({ children }: AuthProviderProps) {
         
         if (!currentUser) {
           console.log("[AuthContext] /me returned null, setting unauthenticated");
-          setUser(null);
-          setStatus("unauthenticated");
+          resolveAuth("unauthenticated", null);
         } else {
           console.log("[AuthContext] /me succeeded, setting authenticated");
-          setUser(currentUser);
-          setStatus("authenticated");
+          resolveAuth("authenticated", currentUser);
         }
       } catch (error) {
         console.error("[AuthContext] Bootstrap error:", error);
         // Any error = unauthenticated (don't assume authenticated)
-        setUser(null);
-        setStatus("unauthenticated");
-      } finally {
-        // CRITICAL: Only set loading to false AFTER status is determined
-        // This ensures guards never redirect during bootstrap
-        setLoading(false);
+        resolveAuth("unauthenticated", null);
       }
     };
     
-    bootstrapAuth();
+    // Safety timeout: Force resolution after 4 seconds to prevent infinite loading
+    // This prevents deadlock if fetchCurrentUser() hangs or network fails silently
+    const timeoutId = setTimeout(() => {
+      if (!isResolved) {
+        console.warn("[AuthContext] Bootstrap timeout (4s) - forcing unauthenticated state");
+        resolveAuth("unauthenticated", null);
+      }
+    }, 4000);
+    
+    bootstrapAuth().finally(() => {
+      clearTimeout(timeoutId);
+    });
   }, []);
 
   // authReady = auth check is complete (not bootstrapping)

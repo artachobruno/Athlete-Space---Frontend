@@ -15,21 +15,37 @@ const TOKEN_EXPIRY_KEY = 'auth_token_expiry';
  * On web: Uses localStorage (fallback, web should use cookies)
  */
 export async function storeAccessToken(token: string, expiresIn: number): Promise<void> {
-  if (isNative()) {
-    // Mobile: Use Capacitor secure storage
-    await Preferences.set({ key: ACCESS_TOKEN_KEY, value: token });
-    
-    // Store expiry timestamp
-    const expiryTimestamp = Date.now() + (expiresIn * 1000);
-    await Preferences.set({ key: TOKEN_EXPIRY_KEY, value: expiryTimestamp.toString() });
-    
-    console.log('[TokenStorage] Token stored securely in Capacitor Preferences');
-  } else {
-    // Web: Use localStorage (fallback - production web should use cookies)
-    localStorage.setItem(ACCESS_TOKEN_KEY, token);
-    const expiryTimestamp = Date.now() + (expiresIn * 1000);
-    localStorage.setItem(TOKEN_EXPIRY_KEY, expiryTimestamp.toString());
-    console.log('[TokenStorage] Token stored in localStorage (web fallback)');
+  try {
+    if (isNative()) {
+      // Mobile: Use Capacitor secure storage
+      console.log('[TokenStorage] Storing token in Capacitor Preferences...');
+      await Preferences.set({ key: ACCESS_TOKEN_KEY, value: token });
+      
+      // Store expiry timestamp
+      const expiryTimestamp = Date.now() + (expiresIn * 1000);
+      await Preferences.set({ key: TOKEN_EXPIRY_KEY, value: expiryTimestamp.toString() });
+      
+      // Verify it was stored
+      const verifyResult = await Preferences.get({ key: ACCESS_TOKEN_KEY });
+      if (verifyResult.value === token) {
+        console.log('[TokenStorage] ✅ Token stored and verified in Capacitor Preferences');
+      } else {
+        console.error('[TokenStorage] ❌ Token storage verification failed!', {
+          expected: token.substring(0, 20) + '...',
+          got: verifyResult.value?.substring(0, 20) + '...',
+        });
+        throw new Error('Token storage verification failed');
+      }
+    } else {
+      // Web: Use localStorage (fallback - production web should use cookies)
+      localStorage.setItem(ACCESS_TOKEN_KEY, token);
+      const expiryTimestamp = Date.now() + (expiresIn * 1000);
+      localStorage.setItem(TOKEN_EXPIRY_KEY, expiryTimestamp.toString());
+      console.log('[TokenStorage] Token stored in localStorage (web fallback)');
+    }
+  } catch (error) {
+    console.error('[TokenStorage] ❌ Failed to store token:', error);
+    throw error;
   }
 }
 
@@ -41,22 +57,40 @@ export async function getAccessToken(): Promise<string | null> {
   let token: string | null = null;
   let expiryTimestamp: number | null = null;
   
-  if (isNative()) {
-    // Mobile: Get from Capacitor secure storage
-    const tokenResult = await Preferences.get({ key: ACCESS_TOKEN_KEY });
-    const expiryResult = await Preferences.get({ key: TOKEN_EXPIRY_KEY });
-    
-    token = tokenResult.value;
-    expiryTimestamp = expiryResult.value ? parseInt(expiryResult.value, 10) : null;
-  } else {
-    // Web: Get from localStorage
-    token = localStorage.getItem(ACCESS_TOKEN_KEY);
-    const expiryStr = localStorage.getItem(TOKEN_EXPIRY_KEY);
-    expiryTimestamp = expiryStr ? parseInt(expiryStr, 10) : null;
+  try {
+    if (isNative()) {
+      // Mobile: Get from Capacitor secure storage
+      const tokenResult = await Preferences.get({ key: ACCESS_TOKEN_KEY });
+      const expiryResult = await Preferences.get({ key: TOKEN_EXPIRY_KEY });
+      
+      token = tokenResult.value;
+      expiryTimestamp = expiryResult.value ? parseInt(expiryResult.value, 10) : null;
+      
+      console.log('[TokenStorage] Retrieved from Capacitor Preferences:', {
+        hasToken: !!token,
+        hasExpiry: !!expiryTimestamp,
+        expiryTimestamp,
+        isExpired: expiryTimestamp ? Date.now() >= expiryTimestamp : null,
+      });
+    } else {
+      // Web: Get from localStorage
+      token = localStorage.getItem(ACCESS_TOKEN_KEY);
+      const expiryStr = localStorage.getItem(TOKEN_EXPIRY_KEY);
+      expiryTimestamp = expiryStr ? parseInt(expiryStr, 10) : null;
+      
+      console.log('[TokenStorage] Retrieved from localStorage:', {
+        hasToken: !!token,
+        hasExpiry: !!expiryTimestamp,
+      });
+    }
+  } catch (error) {
+    console.error('[TokenStorage] Error retrieving token:', error);
+    return null;
   }
   
   // Check if token exists
   if (!token) {
+    console.log('[TokenStorage] No token found');
     return null;
   }
   
@@ -67,6 +101,7 @@ export async function getAccessToken(): Promise<string | null> {
     return null;
   }
   
+  console.log('[TokenStorage] Valid token found');
   return token;
 }
 
