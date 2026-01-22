@@ -182,9 +182,17 @@ export function WeekCalendar({ currentDate, onActivityClick }: WeekCalendarProps
             <Card
               key={idx}
               className={cn(
-                'flex flex-col min-h-0 overflow-hidden',
-                isCurrentDay && 'ring-2 ring-primary/50',
+                'flex flex-col min-h-0 overflow-hidden transition-all duration-150',
+                // Hover state - subtle lift and highlight
+                'hover:shadow-md hover:border-border/80',
+                // Focus state - keyboard navigation
+                'focus-within:ring-2 focus-within:ring-primary/40 focus-within:shadow-md',
+                // Today highlight
+                isCurrentDay && 'ring-2 ring-primary/50 bg-primary/[0.02]',
               )}
+              tabIndex={0}
+              role="gridcell"
+              aria-label={`${format(day, 'EEEE, MMMM d')}${dayTotal > 0 ? `, ${dayTotal} minutes planned` : ', rest day'}`}
             >
               {/* Day Header - fixed height, clickable */}
               <div
