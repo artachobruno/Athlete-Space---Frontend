@@ -129,18 +129,24 @@ export function groupWorkoutSteps(steps: WorkoutStep[] | StructuredWorkoutStep[]
     const stepDuration = getStepDuration(currentStep);
     const stepNotes = currentStep.notes || null;
 
-    // Check if next steps are similar (same base name, same intensity, same duration pattern)
+    // Check if next steps are similar (same base name, same intensity)
+    // For duration: group if both are null, or if they match exactly
+    // This allows grouping steps with varying distances but same name/intensity
     while (i + consecutiveCount < steps.length) {
       const nextStep = steps[i + consecutiveCount] as StepLike;
       const nextBaseName = normalizeStepName(nextStep.name);
       const nextDistance = getStepDistance(nextStep);
       const nextDuration = getStepDuration(nextStep);
       
-      if (
-        nextBaseName === stepBaseName &&
-        (nextStep.intensity || null) === stepIntensity &&
-        nextDuration === stepDuration
-      ) {
+      // Group if:
+      // 1. Same base name
+      // 2. Same intensity (or both null)
+      // 3. Same duration (or both null - allows grouping distance-based steps with varying distances)
+      const sameName = nextBaseName === stepBaseName;
+      const sameIntensity = (nextStep.intensity || null) === stepIntensity;
+      const sameDuration = (stepDuration === null && nextDuration === null) || (stepDuration === nextDuration);
+      
+      if (sameName && sameIntensity && sameDuration) {
         if (nextDistance) {
           totalDistance += nextDistance;
         }
