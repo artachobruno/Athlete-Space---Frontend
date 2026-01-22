@@ -135,6 +135,7 @@ export function WeekCalendar({ currentDate, onActivityClick }: WeekCalendarProps
   const [selectedDay, setSelectedDay] = useState<Date | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [draggedItem, setDraggedItem] = useState<CalendarItem | null>(null);
+  const [dragSourceDate, setDragSourceDate] = useState<string | null>(null);
   const [recentlyDropped, setRecentlyDropped] = useState<string | null>(null);
 
   const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
@@ -247,10 +248,15 @@ export function WeekCalendar({ currentDate, onActivityClick }: WeekCalendarProps
   // Drag-and-drop handlers
   const handleDragStart = (event: DragStartEvent) => {
     const item = event.active.data.current?.item as CalendarItem | undefined;
+    const session = event.active.data.current?.session as CalendarSession | undefined;
     if (!item) return;
     
     setActiveId(event.active.id as string);
     setDraggedItem(item);
+    // Track source date for ghost placeholder
+    if (session?.date) {
+      setDragSourceDate(format(parseISO(session.date), 'yyyy-MM-dd'));
+    }
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
@@ -258,6 +264,7 @@ export function WeekCalendar({ currentDate, onActivityClick }: WeekCalendarProps
     
     setActiveId(null);
     setDraggedItem(null);
+    setDragSourceDate(null);
     
     if (!over) return;
     
@@ -418,6 +425,9 @@ export function WeekCalendar({ currentDate, onActivityClick }: WeekCalendarProps
                       {groupedItems.flatMap((group) => group.items).map((item) => {
                         const session = sessionById.get(item.id) || null;
                         const isDropped = recentlyDropped === item.id;
+                        const isDragging = activeId === item.id;
+                        const dayStr = format(day, 'yyyy-MM-dd');
+                        const isGhostSource = dragSourceDate === dayStr && isDragging;
                         
                         return (
                           <DraggableSessionWrapper
@@ -426,11 +436,17 @@ export function WeekCalendar({ currentDate, onActivityClick }: WeekCalendarProps
                             session={session}
                             onClick={() => handleCardClick(item)}
                           >
+                            {/* Ghost placeholder - shown at original position during drag */}
+                            {isGhostSource && (
+                              <div className="absolute inset-0 rounded-lg border-2 border-dashed border-primary/40 bg-primary/5 animate-pulse" />
+                            )}
                             <div
                               className={cn(
                                 'transition-all duration-300',
                                 // Drop animation - scale and glow effect
-                                isDropped && 'animate-scale-in ring-2 ring-primary/50 shadow-lg'
+                                isDropped && 'animate-scale-in ring-2 ring-primary/50 shadow-lg',
+                                // Dragging state - reduced opacity
+                                isDragging && 'opacity-30'
                               )}
                             >
                               <SessionCard
