@@ -309,13 +309,6 @@ export async function prepareGoogleAuth(): Promise<void> {
  * For web: Clears cookies (handled by backend)
  */
 export async function logout(): Promise<void> {
-  // Clear tokens for mobile
-  const { isNative } = await import('./platform');
-  if (isNative()) {
-    const { clearAccessToken } = await import('./tokenStorage');
-    await clearAccessToken();
-    console.log("[LOGOUT] ✅ Token cleared for mobile");
-  }
   // Clear tokens for mobile (before backend call)
   const { isNative } = await import('./platform');
   if (isNative()) {
