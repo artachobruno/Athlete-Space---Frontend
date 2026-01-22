@@ -1,6 +1,7 @@
 import { CalendarWorkoutCardSvg } from './CalendarWorkoutCardSvg';
 import { WorkoutSessionCard } from '@/components/workout/WorkoutSessionCard';
 import { calendarItemToWorkoutSession } from '@/components/workout/workoutSessionAdapter';
+import { SessionCard } from '@/components/sessions/SessionCard';
 import type { CalendarItem } from '@/types/calendar';
 import { useAuthenticatedQuery } from '@/hooks/useAuthenticatedQuery';
 import { fetchActivityStreams } from '@/lib/api';
@@ -12,7 +13,7 @@ interface Props {
   onClick?: (item: CalendarItem) => void;
   className?: string;
   activityIdBySessionId?: Record<string, string | null | undefined>;
-  /** Use new WorkoutSessionCard design instead of SVG card */
+  /** Use new React-based SessionCard instead of SVG card (Phase 4: default true) */
   useNewCard?: boolean;
 }
 
@@ -23,7 +24,7 @@ export function CalendarWorkoutStack({
   onClick,
   className,
   activityIdBySessionId,
-  useNewCard = false,
+  useNewCard = true, // Phase 4: Default to React-based SessionCard
 }: Props) {
   const visible = items.slice(0, maxVisible);
   const topItem = visible[0];
@@ -42,10 +43,9 @@ export function CalendarWorkoutStack({
     return null;
   }
 
-  // New card design - uses WorkoutSessionCard in compact mode
+  // Phase 4: New React-based SessionCard (replaces SVG)
   if (useNewCard && visible.length === 1) {
     const item = visible[0];
-    const session = calendarItemToWorkoutSession(item, activityStreams);
 
     return (
       <div
@@ -53,12 +53,12 @@ export function CalendarWorkoutStack({
         onClick={() => onClick?.(item)}
         style={{ cursor: onClick ? 'pointer' : 'default' }}
       >
-        <WorkoutSessionCard session={session} compact className="h-full" />
+        <SessionCard session={item} density="compact" className="h-full" />
       </div>
     );
   }
 
-  // Stack layout for multiple items
+  // Phase 4: Stack layout with React-based SessionCard
   if (useNewCard && visible.length > 1) {
     const getScale = (index: number): number => {
       if (index === 0) return 1.0;
@@ -77,7 +77,6 @@ export function CalendarWorkoutStack({
           const offset = getOffset(i);
           const scale = getScale(i);
           const isTopCard = i === 0;
-          const session = calendarItemToWorkoutSession(item, isTopCard ? activityStreams : null);
 
           return (
             <div
@@ -91,7 +90,7 @@ export function CalendarWorkoutStack({
               }}
               onClick={() => isTopCard && onClick?.(item)}
             >
-              <WorkoutSessionCard session={session} compact className="h-full" />
+              <SessionCard session={item} density="compact" className="h-full" />
             </div>
           );
         })}
@@ -99,7 +98,8 @@ export function CalendarWorkoutStack({
     );
   }
 
-  // Legacy SVG mode (fallback)
+  // Legacy SVG mode (deprecated - Phase 4: Use SessionCard instead)
+  // This fallback is kept for backward compatibility but should not be used
   const getScale = (index: number): number => {
     if (index === 0) return 1.0;
     if (index === 1) return 0.97;

@@ -9,8 +9,7 @@ import { cn } from '@/lib/utils';
 import { useAuthenticatedQuery } from '@/hooks/useAuthenticatedQuery';
 import { useMemo, useState } from 'react';
 import { getTssForDate, enrichActivitiesWithTss, type TrainingLoadData } from '@/lib/tss-utils';
-import { WorkoutSessionCard } from '@/components/workout/WorkoutSessionCard';
-import { toWorkoutSession } from '@/components/workout/workoutSessionAdapter';
+import { SessionCard } from '@/components/sessions/SessionCard';
 import { Link, useNavigate } from 'react-router-dom';
 import type { CompletedActivity } from '@/types';
 import type { TodayResponse } from '@/lib/api';
@@ -137,24 +136,7 @@ export function TodayWorkoutCard(props: TodayWorkoutCardProps = {}) {
     gcTime: 30 * 60 * 1000,
   });
 
-  // Convert to WorkoutSession for the new card
-  const workoutSession = useMemo(() => {
-    if (!todayWorkout) return null;
-
-    // Get coach feedback from intelligence or activity
-    const intelligenceMessage = finalTodayIntelligence && typeof finalTodayIntelligence === 'object'
-      ? (finalTodayIntelligence as { message?: string }).message
-      : undefined;
-    
-    const coachFeedback = intelligenceMessage || matchingActivity?.coachFeedback || todayWorkout.notes;
-
-    return toWorkoutSession({
-      session: todayWorkout,
-      activity: matchingActivity,
-      streams: activityStreams,
-      coachFeedback,
-    });
-  }, [todayWorkout, matchingActivity, activityStreams, finalTodayIntelligence]);
+  // Phase 4: SessionCard handles visual representation directly from CalendarSession
 
   // Check if verdict/decision suggests modification (REST, MODIFY, or CANCEL)
   // MUST be called before any early returns to follow Rules of Hooks
@@ -414,12 +396,14 @@ export function TodayWorkoutCard(props: TodayWorkoutCardProps = {}) {
           </Badge>
         </CardHeader>
         <CardContent className="flex-1 py-2">
-          {/* Full WorkoutSessionCard - non-compact to show effort graph */}
-          <WorkoutSessionCard 
-            session={workoutSession} 
-            compact={false}
-            onGraphClick={todayWorkout.workout_id ? () => setShowWorkoutDetails(!showWorkoutDetails) : undefined}
-          />
+          {/* Phase 4: React-based SessionCard (standard density) */}
+          {todayWorkout && (
+            <SessionCard
+              session={todayWorkout}
+              density="standard"
+              onClick={todayWorkout.workout_id ? () => setShowWorkoutDetails(!showWorkoutDetails) : undefined}
+            />
+          )}
         </CardContent>
       </Card>
 
