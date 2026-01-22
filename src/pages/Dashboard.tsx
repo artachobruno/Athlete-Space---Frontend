@@ -50,7 +50,7 @@ function AthleteDashboard() {
       <div className="space-y-4">
         {/* Header */}
         <div>
-          <h1 className="text-2xl font-semibold text-primary">Dashboard</h1>
+          <h1 className="text-[clamp(1.25rem,3vw,1.5rem)] font-semibold text-primary">Dashboard</h1>
           <p className="text-muted-foreground mt-1">Your training overview</p>
         </div>
 
@@ -174,7 +174,7 @@ function CoachDashboard() {
         {/* Header */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <h1 className="text-2xl font-semibold text-primary">Coach Dashboard</h1>
+            <h1 className="text-[clamp(1.25rem,3vw,1.5rem)] font-semibold text-primary">Coach Dashboard</h1>
             <p className="text-muted-foreground mt-1">
               Overview of athlete adherence, trends, and risk
             </p>

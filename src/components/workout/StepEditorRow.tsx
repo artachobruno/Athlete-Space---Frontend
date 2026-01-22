@@ -213,7 +213,7 @@ export function StepEditorRow({ step, onUpdate, onDelete, errors }: StepEditorRo
 
       {/* Target section - full width below */}
       <div className="col-span-12 mt-2 pt-2 border-t">
-        <div className="grid grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <div>
             <Label htmlFor={`step-${step.id}-target-type`} className="text-xs">Target Type</Label>
             <Select value={targetType} onValueChange={handleTargetTypeChange}>

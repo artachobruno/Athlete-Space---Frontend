@@ -36,7 +36,7 @@ export function ConversationHealthPanel({ avgTurns, summariesPerConv, compressio
         <CardTitle className="text-sm font-medium">Conversation Health</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
           {metrics.map((metric) => {
             const Icon = metric.icon;
             return (

@@ -47,7 +47,7 @@ export const HeroSection = () => {
   return (
     <motion.section
       ref={containerRef}
-      className="relative min-h-screen flex items-center justify-center overflow-hidden"
+      className="relative min-h-[100svh] flex items-center justify-center overflow-hidden"
       style={{ opacity }}
     >
       <AnimatedBackground />

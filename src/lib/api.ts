@@ -277,13 +277,17 @@ function generateMockActivityStreams(activity: CompletedActivity): ActivityStrea
     cadence,
   };
 }
+// Platform detection for auth strategy
+import { isNative } from './platform';
+
 // Axios instance configured for CORS
-// - withCredentials: true enables sending cookies/credentials with cross-origin requests
+// - Web: withCredentials: true enables sending cookies/credentials with cross-origin requests
+// - Mobile: Uses Bearer tokens in Authorization header (no cookies)
 // - Backend CORS is configured to allow requests from https://athletespace.ai and other origins
-// - Cookies are sent automatically with withCredentials: true
 export const api = axios.create({
   baseURL: getBaseURL(),
-  withCredentials: true, // Required for CORS with credentials - sends cookies cross-domain
+  // Only use credentials for web (cookies). Mobile uses Bearer tokens.
+  withCredentials: !isNative(), // Disable for mobile, enable for web
   timeout: 30000,
 });
 
@@ -3147,12 +3151,12 @@ const normalizeError = (error: unknown): ApiError => {
   };
 };
 
-// Request interceptor: Sets Content-Type and conversation ID headers
-// CRITICAL: This interceptor is SYNCHRONOUS - no async operations allowed
-// AUTHENTICATION: Handled by HTTP-only cookies automatically via withCredentials: true
-// No Authorization header needed - browser sends cookies with credentials: 'include'
+// Request interceptor: Sets Content-Type, conversation ID, and Authorization headers
+// AUTHENTICATION:
+// - Web: HTTP-only cookies (via withCredentials: true)
+// - Mobile: Bearer tokens in Authorization header (from secure storage)
 api.interceptors.request.use(
-  (config: InternalAxiosRequestConfig) => {
+  async (config: InternalAxiosRequestConfig) => {
     // Ensure headers object exists (axios may not initialize it)
     if (!config.headers) {
       config.headers = new AxiosHeaders();
@@ -3168,6 +3172,28 @@ api.interceptors.request.use(
       }
     }
     
+    // Add Authorization header for mobile (Bearer token)
+    if (isNative()) {
+      const { getAccessToken } = await import('./tokenStorage');
+      const token = await getAccessToken();
+      if (token) {
+        if (typeof (config.headers as { set?: (name: string, value: string) => void }).set === 'function') {
+          (config.headers as { set: (name: string, value: string) => void }).set('Authorization', `Bearer ${token}`);
+        } else {
+          (config.headers as Record<string, string>)['Authorization'] = `Bearer ${token}`;
+        }
+      }
+    }
+    
+    // Add X-Client header to help backend detect mobile clients
+    if (isNative()) {
+      if (typeof (config.headers as { set?: (name: string, value: string) => void }).set === 'function') {
+        (config.headers as { set: (name: string, value: string) => void }).set('X-Client', 'mobile');
+      } else {
+        (config.headers as Record<string, string>)['X-Client'] = 'mobile';
+      }
+    }
+    
     // Add conversation ID header to every request
     const conversationId = getConversationId();
     if (typeof (config.headers as { set?: (name: string, value: string) => void }).set === 'function') {
@@ -3178,7 +3204,7 @@ api.interceptors.request.use(
     
     // Dev-only logging for verification
     if (import.meta.env.DEV) {
-      console.log('[API Request] X-Conversation-Id:', conversationId, 'URL:', config.url);
+      console.log('[API Request] X-Conversation-Id:', conversationId, 'URL:', config.url, 'Mobile:', isNative());
     }
     
     return config;

@@ -14,7 +14,7 @@ interface PreviewShellProps {
  */
 export function PreviewShell({ children }: PreviewShellProps) {
   return (
-    <div className="min-h-screen">
+    <div className="min-h-[100svh]">
       <PreviewBanner />
       {children}
     </div>

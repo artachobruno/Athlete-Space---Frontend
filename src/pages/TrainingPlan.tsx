@@ -47,7 +47,7 @@ export default function TrainingPlan() {
       <div className="space-y-6">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-semibold text-primary">Training Plan</h1>
+            <h1 className="text-[clamp(1.25rem,3vw,1.5rem)] font-semibold text-primary">Training Plan</h1>
             <p className="text-muted-foreground mt-1">Your weekly training schedule</p>
           </div>
           

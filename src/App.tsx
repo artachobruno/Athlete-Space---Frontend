@@ -202,7 +202,7 @@ const AppContent = () => {
   // This prevents race conditions where routes render before auth state is determined
   if (status === "bootstrapping" || loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
+      <div className="min-h-[100svh] flex items-center justify-center bg-background">
         <div className="space-y-4 w-full max-w-md p-8">
           <div className="h-12 w-full bg-muted animate-pulse rounded" />
           <div className="h-32 w-full bg-muted animate-pulse rounded" />
@@ -365,19 +365,21 @@ const AppContent = () => {
 };
 
 const App = () => (
-  <ErrorBoundary>
-    <ThemeProvider>
-      <QueryClientProvider client={queryClient}>
-        <AuthProvider>
-          <TooltipProvider>
-            <Toaster />
-            <Sonner />
-            <AppContent />
-          </TooltipProvider>
-        </AuthProvider>
-      </QueryClientProvider>
-    </ThemeProvider>
-  </ErrorBoundary>
+  <div className="w-full overflow-x-hidden">
+    <ErrorBoundary>
+      <ThemeProvider>
+        <QueryClientProvider client={queryClient}>
+          <AuthProvider>
+            <TooltipProvider>
+              <Toaster />
+              <Sonner />
+              <AppContent />
+            </TooltipProvider>
+          </AuthProvider>
+        </QueryClientProvider>
+      </ThemeProvider>
+    </ErrorBoundary>
+  </div>
 );
 
 export default App;

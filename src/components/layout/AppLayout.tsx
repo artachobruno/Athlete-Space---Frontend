@@ -56,7 +56,7 @@ export function AppLayout({ children }: AppLayoutProps) {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-[100svh] bg-background">
       {/* Mobile header */}
       <header 
         className="lg:hidden fixed top-0 left-0 right-0 bg-card border-b z-50 flex items-center px-4 pt-[env(safe-area-inset-top,0px)] h-[calc(3.5rem+env(safe-area-inset-top,0px))]"
@@ -180,7 +180,7 @@ export function AppLayout({ children }: AppLayoutProps) {
 
       {/* Main content */}
       <main className={cn(
-        'min-h-screen pt-safe-area lg:pt-0 lg:pl-64 transition-all duration-200'
+        'min-h-[100svh] pt-safe-area lg:pt-0 lg:pl-64 transition-all duration-200'
       )}>
         <div className="mx-auto max-w-[1400px] px-6 py-6">
           {children}

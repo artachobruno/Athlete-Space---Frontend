@@ -5,7 +5,7 @@ import { FileText, AlertTriangle, Scale, Shield, UserCheck, Brain } from 'lucide
 export default function Terms() {
   return (
     <PublicLayout>
-      <div className="min-h-screen py-16 px-4">
+      <div className="min-h-[100svh] py-16 px-4">
         <div className="max-w-3xl mx-auto">
           {/* Header */}
           <div className="text-center mb-12">

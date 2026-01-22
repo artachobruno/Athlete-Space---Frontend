@@ -591,7 +591,7 @@ export function ActivityPopup({
           {/* Activity-specific detailed view with tabs */}
           {activity && (
             <Tabs defaultValue="overview" className="w-full">
-              <TabsList className="w-full grid grid-cols-3">
+              <TabsList className="w-full grid grid-cols-1 sm:grid-cols-3">
                 <TabsTrigger value="overview">Overview</TabsTrigger>
                 <TabsTrigger value="map">Map</TabsTrigger>
                 <TabsTrigger value="charts">Charts</TabsTrigger>
@@ -613,7 +613,7 @@ export function ActivityPopup({
                 )}
 
                 {/* Core Metrics Grid */}
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   {activity.avgPace && (
                     <div className="p-3 rounded-lg bg-muted/50">
                       <div className="text-xs text-muted-foreground mb-1">Avg Pace</div>

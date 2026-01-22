@@ -165,10 +165,22 @@ export async function loginWithGoogleNative(): Promise<void> {
   console.log("[GoogleAuthNative] Sending idToken to backend for verification");
 
   try {
-    await api.post("/auth/google/mobile", {
+    const response = await api.post("/auth/google/mobile", {
       id_token: idToken,
       platform: "mobile",
     });
+
+    // Store token for mobile
+    const { storeAccessToken } = await import('./tokenStorage');
+    const accessToken = (response as { access_token?: string }).access_token;
+    const expiresIn = (response as { expires_in?: number }).expires_in || 2592000; // Default 30 days in seconds
+    
+    if (accessToken) {
+      await storeAccessToken(accessToken, expiresIn);
+      console.log("[GoogleAuthNative] ✅ Token stored securely for mobile");
+    } else {
+      console.warn("[GoogleAuthNative] ⚠️ Mobile Google login: No access_token in response");
+    }
 
     console.log("[GoogleAuthNative] Backend authentication successful");
   } catch (error) {

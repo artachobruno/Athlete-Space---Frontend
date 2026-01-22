@@ -30,7 +30,7 @@ export class ErrorBoundary extends Component<Props, State> {
   render() {
     if (this.state.hasError) {
       return (
-        <div className="min-h-screen flex items-center justify-center p-4 bg-background">
+        <div className="min-h-[100svh] flex items-center justify-center p-4 bg-background">
           <GlassCard className="max-w-md w-full">
             <CardHeader>
               <div className="flex items-center gap-2">

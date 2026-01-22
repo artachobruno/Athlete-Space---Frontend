@@ -351,7 +351,7 @@ export function ActivityExpandedContent({ activity }: ActivityExpandedContentPro
 
       {/* Tabs */}
       <Tabs defaultValue="overview" className="w-full">
-        <TabsList className="w-full grid grid-cols-4">
+        <TabsList className="w-full grid grid-cols-2 sm:grid-cols-4">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="steps">Steps</TabsTrigger>
           <TabsTrigger value="execution">Execution</TabsTrigger>
@@ -480,7 +480,7 @@ export function ActivityExpandedContent({ activity }: ActivityExpandedContentPro
           <ActivityCharts activity={activity} />
           
           {/* Execution Metrics Summary */}
-          <div className="grid grid-cols-2 gap-3 mt-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
             <div className="p-4 bg-muted/30 rounded-lg border border-border">
               <div className="text-sm text-muted-foreground mb-1">Status</div>
               <div className={cn(

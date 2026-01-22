@@ -113,8 +113,26 @@ export function AuthProvider({ children }: AuthProviderProps) {
       setStatus("bootstrapping");
       setLoading(true);
       
-      // Call /me to check authentication (HTTP-only cookie handles auth)
-      // No need to check for localStorage tokens - cookies are the source of truth
+      // For mobile: Check if token exists in secure storage
+      // For web: Call /me to check authentication (HTTP-only cookie handles auth)
+      const { isNative } = await import('@/lib/platform');
+      if (isNative()) {
+        const { hasValidToken } = await import('@/lib/tokenStorage');
+        const hasToken = await hasValidToken();
+        
+        if (!hasToken) {
+          console.log("[AuthContext] No valid token found for mobile, setting unauthenticated");
+          setUser(null);
+          setStatus("unauthenticated");
+          setLoading(false);
+          return;
+        }
+        console.log("[AuthContext] Valid token found for mobile, checking /me");
+      }
+      
+      // Call /me to check authentication
+      // Web: HTTP-only cookie handles auth
+      // Mobile: Bearer token in Authorization header (set by API interceptor)
       try {
         const currentUser = await fetchCurrentUser();
         

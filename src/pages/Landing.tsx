@@ -20,7 +20,7 @@ const Landing = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-200 overflow-x-hidden">
+    <div className="min-h-[100svh] bg-slate-950 text-slate-200 overflow-x-hidden">
       <TelemetryNav />
       <TelemetryHero />
       

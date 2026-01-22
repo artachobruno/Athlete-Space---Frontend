@@ -153,7 +153,7 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-background to-primary/3 flex flex-col">
+    <div className="min-h-[100svh] bg-gradient-to-br from-background via-background to-primary/3 flex flex-col">
       {/* Header */}
       <header 
         className="px-4 pb-4 pt-4 flex items-center justify-between"
@@ -197,7 +197,7 @@ export default function Login() {
       <main className="flex-1 flex items-center justify-center p-4">
         <div className="w-full max-w-md space-y-6">
           <div className="text-center space-y-2">
-            <h1 className="text-3xl font-bold text-primary">Welcome</h1>
+            <h1 className="text-[clamp(1.5rem,4vw,1.875rem)] font-bold text-primary">Welcome</h1>
             <p className="text-muted-foreground">
               Sign in to continue your training journey
             </p>

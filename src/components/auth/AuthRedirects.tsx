@@ -7,7 +7,7 @@ import Landing from "@/pages/Landing";
 
 function FullPageSkeleton() {
   return (
-    <div className="min-h-screen flex items-center justify-center">
+    <div className="min-h-[100svh] flex items-center justify-center">
       <div className="space-y-4 w-full max-w-md p-8">
         <Skeleton className="h-12 w-full" />
         <Skeleton className="h-32 w-full" />

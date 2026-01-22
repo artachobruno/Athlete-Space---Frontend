@@ -282,7 +282,7 @@ export function ImportSeasonModal({ open, onOpenChange, onSuccess }: ImportSeaso
             {parsedSessions.length > 0 && (
               <div className="rounded-lg border bg-muted/50 p-4 space-y-2">
                 <h4 className="font-semibold text-sm">Preview</h4>
-                <div className="grid grid-cols-2 gap-4 text-sm">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-sm">
                   <div>
                     <span className="text-muted-foreground">Sessions:</span>
                     <span className="ml-2 font-semibold">{previewStats.sessionsCount}</span>

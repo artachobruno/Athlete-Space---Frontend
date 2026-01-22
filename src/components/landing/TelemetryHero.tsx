@@ -13,7 +13,7 @@ export const TelemetryHero = () => {
   }, []);
 
   return (
-    <section className="relative min-h-screen flex flex-col bg-slate-950">
+    <section className="relative min-h-[100svh] flex flex-col bg-slate-950">
       {/* Subtle grid background */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         {/* Grid pattern - reduced opacity by 10% */}

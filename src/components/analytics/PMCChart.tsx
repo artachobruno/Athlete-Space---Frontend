@@ -482,7 +482,7 @@ function AdvancedPMC({ data }: { data: Array<TrainingLoad & { dateLabel: string 
         </div>
 
         {/* Legend explanation */}
-        <div className="grid grid-cols-3 gap-4 mt-4 pt-4 border-t border-border">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-4 pt-4 border-t border-border">
           <div className="text-center">
             <div className="flex items-center justify-center gap-2 mb-1">
               <div className="w-3 h-0.5 bg-chart-1 rounded" />

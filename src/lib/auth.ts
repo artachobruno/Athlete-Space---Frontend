@@ -142,21 +142,34 @@ export const auth = {
  */
 export async function loginWithEmail(email: string, password: string): Promise<void> {
   try {
-    // Login endpoint sets HTTP-only cookie automatically
-    // No need to store tokens in localStorage - cookies handle authentication
     const response = await api.post("/auth/login", { email, password });
     
     // Log response for debugging
-    console.log("[LOGIN] Login successful, HTTP-only cookie set by backend");
+    console.log("[LOGIN] Login successful");
     console.log("[LOGIN] Response:", response);
     
-    // Success - cookie is automatically set by backend with credentials: 'include'
     // Verify login worked by checking if response indicates success
     if (!response) {
       throw new Error("Login response was empty");
     }
     
-    console.log("[LOGIN] ✅ Authentication cookie set successfully");
+    // For mobile: Store token in secure storage
+    // For web: Cookie is automatically set by backend with credentials: 'include'
+    const { isNative } = await import('./platform');
+    if (isNative()) {
+      const { storeAccessToken } = await import('./tokenStorage');
+      const accessToken = (response as { access_token?: string }).access_token;
+      const expiresIn = (response as { expires_in?: number }).expires_in || 2592000; // Default 30 days in seconds
+      
+      if (accessToken) {
+        await storeAccessToken(accessToken, expiresIn);
+        console.log("[LOGIN] ✅ Token stored securely for mobile");
+      } else {
+        console.warn("[LOGIN] ⚠️ Mobile login: No access_token in response");
+      }
+    } else {
+      console.log("[LOGIN] ✅ Authentication cookie set successfully (web)");
+    }
   } catch (error) {
     // normalizeError already extracts message from backend's {"message": "..."} format
     const apiError = error as { status?: number; message?: string; details?: unknown };
@@ -176,21 +189,34 @@ export async function loginWithEmail(email: string, password: string): Promise<v
  */
 export async function signupWithEmail(email: string, password: string): Promise<void> {
   try {
-    // Signup endpoint sets HTTP-only cookie automatically
-    // No need to store tokens in localStorage - cookies handle authentication
     const response = await api.post("/auth/signup", { email, password });
     
     // Log response for debugging
-    console.log("[SIGNUP] Signup successful, HTTP-only cookie set by backend");
+    console.log("[SIGNUP] Signup successful");
     console.log("[SIGNUP] Response:", response);
     
-    // Success - cookie is automatically set by backend with credentials: 'include'
     // Verify signup worked by checking if response indicates success
     if (!response) {
       throw new Error("Signup response was empty");
     }
     
-    console.log("[SIGNUP] ✅ Authentication cookie set successfully");
+    // For mobile: Store token in secure storage
+    // For web: Cookie is automatically set by backend with credentials: 'include'
+    const { isNative } = await import('./platform');
+    if (isNative()) {
+      const { storeAccessToken } = await import('./tokenStorage');
+      const accessToken = (response as { access_token?: string }).access_token;
+      const expiresIn = (response as { expires_in?: number }).expires_in || 2592000; // Default 30 days in seconds
+      
+      if (accessToken) {
+        await storeAccessToken(accessToken, expiresIn);
+        console.log("[SIGNUP] ✅ Token stored securely for mobile");
+      } else {
+        console.warn("[SIGNUP] ⚠️ Mobile signup: No access_token in response");
+      }
+    } else {
+      console.log("[SIGNUP] ✅ Authentication cookie set successfully (web)");
+    }
   } catch (error) {
     // normalizeError already extracts message from backend's {"message": "..."} format
     const apiError = error as { status?: number; message?: string; details?: unknown };
@@ -279,12 +305,29 @@ export async function prepareGoogleAuth(): Promise<void> {
  * Logout the current user.
  * Note: Logout is primarily about clearing local auth state.
  * If the backend endpoint doesn't exist (404), we still treat it as success.
+ * For mobile: Clears stored tokens
+ * For web: Clears cookies (handled by backend)
  */
 export async function logout(): Promise<void> {
+  // Clear tokens for mobile
+  const { isNative } = await import('./platform');
+  if (isNative()) {
+    const { clearAccessToken } = await import('./tokenStorage');
+    await clearAccessToken();
+    console.log("[LOGOUT] ✅ Token cleared for mobile");
+  }
+  // Clear tokens for mobile (before backend call)
+  const { isNative } = await import('./platform');
+  if (isNative()) {
+    const { clearAccessToken } = await import('./tokenStorage');
+    await clearAccessToken();
+    console.log("[LOGOUT] ✅ Token cleared for mobile");
+  }
+  
   try {
-    // Backend /auth/logout endpoint clears the HTTP-only cookie
+    // Backend /auth/logout endpoint clears the HTTP-only cookie (web)
     await api.post("/auth/logout");
-    console.log("[Auth] ✅ Logout successful, cookie cleared by backend");
+    console.log("[Auth] ✅ Logout successful, cookie cleared by backend (web)");
   } catch (error) {
     // Handle 404 gracefully - endpoint might not exist, but logout is still successful
     const apiError = error as { status?: number; message?: string };
@@ -299,9 +342,9 @@ export async function logout(): Promise<void> {
         console.error("[Auth] Logout error:", error);
       }
     }
-    // Cookie will be cleared by backend if endpoint exists
+    // Cookie will be cleared by backend if endpoint exists (web)
+    // Token already cleared above (mobile)
   }
-  // No localStorage token to clear - cookies are the source of truth
 }
 
 // Guard to prevent multiple simultaneous calls to /me
