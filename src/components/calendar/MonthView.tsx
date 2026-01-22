@@ -50,10 +50,12 @@ import type { CalendarItem } from '@/types/calendar';
 
 import { DroppableDayCell } from './DroppableDayCell';
 import { CalendarWorkoutStack } from './cards/CalendarWorkoutStack';
+import { MobileDayList } from './MobileDayList';
 import { toCalendarItem, capitalizeTitle } from '@/adapters/calendarAdapter';
 import { sortCalendarItems } from './cards/sortCalendarItems';
 import { SessionCard } from '@/components/sessions/SessionCard';
 import { Loader2, GripVertical } from 'lucide-react';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface MonthViewProps {
   currentDate: Date;
@@ -68,12 +70,14 @@ export function MonthView({ currentDate, onActivityClick }: MonthViewProps) {
   const queryClient = useQueryClient();
   const updateSession = useUpdatePlannedSession();
   const updateWorkout = useUpdateWorkoutDate();
+  const isMobile = useIsMobile();
 
   const [activeId, setActiveId] = useState<string | null>(null);
   const [draggedSession, setDraggedSession] = useState<CalendarSession | null>(null);
   const [draggedItem, setDraggedItem] = useState<CalendarItem | null>(null);
   const [dragSourceDate, setDragSourceDate] = useState<string | null>(null);
   const [recentlyDropped, setRecentlyDropped] = useState<string | null>(null);
+  const [selectedDay, setSelectedDay] = useState<Date | null>(null);
 
   const monthStart = startOfMonth(currentDate);
   const monthEnd = endOfMonth(currentDate);
@@ -248,6 +252,41 @@ export function MonthView({ currentDate, onActivityClick }: MonthViewProps) {
     );
   }
 
+  // Mobile layout - stacked vertical list (only current month days)
+  if (isMobile) {
+    const currentMonthDays = days.filter(d => isSameMonth(d, currentDate));
+    
+    const handleMobileItemClick = (item: CalendarItem) => {
+      if (!monthData) return;
+      const session = [...monthData.planned_sessions, ...monthData.workouts]
+        .find((s) => s.id === item.id) ?? null;
+      const activity = monthData.completed_activities.find(
+        (a) => a.planned_session_id === item.id ||
+          (session?.workout_id && a.workout_id === session.workout_id)
+      ) ?? null;
+      onActivityClick?.(null, activity, session ?? undefined);
+    };
+
+    return (
+      <Card className="overflow-hidden h-full flex flex-col">
+        <div className="px-3 py-2 border-b border-border bg-muted/30 flex-shrink-0">
+          <h3 className="text-sm font-medium text-muted-foreground">
+            {format(currentDate, 'MMMM yyyy')}
+          </h3>
+        </div>
+        <MobileDayList
+          days={currentMonthDays}
+          getItemsForDay={getCalendarItemsForDay}
+          onDayClick={setSelectedDay}
+          onItemClick={handleMobileItemClick}
+          showEmptyDays={false}
+          className="flex-1 p-2"
+        />
+      </Card>
+    );
+  }
+
+  // Desktop layout
   const weekDays = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
 
   return (
@@ -257,7 +296,7 @@ export function MonthView({ currentDate, onActivityClick }: MonthViewProps) {
         {weekDays.map((d) => (
           <div
             key={d}
-            className="py-2 text-center text-xs font-medium uppercase tracking-wider text-muted-foreground"
+            className="py-1.5 text-center text-[10px] font-medium uppercase tracking-wider text-muted-foreground"
           >
             {d}
           </div>
@@ -269,8 +308,8 @@ export function MonthView({ currentDate, onActivityClick }: MonthViewProps) {
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
       >
-          {/* Month grid - fixed 6 rows, each row equal height */}
-          <div className="grid grid-cols-7 flex-1 min-h-0" style={{ gridTemplateRows: 'repeat(6, minmax(0, 1fr))' }}>
+          {/* Month grid - 6 rows with better height distribution */}
+          <div className="grid grid-cols-7 flex-1 min-h-0" style={{ gridTemplateRows: 'repeat(6, minmax(80px, 1fr))' }}>
             {days.map((day, idx) => {
               const isCurrentMonth = isSameMonth(day, currentDate);
               const isCurrentDay = isToday(day);
@@ -293,22 +332,22 @@ export function MonthView({ currentDate, onActivityClick }: MonthViewProps) {
                     idx >= days.length - 7 && 'border-b-0'
                   )}
                 >
-                  {/* Day number */}
-                  <div className="px-2 pt-1.5 pb-1">
+                  {/* Day number - compact */}
+                  <div className="px-1 pt-0.5 pb-0.5 flex-shrink-0">
                     <span
                       className={cn(
-                        'text-sm font-medium tabular-nums',
+                        'text-xs font-medium tabular-nums',
                         !isCurrentMonth && 'text-muted-foreground/40',
                         isCurrentDay &&
-                          'bg-primary text-primary-foreground w-6 h-6 rounded-full inline-flex items-center justify-center text-xs font-semibold'
+                          'bg-primary text-primary-foreground w-5 h-5 rounded-full inline-flex items-center justify-center text-[10px] font-semibold'
                       )}
                     >
                       {format(day, 'd')}
                     </span>
                   </div>
 
-                  {/* Workout cards - vertical stack with overflow scroll */}
-                  <div className="flex-1 flex flex-col gap-0.5 px-1 pb-1 min-h-0 overflow-y-auto overflow-x-hidden">
+                  {/* Workout cards - compact vertical stack */}
+                  <div className="flex-1 flex flex-col gap-px px-0.5 pb-0.5 min-h-0 overflow-y-auto overflow-x-hidden">
                     {items.length > 0 && (() => {
                       const sortedItems = sortCalendarItems(items);
                       const visibleItems = sortedItems.slice(0, 3);
