@@ -3,7 +3,7 @@ import { Badge } from '@/components/ui/badge';
 import { fetchCalendarToday, fetchTrainingLoad, fetchActivities, fetchActivityStreams } from '@/lib/api';
 import { getTodayIntelligence } from '@/lib/intelligence';
 import { format } from 'date-fns';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Moon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuthenticatedQuery } from '@/hooks/useAuthenticatedQuery';
 import { useMemo } from 'react';
@@ -164,7 +164,11 @@ export function TodayWorkoutCard(props: TodayWorkoutCardProps = {}) {
     );
   }
 
-  if (error || !todayWorkout || !workoutSession) {
+  // Detect if there's no planned session (rest day)
+  const hasNoPlannedSession = !error && (!finalTodayData?.sessions || 
+    finalTodayData.sessions.filter(s => s.status === 'planned' || s.status === 'completed').length === 0);
+
+  if (error) {
     return (
       <Card className={cn('h-full flex flex-col', cardClassName)}>
         <CardHeader className="pb-2">
@@ -172,7 +176,43 @@ export function TodayWorkoutCard(props: TodayWorkoutCardProps = {}) {
         </CardHeader>
         <CardContent className="flex-1 flex items-center justify-center py-4">
           <p className="text-sm text-muted-foreground">
-            {error ? 'Unable to load session' : 'Rest day - no session scheduled'}
+            Unable to load session
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (hasNoPlannedSession) {
+    return (
+      <Card className={cn('h-full flex flex-col', cardClassName)}>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-lg">Today's Session</CardTitle>
+        </CardHeader>
+        <CardContent className="flex-1 flex items-center justify-center py-4">
+          <div className="flex flex-col items-center gap-3 text-center">
+            <div className="flex items-center gap-2 text-muted-foreground">
+              <Moon className="h-5 w-5" />
+              <span className="font-medium">Rest Day</span>
+            </div>
+            <p className="text-sm text-muted-foreground max-w-sm">
+              Recovery and adaptation are essential parts of training. Take this time to rest and let your body rebuild.
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (!todayWorkout || !workoutSession) {
+    return (
+      <Card className={cn('h-full flex flex-col', cardClassName)}>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-lg">Today's Session</CardTitle>
+        </CardHeader>
+        <CardContent className="flex-1 flex items-center justify-center py-4">
+          <p className="text-sm text-muted-foreground">
+            No session available
           </p>
         </CardContent>
       </Card>
