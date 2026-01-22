@@ -39,9 +39,10 @@ const mapDecisionToType = (decision: string): DecisionType => {
   if (upper === 'REST' || upper === 'PROCEED' || upper === 'MODIFY' || upper === 'CANCEL') {
     return upper as DecisionType;
   }
-  // Fallback for legacy values
+  // Fallback for legacy values and new recommendation types
   const lower = decision.toLowerCase();
   if (lower.includes('rest') || lower.includes('recovery')) return 'REST';
+  if (lower.includes('easy_with_caution') || lower.includes('moderate_with_caution')) return 'MODIFY';
   if (lower.includes('modify') || lower.includes('adjust')) return 'MODIFY';
   if (lower.includes('cancel') || lower.includes('skip')) return 'CANCEL';
   return 'PROCEED';
@@ -236,8 +237,19 @@ export function DailyDecisionCard({ todayIntelligence, isLoading = false, error,
     ? v2Decision.signals.slice(0, 3) // Max 3 signals
     : [];
   
-  // Generate coach framing sentence based on decision type
+  // Generate coach framing sentence based on decision type and primary focus
   const getCoachFraming = (): string => {
+    // Use primary_focus if it contains context-aware messaging
+    if (v2Decision.primary_focus) {
+      const lowerFocus = v2Decision.primary_focus.toLowerCase();
+      if (lowerFocus.includes('take the') || lowerFocus.includes('easy') || lowerFocus.includes('don\'t push')) {
+        return 'Based on your recovery signals, proceed with today\'s workout but keep it easy.';
+      }
+      if (lowerFocus.includes('reduce intensity') || lowerFocus.includes('moderate')) {
+        return 'Based on your current training state, adjust today\'s session intensity.';
+      }
+    }
+    
     switch (decisionType) {
       case 'REST':
         return 'Based on your recent training and recovery signals, today is best used for recovery.';

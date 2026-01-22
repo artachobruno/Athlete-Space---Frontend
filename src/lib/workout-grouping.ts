@@ -56,7 +56,60 @@ export function groupWorkoutSteps(steps: WorkoutStep[] | StructuredWorkoutStep[]
   while (i < steps.length) {
     const currentStep = steps[i] as StepLike;
 
-    // Check for repeating pattern (e.g., Stride + Float)
+    // FIRST: Check for consecutive identical steps (same name, intensity, distance per step)
+    // This should take priority over repeating patterns to group blocks like "5x 1 mi" into "10 mi"
+    let consecutiveCount = 1;
+    const currentDistance = getStepDistance(currentStep);
+    let totalDistance = currentDistance || 0;
+    const stepBaseName = normalizeStepName(currentStep.name);
+    const stepIntensity = currentStep.intensity || null;
+    const stepDuration = getStepDuration(currentStep);
+    const stepNotes = currentStep.notes || null;
+
+    // Check if next steps are identical (same base name, intensity, duration, and same distance per step)
+    while (i + consecutiveCount < steps.length) {
+      const nextStep = steps[i + consecutiveCount] as StepLike;
+      const nextBaseName = normalizeStepName(nextStep.name);
+      const nextDistance = getStepDistance(nextStep);
+      const nextDuration = getStepDuration(nextStep);
+      
+      // Group if:
+      // 1. Same base name
+      // 2. Same intensity (or both null)
+      // 3. Same duration (or both null)
+      // 4. Same distance per step (or both null) - this ensures we only group truly identical steps
+      const sameName = nextBaseName === stepBaseName;
+      const sameIntensity = (nextStep.intensity || null) === stepIntensity;
+      const sameDuration = (stepDuration === null && nextDuration === null) || (stepDuration === nextDuration);
+      const sameDistancePerStep = (currentDistance === null && nextDistance === null) || (currentDistance === nextDistance);
+      
+      if (sameName && sameIntensity && sameDuration && sameDistancePerStep) {
+        if (nextDistance) {
+          totalDistance += nextDistance;
+        }
+        consecutiveCount++;
+      } else {
+        break;
+      }
+    }
+
+    // If we found consecutive identical steps, group them
+    if (consecutiveCount > 1) {
+      grouped.push({
+        name: stepBaseName,
+        count: consecutiveCount,
+        totalDistanceKm: totalDistance > 0 ? totalDistance : null,
+        durationMin: stepDuration,
+        intensity: stepIntensity,
+        notes: stepNotes,
+        isRepeat: false,
+      });
+      i += consecutiveCount;
+      continue;
+    }
+
+    // SECOND: Check for repeating 2-step pattern (e.g., Stride + Float)
+    // Only check if we didn't find consecutive identical steps
     if (i < steps.length - 1) {
       const nextStep = steps[i + 1] as StepLike;
       const currentBaseName = normalizeStepName(currentStep.name);
@@ -120,67 +173,17 @@ export function groupWorkoutSteps(steps: WorkoutStep[] | StructuredWorkoutStep[]
       }
     }
 
-    // Check for consecutive identical or similar steps (same base name)
-    let consecutiveCount = 1;
-    const currentDistance = getStepDistance(currentStep);
-    let totalDistance = currentDistance || 0;
-    const stepBaseName = normalizeStepName(currentStep.name);
-    const stepIntensity = currentStep.intensity || null;
-    const stepDuration = getStepDuration(currentStep);
-    const stepNotes = currentStep.notes || null;
-
-    // Check if next steps are similar (same base name, same intensity)
-    // For duration: group if both are null, or if they match exactly
-    // This allows grouping steps with varying distances but same name/intensity
-    while (i + consecutiveCount < steps.length) {
-      const nextStep = steps[i + consecutiveCount] as StepLike;
-      const nextBaseName = normalizeStepName(nextStep.name);
-      const nextDistance = getStepDistance(nextStep);
-      const nextDuration = getStepDuration(nextStep);
-      
-      // Group if:
-      // 1. Same base name
-      // 2. Same intensity (or both null)
-      // 3. Same duration (or both null - allows grouping distance-based steps with varying distances)
-      const sameName = nextBaseName === stepBaseName;
-      const sameIntensity = (nextStep.intensity || null) === stepIntensity;
-      const sameDuration = (stepDuration === null && nextDuration === null) || (stepDuration === nextDuration);
-      
-      if (sameName && sameIntensity && sameDuration) {
-        if (nextDistance) {
-          totalDistance += nextDistance;
-        }
-        consecutiveCount++;
-      } else {
-        break;
-      }
-    }
-
-    if (consecutiveCount > 1) {
-      // Group consecutive identical/similar steps
-      grouped.push({
-        name: stepBaseName,
-        count: consecutiveCount,
-        totalDistanceKm: totalDistance > 0 ? totalDistance : null,
-        durationMin: stepDuration,
-        intensity: stepIntensity,
-        notes: stepNotes,
-        isRepeat: false,
-      });
-      i += consecutiveCount;
-    } else {
-      // Single step
-      grouped.push({
-        name: currentStep.name,
-        count: 1,
-        totalDistanceKm: currentDistance,
-        durationMin: stepDuration,
-        intensity: stepIntensity,
-        notes: stepNotes,
-        isRepeat: false,
-      });
-      i++;
-    }
+    // Single step (not grouped, not part of a pattern)
+    grouped.push({
+      name: currentStep.name,
+      count: 1,
+      totalDistanceKm: currentDistance,
+      durationMin: stepDuration,
+      intensity: stepIntensity,
+      notes: stepNotes,
+      isRepeat: false,
+    });
+    i++;
   }
 
   return grouped;

@@ -11,7 +11,6 @@ import { useMemo } from 'react';
 import { getTssForDate, enrichActivitiesWithTss, type TrainingLoadData } from '@/lib/tss-utils';
 import { WorkoutSessionCard } from '@/components/workout/WorkoutSessionCard';
 import { toWorkoutSession } from '@/components/workout/workoutSessionAdapter';
-import { WorkoutStepsCard } from '@/components/today/WorkoutStepsCard';
 import { Link } from 'react-router-dom';
 import type { CompletedActivity } from '@/types';
 import type { TodayResponse } from '@/lib/api';
@@ -352,10 +351,6 @@ export function TodayWorkoutCard(props: TodayWorkoutCardProps = {}) {
         </Card>
       )}
 
-      {/* Workout Steps Card - show structured steps from workout.steps */}
-      {workoutSteps.length > 0 && (
-        <WorkoutStepsCard steps={workoutSteps} />
-      )}
     </div>
   );
 }

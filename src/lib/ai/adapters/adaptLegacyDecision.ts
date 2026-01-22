@@ -58,6 +58,7 @@ function extractSignals(explanation: string): string[] {
 function normalizeDecision(recommendation: string): 'REST' | 'PROCEED' | 'MODIFY' | 'CANCEL' {
   const lower = recommendation.toLowerCase();
   if (lower.includes('rest') || lower.includes('recovery')) return 'REST';
+  if (lower.includes('easy_with_caution') || lower.includes('moderate_with_caution')) return 'MODIFY';
   if (lower.includes('modify') || lower.includes('adjust')) return 'MODIFY';
   if (lower.includes('cancel') || lower.includes('skip')) return 'CANCEL';
   return 'PROCEED';
@@ -103,22 +104,44 @@ function defaultFocusForDecision(decision: 'REST' | 'PROCEED' | 'MODIFY' | 'CANC
 export function adaptLegacyDecision(v1: DailyDecisionV1): CoachDecisionV2 {
   const normalizedDecision = normalizeDecision(v1.recommendation);
   const signals = extractSignals(v1.explanation);
+  const lowerRec = v1.recommendation.toLowerCase();
   
-  // Determine primary focus from decision type
-  const primaryFocusMap: Record<'REST' | 'PROCEED' | 'MODIFY' | 'CANCEL', string> = {
-    REST: 'Recovery and adaptation',
-    PROCEED: 'Execute planned session',
-    MODIFY: 'Adjust intensity or volume',
-    CANCEL: 'Skip and recover'
-  };
+  // Determine primary focus from decision type, with special handling for caution recommendations
+  let primaryFocus: string;
+  let recommendedFocus: string[];
+  
+  if (lowerRec.includes('easy_with_caution')) {
+    primaryFocus = 'Take the easy run easy, don\'t push';
+    recommendedFocus = [
+      'Proceed with planned easy run',
+      'Keep effort very easy and conversational',
+      'Listen to your body and cut short if needed'
+    ];
+  } else if (lowerRec.includes('moderate_with_caution')) {
+    primaryFocus = 'Reduce intensity on moderate session';
+    recommendedFocus = [
+      'Proceed with planned moderate session',
+      'Reduce pace/intensity by 10-15%',
+      'Prioritize completion over intensity'
+    ];
+  } else {
+    const primaryFocusMap: Record<'REST' | 'PROCEED' | 'MODIFY' | 'CANCEL', string> = {
+      REST: 'Recovery and adaptation',
+      PROCEED: 'Execute planned session',
+      MODIFY: 'Adjust intensity or volume',
+      CANCEL: 'Skip and recover'
+    };
+    primaryFocus = primaryFocusMap[normalizedDecision];
+    recommendedFocus = defaultFocusForDecision(normalizedDecision);
+  }
   
   return {
     version: 'coach_decision_v2',
     decision: normalizedDecision,
-    primary_focus: primaryFocusMap[normalizedDecision],
+    primary_focus: primaryFocus,
     confidence: v1.confidence.score,
     signals: signals.length > 0 ? signals : ['Based on current training state'],
-    recommended_focus: defaultFocusForDecision(normalizedDecision),
+    recommended_focus: recommendedFocus,
     explanation: v1.explanation, // Preserve for fallback
   };
 }

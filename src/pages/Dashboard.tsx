@@ -20,6 +20,7 @@ import { DailyDecisionCard } from '@/components/dashboard/DailyDecisionCard';
 import { TodayWorkoutCard } from '@/components/dashboard/TodayWorkoutCard';
 import { TodayCompletionStatus } from '@/components/today/TodayCompletionStatus';
 import { WorkoutInstructionsCard } from '@/components/today/WorkoutInstructionsCard';
+import { WorkoutStepsCard } from '@/components/today/WorkoutStepsCard';
 import { CoachInsightCard } from '@/components/today/CoachInsightCard';
 import { useSyncTodayWorkout } from '@/hooks/useSyncTodayWorkout';
 import { useDashboardData } from '@/hooks/useDashboardData';
@@ -94,7 +95,12 @@ function AthleteDashboard() {
             <WorkoutInstructionsCard instructions={firstPlannedSession.instructions} />
           )}
 
-          {/* 4. Coach Insight Card */}
+          {/* 4. Workout Steps Card */}
+          {firstPlannedSession?.steps && firstPlannedSession.steps.length > 0 && (
+            <WorkoutStepsCard steps={firstPlannedSession.steps} />
+          )}
+
+          {/* 5. Coach Insight Card */}
           {firstPlannedSession?.coach_insight && (
             <CoachInsightCard coachInsight={firstPlannedSession.coach_insight} />
           )}
