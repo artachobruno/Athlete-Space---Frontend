@@ -36,6 +36,14 @@ export interface WeeklyIntent {
   explanation: string;
 }
 
+import type { CoachDecisionV2, DailyDecisionV1, CoachDecision } from '@/types/coachDecision';
+import { isCoachDecisionV2 } from '@/types/coachDecision';
+import { adaptLegacyDecision } from '@/lib/ai/adapters/adaptLegacyDecision';
+
+/**
+ * Legacy v1 format (deprecated, use CoachDecisionV2)
+ * @deprecated Use CoachDecisionV2 instead
+ */
 export interface DailyDecision {
   recommendation: string;
   explanation: string;
@@ -175,9 +183,11 @@ export const getWeekIntelligence = async (weekStart?: string): Promise<WeeklyInt
  * Get daily decision recommendations.
  * The backend handles authentication automatically via the Authorization header.
  * 
+ * Returns CoachDecisionV2 if available, falls back to v1 adapter if needed.
+ * 
  * @param decisionDate Optional decision date in YYYY-MM-DD format. If not provided, uses today.
  */
-export const getTodayIntelligence = async (decisionDate?: string): Promise<DailyDecision | null> => {
+export const getTodayIntelligence = async (decisionDate?: string): Promise<CoachDecision | null> => {
   try {
     const params = decisionDate ? { decision_date: decisionDate } : undefined;
     const response = await api.get("/intelligence/today", { params });
@@ -191,6 +201,11 @@ export const getTodayIntelligence = async (decisionDate?: string): Promise<Daily
         explanation?: string;
         confidence?: { score?: number; explanation?: string };
         session?: unknown;
+        // v2 fields
+        version?: string;
+        primary_focus?: string;
+        signals?: string[];
+        recommended_focus?: string[];
       };
       version?: number;
       is_active?: boolean;
@@ -200,10 +215,44 @@ export const getTodayIntelligence = async (decisionDate?: string): Promise<Daily
     
     // Extract the decision from the response
     if (data.decision) {
-      // Confidence is now an object from the API with score and explanation
+      // Check if this is v2 format
+      if (data.decision.version === 'coach_decision_v2') {
+        const v2Decision: CoachDecisionV2 = {
+          version: 'coach_decision_v2',
+          decision: (data.decision.recommendation?.toUpperCase() as 'REST' | 'PROCEED' | 'MODIFY' | 'CANCEL') || 'PROCEED',
+          primary_focus: data.decision.primary_focus || 'Execute today appropriately',
+          confidence: typeof data.decision.confidence === 'object' && typeof data.decision.confidence?.score === 'number'
+            ? data.decision.confidence.score
+            : 0.8,
+          signals: Array.isArray(data.decision.signals) && data.decision.signals.length > 0
+            ? data.decision.signals
+            : ['Based on current training state'],
+          recommended_focus: Array.isArray(data.decision.recommended_focus) && data.decision.recommended_focus.length > 0
+            ? data.decision.recommended_focus
+            : ['Follow planned training'],
+          explanation: data.decision.explanation,
+        };
+        
+        // Validate v2 structure
+        if (v2Decision.signals.length === 0) {
+          console.warn('[CoachDecisionV2] Empty signals array, falling back to v1 adapter');
+          // Fall through to v1 adapter
+        } else if (v2Decision.confidence < 0 || v2Decision.confidence > 1) {
+          console.warn('[CoachDecisionV2] Invalid confidence score, falling back to v1 adapter');
+          // Fall through to v1 adapter
+        } else {
+          console.debug('[CoachDecisionV2]', {
+            decision: v2Decision.decision,
+            confidence: v2Decision.confidence,
+            signalsCount: v2Decision.signals.length,
+          });
+          return v2Decision;
+        }
+      }
+      
+      // v1 format - adapt to v2
       const confidenceData = (data.decision as { confidence?: { score?: number; explanation?: string } }).confidence;
       
-      // Ensure confidence has required properties
       const confidence: { score: number; explanation: string } = confidenceData && 
         typeof confidenceData.score === 'number' && 
         typeof confidenceData.explanation === 'string'
@@ -216,15 +265,26 @@ export const getTodayIntelligence = async (decisionDate?: string): Promise<Daily
             explanation: 'Based on current training state',
           };
       
-      return {
+      const v1Decision: DailyDecisionV1 = {
         recommendation: data.decision.recommendation || '',
         explanation: data.decision.explanation || data.decision.recommendation || '',
         confidence,
       };
+      
+      // Track legacy usage for monitoring
+      console.debug('[CoachDecision] Using v1 adapter');
+      
+      // Adapt to v2
+      return adaptLegacyDecision(v1Decision);
     }
     
-    // Fallback: try to use response as-is
-    return response as unknown as DailyDecision;
+    // Fallback: try to use response as-is (legacy)
+    const fallback = response as unknown as DailyDecisionV1;
+    if (fallback && fallback.recommendation && fallback.confidence) {
+      return adaptLegacyDecision(fallback);
+    }
+    
+    return null;
   } catch (error) {
     const intelligenceError = handleIntelligenceError(error);
     // 503 means data isn't ready yet - this is expected, not an error
