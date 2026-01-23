@@ -50,11 +50,13 @@ export function toCalendarItem(
   const kind = isCompleted ? 'completed' : 'planned';
   const isPaired = !!session.completed_activity_id;
 
-  // Try to find matching activity for metrics (pace, power, HR, load) if available
+  // Try to find matching activity for metrics (pace, power, HR, load, coachFeedback) if available
+  // Match by: planned_session_id, workout_id, or completed_activity_id (external ID)
   // But don't rely on this for determining completion status
   const matchedActivity = activities.find(a => 
     a.planned_session_id === session.id ||
-    (session.workout_id && a.workout_id === session.workout_id)
+    (session.workout_id && a.workout_id === session.workout_id) ||
+    (session.completed_activity_id && a.id === session.completed_activity_id)
   );
 
   // Determine compliance
@@ -103,17 +105,19 @@ export function toCalendarItem(
   }
 
   // Map coach feedback/insight to coachNote
-  // Priority: matched activity coachFeedback > session coach_insight
-  // For completed activities, prefer coachFeedback from the matched activity
-  // For planned sessions, use coach_insight from the session
+  // Priority for completed: matched activity coachFeedback > session coach_insight
+  // Priority for planned: session coach_insight
   let coachNote: { text: string; tone: 'warning' | 'encouragement' | 'neutral' } | undefined = undefined;
   
-  if (isCompleted && matchedActivity?.coachFeedback) {
-    // Completed activity: use coachFeedback from matched activity
-    coachNote = {
-      text: matchedActivity.coachFeedback,
-      tone: 'neutral' as const, // Default tone - can be enhanced to detect from text
-    };
+  if (isCompleted) {
+    // Completed activity: prefer coachFeedback from matched activity, fallback to session coach_insight
+    const feedbackText = matchedActivity?.coachFeedback || session.coach_insight;
+    if (feedbackText) {
+      coachNote = {
+        text: feedbackText,
+        tone: 'neutral' as const, // Default tone - can be enhanced to detect from text
+      };
+    }
   } else if (session.coach_insight) {
     // Planned session: use coach_insight from session
     coachNote = {
