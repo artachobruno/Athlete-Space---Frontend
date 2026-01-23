@@ -23,15 +23,15 @@ export function WorkoutCardShell({
 }: WorkoutCardShellProps) {
   return (
     <div className="relative z-0">
-      {/* Outer halo (NOT clipped by card, sits behind card) */}
+      {/* Outer halo (NOT clipped by card, sits behind card) - painted glow, not additive */}
       {highlighted && (
         <div
-          className="absolute -inset-10 z-0 pointer-events-none"
+          className="absolute -inset-12 z-0 pointer-events-none"
           style={{
             background: CARD_HALO,
-            filter: 'blur(6px)',
-            mixBlendMode: 'screen',
-            opacity: 0.85,
+            filter: 'blur(14px)',
+            opacity: 0.75,
+            transform: 'scale(1.05)',
           }}
         />
       )}
