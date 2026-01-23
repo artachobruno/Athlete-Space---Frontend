@@ -9,6 +9,7 @@ import { AppLayout } from '@/components/layout/AppLayout';
 import { TrainingCalendar } from '@/components/calendar/TrainingCalendar';
 import { useSyncTodayWorkout } from '@/hooks/useSyncTodayWorkout';
 import { useAutoMatchSessions } from '@/hooks/useAutoMatchSessions';
+import { PAGE_BG, scheduleThemeVars } from '@/styles/scheduleTheme';
 
 export default function Calendar() {
   useSyncTodayWorkout();
@@ -18,7 +19,13 @@ export default function Calendar() {
 
   return (
     <AppLayout>
-      <div className="flex flex-col h-full">
+      <div
+        className="flex flex-col h-full min-h-screen"
+        style={{
+          ...scheduleThemeVars,
+          background: PAGE_BG,
+        }}
+      >
         {/* Header */}
         <div className="flex-shrink-0 mb-4">
           <h1 className="text-[clamp(1.25rem,3vw,1.5rem)] font-semibold text-primary">Schedule</h1>
