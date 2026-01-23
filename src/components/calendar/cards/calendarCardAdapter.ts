@@ -34,6 +34,104 @@ function formatDuration(minutes: number): string {
 }
 
 /**
+ * Derives narrative intent text (WHY) from CalendarItem
+ * Present tense for planned, past tense for completed
+ * Max 120 characters
+ */
+function deriveIntentText(item: CalendarItem): string | undefined {
+  const intentNarratives: Record<string, string> = {
+    easy: 'Maintain aerobic base and promote recovery.',
+    steady: 'Build endurance at sustainable effort.',
+    tempo: 'Develop threshold fitness and race pace feel.',
+    intervals: 'Improve VO2 max and speed endurance.',
+    long: 'Build fatigue resistance late-race.',
+    rest: 'Recovery and adaptation day.',
+  };
+
+  // Base narrative from intent
+  let narrative = intentNarratives[item.intent] || 'Training session.';
+
+  // Enhance with title/description context if available
+  const titleLower = item.title?.toLowerCase() || '';
+  const descLower = item.description?.toLowerCase() || '';
+
+  // Special handling for race
+  if (item.sport === 'race') {
+    narrative = 'Race day — execute your plan.';
+  }
+
+  // Adjust tense based on kind
+  if (item.kind === 'completed') {
+    // Convert to past tense
+    narrative = narrative
+      .replace(/Build/g, 'Built')
+      .replace(/Maintain/g, 'Maintained')
+      .replace(/Develop/g, 'Developed')
+      .replace(/Improve/g, 'Improved')
+      .replace(/Promote/g, 'Promoted')
+      .replace(/Execute/g, 'Executed');
+  }
+
+  // Truncate to 120 chars
+  if (narrative.length > 120) {
+    narrative = narrative.slice(0, 117) + '...';
+  }
+
+  return narrative;
+}
+
+/**
+ * Derives execution summary (DID IT WORK?) from CalendarItem
+ * Only for completed activities
+ * Max 120 characters, factual and neutral
+ */
+function deriveExecutionSummary(item: CalendarItem): string | undefined {
+  if (item.kind !== 'completed') {
+    return undefined;
+  }
+
+  const compliance = item.compliance;
+  const isPaired = item.isPaired;
+  const executionNotes = item.executionNotes;
+
+  // If we have explicit execution notes, use them (truncated)
+  if (executionNotes && executionNotes.trim()) {
+    const trimmed = executionNotes.trim();
+    return trimmed.length > 120 ? trimmed.slice(0, 117) + '...' : trimmed;
+  }
+
+  // Derive from compliance + pairing
+  if (compliance === 'complete') {
+    if (isPaired) {
+      return 'On target — matched plan.';
+    }
+    return 'Completed as planned.';
+  }
+
+  if (compliance === 'partial') {
+    return 'Completed with reduced volume.';
+  }
+
+  if (compliance === 'missed') {
+    return 'Missed due to schedule or fatigue.';
+  }
+
+  // Fallback for completed without compliance
+  return 'Completed.';
+}
+
+/**
+ * Derives plan context (WHERE IN THE ARC) from CalendarItem
+ * Placeholder implementation - can be enhanced with actual plan data
+ */
+function derivePlanContext(item: CalendarItem): string | undefined {
+  // TODO: Integrate with actual plan data when available
+  // For now, return undefined to avoid showing placeholder text
+  // This can be populated from plan metadata when that feature is added
+  return undefined;
+}
+
+/**
  * Maps calendar intent to human-readable workout type
  */
 function getWorkoutTypeLabel(intent: string, sport?: string): string {
@@ -116,8 +214,9 @@ export function toCalendarCardProps(item: CalendarItem): CalendarCardProps {
       ? generateMockSparkline()
       : undefined;
 
-  // Description: prioritize coachNote, then description, then empty
-  const description = item.coachNote?.text || item.description || undefined;
+  // Description: long-form fallback only (deprecated for primary narrative)
+  // Do not use for intent or execution - use semantic fields instead
+  const description = item.description || undefined;
 
   return {
     variant,
@@ -150,10 +249,14 @@ function toSessionCardProps(item: CalendarItem): BaseCardProps {
     metricsLabel: secondaryText ? 'DISTANCE · AVG PACE' : undefined,
     metricsValue: secondaryText,
     title: p.title,
-    description: p.description,
+    description: p.description, // Long-form fallback only
     sparkline: p.sparkline,
     isPlanned: true,
     isActivity: false,
+    // Semantic elevation fields
+    planContext: derivePlanContext(item),
+    intentText: deriveIntentText(item),
+    coachInsight: item.coachNote ?? undefined,
   };
 }
 
@@ -170,10 +273,15 @@ function toActivityCardProps(item: CalendarItem): BaseCardProps {
     metricsLabel: secondaryText ? 'DISTANCE · AVG PACE' : undefined,
     metricsValue: secondaryText,
     title: p.title,
-    description: p.description,
+    description: p.description, // Long-form fallback only
     sparkline: p.sparkline,
     isActivity: true,
     isPlanned: false,
+    // Semantic elevation fields
+    planContext: derivePlanContext(item),
+    intentText: deriveIntentText(item),
+    executionSummary: deriveExecutionSummary(item),
+    coachInsight: item.coachNote ?? undefined,
   };
 }
 
@@ -188,10 +296,14 @@ function toTrainingDayCardProps(item: CalendarItem): BaseCardProps {
     metricsLabel: undefined,
     metricsValue: undefined,
     title: p.title,
-    description: p.description,
+    description: p.description, // Long-form fallback only
     sparkline: null,
     titleClampLines: 2,
     descClampLines: 4,
+    // Semantic elevation fields
+    planContext: derivePlanContext(item),
+    intentText: deriveIntentText(item),
+    coachInsight: item.coachNote ?? undefined,
   };
 }
 

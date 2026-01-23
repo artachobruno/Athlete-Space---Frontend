@@ -15,6 +15,14 @@ export interface BaseCardProps {
   viewVariant?: 'month' | 'week' | 'plan';
   isActivity?: boolean;
   isPlanned?: boolean;
+  // Semantic elevation fields
+  planContext?: string; // e.g. "Week 6 · Marathon Build"
+  intentText?: string; // narrative WHY (≤120 chars)
+  executionSummary?: string; // 1-line outcome judgment
+  coachInsight?: {
+    text: string;
+    tone: 'warning' | 'encouragement' | 'neutral';
+  };
 }
 
 // Shared dimensions to match WorkoutCardSvg
@@ -45,6 +53,13 @@ export function BaseCalendarCardSvg({
   descClampLines = 3,
   viewVariant,
   isPlanned = false,
+  isActivity = false,
+  metricsLabel,
+  metricsValue,
+  planContext,
+  intentText,
+  executionSummary,
+  coachInsight,
 }: BaseCardProps) {
   const theme = CALENDAR_CARD_THEMES[variant] ?? CALENDAR_CARD_THEMES['completed-running'];
   const isMonthView = viewVariant === 'month';
@@ -65,8 +80,23 @@ export function BaseCalendarCardSvg({
   const typeLabelY = paddingY + 10 * textScale;
   const titleY = typeLabelY + 18 * textScale;
 
-  // Description region - positioned below title
-  const descY = titleY + 24 * textScale;
+  // Metrics region (if present and not month view)
+  const showMetrics = metricsValue && viewVariant !== 'month';
+  const metricsY = titleY + 24 * textScale;
+  const metricsHeight = showMetrics ? 20 * textScale : 0;
+  const metricsSpacing = showMetrics ? 8 * textScale : 0;
+
+  // Semantic fields region
+  const showIntent = intentText && !isActivity && viewVariant === 'plan';
+  const showExecution = executionSummary && isActivity;
+  const showCoach = coachInsight && (isActivity || viewVariant === 'plan');
+
+  const intentY = titleY + 24 * textScale + metricsHeight + metricsSpacing;
+  const executionY = intentY + (showIntent ? 18 * textScale : 0);
+  const coachY = executionY + (showExecution ? 18 * textScale : 0);
+
+  // Description region - positioned below semantic fields (fallback only)
+  const descY = coachY + (showCoach ? 20 * textScale : 0);
 
   // Accent line position
   const accentY = height - paddingY - 4;
@@ -153,7 +183,105 @@ export function BaseCalendarCardSvg({
         {displayTitle.length > 28 ? `${displayTitle.slice(0, 28)}...` : displayTitle}
       </text>
 
-      {/* Description - using foreignObject for text wrapping */}
+      {/* Metrics - distance and pace (week/plan view only, not month) */}
+      {metricsValue && viewVariant !== 'month' && (
+        <>
+          <text
+            x={paddingX}
+            y={metricsY - 4}
+            fill={COLORS.textMuted}
+            fontSize={10 * textScale}
+            fontWeight={500}
+            letterSpacing="0.05em"
+          >
+            {metricsLabel || ''}
+          </text>
+          <text
+            x={paddingX}
+            y={metricsY + 10 * textScale}
+            fill={COLORS.textSecondary}
+            fontSize={13 * textScale}
+            fontWeight={500}
+          >
+            {metricsValue}
+          </text>
+        </>
+      )}
+
+      {/* Intent Text - narrative WHY (plan view only) */}
+      {intentText && !isActivity && viewVariant === 'plan' && (
+        <foreignObject
+          x={paddingX}
+          y={intentY - 12 * textScale}
+          width={width - paddingX * 2}
+          height={20 * textScale}
+        >
+          <div
+            style={{
+              color: COLORS.textSecondary,
+              fontSize: `${12 * textScale}px`,
+              lineHeight: 1.4,
+              opacity: 0.8,
+              fontStyle: 'italic',
+            }}
+          >
+            {intentText}
+          </div>
+        </foreignObject>
+      )}
+
+      {/* Execution Summary - outcome judgment (completed only) */}
+      {executionSummary && isActivity && (
+        <foreignObject
+          x={paddingX}
+          y={executionY - 12 * textScale}
+          width={width - paddingX * 2}
+          height={20 * textScale}
+        >
+          <div
+            style={{
+              color: COLORS.textSecondary,
+              fontSize: `${12 * textScale}px`,
+              lineHeight: 1.4,
+              opacity: 0.75,
+            }}
+          >
+            {executionSummary}
+          </div>
+        </foreignObject>
+      )}
+
+      {/* Coach Insight - sparingly shown (hero or completed) */}
+      {coachInsight && (isActivity || viewVariant === 'plan') && (
+        <foreignObject
+          x={paddingX}
+          y={coachY - 12 * textScale}
+          width={width - paddingX * 2}
+          height={40 * textScale}
+        >
+          <div
+            style={{
+              color:
+                coachInsight.tone === 'warning'
+                  ? 'hsl(0 70% 60%)'
+                  : coachInsight.tone === 'encouragement'
+                    ? 'hsl(120 50% 55%)'
+                    : COLORS.textSecondary,
+              fontSize: `${12 * textScale}px`,
+              lineHeight: 1.4,
+              opacity: 0.85,
+              overflow: 'hidden',
+              display: '-webkit-box',
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: 'vertical',
+            }}
+          >
+            {coachInsight.text}
+          </div>
+        </foreignObject>
+      )}
+
+      {/* Description - long-form fallback only */}
       {description && (
         <foreignObject
           x={paddingX}
