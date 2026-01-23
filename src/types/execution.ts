@@ -36,10 +36,10 @@ export interface ExecutionSummary {
  * Used globally for consistent visual representation.
  */
 export const EXECUTION_STATE_COLORS: Record<ExecutionState, string> = {
-  PLANNED_ONLY: 'text-muted-foreground', // Gray/Blue
-  COMPLETED_AS_PLANNED: 'text-green-600 dark:text-green-400', // Green
-  COMPLETED_UNPLANNED: 'text-amber-600 dark:text-amber-400', // Amber/Orange
-  MISSED: 'text-red-600 dark:text-red-400', // Red/Muted
+  PLANNED_ONLY: 'text-muted-foreground',
+  COMPLETED_AS_PLANNED: 'text-green-600 dark:text-green-400',
+  COMPLETED_UNPLANNED: 'text-amber-600 dark:text-amber-400',
+  MISSED: 'text-red-600 dark:text-red-400',
 };
 
 export const EXECUTION_STATE_BG_COLORS: Record<ExecutionState, string> = {
@@ -48,3 +48,60 @@ export const EXECUTION_STATE_BG_COLORS: Record<ExecutionState, string> = {
   COMPLETED_UNPLANNED: 'bg-amber-500/10',
   MISSED: 'bg-red-500/10',
 };
+
+/**
+ * Planning types for execution flow components.
+ */
+export interface PlanSession {
+  id: string;
+  session_id: string;
+  date: string;
+  type: string;
+  template_name: string;
+  duration: number;
+  distance?: number;
+  explanation?: string;
+  rationale?: string;
+  notes?: string;
+}
+
+export interface WeekPlan {
+  week: number;
+  week_number: number;
+  weekStart: string;
+  weekEnd: string;
+  start_date: string;
+  end_date: string;
+  sessions: PlanSession[];
+  phase?: string;
+  focus?: string;
+  coachNotes?: string;
+}
+
+export interface ExecutionConflict {
+  date: string;
+  type: 'overlap' | 'overload' | 'recovery';
+  session_id: string;
+  existing_session_id: string;
+  reason: 'overlap' | 'manual_edit';
+  message: string;
+  severity: 'warning' | 'error';
+}
+
+export interface ExecutionResponse {
+  success: boolean;
+  message?: string;
+  applied_sessions?: PlanSession[];
+  sessions_created?: number;
+  weeks_affected?: number;
+}
+
+export interface ExecutionPreviewResponse {
+  weeks: WeekPlan[];
+  conflicts: ExecutionConflict[];
+  summary: {
+    total_sessions: number;
+    total_duration_minutes: number;
+    total_distance_km?: number;
+  };
+}
