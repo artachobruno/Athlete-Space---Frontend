@@ -19,6 +19,7 @@ import { safeDetectStore, safeInitAnalytics } from "@/lib/safe-analytics";
 import Dashboard from "./pages/Dashboard";
 import Calendar from "./pages/Calendar";
 import TrainingPlan from "./pages/TrainingPlan";
+import PlanInspect from "./pages/PlanInspect";
 import Activities from "./pages/Activities";
 import Analytics from "./pages/Analytics";
 import Coach from "./pages/Coach";
@@ -285,6 +286,14 @@ const AppContent = () => {
           element={
             <RequireAuth>
               <TrainingPlan />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/plan/inspect"
+          element={
+            <RequireAuth>
+              <PlanInspect />
             </RequireAuth>
           }
         />

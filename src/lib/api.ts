@@ -3643,3 +3643,75 @@ export const updateWorkoutDate = async (
   }
 };
 
+/**
+ * Plan Inspector API types
+ */
+export interface PlanModification {
+  type: string;
+  affected_session: string | null;
+  delta: string;
+  reason: string;
+  trigger: string;
+}
+
+export interface WeekInspect {
+  week_index: number;
+  date_range: [string, string];
+  status: "completed" | "current" | "upcoming";
+  intended_focus: string;
+  planned_key_sessions: string[];
+  modifications: PlanModification[];
+}
+
+export interface PlanPhaseInspect {
+  name: string;
+  intent: string;
+  weeks: WeekInspect[];
+}
+
+export interface PlanSnapshot {
+  objective: string;
+  anchor_type: "race" | "objective";
+  anchor_title: string;
+  anchor_date: string | null;
+  current_phase: string | null;
+  total_weeks: number;
+  weekly_structure: Record<string, string>;
+}
+
+export interface CoachAssessment {
+  summary: string;
+  confidence: "low" | "medium" | "high";
+}
+
+export interface PlanChangeLogItem {
+  date: string;
+  change_type: string;
+  description: string;
+}
+
+export interface PlanInspectResponse {
+  plan_snapshot: PlanSnapshot;
+  phases: PlanPhaseInspect[];
+  current_week: WeekInspect | null;
+  coach_assessment: CoachAssessment | null;
+  change_log: PlanChangeLogItem[];
+}
+
+/**
+ * Get plan inspection data (dev/admin only).
+ * @param athleteId - Optional athlete ID (defaults to user's athlete)
+ * @returns Plan inspection data
+ */
+export const getPlanInspect = async (athleteId?: number): Promise<PlanInspectResponse> => {
+  console.log("[API] Fetching plan inspect:", { athleteId });
+  try {
+    const params = athleteId ? { athlete_id: athleteId } : {};
+    const response = await api.get("/plan/inspect", { params });
+    return response as unknown as PlanInspectResponse;
+  } catch (error) {
+    console.error("[API] Failed to fetch plan inspect:", error);
+    throw error;
+  }
+};
+
