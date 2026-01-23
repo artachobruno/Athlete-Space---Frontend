@@ -6,6 +6,9 @@ import { CardTypography } from '@/styles/cardTypography';
 import { WorkoutCardShell } from '@/components/sessions/WorkoutCardShell';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { NarrativeBlock } from '@/components/workout/NarrativeBlock';
+import { getIntentNarrative, getExecutionSummary, truncateNarrative } from '@/copy/workoutNarratives';
+import { normalizeCalendarSport, normalizeCalendarIntent } from '@/types/calendar';
 import { Footprints, Bike, Waves, Clock, Route, Mountain, Heart, Zap, MessageCircle, CheckCircle2, ExternalLink, X, SkipForward, TrendingUp, Info, Download, Loader2, ArrowRight, Link2, Bot, Trash2 } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { cn } from '@/lib/utils';
@@ -698,6 +701,51 @@ export function ActivityPopup({
               </span>
             )}
           </div>
+
+          {/* ============ NARRATIVE BLOCK ============ */}
+          {(() => {
+            // Determine status
+            const isCompleted = !!activity || workout?.completed;
+            const status = isCompleted ? 'completed' : 'planned';
+            
+            // Derive intent text
+            const sport = normalizeCalendarSport(workout?.sport || activity?.sport);
+            const intent = normalizeCalendarIntent(workout?.intent || session?.intensity);
+            const intentText = intent ? truncateNarrative(getIntentNarrative(sport, intent, isCompleted)) : undefined;
+            
+            // Derive execution summary (only for completed)
+            // Use coachFeedback if available, otherwise derive from activity data
+            let executionSummary: string | undefined = undefined;
+            if (isCompleted && activity) {
+              if (activity.coachFeedback) {
+                executionSummary = truncateNarrative(activity.coachFeedback);
+              } else {
+                // Fallback: simple completion message
+                executionSummary = 'Completed as planned.';
+              }
+            }
+            
+            // Get coach insight from session (separate from execution summary)
+            const coachInsight = session?.coach_insight ? {
+              text: session.coach_insight,
+              tone: 'neutral' as const,
+            } : undefined;
+            
+            // Check if unplanned
+            const isUnplanned = isCompleted && !session?.completed_activity_id && !workout?.actualActivityId;
+            
+            return (
+              <div className="pb-4">
+                <NarrativeBlock
+                  intentText={intentText}
+                  executionSummary={executionSummary}
+                  coachInsight={coachInsight}
+                  status={status}
+                  isUnplanned={isUnplanned}
+                />
+              </div>
+            );
+          })()}
 
           {/* Activity-specific detailed view with tabs */}
           {activity && (
