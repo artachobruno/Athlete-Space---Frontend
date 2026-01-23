@@ -51,8 +51,8 @@ export function NarrativeBlock({
         </>
       )}
 
-      {/* Coach section - only after Outcome, only if coachInsight exists */}
-      {isCompleted && executionSummary && coachInsight && (
+      {/* Coach section - shows after Outcome (if present) or after Purpose (if no Outcome) */}
+      {coachInsight && (
         <div>
           <div className="text-xs uppercase tracking-wider text-muted-foreground mb-1.5">
             Coach

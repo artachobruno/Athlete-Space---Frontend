@@ -714,22 +714,32 @@ export function ActivityPopup({
             const intentText = intent ? truncateNarrative(getIntentNarrative(sport, intent, isCompleted)) : undefined;
             
             // Derive execution summary (only for completed)
-            // Use coachFeedback if available, otherwise derive from activity data
+            // This should be factual - how the session went
             let executionSummary: string | undefined = undefined;
             if (isCompleted && activity) {
-              if (activity.coachFeedback) {
-                executionSummary = truncateNarrative(activity.coachFeedback);
-              } else {
-                // Fallback: simple completion message
-                executionSummary = 'Completed as planned.';
-              }
+              // Use a simple completion message for now
+              // Could be enhanced with compliance data later
+              executionSummary = 'Completed as planned.';
             }
             
-            // Get coach insight from session (separate from execution summary)
-            const coachInsight = session?.coach_insight ? {
-              text: session.coach_insight,
-              tone: 'neutral' as const,
-            } : undefined;
+            // Get coach insight - check multiple sources
+            // Priority: activity.coachFeedback > session.coach_insight
+            // Coach insight can appear for both planned and completed sessions
+            const coachInsight = (() => {
+              if (activity?.coachFeedback) {
+                return {
+                  text: activity.coachFeedback,
+                  tone: 'neutral' as const,
+                };
+              }
+              if (session?.coach_insight) {
+                return {
+                  text: session.coach_insight,
+                  tone: 'neutral' as const,
+                };
+              }
+              return undefined;
+            })();
             
             // Check if unplanned
             const isUnplanned = isCompleted && !session?.completed_activity_id && !workout?.actualActivityId;
@@ -758,18 +768,7 @@ export function ActivityPopup({
 
               {/* OVERVIEW TAB */}
               <TabsContent value="overview" className="mt-4 space-y-4">
-                {/* Coach Insight */}
-                {activity.coachFeedback && (
-                  <div className="p-3 bg-muted/50 rounded-lg border-l-2 border-primary/40">
-                    <div className="flex items-center gap-2 mb-1.5">
-                      <Bot className="h-4 w-4 text-primary" />
-                      <span className="text-xs font-medium text-primary">Analysis</span>
-                    </div>
-                    <p className="text-sm text-foreground leading-relaxed">
-                      {activity.coachFeedback}
-                    </p>
-                  </div>
-                )}
+                {/* Coach Insight removed - now shown in NarrativeBlock above tabs */}
 
                 {/* Core Metrics Grid */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
