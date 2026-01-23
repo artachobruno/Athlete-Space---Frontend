@@ -102,6 +102,16 @@ export function toCalendarItem(
     startLocal = `${session.date}T00:00:00`;
   }
 
+  // Map coach_insight to coachNote if present
+  // Backend provides coach_insight as a string, we need to structure it with tone
+  // For now, default to 'neutral' tone - can be enhanced later to detect tone from text
+  const coachNote = session.coach_insight
+    ? {
+        text: session.coach_insight,
+        tone: 'neutral' as const, // Default tone - can be enhanced to detect from text
+      }
+    : undefined;
+
   return {
     id: session.id,
     kind,
@@ -119,5 +129,6 @@ export function toCalendarItem(
     description: session.notes || undefined,
     executionNotes: session.execution_notes || undefined,
     mustDos: session.must_dos || undefined,
+    coachNote,
   };
 }

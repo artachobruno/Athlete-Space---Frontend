@@ -46,6 +46,13 @@ const COLORS = {
 /**
  * Determines if coach insight should be shown (week view, completed only)
  * Aggressively gated to prevent over-rendering
+ * 
+ * Shows only when:
+ * - Card is a completed activity (isActivity === true)
+ * - Coach insight text exists (coachInsight?.text is truthy)
+ * 
+ * Note: Coach insight is optional - not all completed activities will have coach notes.
+ * This is why it's conditionally rendered rather than always shown.
  */
 function shouldShowCoachInsight(props: BaseCardProps): boolean {
   return Boolean(props.isActivity && props.coachInsight?.text);
@@ -127,14 +134,27 @@ export function BaseCalendarCardSvg({
     const semanticSpacing = 7 * textScale;
     const semanticY = metaBottom + semanticSpacing;
     
+    // Unplanned completed detection: isActivity && !isPlanned
+    const isUnplannedCompleted = isActivity && !isPlanned;
+    
+    // Unplanned label: above execution, small spacing
+    const unplannedLabelHeight = 10 * textScale; // Small label height
+    const unplannedLabelSpacing = 4 * textScale; // Spacing below label
+    const unplannedLabelY = isUnplannedCompleted ? semanticY : semanticY;
+    
+    // Execution: adjust position if unplanned label exists
+    const executionY = isUnplannedCompleted 
+      ? semanticY + unplannedLabelHeight + unplannedLabelSpacing 
+      : semanticY;
+    
     // Coach Insight: only for completed activities, placed after execution
     const showCoach = shouldShowCoachInsight({
       isActivity,
       coachInsight,
     } as BaseCardProps);
-    // Execution foreignObject: y = semanticY - 12*textScale, height = 18*textScale
-    // Execution bottom = semanticY - 12*textScale + 18*textScale = semanticY + 6*textScale
-    const executionBottom = isActivity && executionSummary ? semanticY + 6 * textScale : semanticY;
+    // Execution foreignObject: y = executionY - 12*textScale, height = 18*textScale
+    // Execution bottom = executionY - 12*textScale + 18*textScale = executionY + 6*textScale
+    const executionBottom = isActivity && executionSummary ? executionY + 6 * textScale : executionY;
     const coachSpacing = 6 * textScale; // Spacing between execution and coach
     const coachY = executionBottom + (showCoach ? coachSpacing : 0);
     
@@ -145,6 +165,8 @@ export function BaseCalendarCardSvg({
       metaLabelY,
       metaValueY,
       semanticY,
+      unplannedLabelY,
+      executionY,
       coachY,
     };
     
@@ -317,10 +339,25 @@ export function BaseCalendarCardSvg({
           </foreignObject>
         )}
 
+        {/* Unplanned label (above execution, completed only) */}
+        {isUnplannedCompleted && (
+          <text
+            x={paddingX}
+            y={weekLayout.unplannedLabelY}
+            fill={COLORS.textMuted}
+            fontSize={9 * textScale}
+            fontWeight={500}
+            letterSpacing="0.08em"
+            opacity={0.6}
+          >
+            UNPLANNED ACTIVITY
+          </text>
+        )}
+
         {isActivity && executionSummary && (
           <foreignObject
             x={paddingX}
-            y={weekLayout.semanticY - 12 * textScale}
+            y={weekLayout.executionY - 12 * textScale}
             width={width - paddingX * 2}
             height={18 * textScale}
           >
