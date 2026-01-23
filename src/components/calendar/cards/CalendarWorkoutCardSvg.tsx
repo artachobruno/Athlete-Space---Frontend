@@ -9,12 +9,14 @@ interface CalendarWorkoutCardSvgProps {
   viewVariant: 'month' | 'week' | 'plan';
   streams?: ActivityStreamsResponse | null;
   className?: string;
+  /** Mobile breakpoint flag - when true, uses stacked layout */
+  isMobile?: boolean;
 }
 
 const mapVariant = (variant: 'month' | 'week' | 'plan'): WorkoutCardVariant =>
   variant === 'month' ? 'mobile' : 'feed';
 
-export function CalendarWorkoutCardSvg({ item, viewVariant, streams, className }: CalendarWorkoutCardSvgProps) {
+export function CalendarWorkoutCardSvg({ item, viewVariant, streams, className, isMobile }: CalendarWorkoutCardSvgProps) {
   const props = toCalendarCardProps(item);
   const isCompleted = item.kind === 'completed';
 
@@ -31,6 +33,7 @@ export function CalendarWorkoutCardSvg({ item, viewVariant, streams, className }
         isPlanned={true}
         isActivity={false}
         viewVariant={viewVariant}
+        isMobile={isMobile}
       />
     );
   }

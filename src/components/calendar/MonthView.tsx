@@ -388,6 +388,7 @@ export function MonthView({ currentDate, onActivityClick }: MonthViewProps) {
                                     maxVisible={1}
                                     activityIdBySessionId={activityIdBySessionId}
                                     useNewCard
+                                    isMobile={isMobile}
                                     onClick={(clickedItem) => {
                                       if (!monthData) return;
                                       const session =

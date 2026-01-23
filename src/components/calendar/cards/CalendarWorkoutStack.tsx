@@ -16,6 +16,8 @@ interface Props {
   activityIdBySessionId?: Record<string, string | null | undefined>;
   /** Use new React-based SessionCard instead of SVG card (Phase 4: default true) */
   useNewCard?: boolean;
+  /** Mobile breakpoint flag - when true, uses stacked layout */
+  isMobile?: boolean;
 }
 
 export function CalendarWorkoutStack({
@@ -26,6 +28,7 @@ export function CalendarWorkoutStack({
   className,
   activityIdBySessionId,
   useNewCard = true, // Phase 4: Default to React-based SessionCard
+  isMobile = false,
 }: Props) {
   const visible = items.slice(0, maxVisible);
   const topItem = visible[0];
@@ -174,6 +177,7 @@ export function CalendarWorkoutStack({
                 item={item}
                 viewVariant={variant}
                 streams={isTopCard ? activityStreams ?? null : null}
+                isMobile={isMobile}
               />
             </div>
           </div>

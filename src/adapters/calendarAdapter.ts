@@ -102,15 +102,25 @@ export function toCalendarItem(
     startLocal = `${session.date}T00:00:00`;
   }
 
-  // Map coach_insight to coachNote if present
-  // Backend provides coach_insight as a string, we need to structure it with tone
-  // For now, default to 'neutral' tone - can be enhanced later to detect tone from text
-  const coachNote = session.coach_insight
-    ? {
-        text: session.coach_insight,
-        tone: 'neutral' as const, // Default tone - can be enhanced to detect from text
-      }
-    : undefined;
+  // Map coach feedback/insight to coachNote
+  // Priority: matched activity coachFeedback > session coach_insight
+  // For completed activities, prefer coachFeedback from the matched activity
+  // For planned sessions, use coach_insight from the session
+  let coachNote: { text: string; tone: 'warning' | 'encouragement' | 'neutral' } | undefined = undefined;
+  
+  if (isCompleted && matchedActivity?.coachFeedback) {
+    // Completed activity: use coachFeedback from matched activity
+    coachNote = {
+      text: matchedActivity.coachFeedback,
+      tone: 'neutral' as const, // Default tone - can be enhanced to detect from text
+    };
+  } else if (session.coach_insight) {
+    // Planned session: use coach_insight from session
+    coachNote = {
+      text: session.coach_insight,
+      tone: 'neutral' as const, // Default tone - can be enhanced to detect from text
+    };
+  }
 
   return {
     id: session.id,
