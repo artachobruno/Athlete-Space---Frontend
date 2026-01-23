@@ -18,14 +18,12 @@ export function computeExecutionState(
   activity: CompletedActivity | undefined,
   date: string
 ): ExecutionState {
-  // Exclude cancelled planned sessions
-  if (planned?.status === 'cancelled' || planned?.status === 'deleted') {
-    // If cancelled, treat as if it doesn't exist
+  // Exclude deleted/skipped planned sessions
+  if (planned?.status === 'deleted' || planned?.status === 'skipped') {
     if (activity) {
       return 'COMPLETED_UNPLANNED';
     }
-    // No activity, no valid planned = no summary (should be filtered out)
-    return 'PLANNED_ONLY'; // Fallback, but should be filtered
+    return 'PLANNED_ONLY';
   }
 
   const dateObj = parseISO(date);
@@ -123,8 +121,8 @@ export function buildExecutionSummaries(
 
   // First pass: Handle paired items
   for (const planned of plannedSessions) {
-    // Skip cancelled/deleted
-    if (planned.status === 'cancelled' || planned.status === 'deleted') {
+    // Skip deleted/skipped
+    if (planned.status === 'deleted' || planned.status === 'skipped') {
       continue;
     }
 
@@ -168,7 +166,7 @@ export function buildExecutionSummaries(
   // Second pass: Handle unpaired planned sessions
   for (const planned of plannedSessions) {
     if (usedPlannedIds.has(planned.id)) continue;
-    if (planned.status === 'cancelled' || planned.status === 'deleted') continue;
+    if (planned.status === 'deleted' || planned.status === 'skipped') continue;
 
     const executionState = computeExecutionState(planned, undefined, date);
     summaries.push({
