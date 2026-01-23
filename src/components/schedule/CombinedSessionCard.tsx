@@ -70,7 +70,7 @@ export function CombinedSessionCard({
     },
     COMPLETED_AS_PLANNED: {
       icon: CheckCircle2,
-      label: 'Completed as planned',
+      label: 'Done',
       color: EXECUTION_STATE_COLORS.COMPLETED_AS_PLANNED,
       bgColor: EXECUTION_STATE_BG_COLORS.COMPLETED_AS_PLANNED,
     },
@@ -195,7 +195,7 @@ export function CombinedSessionCard({
         {StateIcon && (
           <StateIcon className={cn('h-3 w-3', config.color)} />
         )}
-        <span className={cn('text-[9px] font-medium', config.color)}>
+        <span className={cn('text-[9px] font-medium truncate max-w-[100px]', config.color)} title={config.label}>
           {config.label}
         </span>
       </div>

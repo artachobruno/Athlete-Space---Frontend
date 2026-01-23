@@ -23,6 +23,8 @@ import {
 import { CombinedSessionCard } from '@/components/schedule/CombinedSessionCard';
 import { DayView } from './DayView';
 import { WeeklyNarrativeCard } from './WeeklyNarrativeCard';
+import { SwipeIndicator } from './SwipeIndicator';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { Button } from '@/components/ui/button';
 import { GlassCard } from '@/components/ui/GlassCard';
 import {
@@ -62,6 +64,7 @@ interface WeekViewProps {
 function WeekView({ currentDate, onActivityClick }: WeekViewProps) {
   const [selectedDay, setSelectedDay] = useState<Date | null>(null);
   const [isSharing, setIsSharing] = useState(false);
+  const isMobile = useIsMobile();
 
   const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
   const weekEnd = endOfWeek(currentDate, { weekStartsOn: 1 });
@@ -195,6 +198,45 @@ function WeekView({ currentDate, onActivityClick }: WeekViewProps) {
     );
   }
 
+  // Mobile layout - stacked vertical list
+  if (isMobile) {
+    const getItemsForDay = (date: Date): ExecutionSummary[] => {
+      return getExecutionSummariesForDay(date);
+    };
+
+    return (
+      <div className="h-full overflow-hidden flex flex-col">
+        <SwipeIndicator label="week" className="flex-shrink-0" />
+        <div className="flex-1 overflow-y-auto px-1">
+          {days.map((day) => {
+            const summaries = getItemsForDay(day);
+            if (summaries.length === 0) return null;
+
+            return (
+              <div key={format(day, 'yyyy-MM-dd')} className="mb-3">
+                <div className="mb-1 px-2">
+                  <p className="text-xs font-medium text-muted-foreground">
+                    {format(day, 'EEEE, MMM d')}
+                  </p>
+                </div>
+                <div className="space-y-1.5">
+                  {summaries.map((summary, idx) => (
+                    <CombinedSessionCard
+                      key={summary.planned?.id || summary.activity?.id || idx}
+                      executionSummary={summary}
+                      onClick={() => handleCardClick(summary)}
+                      variant="week"
+                    />
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-3">
       {/* Weekly Narrative Card */}
@@ -204,7 +246,7 @@ function WeekView({ currentDate, onActivityClick }: WeekViewProps) {
         onKeySessionClick={handleKeySessionClick}
       />
 
-      {/* Week Grid */}
+      {/* Week Grid - Desktop */}
       <div className="grid grid-cols-7 gap-2">
         {days.map((day, idx) => {
           const isCurrentDay = isToday(day);

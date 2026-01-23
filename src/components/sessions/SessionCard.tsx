@@ -384,11 +384,12 @@ export function SessionCard({
             {/* Zone badge for standard/rich */}
             {density !== 'compact' && intent && (
               <span
-                className="px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wide whitespace-nowrap"
+                className="px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wide max-w-[80px] truncate"
                 style={{
                   backgroundColor: zoneBgColor,
                   color: zoneTextColor,
                 }}
+                title={zoneLabel}
               >
                 {zoneLabel}
               </span>
@@ -396,8 +397,15 @@ export function SessionCard({
             
             {/* Status badge for standard/rich */}
             {density !== 'compact' && (
-              <Badge variant="outline" className={cn('text-[10px]', statusColors.badge)}>
-                {session.status === 'completed' && 'Completed'}
+              <Badge 
+                variant="outline" 
+                className={cn(
+                  'text-[10px] max-w-[70px] truncate',
+                  statusColors.badge
+                )}
+                title={session.status === 'completed' ? 'Completed' : session.status}
+              >
+                {session.status === 'completed' && 'Done'}
                 {session.status === 'skipped' && 'Skipped'}
                 {session.status === 'deleted' && 'Deleted'}
                 {session.status === 'missed' && 'Missed'}
