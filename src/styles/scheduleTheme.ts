@@ -104,13 +104,31 @@ export const CARD_INNER_SHADOW = `
  * Internal card light field (nebula / glow star)
  * Anchored slightly right-of-center
  * Creates localized radial light emitter inside card
+ * Core hotspot for true "glow star" effect
  */
 export const CARD_LIGHT_FIELD = `
   radial-gradient(
     420px 320px at 70% 55%,
-    rgba(56, 189, 248, 0.22) 0%,
-    rgba(56, 189, 248, 0.14) 25%,
-    rgba(56, 189, 248, 0.06) 45%,
+    rgba(125, 211, 252, 0.38) 0%,
+    rgba(56, 189, 248, 0.24) 18%,
+    rgba(56, 189, 248, 0.14) 32%,
+    rgba(56, 189, 248, 0.06) 50%,
+    rgba(2, 6, 23, 0.0) 72%
+  )
+`;
+
+/**
+ * Outer card halo (emissive field outside card bounds)
+ * This is the visible glow around the card in the reference
+ * Sits behind the card, larger than card bounds, not clipped
+ */
+export const CARD_HALO = `
+  radial-gradient(
+    520px 420px at 50% 55%,
+    rgba(56, 189, 248, 0.35) 0%,
+    rgba(56, 189, 248, 0.22) 22%,
+    rgba(56, 189, 248, 0.12) 40%,
+    rgba(56, 189, 248, 0.04) 55%,
     rgba(2, 6, 23, 0.0) 70%
   )
 `;
@@ -200,6 +218,7 @@ export const scheduleThemeVars = {
   '--card-inner-highlight': CARD_INNER_HIGHLIGHT,
   '--card-inner-shadow': CARD_INNER_SHADOW,
   '--card-light-field': CARD_LIGHT_FIELD,
+  '--card-halo': CARD_HALO,
   '--card-glow': CARD_GLOW,
   '--noise-opacity': NOISE_OPACITY.toString(),
 } as const;
