@@ -312,7 +312,7 @@ export const api = axios.create({
   baseURL: getBaseURL(),
   // Only use credentials for web (cookies). Mobile uses Bearer tokens.
   withCredentials: !isNative(), // Disable for mobile, enable for web
-  timeout: 30000,
+  timeout: 60000, // 60 seconds - increased for large activity queries
 });
 
 /**
