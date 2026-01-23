@@ -112,6 +112,14 @@ export function isQualitySession(intent: CalendarIntent): boolean {
 }
 
 /**
+ * Determines if a calendar intent should be highlighted (hero workout)
+ * Currently active for all intents
+ */
+export function isHighlightedIntent(intent: CalendarIntent): boolean {
+  return true; // Active for all intents
+}
+
+/**
  * Groups calendar items by date
  */
 export function groupItemsByDate(items: CalendarItem[]): Map<string, DaySummary> {

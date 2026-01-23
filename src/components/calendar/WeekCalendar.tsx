@@ -55,6 +55,7 @@ import type { PlannedWorkout, CompletedActivity } from '@/types';
 import type { CalendarSession } from '@/lib/api';
 import { normalizeSportType, mapIntensityToIntent } from '@/lib/session-utils';
 import { toCalendarItem, capitalizeTitle } from '@/adapters/calendarAdapter';
+import { isHighlightedIntent } from '@/types/calendar';
 
 interface WeekCalendarProps {
   currentDate: Date;
@@ -484,7 +485,7 @@ export function WeekCalendar({ currentDate, onActivityClick }: WeekCalendarProps
                                 session={item}
                                 density="standard"
                                 className="h-full"
-                                highlighted={item.intent === 'long'}
+                                highlighted={isHighlightedIntent(item.intent)}
                               />
                             </div>
                           </DraggableSessionWrapper>
@@ -507,7 +508,7 @@ export function WeekCalendar({ currentDate, onActivityClick }: WeekCalendarProps
               session={draggedItem}
               density="compact"
               className="w-[200px]"
-              highlighted={draggedItem.intent === 'long'}
+              highlighted={isHighlightedIntent(draggedItem.intent)}
             />
           </div>
         )}

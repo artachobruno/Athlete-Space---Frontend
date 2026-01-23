@@ -3,6 +3,7 @@ import { WorkoutSessionCard } from '@/components/workout/WorkoutSessionCard';
 import { calendarItemToWorkoutSession } from '@/components/workout/workoutSessionAdapter';
 import { SessionCard } from '@/components/sessions/SessionCard';
 import type { CalendarItem } from '@/types/calendar';
+import { isHighlightedIntent } from '@/types/calendar';
 import { useAuthenticatedQuery } from '@/hooks/useAuthenticatedQuery';
 import { fetchActivityStreams } from '@/lib/api';
 
@@ -61,7 +62,7 @@ export function CalendarWorkoutStack({
           session={item} 
           density={density} 
           className="h-full"
-          highlighted={item.intent === 'long'}
+          highlighted={isHighlightedIntent(item.intent)}
         />
       </div>
     );
@@ -103,7 +104,7 @@ export function CalendarWorkoutStack({
           session={item} 
           density={density} 
           className="h-full"
-          highlighted={item.intent === 'long'}
+          highlighted={isHighlightedIntent(item.intent)}
         />
             </div>
           );
