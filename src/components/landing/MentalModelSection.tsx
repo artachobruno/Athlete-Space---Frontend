@@ -41,7 +41,7 @@ export const MentalModelSection = () => {
   }, [isInView, hasAnimated]);
 
   return (
-    <section ref={containerRef} className="relative py-32 bg-slate-950" id="system">
+    <section ref={containerRef} className="relative py-32" id="system">
       <div className="container mx-auto px-6">
         {/* Section label */}
         <motion.div

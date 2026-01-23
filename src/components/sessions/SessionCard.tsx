@@ -255,8 +255,11 @@ export function SessionCard({
   const showSteps = density === 'rich';
   const showBothDurationAndDistance = density !== 'compact';
 
+  // Determine role based on highlighted state and intent
+  const surfaceRole: 'ambient' | 'focus' = isHighlighted ? 'focus' : 'ambient';
+
   return (
-    <WorkoutCardShell highlighted={isHighlighted} intent={calendarIntent}>
+    <WorkoutCardShell role={surfaceRole} intent={calendarIntent}>
       <div
         className={cn(
           'w-full',
@@ -281,13 +284,7 @@ export function SessionCard({
         )}>
           {/* Title row */}
           <div className={cn('flex items-center flex-wrap', spacing.titleGap)}>
-            <h3
-              className="text-sm font-semibold tracking-tight truncate"
-              style={{
-                color: 'rgba(241, 245, 249, 0.96)',
-                textShadow: '0 0 1px rgba(255,255,255,0.25), 0 0 12px rgba(56,189,248,0.18)',
-              }}
-            >
+            <h3 className="text-sm font-semibold tracking-tight truncate text-white">
               {session.title || session.type || 'Workout'}
             </h3>
             {showIntensityBadge && intent && (
@@ -308,10 +305,7 @@ export function SessionCard({
           )}>
             {/* Compact: Show duration OR distance (prefer duration) */}
             {density === 'compact' && (
-              <div
-                className="mt-1 flex items-center gap-2 text-xs"
-                style={{ color: 'rgba(203, 213, 225, 0.82)' }}
-              >
+              <div className="mt-1 flex items-center gap-2 text-xs text-white/70">
                 {session.duration_minutes ? (
                   <>
                     <Clock className="h-3 w-3" />
@@ -335,10 +329,7 @@ export function SessionCard({
             )}
             {/* Standard/Rich: Show both duration and distance */}
             {showBothDurationAndDistance && (
-              <div
-                className="mt-1 flex items-center gap-2 text-xs"
-                style={{ color: 'rgba(203, 213, 225, 0.82)' }}
-              >
+              <div className="mt-1 flex items-center gap-2 text-xs text-white/70">
                 {session.duration_minutes && (
                   <>
                     <Clock className="h-3 w-3" />
@@ -379,10 +370,7 @@ export function SessionCard({
 
               {/* Coach insight teaser */}
               {session.coach_insight && (
-                <p
-                  className="mt-2 text-xs line-clamp-2"
-                  style={{ color: 'rgba(148, 163, 184, 0.75)' }}
-                >
+                <p className="mt-2 text-xs line-clamp-2 text-white/60">
                   {session.coach_insight}
                 </p>
               )}
@@ -391,10 +379,7 @@ export function SessionCard({
 
           {/* Standard density: Coach insight teaser (1 line max) */}
           {density === 'standard' && showCoachInsight && session.coach_insight && (
-            <p
-              className="mt-2 text-xs line-clamp-2"
-              style={{ color: 'rgba(148, 163, 184, 0.75)' }}
-            >
+            <p className="mt-2 text-xs line-clamp-2 text-white/60">
               {session.coach_insight}
             </p>
           )}

@@ -25,8 +25,8 @@ const TrendIndicator = ({ trend }: { trend?: 'up' | 'down' | 'stable' }) => {
 
 export const TelemetryStatusBand = () => {
   return (
-    <motion.div 
-      className="w-full border-b border-slate-800/50"
+    <motion.div
+      className="w-full border-b border-white/10"
       initial={{ opacity: 0, y: -20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.8, delay: 0.2 }}

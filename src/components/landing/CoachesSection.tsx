@@ -4,7 +4,7 @@ import { VideoFrame } from './VideoFrame';
 
 export const CoachesSection = () => {
   return (
-    <section className="relative py-24 bg-slate-950" id="coaches">
+    <section className="relative py-24" id="coaches">
       <div className="container mx-auto px-6">
         {/* Section label */}
         <motion.div

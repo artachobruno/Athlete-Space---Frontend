@@ -112,7 +112,7 @@ function DraggableSessionWrapper({
           {...listeners}
           className={cn(
             'absolute top-1 right-1 p-0.5 rounded opacity-0 group-hover:opacity-100',
-            'bg-background/80 backdrop-blur-sm border border-border/50',
+            'bg-white/[0.08] backdrop-blur-md border border-white/10',
             'transition-opacity duration-150 cursor-grab active:cursor-grabbing'
           )}
           onClick={(e) => e.stopPropagation()}

@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 
 export const TelemetryFooter = () => {
   return (
-    <footer className="relative py-16 bg-slate-950 border-t border-slate-900/50">
+    <footer className="relative py-16 border-t border-white/10">
       <div className="container mx-auto px-6">
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-8">
           {/* Brand - static logo only, no animation */}

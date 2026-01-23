@@ -58,8 +58,8 @@ export function AppLayout({ children }: AppLayoutProps) {
   return (
     <div className="min-h-[100svh]">
       {/* Mobile header */}
-      <header 
-        className="lg:hidden fixed top-0 left-0 right-0 border-b z-50 flex items-center px-4 pt-[env(safe-area-inset-top,0px)] h-[calc(3.5rem+env(safe-area-inset-top,0px))]"
+      <header
+        className="lg:hidden fixed top-0 left-0 right-0 border-b border-white/10 z-50 flex items-center px-4 pt-[env(safe-area-inset-top,0px)] h-[calc(3.5rem+env(safe-area-inset-top,0px))]"
         style={{
           background: 'rgba(2, 6, 23, 0.85)',
           backdropFilter: 'blur(12px)',
@@ -81,7 +81,7 @@ export function AppLayout({ children }: AppLayoutProps) {
       {/* Sidebar */}
       <aside
         className={cn(
-          'fixed left-0 w-64 border-r z-40 transition-transform duration-200 ease-in-out',
+          'fixed left-0 w-64 border-r border-white/10 z-40 transition-transform duration-200 ease-in-out',
           // On mobile: start below the header (which includes safe area)
           'top-[calc(3.5rem+env(safe-area-inset-top,0px))] h-[calc(100%-3.5rem-env(safe-area-inset-top,0px))]',
           // On desktop: full height from top
@@ -194,10 +194,7 @@ export function AppLayout({ children }: AppLayoutProps) {
       {/* Mobile overlay */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 backdrop-blur-sm z-30 lg:hidden"
-          style={{
-            background: 'rgba(2, 6, 23, 0.80)',
-          }}
+          className="fixed inset-0 bg-black/20 backdrop-blur-sm z-30 lg:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}

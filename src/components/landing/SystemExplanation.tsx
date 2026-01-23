@@ -40,7 +40,7 @@ const ExplanationBlock = ({ title, description, metrics, align = 'left' }: Expla
 
 export const SystemExplanation = () => {
   return (
-    <section className="relative py-24 bg-slate-950">
+    <section className="relative py-24">
       <div className="container mx-auto px-6">
         {/* System Logic explanation block */}
         <div className="py-16">

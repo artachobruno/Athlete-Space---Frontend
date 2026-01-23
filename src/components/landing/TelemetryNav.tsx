@@ -53,7 +53,13 @@ export const TelemetryNav = () => {
       animate={{ opacity: 1 }}
       transition={{ duration: 0.8, delay: 0.1 }}
     >
-      <div className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm border-b border-slate-800/30" />
+      <div
+        className="absolute inset-0 border-b border-white/10"
+        style={{
+          background: 'rgba(2, 6, 23, 0.85)',
+          backdropFilter: 'blur(12px)',
+        }}
+      />
       
       <div className="relative container mx-auto px-6">
         <div className="flex items-center justify-between h-16">
@@ -103,8 +109,12 @@ export const TelemetryNav = () => {
       {/* Mobile menu - position below nav accounting for safe area */}
       {isMenuOpen && (
         <motion.div
-          className="md:hidden absolute left-0 right-0 bg-slate-950/95 backdrop-blur-sm border-b border-slate-800/30"
-          style={{ top: 'calc(4rem + env(safe-area-inset-top, 0px))' }}
+          className="md:hidden absolute left-0 right-0 border-b border-white/10"
+          style={{
+            top: 'calc(4rem + env(safe-area-inset-top, 0px))',
+            background: 'rgba(2, 6, 23, 0.85)',
+            backdropFilter: 'blur(12px)',
+          }}
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.2 }}

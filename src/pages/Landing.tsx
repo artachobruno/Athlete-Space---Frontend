@@ -1,4 +1,3 @@
-import { useEffect } from 'react';
 import { TelemetryNav } from '@/components/landing/TelemetryNav';
 import { TelemetryHero } from '@/components/landing/TelemetryHero';
 import { TelemetryStrip } from '@/components/landing/TelemetryStatusBand';
@@ -10,17 +9,8 @@ import { BrandSignatureSection } from '@/components/landing/BrandSignatureSectio
 import { TelemetryFooter } from '@/components/landing/TelemetryFooter';
 
 const Landing = () => {
-  useEffect(() => {
-    // Force dark mode for landing page
-    document.documentElement.classList.add('dark');
-    
-    return () => {
-      // Optionally restore previous theme state on unmount
-    };
-  }, []);
-
   return (
-    <div className="min-h-[100svh] bg-slate-950 text-slate-200 overflow-x-hidden">
+    <div className="min-h-[100svh] text-foreground overflow-x-hidden">
       <TelemetryNav />
       <TelemetryHero />
       

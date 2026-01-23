@@ -5,6 +5,7 @@ import {
   CARD_INNER_HIGHLIGHT,
   CARD_INNER_SHADOW,
   CARD_NEBULA,
+  CARD_GLOW,
   STELLAR_DENSITY,
   NOISE_OPACITY,
   NOISE_BLEND_MODE,
@@ -12,60 +13,131 @@ import {
   scheduleThemeVars,
 } from '@/styles/scheduleTheme';
 
+/**
+ * Surface role - determines visual intensity and effects
+ */
+export type SurfaceRole = 'ambient' | 'focus' | 'modal' | 'summary';
+
+/**
+ * Workout intent - used for star density variation
+ */
+export type WorkoutIntent = 'easy' | 'steady' | 'tempo' | 'intervals' | 'long' | 'rest';
+
+/**
+ * Surface configuration - centralizes all visual decisions
+ */
+const surfaceConfig = {
+  ambient: {
+    stars: 0.15,
+    nebula: 0.10,
+    blur: 14,
+    glow: false,
+  },
+  focus: {
+    stars: 0.35,
+    nebula: 0.25,
+    blur: 16,
+    glow: true,
+  },
+  modal: {
+    stars: 0.45,
+    nebula: 0.35,
+    blur: 18,
+    glow: false,
+  },
+  summary: {
+    stars: 0.25,
+    nebula: 0.20,
+    blur: 14,
+    glow: false,
+  },
+} as const;
+
 interface WorkoutCardShellProps {
   children: React.ReactNode;
-  highlighted?: boolean;
-  intent?: 'easy' | 'steady' | 'tempo' | 'intervals' | 'long' | 'rest';
+  /** Surface role - determines visual intensity */
+  role?: SurfaceRole;
+  /** Workout intent - used for star density variation */
+  intent?: WorkoutIntent;
+  /** Additional CSS classes */
+  className?: string;
+  /** Padding override */
+  padding?: string;
 }
 
 export function WorkoutCardShell({
   children,
-  highlighted = false,
+  role = 'ambient',
   intent = 'easy',
+  className,
+  padding = 'p-3',
 }: WorkoutCardShellProps) {
+  const config = surfaceConfig[role];
   const stellarSize = STELLAR_DENSITY[intent] || STELLAR_DENSITY.easy;
+  const hasStars = config.stars > 0;
+  const hasNebula = config.nebula > 0;
+
   return (
-    <div className="relative">
+    <div className={cn('relative', className)}>
       {/* Actual card */}
       <div
         className={cn(
           // Base glass card
-          'relative rounded-xl backdrop-blur-[14px]',
+          'relative rounded-xl',
           'shadow-sm transition-all motion-safe:duration-200',
-          
-          // Border only for non-highlighted cards (highlighted = pure light)
-          !highlighted && 'border border-white/5',
-
-          // Hover
-          'hover:shadow-lg'
+          'border border-white/5',
+          // Hover - subtle star animation
+          'hover:shadow-lg group',
         )}
         style={{
           ...scheduleThemeVars,
           background: CARD_BG,
           borderColor: CARD_BORDER,
           boxShadow: CARD_INNER_SHADOW,
+          backdropFilter: `blur(${config.blur}px)`,
         }}
       >
-        {/* Stellar field - actual stars (SVG) + nebula mist - behind highlight */}
-        {highlighted && (
+        {/* Stellar field - actual stars (SVG) + nebula mist */}
+        {hasStars && (
           <div
-            className="absolute inset-0 rounded-xl pointer-events-none"
+            className="stars absolute inset-0 rounded-xl pointer-events-none"
             style={{
-              backgroundImage: `url('/stars.svg'), ${CARD_NEBULA}`,
+              backgroundImage: `url('/stars.svg'), ${hasNebula ? CARD_NEBULA : 'none'}`,
               backgroundSize: `${stellarSize}, cover`,
               backgroundRepeat: 'repeat, no-repeat',
               backgroundPosition: '0% 0%, 70% 50%',
-              opacity: 0.85,
+              opacity: config.stars,
             }}
           />
         )}
 
-        {/* Inner highlight (top-left sheen) - on top of stellar field, subtle */}
+        {/* Nebula only (if no stars but nebula enabled) */}
+        {!hasStars && hasNebula && (
+          <div
+            className="absolute inset-0 rounded-xl pointer-events-none"
+            style={{
+              background: CARD_NEBULA,
+              opacity: config.nebula,
+            }}
+          />
+        )}
+
+        {/* Glow effect for focus role */}
+        {config.glow && (
+          <div
+            className="absolute inset-0 rounded-xl pointer-events-none"
+            style={{
+              boxShadow: CARD_GLOW,
+            }}
+          />
+        )}
+
+        {/* Inner highlight (top-left sheen) */}
         <div
           className="absolute inset-0 rounded-xl pointer-events-none"
           style={{
             background: CARD_INNER_HIGHLIGHT,
-            opacity: highlighted ? 0.5 : 1.0,
+            opacity: role === 'modal' ? 0.3 : role === 'focus' ? 0.4 : 1.0,
           }}
         />
 
@@ -80,7 +152,7 @@ export function WorkoutCardShell({
           }}
         />
 
-        <div className="relative p-3">
+        <div className={cn('relative', padding)}>
           {children}
         </div>
       </div>

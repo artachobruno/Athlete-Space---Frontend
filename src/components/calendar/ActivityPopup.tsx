@@ -2,6 +2,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { WorkoutCardShell } from '@/components/sessions/WorkoutCardShell';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Footprints, Bike, Waves, Clock, Route, Mountain, Heart, Zap, MessageCircle, CheckCircle2, ExternalLink, X, SkipForward, TrendingUp, Info, Download, Loader2, ArrowRight, Link2, Bot, Trash2 } from 'lucide-react';
@@ -591,17 +592,18 @@ export function ActivityPopup({
   return (
     <>
       <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="p-0 sm:max-w-[600px] max-h-[85vh] overflow-y-auto">
-        <Card className="border-0 shadow-none">
-          <CardHeader className="pb-3">
-            <div className="flex items-center gap-3">
-              <div className="p-2.5 rounded-lg bg-muted">
-                <SportIcon className="h-5 w-5 text-foreground" />
-              </div>
-              <div className="flex-1">
-                <DialogTitle className="text-lg font-semibold text-foreground">
-                  {workout?.title || activity?.title}
-                </DialogTitle>
+      <DialogContent className="p-0 sm:max-w-[600px] max-h-[85vh] overflow-y-auto bg-transparent border-0">
+        <WorkoutCardShell role="modal" padding="p-0">
+          <Card className="border-0 shadow-none bg-transparent">
+            <CardHeader className="pb-3">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 rounded-lg bg-muted">
+                  <SportIcon className="h-5 w-5 text-foreground" />
+                </div>
+                <div className="flex-1">
+                  <DialogTitle className="text-lg font-semibold text-white">
+                    {workout?.title || activity?.title}
+                  </DialogTitle>
                 <div className="flex items-center gap-2 mt-1.5">
                   {workout && (
                     <Badge 
@@ -638,7 +640,7 @@ export function ActivityPopup({
           )}
 
           {/* Metrics row */}
-          <div className="flex items-center gap-4 text-sm text-muted-foreground">
+          <div className="flex items-center gap-4 text-sm text-white/70">
             <span className="flex items-center gap-1.5">
               <Clock className="h-4 w-4" />
               {workout?.duration || activity?.duration}m
@@ -1001,7 +1003,7 @@ export function ActivityPopup({
             <div className="flex gap-2 mt-4">
               <Button
                 variant="outline"
-                className="flex-1"
+                className="flex-1 bg-white/10 hover:bg-white/15 border-white/15 text-white"
                 onClick={() => {
                   if (isPlannedSession && session?.id) {
                     // Navigate to coach with pre-filled draft message for modification
@@ -1062,6 +1064,7 @@ export function ActivityPopup({
             </div>
           </CardContent>
         </Card>
+        </WorkoutCardShell>
       </DialogContent>
     </Dialog>
 

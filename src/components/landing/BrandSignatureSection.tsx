@@ -43,7 +43,7 @@ const SignatureLogo = () => {
 
 export const BrandSignatureSection = () => {
   return (
-    <section className="relative py-20 md:py-28 bg-slate-950 overflow-hidden">
+    <section className="relative py-20 md:py-28 overflow-hidden">
       {/* Subtle top border */}
       <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-slate-800/30 to-transparent" />
 
