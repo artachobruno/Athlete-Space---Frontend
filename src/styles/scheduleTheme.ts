@@ -103,27 +103,29 @@ export const CARD_INNER_SHADOW = `
 /**
  * Nebula mist – atmospheric layer (not stars)
  * Soft radial gradient for depth and atmosphere
+ * Desaturated blue, emanating from center-right, very subtle
  */
 export const CARD_NEBULA = `
   radial-gradient(
-    280px 220px at 65% 45%,
-    rgba(120, 180, 255, 0.12) 0%,
-    rgba(120, 180, 255, 0.06) 35%,
-    rgba(2, 6, 23, 0.0) 65%
+    320px 240px at 70% 50%,
+    rgba(140, 180, 240, 0.08) 0%,
+    rgba(140, 180, 240, 0.04) 30%,
+    rgba(2, 6, 23, 0.0) 60%
   )
 `;
 
 /**
  * Stellar density control (background-size variation)
  * Smaller size = more stars per area
+ * Adjusted for Milky Way density - sparse but visible
  */
 export const STELLAR_DENSITY = {
-  easy: '300px 300px',
-  steady: '280px 280px',
-  tempo: '250px 250px',
-  intervals: '220px 220px',
-  long: '200px 200px',
-  rest: '300px 300px',
+  easy: '250px 250px',
+  steady: '230px 230px',
+  tempo: '210px 210px',
+  intervals: '190px 190px',
+  long: '180px 180px',
+  rest: '250px 250px',
 } as const;
 
 /**

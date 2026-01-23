@@ -54,17 +54,18 @@ export function WorkoutCardShell({
               backgroundImage: `url('/stars.svg'), ${CARD_NEBULA}`,
               backgroundSize: `${stellarSize}, cover`,
               backgroundRepeat: 'repeat, no-repeat',
-              backgroundPosition: '0% 0%, center',
-              opacity: 1.0,
+              backgroundPosition: '0% 0%, 70% 50%',
+              opacity: 0.7,
             }}
           />
         )}
 
-        {/* Inner highlight (top-left sheen) - on top of stellar field */}
+        {/* Inner highlight (top-left sheen) - on top of stellar field, subtle */}
         <div
           className="absolute inset-0 rounded-xl pointer-events-none"
           style={{
             background: CARD_INNER_HIGHLIGHT,
+            opacity: highlighted ? 0.5 : 1.0,
           }}
         />
 

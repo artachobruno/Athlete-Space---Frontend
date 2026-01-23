@@ -1,28 +1,83 @@
 <svg width="400" height="400" viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
-  <!-- Sparse, uneven star field - Milky Way style (larger, more visible) -->
-  <circle cx="40" cy="60" r="1.2" fill="white" opacity="0.9"/>
-  <circle cx="120" cy="90" r="0.8" fill="white" opacity="0.7"/>
-  <circle cx="200" cy="50" r="1.5" fill="white" opacity="0.95"/>
-  <circle cx="300" cy="140" r="0.6" fill="white" opacity="0.6"/>
-  <circle cx="260" cy="260" r="1.0" fill="white" opacity="0.8"/>
-  <circle cx="90" cy="300" r="0.8" fill="white" opacity="0.7"/>
-  <circle cx="340" cy="320" r="1.3" fill="white" opacity="0.9"/>
-  <circle cx="150" cy="180" r="1.0" fill="white" opacity="0.75"/>
-  <circle cx="280" cy="80" r="0.8" fill="white" opacity="0.65"/>
-  <circle cx="50" cy="250" r="1.2" fill="white" opacity="0.85"/>
-  <circle cx="220" cy="310" r="0.6" fill="white" opacity="0.6"/>
-  <circle cx="360" cy="200" r="1.0" fill="white" opacity="0.8"/>
-  <circle cx="110" cy="140" r="0.8" fill="white" opacity="0.7"/>
-  <circle cx="320" cy="280" r="1.2" fill="white" opacity="0.9"/>
-  <circle cx="70" cy="220" r="0.8" fill="white" opacity="0.65"/>
-  <circle cx="240" cy="120" r="1.0" fill="white" opacity="0.75"/>
-  <circle cx="180" cy="350" r="0.6" fill="white" opacity="0.6"/>
-  <circle cx="380" cy="100" r="0.8" fill="white" opacity="0.7"/>
-  <circle cx="30" cy="150" r="1.0" fill="white" opacity="0.8"/>
-  <circle cx="290" cy="240" r="0.8" fill="white" opacity="0.7"/>
-  <circle cx="160" cy="40" r="0.7" fill="white" opacity="0.65"/>
-  <circle cx="370" cy="180" r="0.9" fill="white" opacity="0.75"/>
-  <circle cx="20" cy="280" r="0.8" fill="white" opacity="0.7"/>
-  <circle cx="330" cy="60" r="1.1" fill="white" opacity="0.85"/>
-  <circle cx="100" cy="200" r="0.7" fill="white" opacity="0.65"/>
+  <!-- Dense, irregular star field - Milky Way style with varying sizes and brightness -->
+  <!-- Cluster 1: Top-left area -->
+  <circle cx="30" cy="25" r="0.4" fill="white" opacity="0.5"/>
+  <circle cx="45" cy="40" r="0.6" fill="white" opacity="0.7"/>
+  <circle cx="20" cy="55" r="0.3" fill="white" opacity="0.4"/>
+  <circle cx="60" cy="30" r="0.5" fill="white" opacity="0.6"/>
+  <circle cx="35" cy="70" r="0.4" fill="white" opacity="0.5"/>
+  
+  <!-- Cluster 2: Center-left -->
+  <circle cx="50" cy="120" r="0.5" fill="white" opacity="0.6"/>
+  <circle cx="75" cy="140" r="0.7" fill="white" opacity="0.8"/>
+  <circle cx="40" cy="160" r="0.4" fill="white" opacity="0.5"/>
+  <circle cx="90" cy="110" r="0.3" fill="white" opacity="0.4"/>
+  <circle cx="65" cy="180" r="0.6" fill="white" opacity="0.7"/>
+  
+  <!-- Cluster 3: Center -->
+  <circle cx="150" cy="100" r="0.8" fill="white" opacity="0.9"/>
+  <circle cx="180" cy="120" r="0.5" fill="white" opacity="0.6"/>
+  <circle cx="160" cy="140" r="0.4" fill="white" opacity="0.5"/>
+  <circle cx="200" cy="90" r="0.6" fill="white" opacity="0.7"/>
+  <circle cx="170" cy="160" r="0.3" fill="white" opacity="0.4"/>
+  <circle cx="190" cy="150" r="0.5" fill="white" opacity="0.6"/>
+  
+  <!-- Cluster 4: Center-right (nebula area) -->
+  <circle cx="250" cy="80" r="0.9" fill="white" opacity="0.95"/>
+  <circle cx="280" cy="100" r="0.6" fill="white" opacity="0.7"/>
+  <circle cx="260" cy="120" r="0.4" fill="white" opacity="0.5"/>
+  <circle cx="300" cy="70" r="0.7" fill="white" opacity="0.8"/>
+  <circle cx="270" cy="140" r="0.5" fill="white" opacity="0.6"/>
+  <circle cx="290" cy="110" r="0.3" fill="white" opacity="0.4"/>
+  <circle cx="240" cy="130" r="0.6" fill="white" opacity="0.7"/>
+  
+  <!-- Cluster 5: Right side -->
+  <circle cx="320" cy="50" r="0.5" fill="white" opacity="0.6"/>
+  <circle cx="350" cy="80" r="0.4" fill="white" opacity="0.5"/>
+  <circle cx="340" cy="120" r="0.7" fill="white" opacity="0.8"/>
+  <circle cx="360" cy="100" r="0.3" fill="white" opacity="0.4"/>
+  <circle cx="330" cy="150" r="0.5" fill="white" opacity="0.6"/>
+  
+  <!-- Cluster 6: Bottom-left -->
+  <circle cx="80" cy="220" r="0.6" fill="white" opacity="0.7"/>
+  <circle cx="100" cy="240" r="0.4" fill="white" opacity="0.5"/>
+  <circle cx="60" cy="260" r="0.5" fill="white" opacity="0.6"/>
+  <circle cx="120" cy="200" r="0.3" fill="white" opacity="0.4"/>
+  <circle cx="70" cy="280" r="0.4" fill="white" opacity="0.5"/>
+  
+  <!-- Cluster 7: Bottom-center -->
+  <circle cx="180" cy="220" r="0.5" fill="white" opacity="0.6"/>
+  <circle cx="200" cy="240" r="0.7" fill="white" opacity="0.8"/>
+  <circle cx="160" cy="260" r="0.4" fill="white" opacity="0.5"/>
+  <circle cx="220" cy="200" r="0.3" fill="white" opacity="0.4"/>
+  <circle cx="190" cy="280" r="0.6" fill="white" opacity="0.7"/>
+  
+  <!-- Cluster 8: Bottom-right -->
+  <circle cx="280" cy="220" r="0.5" fill="white" opacity="0.6"/>
+  <circle cx="300" cy="240" r="0.4" fill="white" opacity="0.5"/>
+  <circle cx="260" cy="260" r="0.6" fill="white" opacity="0.7"/>
+  <circle cx="320" cy="200" r="0.3" fill="white" opacity="0.4"/>
+  <circle cx="290" cy="280" r="0.5" fill="white" opacity="0.6"/>
+  
+  <!-- Sparse stars: scattered throughout -->
+  <circle cx="110" cy="60" r="0.3" fill="white" opacity="0.4"/>
+  <circle cx="140" cy="50" r="0.4" fill="white" opacity="0.5"/>
+  <circle cx="130" cy="180" r="0.3" fill="white" opacity="0.4"/>
+  <circle cx="230" cy="40" r="0.4" fill="white" opacity="0.5"/>
+  <circle cx="210" cy="180" r="0.3" fill="white" opacity="0.4"/>
+  <circle cx="310" cy="180" r="0.4" fill="white" opacity="0.5"/>
+  <circle cx="140" cy="300" r="0.3" fill="white" opacity="0.4"/>
+  <circle cx="250" cy="300" r="0.4" fill="white" opacity="0.5"/>
+  <circle cx="370" cy="200" r="0.3" fill="white" opacity="0.4"/>
+  <circle cx="380" cy="250" r="0.4" fill="white" opacity="0.5"/>
+  <circle cx="15" cy="200" r="0.3" fill="white" opacity="0.4"/>
+  <circle cx="25" cy="300" r="0.4" fill="white" opacity="0.5"/>
+  <circle cx="150" cy="320" r="0.3" fill="white" opacity="0.4"/>
+  <circle cx="270" cy="320" r="0.4" fill="white" opacity="0.5"/>
+  <circle cx="360" cy="280" r="0.3" fill="white" opacity="0.4"/>
+  <circle cx="50" cy="320" r="0.4" fill="white" opacity="0.5"/>
+  <circle cx="330" cy="320" r="0.3" fill="white" opacity="0.4"/>
+  <circle cx="120" cy="350" r="0.4" fill="white" opacity="0.5"/>
+  <circle cx="240" cy="350" r="0.3" fill="white" opacity="0.4"/>
+  <circle cx="350" cy="350" r="0.4" fill="white" opacity="0.5"/>
 </svg>
