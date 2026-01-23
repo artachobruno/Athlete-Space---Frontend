@@ -17,6 +17,7 @@ import { Clock, Route, CheckCircle2, XCircle, Trash2 } from 'lucide-react';
 import { useUnitSystem } from '@/hooks/useUnitSystem';
 import { cn } from '@/lib/utils';
 import { WorkoutCardShell } from './WorkoutCardShell';
+import { normalizeCalendarIntent, type CalendarIntent } from '@/types/calendar';
 import {
   sessionSpacing,
   sessionRadius,
@@ -214,6 +215,9 @@ export function SessionCard({
     ? sessionIntentColors[intent as keyof typeof sessionIntentColors]
     : 'bg-muted text-muted-foreground border-border';
   
+  // Normalize intent for stellar density (CalendarIntent type)
+  const calendarIntent: CalendarIntent = normalizeCalendarIntent(intensity || session.type);
+  
   // Determine if this should be highlighted (intent-based, prop overrides)
   const isHighlighted =
     highlighted ??
@@ -252,7 +256,7 @@ export function SessionCard({
   const showBothDurationAndDistance = density !== 'compact';
 
   return (
-    <WorkoutCardShell highlighted={isHighlighted}>
+    <WorkoutCardShell highlighted={isHighlighted} intent={calendarIntent}>
       <div
         className={cn(
           'w-full',

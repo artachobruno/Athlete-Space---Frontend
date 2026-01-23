@@ -4,7 +4,8 @@ import {
   CARD_BORDER,
   CARD_INNER_HIGHLIGHT,
   CARD_INNER_SHADOW,
-  CARD_STELLAR_FIELD,
+  CARD_NEBULA,
+  STELLAR_DENSITY,
   NOISE_OPACITY,
   NOISE_BLEND_MODE,
   NOISE_FALLBACK,
@@ -14,12 +15,15 @@ import {
 interface WorkoutCardShellProps {
   children: React.ReactNode;
   highlighted?: boolean;
+  intent?: 'easy' | 'steady' | 'tempo' | 'intervals' | 'long' | 'rest';
 }
 
 export function WorkoutCardShell({
   children,
   highlighted = false,
+  intent = 'easy',
 }: WorkoutCardShellProps) {
+  const stellarSize = STELLAR_DENSITY[intent] || STELLAR_DENSITY.easy;
   return (
     <div className="relative">
       {/* Actual card */}
@@ -42,13 +46,15 @@ export function WorkoutCardShell({
           boxShadow: CARD_INNER_SHADOW,
         }}
       >
-        {/* Stellar field - milky way style texture (sparse stars, not glow) - behind highlight */}
+        {/* Stellar field - actual stars (SVG) + nebula mist */}
         {highlighted && (
           <div
             className="absolute inset-0 rounded-xl pointer-events-none"
             style={{
-              background: CARD_STELLAR_FIELD,
-              opacity: 0.8,
+              backgroundImage: `url('/stars.svg'), ${CARD_NEBULA}`,
+              backgroundSize: `${stellarSize}, cover`,
+              backgroundRepeat: 'repeat, no-repeat',
+              opacity: 0.6,
             }}
           />
         )}

@@ -101,32 +101,30 @@ export const CARD_INNER_SHADOW = `
 `;
 
 /**
- * Stellar field – milky way style
- * Uses layered noise + faint radial energy
- * Creates sparse "stars" and depth without glow
+ * Nebula mist – atmospheric layer (not stars)
+ * Soft radial gradient for depth and atmosphere
  */
-export const CARD_STELLAR_FIELD = `
+export const CARD_NEBULA = `
   radial-gradient(
-    600px 400px at 70% 50%,
-    rgba(96, 165, 250, 0.12) 0%,
-    rgba(96, 165, 250, 0.06) 35%,
+    280px 220px at 65% 45%,
+    rgba(120, 180, 255, 0.12) 0%,
+    rgba(120, 180, 255, 0.06) 35%,
     rgba(2, 6, 23, 0.0) 65%
-  ),
-  repeating-radial-gradient(
-    circle at 20% 30%,
-    rgba(255,255,255,0.12),
-    rgba(255,255,255,0.12) 0.5px,
-    transparent 0.5px,
-    transparent 2.5px
-  ),
-  repeating-radial-gradient(
-    circle at 80% 70%,
-    rgba(255,255,255,0.10),
-    rgba(255,255,255,0.10) 0.5px,
-    transparent 0.5px,
-    transparent 3px
   )
 `;
+
+/**
+ * Stellar density control (background-size variation)
+ * Smaller size = more stars per area
+ */
+export const STELLAR_DENSITY = {
+  easy: '600px 600px',
+  steady: '550px 550px',
+  tempo: '480px 480px',
+  intervals: '420px 420px',
+  long: '360px 360px',
+  rest: '600px 600px',
+} as const;
 
 /**
  * Tailwind-ready card background class
@@ -212,7 +210,7 @@ export const scheduleThemeVars = {
   '--card-blur': CARD_BLUR,
   '--card-inner-highlight': CARD_INNER_HIGHLIGHT,
   '--card-inner-shadow': CARD_INNER_SHADOW,
-  '--card-stellar-field': CARD_STELLAR_FIELD,
+  '--card-nebula': CARD_NEBULA,
   '--card-glow': CARD_GLOW,
   '--noise-opacity': NOISE_OPACITY.toString(),
 } as const;
