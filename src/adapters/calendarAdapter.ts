@@ -111,7 +111,16 @@ export function toCalendarItem(
   
   if (isCompleted) {
     // Completed activity: prefer coachFeedback from matched activity, fallback to session coach_insight
-    const feedbackText = matchedActivity?.coachFeedback || session.coach_insight;
+    // Also check all activities for this session ID in case matching failed
+    const feedbackFromMatched = matchedActivity?.coachFeedback;
+    const feedbackFromSession = session.coach_insight;
+    // Fallback: search all activities for this session ID if matching failed
+    const feedbackFromAnyActivity = !feedbackFromMatched && !feedbackFromSession
+      ? activities.find(a => a.planned_session_id === session.id)?.coachFeedback
+      : undefined;
+    
+    const feedbackText = feedbackFromMatched || feedbackFromSession || feedbackFromAnyActivity;
+    
     if (feedbackText) {
       coachNote = {
         text: feedbackText,
