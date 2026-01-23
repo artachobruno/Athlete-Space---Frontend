@@ -296,7 +296,8 @@ export function SessionCard({
   // Compact shows 1-line truncated text; standard/rich shows full text
   const showIntentText = isPlanned && session.intent_text;
   const showExecutionSummary = isCompleted && session.execution_notes && (density === 'standard' || density === 'rich');
-  const showCoachInsight = isCompleted && session.coach_insight;
+  // Show coach insight for both planned (pre-workout guidance) and completed (post-workout analysis)
+  const showCoachInsight = session.coach_insight;  // Show for all sessions with coach feedback
   const showSteps = density === 'rich' && isPlanned;
 
   // Determine role based on highlighted state and intent
@@ -473,7 +474,7 @@ export function SessionCard({
               </p>
             )}
 
-            {/* COMPLETED: Coach insight */}
+            {/* Coach insight (for both planned and completed sessions) */}
             {showCoachInsight && (
               <p 
                 className={cn(
