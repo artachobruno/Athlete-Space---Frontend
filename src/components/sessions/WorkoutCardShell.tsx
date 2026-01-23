@@ -55,7 +55,7 @@ export function WorkoutCardShell({
               backgroundSize: `${stellarSize}, cover`,
               backgroundRepeat: 'repeat, no-repeat',
               backgroundPosition: '0% 0%, 70% 50%',
-              opacity: 0.7,
+              opacity: 0.85,
             }}
           />
         )}
