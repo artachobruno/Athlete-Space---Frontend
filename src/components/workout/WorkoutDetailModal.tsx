@@ -2,7 +2,7 @@ import { Dialog, DialogContent } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Clock, Route, Mountain, MessageCircle, ExternalLink, CheckCircle2, Loader2, TrendingUp, Zap, Heart } from 'lucide-react';
+import { Clock, Route, Mountain, MessageCircle, ExternalLink, CheckCircle2 } from 'lucide-react';
 import { useUnitSystem } from '@/hooks/useUnitSystem';
 import { cn } from '@/lib/utils';
 import { NarrativeBlock } from './NarrativeBlock';
@@ -15,16 +15,15 @@ import { sessionStatusColors } from '@/styles/sessionTokens';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { fetchActivityStreams, fetchTrainingLoad } from '@/lib/api';
-import { fetchStructuredWorkout } from '@/api/workouts';
-import { useAuthenticatedQuery } from '@/hooks/useAuthenticatedQuery';
 import { useStructuredWorkout } from '@/hooks/useStructuredWorkout';
-import { ActivityMap } from '@/components/activities/ActivityMap';
-import { ActivityCharts } from '@/components/activities/ActivityCharts';
-import { WorkoutComparison } from './WorkoutComparison';
-import { WorkoutStepsTable } from './WorkoutStepsTable';
 import { normalizeRoutePointsFromStreams } from '@/lib/route-utils';
-import { getTssForDate, enrichActivitiesWithTss } from '@/lib/tss-utils';
-import { useMemo, useState } from 'react';
+import { getTssForDate } from '@/lib/tss-utils';
+import { useMemo } from 'react';
+import { OverviewTab } from './tabs/OverviewTab';
+import { MapTab } from './tabs/MapTab';
+import { ChartsTab } from './tabs/ChartsTab';
+import { StructureTab } from './tabs/StructureTab';
+import { NotesTab } from './tabs/NotesTab';
 
 interface WorkoutDetailModalProps {
   open: boolean;
@@ -180,12 +179,6 @@ export function WorkoutDetailModal({
   const displayTss = activity?.trainingLoad || 
     (activity?.date ? getTssForDate(activity.date, trainingLoadData) : null);
 
-  // Get comparison data from structured workout (if available)
-  const comparison = structuredWorkout?.comparison;
-
-  // Chart type toggle state
-  const [chartType, setChartType] = useState<'pace' | 'hr' | 'elevation' | 'power'>('pace');
-
   const handleStartSession = () => {
     // TODO: Implement start session logic
     onOpenChange(false);
@@ -294,173 +287,46 @@ export function WorkoutDetailModal({
               </TabsList>
 
               <TabsContent value="overview" className="mt-4">
-                <div className="grid grid-cols-2 gap-3">
-                  {/* TSS / Load */}
-                  {displayTss !== null && displayTss > 0 && (
-                    <div className="p-3 rounded-lg bg-muted/50">
-                      <div className="text-xs text-muted-foreground mb-1">TSS</div>
-                      <div className="text-sm font-medium text-foreground">{Math.round(displayTss)}</div>
-                    </div>
-                  )}
-                  
-                  {/* Intensity Factor */}
-                  {activity?.intensityFactor !== undefined && activity.intensityFactor !== null && (
-                    <div className={cn(
-                      "p-3 rounded-lg bg-muted/50",
-                      activity.intensityFactor >= 1.0 && "ring-2 ring-load-overreaching/30"
-                    )}>
-                      <div className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
-                        <TrendingUp className="h-3 w-3" />
-                        Intensity Factor
-                      </div>
-                      <div className={cn(
-                        "text-sm font-medium",
-                        activity.intensityFactor >= 1.0 
-                          ? "text-load-overreaching" 
-                          : "text-foreground"
-                      )}>
-                        {activity.intensityFactor.toFixed(2)}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Elevation gain */}
-                  {elevation && (
-                    <div className="p-3 rounded-lg bg-muted/50">
-                      <div className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
-                        <Mountain className="h-3 w-3" />
-                        Elevation Gain
-                      </div>
-                      <div className="text-sm font-medium text-foreground">
-                        {(() => {
-                          const elev = convertElevation(elevation);
-                          return `${elev.value.toFixed(1)} ${elev.unit}`;
-                        })()}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Compliance indicator */}
-                  {item?.compliance && (
-                    <div className="p-3 rounded-lg bg-muted/50">
-                      <div className="text-xs text-muted-foreground mb-1">Compliance</div>
-                      <div className="text-sm font-medium text-foreground capitalize">
-                        {item.compliance}
-                      </div>
-                    </div>
-                  )}
-                </div>
+                <OverviewTab
+                  execution={{
+                    tss: displayTss,
+                    intensityFactor: activity?.intensityFactor ?? null,
+                    elevationGain: elevation ?? null,
+                  }}
+                  compliance={item?.compliance}
+                  activity={activity}
+                />
               </TabsContent>
 
               <TabsContent value="map" className="mt-4">
-                <div className="rounded-lg overflow-hidden border border-border">
-                  {streamsLoading ? (
-                    <div className="flex items-center justify-center h-64 text-muted-foreground">
-                      <Loader2 className="h-5 w-5 animate-spin" />
-                    </div>
-                  ) : streamsError ? (
-                    <div className="flex items-center justify-center h-64 text-muted-foreground">
-                      <span className="text-sm">Route unavailable</span>
-                    </div>
-                  ) : (
-                    <ActivityMap coordinates={routeCoordinates} />
-                  )}
-                </div>
+                <MapTab
+                  routeCoordinates={routeCoordinates}
+                  isLoading={streamsLoading}
+                  error={streamsError}
+                />
               </TabsContent>
 
               <TabsContent value="charts" className="mt-4">
-                {activity ? (
-                  <div className="space-y-4">
-                    {/* Chart type selector */}
-                    <div className="flex gap-2">
-                      {['pace', 'hr', 'elevation', 'power'].map((type) => (
-                        <Button
-                          key={type}
-                          variant={chartType === type ? 'default' : 'outline'}
-                          size="sm"
-                          onClick={() => setChartType(type as typeof chartType)}
-                          className="text-xs"
-                        >
-                          {type === 'pace' && 'Pace'}
-                          {type === 'hr' && 'Heart Rate'}
-                          {type === 'elevation' && 'Elevation'}
-                          {type === 'power' && 'Power'}
-                        </Button>
-                      ))}
-                    </div>
-                    {/* Chart display - ActivityCharts handles all chart types */}
-                    <ActivityCharts activity={activity} />
-                  </div>
-                ) : (
-                  <div className="text-sm text-muted-foreground text-center py-8">
-                    No activity data available
-                  </div>
-                )}
+                <ChartsTab activity={activity} />
               </TabsContent>
 
               <TabsContent value="structure" className="mt-4">
-                {isPlanned ? (
-                  // Planned: show step targets
-                  structuredWorkout?.steps ? (
-                    <WorkoutStepsTable steps={structuredWorkout.steps} />
-                  ) : (
-                    <div className="text-sm text-muted-foreground text-center py-8">
-                      No structured workout data available
-                    </div>
-                  )
-                ) : (
-                  // Completed: show planned vs actual comparison
-                  structuredWorkout?.steps && comparison && Array.isArray(comparison) && comparison.length > 0 ? (
-                    <WorkoutComparison
-                      steps={structuredWorkout.steps}
-                      comparison={comparison}
-                      totalDistanceMeters={structuredWorkout.workout.total_distance_meters}
-                      totalDurationSeconds={structuredWorkout.workout.total_duration_seconds}
-                    />
-                  ) : (
-                    <div className="text-sm text-muted-foreground text-center py-8">
-                      {structuredWorkoutState.status === 'loading' ? (
-                        <Loader2 className="h-5 w-5 animate-spin mx-auto" />
-                      ) : (
-                        'No execution data available'
-                      )}
-                    </div>
-                  )
-                )}
+                <StructureTab
+                  isPlanned={isPlanned}
+                  structuredWorkout={structuredWorkout ? {
+                    steps: structuredWorkout.steps,
+                    comparison: structuredWorkout.comparison,
+                    workout: {
+                      total_distance_meters: structuredWorkout.workout.total_distance_meters,
+                      total_duration_seconds: structuredWorkout.workout.total_duration_seconds,
+                    },
+                  } : null}
+                  isLoading={structuredWorkoutState.status === 'loading'}
+                />
               </TabsContent>
 
               <TabsContent value="notes" className="mt-4">
-                <div className="space-y-4">
-                  {/* Athlete notes */}
-                  {session?.notes && (
-                    <div>
-                      <div className="text-xs uppercase tracking-wider text-muted-foreground mb-2">
-                        Athlete Notes
-                      </div>
-                      <p className="text-sm text-foreground leading-relaxed">
-                        {session.notes}
-                      </p>
-                    </div>
-                  )}
-
-                  {/* Coach comments */}
-                  {session?.coach_insight && (
-                    <div>
-                      <div className="text-xs uppercase tracking-wider text-muted-foreground mb-2">
-                        Coach Comments
-                      </div>
-                      <p className="text-sm text-foreground leading-relaxed">
-                        {session.coach_insight}
-                      </p>
-                    </div>
-                  )}
-
-                  {!session?.notes && !session?.coach_insight && (
-                    <div className="text-sm text-muted-foreground text-center py-8">
-                      No notes available
-                    </div>
-                  )}
-                </div>
+                <NotesTab session={session} activity={activity} />
               </TabsContent>
             </Tabs>
 
