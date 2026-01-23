@@ -25,6 +25,7 @@ import {
   sessionIntentColors,
   sessionFontSizes,
 } from '@/styles/sessionTokens';
+import { CardTypography } from '@/styles/cardTypography';
 import { EffortGraph } from '@/components/workout/EffortGraph';
 import type { CalendarSession } from '@/lib/api';
 import type { CalendarItem } from '@/types/calendar';
@@ -271,97 +272,118 @@ export function SessionCard({
         onClick={onClick}
       >
       <div className={cn(
-        'flex items-center justify-between',
-        spacing.gap,
+        'flex items-start justify-between',
         // In compact mode, this is the top section above the graph
         density === 'compact' && 'flex-shrink-0'
       )}>
-        {/* Left: Main content */}
-        <div className={cn(
-          'flex-1 min-w-0 flex flex-col justify-center',
-          // Vertical spacing between title and metadata
-          density === 'compact' ? 'space-y-1' : density === 'standard' ? 'space-y-1.5' : 'space-y-2'
-        )}>
-          {/* Title row */}
-          <div className={cn('flex items-center flex-wrap', spacing.titleGap)}>
-            <h3 className="text-sm font-semibold tracking-tight truncate text-white">
+        {/* Main content */}
+        <div className="flex-1 min-w-0">
+          {/* Header: Title and Duration on same row (standard/rich) or Title only (compact) */}
+          {density === 'compact' ? (
+            <h3 
+              className="truncate mb-[6px]"
+              style={CardTypography.titleCompact}
+            >
               {session.title || session.type || 'Workout'}
             </h3>
-            {showIntensityBadge && intent && (
-              <Badge variant="outline" className={cn(fonts.badge, intentColorClass)}>
-                {getIntentLabel(intensity, session.type)}
-              </Badge>
-            )}
-          </div>
+          ) : (
+            <div className="flex justify-between items-start mb-[6px]">
+              <h3 
+                className="line-clamp-2 flex-1"
+                style={CardTypography.title}
+              >
+                {session.title || session.type || 'Workout'}
+              </h3>
+              {session.duration_minutes && (
+                <span 
+                  className="ml-2 flex-shrink-0 text-[13px] text-white/60 whitespace-nowrap"
+                >
+                  {formatDuration(session.duration_minutes)}
+                </span>
+              )}
+            </div>
+          )}
 
-          {/* Metadata row */}
-          <div className={cn(
-            'flex items-center flex-nowrap',
-            spacing.metadataGap,
-            fonts.metadata,
-            'text-muted-foreground',
-            // Fixed height for metadata row in compact mode
-            density === 'compact' && 'h-4'
-          )}>
-            {/* Compact: Show duration OR distance (prefer duration) */}
-            {density === 'compact' && (
-              <div className="mt-1 flex items-center gap-2 text-xs text-white/70">
-                {session.duration_minutes ? (
-                  <>
-                    <Clock className="h-3 w-3" />
-                    <span>{formatDuration(session.duration_minutes)}</span>
-                  </>
-                ) : session.distance_km ? (
-                  <>
-                    <Clock className="h-3 w-3" />
-                    <span>{formatDistance(convertDistance(session.distance_km))}</span>
-                  </>
-                ) : null}
-                {intent && (session.duration_minutes || session.distance_km) && (
-                  <>
-                    <span className="opacity-40">•</span>
-                    <span className="uppercase tracking-wider opacity-60">
-                      {getIntentLabel(intensity, session.type)}
-                    </span>
-                  </>
-                )}
+          {/* Meta chip row (EASY/MODERATE) - only for standard/rich */}
+          {showIntensityBadge && intent && (() => {
+            const intentLower = intent.toLowerCase();
+            const isEasy = intentLower === 'easy' || intentLower === 'recovery' || intentLower === 'aerobic';
+            const isModerate = intentLower === 'threshold' || intentLower === 'tempo' || intentLower === 'endurance';
+            const isHard = intentLower === 'vo2' || intentLower === 'intervals';
+            
+            return (
+              <div className="mb-[8px]">
+                <span
+                  className="px-2 py-0.5 rounded-full inline-block"
+                  style={{
+                    ...CardTypography.metaChip,
+                    backgroundColor: isEasy
+                      ? 'rgba(52,211,153,0.18)' 
+                      : isModerate
+                      ? 'rgba(251,191,36,0.18)'
+                      : isHard
+                      ? 'rgba(239,68,68,0.18)'
+                      : 'rgba(148,163,184,0.18)',
+                    color: isEasy
+                      ? '#6EE7B7'
+                      : isModerate
+                      ? '#FBBF24'
+                      : isHard
+                      ? '#FCA5A5'
+                      : '#94A3B8',
+                  }}
+                >
+                  {getIntentLabel(intensity, session.type).toUpperCase()}
+                </span>
               </div>
-            )}
-            {/* Standard/Rich: Show both duration and distance */}
-            {showBothDurationAndDistance && (
-              <div className="mt-1 flex items-center gap-2 text-xs text-white/70">
-                {session.duration_minutes && (
-                  <>
-                    <Clock className="h-3 w-3" />
-                    <span>{formatDuration(session.duration_minutes)}</span>
-                  </>
-                )}
-                {session.duration_minutes && session.distance_km && (
-                  <span className="opacity-40">•</span>
-                )}
-                {session.distance_km && (
+            );
+          })()}
+
+          {/* Stats row - duration/distance with icons */}
+          {density === 'compact' ? (
+            <div className="flex items-center gap-2" style={CardTypography.stat}>
+              {session.duration_minutes ? (
+                <>
+                  <Clock className="w-3 h-3 opacity-60" />
+                  <span>{formatDuration(session.duration_minutes)}</span>
+                </>
+              ) : session.distance_km ? (
+                <>
+                  <Route className="w-3 h-3 opacity-60" />
                   <span>{formatDistance(convertDistance(session.distance_km))}</span>
-                )}
-              </div>
-            )}
-          </div>
+                </>
+              ) : null}
+            </div>
+          ) : showBothDurationAndDistance && (
+            <div className="flex items-center gap-4 mb-[10px]" style={CardTypography.stat}>
+              {session.duration_minutes && (
+                <span className="flex items-center gap-1">
+                  <Clock className="w-3 h-3 opacity-60" />
+                  {formatDuration(session.duration_minutes)}
+                </span>
+              )}
+              {session.distance_km && (
+                <span className="flex items-center gap-1">
+                  <Route className="w-3 h-3 opacity-60" />
+                  {formatDistance(convertDistance(session.distance_km))}
+                </span>
+              )}
+            </div>
+          )}
 
           {/* Rich density: Step preview and coach insight */}
           {showSteps && (
-            <div className="space-y-2 pt-1">
+            <div className="mt-[12px]">
               {/* Step preview (1-2 lines max) */}
               {session.steps && session.steps.length > 0 && (
-                <div
-                  className={fonts.metadata}
-                  style={{ color: 'rgba(148, 163, 184, 0.75)' }}
-                >
+                <div style={CardTypography.description}>
                   {session.steps.slice(0, 2).map((step, idx) => (
                     <div key={idx} className="truncate">
                       {step.order || idx + 1}. {step.name || `Step ${idx + 1}`}
                     </div>
                   ))}
                   {session.steps.length > 2 && (
-                    <span className="text-muted-foreground/60">
+                    <span className="opacity-60">
                       +{session.steps.length - 2} more
                     </span>
                   )}
@@ -370,16 +392,16 @@ export function SessionCard({
 
               {/* Coach insight teaser */}
               {session.coach_insight && (
-                <p className="mt-2 text-xs line-clamp-2 text-white/60">
+                <p className="mt-[10px] max-w-[85%]" style={CardTypography.description}>
                   {session.coach_insight}
                 </p>
               )}
             </div>
           )}
 
-          {/* Standard density: Coach insight teaser (1 line max) */}
+          {/* Standard density: Coach insight teaser (optional) */}
           {density === 'standard' && showCoachInsight && session.coach_insight && (
-            <p className="mt-2 text-xs line-clamp-2 text-white/60">
+            <p className="mt-[10px] max-w-[85%]" style={CardTypography.description}>
               {session.coach_insight}
             </p>
           )}

@@ -2,6 +2,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { CardTypography } from '@/styles/cardTypography';
 import { WorkoutCardShell } from '@/components/sessions/WorkoutCardShell';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -601,22 +602,55 @@ export function ActivityPopup({
                   <SportIcon className="h-5 w-5 text-foreground" />
                 </div>
                 <div className="flex-1">
-                  <DialogTitle className="text-lg font-semibold text-white">
+                  <DialogTitle 
+                    className="mb-[6px] line-clamp-2"
+                    style={CardTypography.title}
+                  >
                     {workout?.title || activity?.title}
                   </DialogTitle>
-                <div className="flex items-center gap-2 mt-1.5">
-                  {workout && (
-                    <Badge 
-                      variant="outline" 
-                      className={cn('text-xs', intentColors[workout.intent])}
-                    >
-                      {workout.intent}
-                    </Badge>
-                  )}
+                <div className="flex items-center gap-2 mb-[8px]">
+                  {workout && (() => {
+                    const intent = workout.intent?.toLowerCase() || '';
+                    const isEasy = intent === 'easy' || intent === 'recovery' || intent === 'aerobic';
+                    const isModerate = intent === 'threshold' || intent === 'tempo' || intent === 'endurance';
+                    const isHard = intent === 'vo2' || intent === 'intervals';
+                    
+                    return (
+                      <span
+                        className="px-2 py-0.5 rounded-full inline-block"
+                        style={{
+                          ...CardTypography.metaChip,
+                          backgroundColor: isEasy
+                            ? 'rgba(52,211,153,0.18)' 
+                            : isModerate
+                            ? 'rgba(251,191,36,0.18)'
+                            : isHard
+                            ? 'rgba(239,68,68,0.18)'
+                            : 'rgba(148,163,184,0.18)',
+                        color: isEasy
+                          ? '#6EE7B7'
+                          : isModerate
+                          ? '#FBBF24'
+                          : isHard
+                          ? '#FCA5A5'
+                          : '#94A3B8',
+                        }}
+                      >
+                        {workout.intent.toUpperCase()}
+                      </span>
+                    );
+                  })()}
                   {activity && (
-                    <Badge variant="outline" className="text-xs bg-green-500/10 text-green-600 dark:text-green-400 border-green-500/30">
-                      Completed
-                    </Badge>
+                    <span
+                      className="px-2 py-0.5 rounded-full inline-block"
+                      style={{
+                        ...CardTypography.metaChip,
+                        backgroundColor: 'rgba(52,211,153,0.18)',
+                        color: '#6EE7B7',
+                      }}
+                    >
+                      COMPLETED
+                    </span>
                   )}
                   {workout?.completed && (
                     <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />
@@ -626,10 +660,10 @@ export function ActivityPopup({
             </div>
           </CardHeader>
 
-          <CardContent className="space-y-4 pt-0">
+          <CardContent className="pt-0">
           {/* Recovery Context Banner */}
           {shouldShowRecoveryBanner && (
-            <Alert className="bg-amber-500/10 border-amber-500/30">
+            <Alert className="bg-amber-500/10 border-amber-500/30 mb-[10px]">
               <Info className="h-4 w-4 text-amber-600 dark:text-amber-400" />
               <AlertDescription className="text-sm text-foreground">
                 <span className="font-semibold">Recovery Suggestion</span>
@@ -640,14 +674,14 @@ export function ActivityPopup({
           )}
 
           {/* Metrics row */}
-          <div className="flex items-center gap-4 text-sm text-white/70">
-            <span className="flex items-center gap-1.5">
-              <Clock className="h-4 w-4" />
+          <div className="flex items-center gap-4 mb-[10px]" style={CardTypography.stat}>
+            <span className="flex items-center gap-1">
+              <Clock className="w-3 h-3 opacity-60" />
               {workout?.duration || activity?.duration}m
             </span>
             {(workout?.distance || activity?.distance) && (
-              <span className="flex items-center gap-1.5">
-                <Route className="h-4 w-4" />
+              <span className="flex items-center gap-1">
+                <Route className="w-3 h-3 opacity-60" />
                 {(() => {
                   const dist = convertDistance((workout?.distance || activity?.distance) || 0);
                   return `${dist.value.toFixed(1)} ${dist.unit}`;
@@ -655,8 +689,8 @@ export function ActivityPopup({
               </span>
             )}
             {activity?.elevation && (
-              <span className="flex items-center gap-1.5">
-                <Mountain className="h-4 w-4" />
+              <span className="flex items-center gap-1">
+                <Mountain className="w-3 h-3 opacity-60" />
                 {(() => {
                   const elev = convertElevation(activity.elevation);
                   return `${elev.value.toFixed(1)} ${elev.unit}`;
