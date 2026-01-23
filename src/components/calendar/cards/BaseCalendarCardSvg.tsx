@@ -43,6 +43,14 @@ const COLORS = {
   textMuted: 'hsl(220 10% 45%)',
 };
 
+/**
+ * Determines if coach insight should be shown (week view, completed only)
+ * Aggressively gated to prevent over-rendering
+ */
+function shouldShowCoachInsight(props: BaseCardProps): boolean {
+  return Boolean(props.isActivity && props.coachInsight?.text);
+}
+
 export function BaseCalendarCardSvg({
   variant,
   topLeft,
@@ -119,6 +127,17 @@ export function BaseCalendarCardSvg({
     const semanticSpacing = 7 * textScale;
     const semanticY = metaBottom + semanticSpacing;
     
+    // Coach Insight: only for completed activities, placed after execution
+    const showCoach = shouldShowCoachInsight({
+      isActivity,
+      coachInsight,
+    } as BaseCardProps);
+    // Execution foreignObject: y = semanticY - 12*textScale, height = 18*textScale
+    // Execution bottom = semanticY - 12*textScale + 18*textScale = semanticY + 6*textScale
+    const executionBottom = isActivity && executionSummary ? semanticY + 6 * textScale : semanticY;
+    const coachSpacing = 6 * textScale; // Spacing between execution and coach
+    const coachY = executionBottom + (showCoach ? coachSpacing : 0);
+    
     // Store for rendering
     const weekLayout = {
       planContextY,
@@ -126,6 +145,7 @@ export function BaseCalendarCardSvg({
       metaLabelY,
       metaValueY,
       semanticY,
+      coachY,
     };
     
     // Render week view with explicit slots
@@ -317,6 +337,31 @@ export function BaseCalendarCardSvg({
               }}
             >
               {executionSummary}
+            </div>
+          </foreignObject>
+        )}
+
+        {/* SLOT 4: Coach Insight (completed only, after execution) */}
+        {showCoach && coachInsight && (
+          <foreignObject
+            x={paddingX}
+            y={weekLayout.coachY - 12 * textScale}
+            width={width - paddingX * 2}
+            height={36 * textScale}
+          >
+            <div
+              style={{
+                color: COLORS.textSecondary,
+                fontSize: `${12 * textScale}px`,
+                lineHeight: 1.4,
+                opacity: coachInsight.tone === 'warning' ? 0.7 : coachInsight.tone === 'encouragement' ? 0.65 : 0.68,
+                overflow: 'hidden',
+                display: '-webkit-box',
+                WebkitLineClamp: 2,
+                WebkitBoxOrient: 'vertical',
+              }}
+            >
+              {coachInsight.text}
             </div>
           </foreignObject>
         )}
