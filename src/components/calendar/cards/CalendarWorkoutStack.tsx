@@ -57,7 +57,12 @@ export function CalendarWorkoutStack({
         onClick={() => onClick?.(item)}
         style={{ cursor: onClick ? 'pointer' : 'default' }}
       >
-        <SessionCard session={item} density={density} className="h-full" />
+        <SessionCard 
+          session={item} 
+          density={density} 
+          className="h-full"
+          highlighted={item.intent === 'long'}
+        />
       </div>
     );
   }
@@ -66,8 +71,8 @@ export function CalendarWorkoutStack({
   if (useNewCard && visible.length > 1) {
     const getScale = (index: number): number => {
       if (index === 0) return 1.0;
-      if (index === 1) return 0.96;
-      return 0.92;
+      if (index === 1) return 0.97;
+      return 0.94;
     };
 
     const getOffset = (index: number): { x: number; y: number } => ({
@@ -94,7 +99,12 @@ export function CalendarWorkoutStack({
               }}
               onClick={() => isTopCard && onClick?.(item)}
             >
-              <SessionCard session={item} density={density} className="h-full" />
+              <SessionCard 
+          session={item} 
+          density={density} 
+          className="h-full"
+          highlighted={item.intent === 'long'}
+        />
             </div>
           );
         })}

@@ -174,7 +174,6 @@ function WeekView({ currentDate, onActivityClick }: WeekViewProps) {
       {/* Week Grid */}
       <div className="grid grid-cols-7 gap-2">
         {days.map((day, idx) => {
-          const groupedItems = getGroupedItemsForDay(day);
           const isCurrentDay = isToday(day);
 
           return (

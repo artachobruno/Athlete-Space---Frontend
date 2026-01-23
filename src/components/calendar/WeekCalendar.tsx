@@ -484,6 +484,7 @@ export function WeekCalendar({ currentDate, onActivityClick }: WeekCalendarProps
                                 session={item}
                                 density="standard"
                                 className="h-full"
+                                highlighted={item.intent === 'long'}
                               />
                             </div>
                           </DraggableSessionWrapper>
@@ -504,8 +505,9 @@ export function WeekCalendar({ currentDate, onActivityClick }: WeekCalendarProps
           <div className="opacity-90 shadow-xl rounded-lg ring-2 ring-primary animate-scale-in">
             <SessionCard
               session={draggedItem}
-              density="standard"
+              density="compact"
               className="w-[200px]"
+              highlighted={draggedItem.intent === 'long'}
             />
           </div>
         )}

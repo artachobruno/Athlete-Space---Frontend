@@ -402,6 +402,7 @@ export function TodayWorkoutCard(props: TodayWorkoutCardProps = {}) {
               session={todayWorkout}
               density="standard"
               onClick={todayWorkout.workout_id ? () => setShowWorkoutDetails(!showWorkoutDetails) : undefined}
+              highlighted={todayWorkout.intensity?.toLowerCase().includes('long') || false}
             />
           )}
         </CardContent>

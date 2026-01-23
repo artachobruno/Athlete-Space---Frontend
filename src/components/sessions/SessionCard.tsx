@@ -12,11 +12,11 @@
  * - Density variants for different contexts
  */
 
-import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Clock, Route, CheckCircle2, XCircle, Trash2 } from 'lucide-react';
 import { useUnitSystem } from '@/hooks/useUnitSystem';
 import { cn } from '@/lib/utils';
+import { WorkoutCardShell } from './WorkoutCardShell';
 import {
   sessionSpacing,
   sessionRadius,
@@ -60,6 +60,8 @@ interface SessionCardProps {
   onClick?: () => void;
   /** Additional CSS classes */
   className?: string;
+  /** Highlight this workout with glow effect */
+  highlighted?: boolean;
 }
 
 /**
@@ -188,6 +190,7 @@ export function SessionCard({
   density = 'standard',
   onClick,
   className,
+  highlighted = false,
 }: SessionCardProps) {
   // Normalize input - handle both CalendarSession and CalendarItem
   // Check if it's a CalendarSession by looking for 'status' field with specific values
@@ -210,6 +213,13 @@ export function SessionCard({
   const intentColorClass = intent && intent in sessionIntentColors
     ? sessionIntentColors[intent as keyof typeof sessionIntentColors]
     : 'bg-muted text-muted-foreground border-border';
+  
+  // Determine if this should be highlighted (intent-based, prop overrides)
+  const isHighlighted =
+    highlighted ??
+    (intent === 'long' ||
+     intent === 'threshold' ||
+     intent === 'vo2');
 
   // Format duration
   const formatDuration = (minutes: number | null | undefined): string => {
@@ -242,19 +252,17 @@ export function SessionCard({
   const showBothDurationAndDistance = density !== 'compact';
 
   return (
-    <Card
-      className={cn(
-        radius,
-        spacing.padding,
-        statusColors.border,
-        statusColors.background,
-        onClick && 'cursor-pointer hover:shadow-md transition-shadow',
-        // Fixed height for compact density - adjusted to accommodate graph properly
-        density === 'compact' && 'h-[88px] flex flex-col overflow-hidden',
-        className
-      )}
-      onClick={onClick}
-    >
+    <WorkoutCardShell highlighted={isHighlighted}>
+      <div
+        className={cn(
+          'w-full',
+          onClick && 'cursor-pointer',
+          // Min height for compact density - prevents clipping while maintaining layout
+          density === 'compact' && 'min-h-[88px] flex flex-col overflow-hidden',
+          className
+        )}
+        onClick={onClick}
+      >
       <div className={cn(
         'flex items-center justify-between',
         spacing.gap,
@@ -269,7 +277,7 @@ export function SessionCard({
         )}>
           {/* Title row */}
           <div className={cn('flex items-center flex-wrap', spacing.titleGap)}>
-            <h3 className={cn('font-semibold truncate', fonts.title, statusColors.text)}>
+            <h3 className="text-sm font-semibold tracking-tight text-foreground truncate">
               {session.title || session.type || 'Workout'}
             </h3>
             {showIntensityBadge && intent && (
@@ -290,41 +298,44 @@ export function SessionCard({
           )}>
             {/* Compact: Show duration OR distance (prefer duration) */}
             {density === 'compact' && (
-              <>
+              <div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
                 {session.duration_minutes ? (
-                  <div className="flex items-center gap-1.5 whitespace-nowrap shrink-0">
-                    <Clock className="h-3.5 w-3.5 shrink-0" />
-                    <span className="whitespace-nowrap">{formatDuration(session.duration_minutes)}</span>
-                  </div>
+                  <>
+                    <Clock className="h-3 w-3" />
+                    <span>{formatDuration(session.duration_minutes)}</span>
+                  </>
                 ) : session.distance_km ? (
-                  <div className="flex items-center gap-1.5 whitespace-nowrap shrink-0">
-                    <Route className="h-3.5 w-3.5 shrink-0" />
-                    <span className="whitespace-nowrap">{formatDistance(convertDistance(session.distance_km))}</span>
-                  </div>
+                  <>
+                    <Clock className="h-3 w-3" />
+                    <span>{formatDistance(convertDistance(session.distance_km))}</span>
+                  </>
                 ) : null}
-                {intent && (
-                  <span className={cn('uppercase tracking-wider opacity-60 whitespace-nowrap shrink-0', fonts.badge)}>
-                    {getIntentLabel(intensity, session.type)}
-                  </span>
+                {intent && (session.duration_minutes || session.distance_km) && (
+                  <>
+                    <span className="opacity-40">•</span>
+                    <span className="uppercase tracking-wider opacity-60">
+                      {getIntentLabel(intensity, session.type)}
+                    </span>
+                  </>
                 )}
-              </>
+              </div>
             )}
             {/* Standard/Rich: Show both duration and distance */}
             {showBothDurationAndDistance && (
-              <>
+              <div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
                 {session.duration_minutes && (
-                  <div className="flex items-center gap-1.5 whitespace-nowrap shrink-0">
-                    <Clock className="h-3.5 w-3.5 shrink-0" />
-                    <span className="whitespace-nowrap">{formatDuration(session.duration_minutes)}</span>
-                  </div>
+                  <>
+                    <Clock className="h-3 w-3" />
+                    <span>{formatDuration(session.duration_minutes)}</span>
+                  </>
+                )}
+                {session.duration_minutes && session.distance_km && (
+                  <span className="opacity-40">•</span>
                 )}
                 {session.distance_km && (
-                  <div className="flex items-center gap-1.5 whitespace-nowrap shrink-0">
-                    <Route className="h-3.5 w-3.5 shrink-0" />
-                    <span className="whitespace-nowrap">{formatDistance(convertDistance(session.distance_km))}</span>
-                  </div>
+                  <span>{formatDistance(convertDistance(session.distance_km))}</span>
                 )}
-              </>
+              </div>
             )}
           </div>
 
@@ -349,18 +360,18 @@ export function SessionCard({
 
               {/* Coach insight teaser */}
               {session.coach_insight && (
-                <div className={cn('text-muted-foreground italic line-clamp-2', fonts.insight)}>
+                <p className="mt-2 text-xs text-muted-foreground line-clamp-2">
                   {session.coach_insight}
-                </div>
+                </p>
               )}
             </div>
           )}
 
           {/* Standard density: Coach insight teaser (1 line max) */}
           {density === 'standard' && showCoachInsight && session.coach_insight && (
-            <div className={cn('text-muted-foreground line-clamp-1', fonts.insight)}>
+            <p className="mt-2 text-xs text-muted-foreground line-clamp-2">
               {session.coach_insight}
-            </div>
+            </p>
           )}
         </div>
 
@@ -385,11 +396,12 @@ export function SessionCard({
           <EffortGraph
             data={effortData}
             showData={showEffortData}
-            compact={true}
-            onClick={onClick}
+            compact
+            onClick={undefined}
           />
         </div>
       )}
-    </Card>
+      </div>
+    </WorkoutCardShell>
   );
 }
