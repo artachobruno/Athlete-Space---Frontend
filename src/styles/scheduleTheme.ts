@@ -108,14 +108,21 @@ export const CARD_INNER_SHADOW = `
 export const CARD_STELLAR_FIELD = `
   radial-gradient(
     600px 400px at 70% 50%,
-    rgba(96, 165, 250, 0.10) 0%,
-    rgba(96, 165, 250, 0.04) 35%,
+    rgba(96, 165, 250, 0.12) 0%,
+    rgba(96, 165, 250, 0.06) 35%,
     rgba(2, 6, 23, 0.0) 65%
   ),
   repeating-radial-gradient(
     circle at 20% 30%,
-    rgba(255,255,255,0.08),
-    rgba(255,255,255,0.08) 0.5px,
+    rgba(255,255,255,0.12),
+    rgba(255,255,255,0.12) 0.5px,
+    transparent 0.5px,
+    transparent 2.5px
+  ),
+  repeating-radial-gradient(
+    circle at 80% 70%,
+    rgba(255,255,255,0.10),
+    rgba(255,255,255,0.10) 0.5px,
     transparent 0.5px,
     transparent 3px
   )

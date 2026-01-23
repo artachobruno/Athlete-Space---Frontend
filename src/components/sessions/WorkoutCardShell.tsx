@@ -42,24 +42,24 @@ export function WorkoutCardShell({
           boxShadow: CARD_INNER_SHADOW,
         }}
       >
-        {/* Inner highlight (top-left sheen) */}
+        {/* Stellar field - milky way style texture (sparse stars, not glow) - behind highlight */}
+        {highlighted && (
+          <div
+            className="absolute inset-0 rounded-xl pointer-events-none"
+            style={{
+              background: CARD_STELLAR_FIELD,
+              opacity: 0.8,
+            }}
+          />
+        )}
+
+        {/* Inner highlight (top-left sheen) - on top of stellar field */}
         <div
           className="absolute inset-0 rounded-xl pointer-events-none"
           style={{
             background: CARD_INNER_HIGHLIGHT,
           }}
         />
-
-        {/* Stellar field - milky way style texture (sparse stars, not glow) */}
-        {highlighted && (
-          <div
-            className="absolute inset-0 rounded-xl pointer-events-none"
-            style={{
-              background: CARD_STELLAR_FIELD,
-              opacity: 0.6,
-            }}
-          />
-        )}
 
         {/* Noise / Texture overlay */}
         <div
