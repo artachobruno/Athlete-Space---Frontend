@@ -1,10 +1,12 @@
 import { useEffect, useRef, useCallback } from 'react';
+import { hapticMedium } from '@/lib/haptics';
 
 interface SwipeGestureOptions {
   onSwipeLeft?: () => void;
   onSwipeRight?: () => void;
   threshold?: number; // minimum distance for a swipe
   enabled?: boolean;
+  hapticFeedback?: boolean; // enable haptic feedback on swipe
 }
 
 export function useSwipeGesture<T extends HTMLElement = HTMLDivElement>({
@@ -12,6 +14,7 @@ export function useSwipeGesture<T extends HTMLElement = HTMLDivElement>({
   onSwipeRight,
   threshold = 50,
   enabled = true,
+  hapticFeedback = true,
 }: SwipeGestureOptions) {
   const ref = useRef<T>(null);
   const touchStartX = useRef<number | null>(null);
@@ -35,6 +38,11 @@ export function useSwipeGesture<T extends HTMLElement = HTMLDivElement>({
     // Only trigger horizontal swipe if it's more horizontal than vertical
     // This prevents conflicts with vertical scrolling
     if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > threshold) {
+      // Trigger haptic feedback on successful swipe
+      if (hapticFeedback) {
+        hapticMedium();
+      }
+      
       if (deltaX > 0) {
         onSwipeRight?.();
       } else {
@@ -44,7 +52,7 @@ export function useSwipeGesture<T extends HTMLElement = HTMLDivElement>({
 
     touchStartX.current = null;
     touchStartY.current = null;
-  }, [enabled, threshold, onSwipeLeft, onSwipeRight]);
+  }, [enabled, threshold, onSwipeLeft, onSwipeRight, hapticFeedback]);
 
   useEffect(() => {
     const element = ref.current;
