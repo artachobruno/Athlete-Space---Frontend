@@ -1047,8 +1047,13 @@ export function ActivityPopup({
               {activity && (
                 <Button
                   variant="default"
-                  className="flex-1"
+                  className="flex-1 rounded-[10px]"
                   onClick={handleViewDetails}
+                  style={{
+                    background: 'linear-gradient(180deg, rgba(59,130,246,0.28), rgba(30,64,175,0.32))',
+                    boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.18), 0 0 18px rgba(59,130,246,0.35)',
+                    border: 'none',
+                  }}
                 >
                   <ExternalLink className="h-4 w-4 mr-2" />
                   View Details

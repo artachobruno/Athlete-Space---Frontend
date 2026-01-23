@@ -281,7 +281,13 @@ export function SessionCard({
         )}>
           {/* Title row */}
           <div className={cn('flex items-center flex-wrap', spacing.titleGap)}>
-            <h3 className="text-sm font-semibold tracking-tight text-foreground truncate">
+            <h3
+              className="text-sm font-semibold tracking-tight truncate"
+              style={{
+                color: 'rgba(241, 245, 249, 0.96)',
+                textShadow: '0 0 1px rgba(255,255,255,0.25), 0 0 12px rgba(56,189,248,0.18)',
+              }}
+            >
               {session.title || session.type || 'Workout'}
             </h3>
             {showIntensityBadge && intent && (
@@ -302,7 +308,10 @@ export function SessionCard({
           )}>
             {/* Compact: Show duration OR distance (prefer duration) */}
             {density === 'compact' && (
-              <div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
+              <div
+                className="mt-1 flex items-center gap-2 text-xs"
+                style={{ color: 'rgba(203, 213, 225, 0.82)' }}
+              >
                 {session.duration_minutes ? (
                   <>
                     <Clock className="h-3 w-3" />
@@ -326,7 +335,10 @@ export function SessionCard({
             )}
             {/* Standard/Rich: Show both duration and distance */}
             {showBothDurationAndDistance && (
-              <div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
+              <div
+                className="mt-1 flex items-center gap-2 text-xs"
+                style={{ color: 'rgba(203, 213, 225, 0.82)' }}
+              >
                 {session.duration_minutes && (
                   <>
                     <Clock className="h-3 w-3" />
@@ -348,7 +360,10 @@ export function SessionCard({
             <div className="space-y-2 pt-1">
               {/* Step preview (1-2 lines max) */}
               {session.steps && session.steps.length > 0 && (
-                <div className={cn('text-muted-foreground', fonts.metadata)}>
+                <div
+                  className={fonts.metadata}
+                  style={{ color: 'rgba(148, 163, 184, 0.75)' }}
+                >
                   {session.steps.slice(0, 2).map((step, idx) => (
                     <div key={idx} className="truncate">
                       {step.order || idx + 1}. {step.name || `Step ${idx + 1}`}
@@ -364,7 +379,10 @@ export function SessionCard({
 
               {/* Coach insight teaser */}
               {session.coach_insight && (
-                <p className="mt-2 text-xs text-muted-foreground line-clamp-2">
+                <p
+                  className="mt-2 text-xs line-clamp-2"
+                  style={{ color: 'rgba(148, 163, 184, 0.75)' }}
+                >
                   {session.coach_insight}
                 </p>
               )}
@@ -373,7 +391,10 @@ export function SessionCard({
 
           {/* Standard density: Coach insight teaser (1 line max) */}
           {density === 'standard' && showCoachInsight && session.coach_insight && (
-            <p className="mt-2 text-xs text-muted-foreground line-clamp-2">
+            <p
+              className="mt-2 text-xs line-clamp-2"
+              style={{ color: 'rgba(148, 163, 184, 0.75)' }}
+            >
               {session.coach_insight}
             </p>
           )}

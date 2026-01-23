@@ -117,15 +117,15 @@ export const CARD_NEBULA = `
 /**
  * Stellar density control (background-size variation)
  * Smaller size = more stars per area
- * Adjusted for dense Milky Way with clusters
+ * Adjusted for very dense Milky Way with many clusters
  */
 export const STELLAR_DENSITY = {
-  easy: '200px 200px',
-  steady: '190px 190px',
-  tempo: '180px 180px',
-  intervals: '170px 170px',
-  long: '160px 160px',
-  rest: '200px 200px',
+  easy: '180px 180px',
+  steady: '170px 170px',
+  tempo: '160px 160px',
+  intervals: '150px 150px',
+  long: '140px 140px',
+  rest: '180px 180px',
 } as const;
 
 /**
