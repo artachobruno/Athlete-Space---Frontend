@@ -80,7 +80,275 @@ export function BaseCalendarCardSvg({
   const typeLabelY = paddingY + 10 * textScale;
   const titleY = typeLabelY + 18 * textScale;
 
-  // Metrics region (if present and not month view)
+  // Accent line position (used in both week and other views)
+  const accentY = height - paddingY - 4;
+
+  // Unique ID for gradients (needed before early return)
+  const id = `calendar-card-${variant}-${Math.random().toString(36).slice(2, 8)}`;
+
+  // Week view: Canonical text stack
+  // 0. PlanContext (if present)
+  // 1. Title
+  // 2. Meta (time · distance · pace)
+  // 3. Intent (planned) OR Execution (completed)
+  const isWeekView = viewVariant === 'week';
+  
+  if (isWeekView) {
+    // Week view layout: simplified, explicit slots
+    const hasPlanContext = Boolean(planContext);
+    
+    // PlanContext: above title, no spacing above, small spacing below
+    const planContextHeight = 10 * textScale; // Font size 9 * textScale with line height
+    const planContextSpacing = 4 * textScale; // Small spacing below planContext (gap to title)
+    
+    // PlanContext Y position: top of foreignObject
+    // Positioned above titleY by planContext height + spacing
+    const planContextY = hasPlanContext ? titleY - planContextHeight - planContextSpacing : titleY;
+    
+    // Title: use original titleY (planContext sits above it, doesn't push it down)
+    const adjustedTitleY = titleY;
+    const titleBottom = adjustedTitleY + 18 * textScale; // Title height
+    
+    // Meta row: 4-6px spacing from title
+    const metaSpacing = 5 * textScale;
+    const metaLabelY = titleBottom + metaSpacing;
+    const metaValueY = metaLabelY + 10 * textScale;
+    const metaBottom = metaValueY + 4 * textScale;
+    
+    // Intent/Execution: 6-8px spacing from meta
+    const semanticSpacing = 7 * textScale;
+    const semanticY = metaBottom + semanticSpacing;
+    
+    // Store for rendering
+    const weekLayout = {
+      planContextY,
+      titleY: adjustedTitleY,
+      metaLabelY,
+      metaValueY,
+      semanticY,
+    };
+    
+    // Render week view with explicit slots
+    return (
+      <svg
+        width="100%"
+        height="100%"
+        viewBox={`0 0 ${width} ${height}`}
+        preserveAspectRatio="xMidYMid meet"
+        xmlns="http://www.w3.org/2000/svg"
+        style={{
+          display: 'block',
+          fontFamily: 'system-ui, -apple-system, sans-serif',
+        }}
+      >
+        <defs>
+          <linearGradient id={`${id}-bg`} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={theme.base} stopOpacity="1" />
+            <stop offset="100%" stopColor={theme.base} stopOpacity="0.95" />
+          </linearGradient>
+        </defs>
+
+        {/* Background */}
+        <rect
+          x="0"
+          y="0"
+          width={width}
+          height={height}
+          rx={8 * scale}
+          fill={`url(#${id}-bg)`}
+        />
+
+        {/* Border */}
+        <rect
+          x="0.5"
+          y="0.5"
+          width={width - 1}
+          height={height - 1}
+          rx={8 * scale}
+          fill="none"
+          stroke={COLORS.border}
+          strokeWidth={1}
+          opacity="0.5"
+        />
+
+        {/* Type label - small caps */}
+        <text
+          x={paddingX}
+          y={typeLabelY}
+          fill={COLORS.textMuted}
+          fontSize={11 * textScale}
+          fontWeight={500}
+          letterSpacing="0.06em"
+        >
+          {topLeft.toUpperCase()}
+        </text>
+
+        {/* Duration - right aligned */}
+        <text
+          x={width - paddingX}
+          y={typeLabelY}
+          fill={COLORS.textSecondary}
+          fontSize={11 * textScale}
+          fontWeight={500}
+          textAnchor="end"
+          letterSpacing="0.06em"
+        >
+          {topRight}
+        </text>
+
+        {/* SLOT 0: PlanContext (above title, if present) */}
+        {planContext && (
+          <foreignObject
+            x={paddingX}
+            y={weekLayout.planContextY}
+            width={width - paddingX * 2}
+            height={10 * textScale}
+          >
+            <div
+              style={{
+                color: COLORS.textMuted,
+                fontSize: `${9 * textScale}px`,
+                fontWeight: 400,
+                letterSpacing: '0.02em',
+                opacity: 0.575,
+                overflow: 'hidden',
+                display: '-webkit-box',
+                WebkitLineClamp: 1,
+                WebkitBoxOrient: 'vertical',
+              }}
+            >
+              {planContext}
+            </div>
+          </foreignObject>
+        )}
+
+        {/* SLOT 1: Title */}
+        <foreignObject
+          x={paddingX}
+          y={weekLayout.titleY - 18 * textScale}
+          width={width - paddingX * 2}
+          height={36 * textScale}
+        >
+          <div
+            style={{
+              color: COLORS.textPrimary,
+              fontSize: `${18 * textScale}px`,
+              fontWeight: 600,
+              letterSpacing: '-0.01em',
+              lineHeight: 1.2,
+              overflow: 'hidden',
+              display: '-webkit-box',
+              WebkitLineClamp: 2,
+              WebkitBoxOrient: 'vertical',
+            }}
+          >
+            {displayTitle}
+          </div>
+        </foreignObject>
+
+        {/* SLOT 2: Meta row (time · distance · pace) */}
+        {metricsValue && (
+          <>
+            <text
+              x={paddingX}
+              y={weekLayout.metaLabelY}
+              fill={COLORS.textMuted}
+              fontSize={10 * textScale}
+              fontWeight={500}
+              letterSpacing="0.05em"
+            >
+              {metricsLabel || ''}
+            </text>
+            <text
+              x={paddingX}
+              y={weekLayout.metaValueY}
+              fill={COLORS.textSecondary}
+              fontSize={13 * textScale}
+              fontWeight={500}
+            >
+              {metricsValue}
+            </text>
+          </>
+        )}
+
+        {/* SLOT 3: Intent (planned) OR Execution (completed) */}
+        {isPlanned && intentText && (
+          <foreignObject
+            x={paddingX}
+            y={weekLayout.semanticY - 12 * textScale}
+            width={width - paddingX * 2}
+            height={36 * textScale}
+          >
+            <div
+              style={{
+                color: COLORS.textSecondary,
+                fontSize: `${12 * textScale}px`,
+                lineHeight: 1.4,
+                opacity: 0.8,
+                fontStyle: 'italic',
+                overflow: 'hidden',
+                display: '-webkit-box',
+                WebkitLineClamp: 2,
+                WebkitBoxOrient: 'vertical',
+              }}
+            >
+              {intentText}
+            </div>
+          </foreignObject>
+        )}
+
+        {isActivity && executionSummary && (
+          <foreignObject
+            x={paddingX}
+            y={weekLayout.semanticY - 12 * textScale}
+            width={width - paddingX * 2}
+            height={18 * textScale}
+          >
+            <div
+              style={{
+                color: COLORS.textSecondary,
+                fontSize: `${12 * textScale}px`,
+                lineHeight: 1.4,
+                opacity: 0.75,
+                overflow: 'hidden',
+                display: '-webkit-box',
+                WebkitLineClamp: 1,
+                WebkitBoxOrient: 'vertical',
+              }}
+            >
+              {executionSummary}
+            </div>
+          </foreignObject>
+        )}
+
+        {/* Accent line at bottom - subtle indicator for planned */}
+        {isPlanned && (
+          <rect
+            x={paddingX}
+            y={accentY}
+            width={width - paddingX * 2}
+            height={3}
+            rx={1.5}
+            fill={theme.sparkline}
+            opacity={0.3}
+          />
+        )}
+
+        {/* Bottom baseline */}
+        <line
+          x1={paddingX}
+          y1={height - paddingY}
+          x2={width - paddingX}
+          y2={height - paddingY}
+          stroke={COLORS.border}
+          strokeWidth={1}
+          opacity="0.3"
+        />
+      </svg>
+    );
+  }
+
+  // Month/Plan view: existing layout (unchanged for now)
   const showMetrics = metricsValue && viewVariant !== 'month';
   const metricsY = titleY + 24 * textScale;
   const metricsHeight = showMetrics ? 20 * textScale : 0;
@@ -97,11 +365,6 @@ export function BaseCalendarCardSvg({
 
   // Description region - positioned below semantic fields (fallback only)
   const descY = coachY + (showCoach ? 20 * textScale : 0);
-
-  // Accent line position
-  const accentY = height - paddingY - 4;
-
-  const id = `calendar-card-${variant}-${Math.random().toString(36).slice(2, 8)}`;
 
   return (
     <svg
