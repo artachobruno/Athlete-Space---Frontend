@@ -2136,7 +2136,29 @@ export const fetchCalendarToday = async (date?: string): Promise<TodayResponse> 
   console.log("[API] Fetching calendar today", date ? `(requested date: ${date} - API returns today)` : "");
   try {
     const response = await api.get("/calendar/today");
-    return response as unknown as TodayResponse;
+    const todayResponse = response as unknown as TodayResponse;
+    
+    // Debug: Log coach_insight in sessions
+    if (todayResponse?.sessions) {
+      todayResponse.sessions.forEach((session, idx) => {
+        if (session.coach_insight) {
+          console.log(`[API] Calendar today session ${idx} has coach_insight:`, {
+            sessionId: session.id,
+            status: session.status,
+            coach_insight_length: session.coach_insight.length,
+            coach_insight_preview: session.coach_insight.substring(0, 100),
+          });
+        } else {
+          console.log(`[API] Calendar today session ${idx} NO coach_insight:`, {
+            sessionId: session.id,
+            status: session.status,
+            has_coach_insight: !!session.coach_insight,
+          });
+        }
+      });
+    }
+    
+    return todayResponse;
   } catch (error) {
     // Handle 500 errors gracefully - return empty today instead of crashing UI
     if (error && typeof error === 'object' && 'status' in error) {

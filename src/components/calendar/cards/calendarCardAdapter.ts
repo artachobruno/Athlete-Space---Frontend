@@ -191,7 +191,7 @@ function generateMockSparkline(): number[] {
   );
 }
 
-function toSessionCardProps(item: CalendarItem): BaseCardProps {
+export function toSessionCardProps(item: CalendarItem): BaseCardProps {
   const variant = deriveCardVariant(item);
   const p = toCalendarCardProps(item);
   const secondaryText =

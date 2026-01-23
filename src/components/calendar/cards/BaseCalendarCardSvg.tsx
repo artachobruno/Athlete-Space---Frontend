@@ -57,7 +57,8 @@ const COLORS = {
  * This is why it's conditionally rendered rather than always shown.
  */
 function shouldShowCoachInsight(props: BaseCardProps): boolean {
-  return Boolean(props.isActivity && props.coachInsight?.text);
+  // Show coach insight for both planned (pre-workout guidance) and completed (post-workout analysis) sessions
+  return Boolean(props.coachInsight?.text);
 }
 
 export function BaseCalendarCardSvg({
@@ -149,7 +150,7 @@ export function BaseCalendarCardSvg({
     ? semanticY + unplannedLabelHeight + unplannedLabelSpacing 
     : semanticY;
   
-  // Coach Insight: only for completed activities, placed after execution
+  // Coach Insight: for both planned (pre-workout) and completed (post-workout) sessions
   // On mobile: only show if hero (this is handled by shouldShowCoachInsight logic)
   const showCoach = shouldShowBody && shouldShowCoachInsight({
     isActivity,

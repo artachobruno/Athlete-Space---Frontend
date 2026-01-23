@@ -243,6 +243,27 @@ export function SessionCard({
   const session: SessionCardData = isCalendarSession
     ? sessionToCardData(sessionOrItem as CalendarSession)
     : itemToCardData(sessionOrItem as CalendarItem);
+  
+  // Debug logging
+  if (session.coach_insight) {
+    console.log('[SessionCard] Has coach_insight:', {
+      sessionId: session.id,
+      status: session.status,
+      coach_insight_length: session.coach_insight.length,
+      coach_insight_preview: session.coach_insight.substring(0, 100),
+      isCalendarSession,
+    });
+  } else {
+    console.log('[SessionCard] NO coach_insight:', {
+      sessionId: session.id,
+      status: session.status,
+      isCalendarSession,
+      rawData: isCalendarSession 
+        ? (sessionOrItem as CalendarSession).coach_insight 
+        : (sessionOrItem as CalendarItem).coachNote?.text,
+    });
+  }
+  
   const { convertDistance, formatDistance } = useUnitSystem();
   const statusColors = sessionStatusColors[session.status] || sessionStatusColors.planned;
   

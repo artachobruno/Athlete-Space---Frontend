@@ -1,4 +1,4 @@
-import { CheckCircle2, XCircle, AlertCircle } from 'lucide-react';
+import { CheckCircle2, XCircle, AlertCircle, Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { ExecutionSummary } from '@/types/execution';
 import {
@@ -170,6 +170,18 @@ export function CombinedSessionCard({
               )}
             </div>
           )}
+        </div>
+      )}
+
+      {/* Coach Insight */}
+      {planned?.coach_insight && (
+        <div className="px-2 py-1.5 border-t border-border/40 bg-primary/5">
+          <div className="flex items-start gap-1.5">
+            <Sparkles className="h-3 w-3 text-primary mt-0.5 flex-shrink-0" />
+            <p className="text-[10px] leading-relaxed text-foreground flex-1">
+              {planned.coach_insight}
+            </p>
+          </div>
         </div>
       )}
 

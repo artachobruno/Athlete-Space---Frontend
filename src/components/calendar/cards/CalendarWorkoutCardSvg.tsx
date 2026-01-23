@@ -1,6 +1,6 @@
 import { WorkoutCardSvg, type WorkoutCardVariant } from '@/components/workout/WorkoutCardSvg';
 import { BaseCalendarCardSvg } from './BaseCalendarCardSvg';
-import { toCalendarCardProps, deriveCardVariant } from './calendarCardAdapter';
+import { toCalendarCardProps, deriveCardVariant, toSessionCardProps } from './calendarCardAdapter';
 import type { CalendarItem } from '@/types/calendar';
 import type { ActivityStreamsResponse } from '@/lib/api';
 
@@ -23,6 +23,7 @@ export function CalendarWorkoutCardSvg({ item, viewVariant, streams, className, 
   // Planned sessions: use BaseCalendarCardSvg (training calendar card)
   if (!isCompleted) {
     const cardVariant = deriveCardVariant(item);
+    const sessionCardProps = toSessionCardProps(item);
     return (
       <BaseCalendarCardSvg
         variant={cardVariant}
@@ -34,6 +35,9 @@ export function CalendarWorkoutCardSvg({ item, viewVariant, streams, className, 
         isActivity={false}
         viewVariant={viewVariant}
         isMobile={isMobile}
+        intentText={sessionCardProps.intentText}
+        coachInsight={sessionCardProps.coachInsight}
+        planContext={sessionCardProps.planContext}
       />
     );
   }

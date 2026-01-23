@@ -126,6 +126,11 @@ export function toCalendarItem(
         text: feedbackText,
         tone: 'neutral' as const, // Default tone - can be enhanced to detect from text
       };
+      console.log('[CALENDAR_ADAPTER] Coach note for completed session:', {
+        sessionId: session.id,
+        hasCoachNote: !!coachNote,
+        coachNoteText: coachNote.text.substring(0, 100),
+      });
     }
   } else if (session.coach_insight) {
     // Planned session: use coach_insight from session
@@ -133,6 +138,19 @@ export function toCalendarItem(
       text: session.coach_insight,
       tone: 'neutral' as const, // Default tone - can be enhanced to detect from text
     };
+    console.log('[CALENDAR_ADAPTER] Coach note for planned session:', {
+      sessionId: session.id,
+      hasCoachNote: !!coachNote,
+      coachNoteText: coachNote.text.substring(0, 100),
+      sessionCoachInsight: session.coach_insight?.substring(0, 100),
+    });
+  } else {
+    console.log('[CALENDAR_ADAPTER] No coach note:', {
+      sessionId: session.id,
+      isCompleted,
+      hasCoachInsight: !!session.coach_insight,
+      coachInsightValue: session.coach_insight,
+    });
   }
 
   return {
