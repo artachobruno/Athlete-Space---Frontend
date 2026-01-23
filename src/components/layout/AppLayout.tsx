@@ -202,6 +202,9 @@ export function AppLayout({ children }: AppLayoutProps) {
       {/* Main content */}
       <main
         className="min-h-[100svh] pt-safe-area lg:pt-0 lg:pl-64 transition-all duration-200"
+        style={{
+          background: 'var(--app-bg)',
+        }}
       >
         <div className="mx-auto max-w-[1400px] px-6 py-6">
           {children}

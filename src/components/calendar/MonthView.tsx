@@ -269,13 +269,13 @@ export function MonthView({ currentDate, onActivityClick }: MonthViewProps) {
     };
 
     return (
-      <Card className="overflow-hidden h-full flex flex-col">
-        <div className="px-3 py-2 border-b border-border bg-muted/30 flex-shrink-0">
+      <div className="overflow-hidden h-full flex flex-col bg-transparent">
+        <div className="px-3 py-2 border-b border-white/10 flex-shrink-0 bg-transparent">
           <h3 className="text-sm font-medium text-muted-foreground">
             {format(currentDate, 'MMMM yyyy')}
           </h3>
         </div>
-        <SwipeIndicator label="month" className="flex-shrink-0 border-b border-border/50" />
+        <SwipeIndicator label="month" className="flex-shrink-0 border-b border-white/10" />
         <MobileDayList
           days={currentMonthDays}
           getItemsForDay={getCalendarItemsForDay}
@@ -284,7 +284,7 @@ export function MonthView({ currentDate, onActivityClick }: MonthViewProps) {
           showEmptyDays={false}
           className="flex-1 p-2"
         />
-      </Card>
+      </div>
     );
   }
 

@@ -60,14 +60,15 @@ export function CalendarWorkoutStack({
         className={`w-full h-full p-1 ${className ?? ''}`}
         onClick={() => onClick?.(item)}
         style={{ cursor: onClick ? 'pointer' : 'default' }}
-      >
-        <SessionCard 
+            >
+              <SessionCard 
           session={item} 
           density={density} 
           className="h-full"
           highlighted={isHighlightedIntent(item.intent)}
+          hideEffortGraph={variant === 'month'}
         />
-      </div>
+            </div>
     );
   }
 
@@ -108,6 +109,7 @@ export function CalendarWorkoutStack({
           density={density} 
           className="h-full"
           highlighted={isHighlightedIntent(item.intent)}
+          hideEffortGraph={variant === 'month'}
         />
             </div>
           );

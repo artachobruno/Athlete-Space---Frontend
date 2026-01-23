@@ -64,6 +64,8 @@ interface SessionCardProps {
   className?: string;
   /** Highlight this workout with glow effect */
   highlighted?: boolean;
+  /** Hide effort graph (for month view) */
+  hideEffortGraph?: boolean;
 }
 
 /**
@@ -230,6 +232,7 @@ export function SessionCard({
   onClick,
   className,
   highlighted = false,
+  hideEffortGraph = false,
 }: SessionCardProps) {
   // Normalize input - handle both CalendarSession and CalendarItem
   // Check if it's a CalendarSession by looking for 'status' field with specific values
@@ -485,7 +488,7 @@ export function SessionCard({
         )}
 
         {/* ============ EFFORT GRAPH (compact only) ============ */}
-        {density === 'compact' && effortData && effortData.length > 0 && (
+        {density === 'compact' && !hideEffortGraph && effortData && effortData.length > 0 && (
           <div className="h-[20px] mt-1.5 -mx-2 -mb-2 flex-shrink-0 flex-grow" style={{ minHeight: '20px' }}>
             <EffortGraph
               data={effortData}

@@ -42,7 +42,7 @@ export function MobileDayList({
           <div
             key={format(day, 'yyyy-MM-dd')}
             className={cn(
-              'rounded-lg border bg-card transition-colors',
+              'rounded-lg border bg-transparent transition-colors',
               isCurrentDay && 'ring-2 ring-primary/50 bg-primary/[0.02]'
             )}
           >
