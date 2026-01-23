@@ -2160,6 +2160,58 @@ export const fetchCalendarToday = async (date?: string): Promise<TodayResponse> 
  * 
  * In preview mode: Returns mock calendar sessions for the season.
  */
+// Season summary types (narrative view)
+export interface SeasonSummaryWeek {
+  week_index: number;
+  date_range: string;
+  status: "completed" | "current" | "upcoming";
+  coach_summary: string;
+  key_sessions: string[];
+  flags: ("fatigue" | "missed_sessions")[];
+}
+
+export interface SeasonSummaryPhase {
+  name: string;
+  intent: string;
+  weeks: SeasonSummaryWeek[];
+}
+
+export interface SeasonSummaryGoalRace {
+  name: string;
+  date: string;
+  weeks_to_race: number;
+}
+
+export interface SeasonSummary {
+  goal_race: SeasonSummaryGoalRace | null;
+  current_phase: string;
+  phases: SeasonSummaryPhase[];
+}
+
+/**
+ * Fetches season narrative summary - a read-only, story-driven view.
+ * 
+ * This endpoint returns a narrative view of how the season is unfolding
+ * relative to the plan, week by week. No metrics, no calendar mechanics.
+ */
+export const fetchSeasonSummary = async (): Promise<SeasonSummary> => {
+  console.log("[API] Fetching season summary");
+  try {
+    const response = await api.get("/intelligence/season/summary");
+    console.log("[API] Season summary response:", response);
+    
+    const responseData = response.data || response;
+    return responseData as SeasonSummary;
+  } catch (error) {
+    const apiError = error as ApiError;
+    console.error("[API] Failed to fetch season summary:", {
+      message: apiError.message,
+      status: apiError.status,
+    });
+    throw error;
+  }
+};
+
 export const fetchCalendarSeason = async (): Promise<SeasonResponse> => {
   // Check if we're in preview mode
   if (isPreviewMode()) {

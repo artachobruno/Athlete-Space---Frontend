@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ChevronLeft, ChevronRight, Download, Plus } from 'lucide-react';
-import { format, addMonths, subMonths, addWeeks, subWeeks } from 'date-fns';
+import { format, addMonths, subMonths, addWeeks, subWeeks, startOfWeek } from 'date-fns';
 
 import { MonthView } from './MonthView';
 import { WeekCalendar } from './WeekCalendar';
@@ -86,7 +86,10 @@ export function TrainingCalendar() {
 
   const getNavigationLabel = () => {
     if (view === 'month') return format(currentDate, 'MMMM yyyy');
-    if (view === 'week') return `Week of ${format(currentDate, 'MMM d, yyyy')}`;
+    if (view === 'week') {
+      const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
+      return `Week of ${format(weekStart, 'MMM d, yyyy')}`;
+    }
     const quarter = Math.floor(currentDate.getMonth() / 3) + 1;
     return `Q${quarter} ${format(currentDate, 'yyyy')}`;
   };
