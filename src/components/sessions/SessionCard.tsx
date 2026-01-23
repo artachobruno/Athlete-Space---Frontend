@@ -290,9 +290,10 @@ export function SessionCard({
   const isUnplanned = session.is_unplanned && isCompleted;
   
   // Body content rules (never show both intent and execution)
-  const showIntentText = isPlanned && (density === 'standard' || density === 'rich');
-  const showExecutionSummary = isCompleted && (density === 'standard' || density === 'rich');
-  const showCoachInsight = isCompleted && session.coach_insight && (density === 'standard' || density === 'rich');
+  // Compact shows 1-line truncated text; standard/rich shows full text
+  const showIntentText = isPlanned && session.intent_text;
+  const showExecutionSummary = isCompleted && session.execution_notes && (density === 'standard' || density === 'rich');
+  const showCoachInsight = isCompleted && session.coach_insight;
   const showSteps = density === 'rich' && isPlanned;
 
   // Determine role based on highlighted state and intent
@@ -415,13 +416,19 @@ export function SessionCard({
 
         {/* ============ BODY: Intent OR Execution (never mixed) ============ */}
         {/* Gap: ~7-8px from meta */}
-        {(showIntentText || showExecutionSummary || showSteps) && (
-          <div className="mt-[7px] space-y-2">
-            {/* PLANNED: Intent narrative (2 lines max) */}
-            {showIntentText && session.intent_text && (
+        {(showIntentText || showExecutionSummary || showSteps || showCoachInsight) && (
+          <div className={cn(
+            'mt-[7px]',
+            density !== 'compact' && 'space-y-2'
+          )}>
+            {/* PLANNED: Intent narrative */}
+            {showIntentText && (
               <p 
-                className="line-clamp-2 opacity-80"
-                style={CardTypography.description}
+                className={cn(
+                  'opacity-80',
+                  density === 'compact' ? 'truncate text-[10px]' : 'line-clamp-2'
+                )}
+                style={density === 'compact' ? undefined : CardTypography.description}
               >
                 {session.intent_text}
               </p>
@@ -463,11 +470,13 @@ export function SessionCard({
               </p>
             )}
 
-            {/* COMPLETED: Coach insight (2 lines max, subtle opacity) */}
+            {/* COMPLETED: Coach insight */}
             {showCoachInsight && (
               <p 
-                className="line-clamp-2 opacity-60"
-                style={CardTypography.description}
+                className={cn(
+                  density === 'compact' ? 'truncate text-[10px] opacity-70' : 'line-clamp-2 opacity-60'
+                )}
+                style={density === 'compact' ? undefined : CardTypography.description}
               >
                 {session.coach_insight}
               </p>
