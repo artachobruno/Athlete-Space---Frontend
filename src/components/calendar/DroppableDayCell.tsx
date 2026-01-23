@@ -28,11 +28,11 @@ export function DroppableDayCell({ date, children, className, style }: Droppable
       ref={setNodeRef}
       className={cn(
         // Base transition for smooth hover/focus effects
-        'transition-colors duration-150',
-        // Hover state - subtle background highlight
-        'hover:bg-muted/60',
+        'transition-all duration-150',
+        // Hover state - subtle lift (no background change for transparent glass)
+        'hover:shadow-md',
         // Focus state - keyboard navigation support
-        'focus-within:ring-1 focus-within:ring-primary/30 focus-within:bg-muted/40',
+        'focus-within:ring-2 focus-within:ring-primary/40 focus-within:shadow-md',
         className,
         // Drag-over state - higher priority styling
         isOver && 'ring-2 ring-primary ring-offset-1 bg-primary/10'

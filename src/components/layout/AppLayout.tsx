@@ -96,7 +96,7 @@ export function AppLayout({ children }: AppLayoutProps) {
       >
         <div className="flex flex-col h-full">
           {/* Logo - only visible on desktop since mobile has header */}
-          <div className="hidden lg:flex h-16 items-center px-6 border-b">
+          <div className="hidden lg:flex h-16 items-center px-6 border-b border-white/10">
             <Logo size="nav" />
           </div>
 
@@ -126,7 +126,7 @@ export function AppLayout({ children }: AppLayoutProps) {
           </nav>
 
           {/* Footer: Privacy, FAQ, Science, Support */}
-          <div className="p-4 border-t space-y-1">
+          <div className="p-4 border-t border-white/10 space-y-1">
             <Link
               to="/privacy"
               onClick={() => setSidebarOpen(false)}

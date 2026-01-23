@@ -29,8 +29,8 @@ export const TelemetryFooter = () => {
         </div>
 
         {/* Final CTA */}
-        <motion.div 
-          className="mt-16 pt-12 border-t border-slate-900/30 text-center"
+        <motion.div
+          className="mt-16 pt-12 border-t border-white/10 text-center"
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
           viewport={{ once: true }}
@@ -48,8 +48,8 @@ export const TelemetryFooter = () => {
         </motion.div>
 
         {/* Bottom line */}
-        <motion.div 
-          className="mt-12 pt-8 border-t border-slate-900/30"
+        <motion.div
+          className="mt-12 pt-8 border-t border-white/10"
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
           viewport={{ once: true }}

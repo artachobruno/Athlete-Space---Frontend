@@ -72,8 +72,12 @@ export const TelemetryStrip = ({ variant = 'default' }: { variant?: 'default' | 
       ];
 
   return (
-    <motion.div 
-      className="w-full bg-slate-900/30 border-y border-slate-800/30 py-4 overflow-hidden"
+    <motion.div
+      className="w-full border-y border-white/10 py-4 overflow-hidden"
+      style={{
+        background: 'rgba(2, 6, 23, 0.4)',
+        backdropFilter: 'blur(8px)',
+      }}
       initial={{ opacity: 0 }}
       whileInView={{ opacity: 1 }}
       viewport={{ once: true }}

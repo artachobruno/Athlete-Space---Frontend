@@ -32,9 +32,6 @@ const features = [
 export const WhySection = () => {
   return (
     <section className="relative py-32 overflow-hidden">
-      {/* Background */}
-      <div className="absolute inset-0 bg-slate-950" />
-      
       {/* Gradient orbs */}
       <motion.div
         className="absolute top-1/3 right-0 w-[500px] h-[500px] rounded-full"

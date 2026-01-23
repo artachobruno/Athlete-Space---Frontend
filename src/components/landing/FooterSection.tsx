@@ -11,10 +11,6 @@ const links = {
 export const FooterSection = () => {
   return (
     <footer className="relative py-20 overflow-hidden">
-      {/* Background */}
-      <div className="absolute inset-0 bg-slate-950" />
-      <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-900/20 to-slate-950" />
-      
       {/* Top border gradient */}
       <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
 

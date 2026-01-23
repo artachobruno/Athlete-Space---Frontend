@@ -14,8 +14,8 @@ export function PublicLayout({ children }: PublicLayoutProps) {
   return (
     <div className="min-h-[100svh]">
       {/* Simple header */}
-      <header 
-        className="border-b border-border"
+      <header
+        className="border-b border-white/10"
         style={{
           background: 'rgba(2, 6, 23, 0.85)',
           backdropFilter: 'blur(12px)',

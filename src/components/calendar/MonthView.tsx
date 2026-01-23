@@ -292,9 +292,9 @@ export function MonthView({ currentDate, onActivityClick }: MonthViewProps) {
   const weekDays = ['MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT', 'SUN'];
 
   return (
-    <Card className="overflow-hidden h-full flex flex-col">
-      {/* Header row - consistent with dashboard card headers */}
-      <div className="grid grid-cols-7 border-b border-border bg-muted/30 flex-shrink-0">
+    <div className="overflow-hidden h-full flex flex-col">
+      {/* Header row - transparent glass matching week view */}
+      <div className="grid grid-cols-7 border-b border-white/10 flex-shrink-0 bg-transparent">
         {weekDays.map((d) => (
           <div
             key={d}
@@ -322,13 +322,14 @@ export function MonthView({ currentDate, onActivityClick }: MonthViewProps) {
                   key={idx}
                   date={day}
                   className={cn(
-                    'relative border-b border-r border-border/50 flex flex-col transition-all duration-150 min-h-0 overflow-hidden',
+                    'relative border-b border-r border-white/10 flex flex-col transition-all duration-150 min-h-0 overflow-hidden',
+                    'rounded-lg bg-transparent',
                     // Dimmed for non-current month
-                    !isCurrentMonth && 'bg-muted/5 opacity-60',
-                    // Hover state - subtle highlight
-                    isCurrentMonth && 'hover:bg-muted/50',
+                    !isCurrentMonth && 'opacity-60',
+                    // Hover state - subtle lift
+                    isCurrentMonth && 'hover:shadow-md',
                     // Today highlight
-                    isCurrentDay && 'bg-primary/5 ring-1 ring-inset ring-primary/30',
+                    isCurrentDay && 'ring-2 ring-primary/50 bg-primary/[0.02]',
                     // Grid borders
                     idx % 7 === 6 && 'border-r-0',
                     idx >= days.length - 7 && 'border-b-0'
@@ -437,6 +438,6 @@ export function MonthView({ currentDate, onActivityClick }: MonthViewProps) {
           )}
         </DragOverlay>
       </DndContext>
-    </Card>
+    </div>
   );
 }
