@@ -4,6 +4,7 @@ import {
   CARD_BORDER,
   CARD_INNER_HIGHLIGHT,
   CARD_INNER_SHADOW,
+  CARD_LIGHT_FIELD,
   CARD_GLOW,
   NOISE_OPACITY,
   NOISE_BLEND_MODE,
@@ -26,7 +27,7 @@ export function WorkoutCardShell({
         // Base glass card
         'relative rounded-xl border backdrop-blur-[14px]',
         'shadow-sm transition-all motion-safe:duration-200',
-        'border-white/10',
+        'border-white/5',
 
         // Hover
         'hover:shadow-lg hover:border-white/20',
@@ -50,6 +51,17 @@ export function WorkoutCardShell({
           background: CARD_INNER_HIGHLIGHT,
         }}
       />
+
+      {/* Card light field (glow star) - localized radial light emitter */}
+      {highlighted && (
+        <div
+          className="absolute inset-0 rounded-xl pointer-events-none"
+          style={{
+            background: CARD_LIGHT_FIELD,
+            opacity: 0.9,
+          }}
+        />
+      )}
 
       {/* Noise / Texture overlay */}
       <div
