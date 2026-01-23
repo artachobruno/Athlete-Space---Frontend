@@ -127,57 +127,89 @@ export function TrainingCalendar() {
   return (
     <div className="flex flex-col h-full">
       {/* Controls */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 flex-shrink-0 mb-4">
-        {/* Navigation */}
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="icon" onClick={navigatePrevious}>
-            <ChevronLeft className="h-4 w-4" />
-          </Button>
-          <Button variant="outline" size="icon" onClick={navigateNext}>
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-          <Button variant="ghost" onClick={goToToday} className="text-sm">
-            Today
-          </Button>
-          <span className="font-semibold text-foreground ml-2">
-            {getNavigationLabel()}
-          </span>
+      <div className="flex flex-col gap-3 flex-shrink-0 mb-4">
+        {/* Top row: Navigation + View tabs */}
+        <div className="flex items-center justify-between gap-2">
+          {/* Navigation controls */}
+          <div className="flex items-center gap-1.5 sm:gap-2">
+            <Button variant="outline" size="icon" className="h-8 w-8 sm:h-9 sm:w-9" onClick={navigatePrevious}>
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+            <Button variant="outline" size="icon" className="h-8 w-8 sm:h-9 sm:w-9" onClick={navigateNext}>
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+            <Button variant="ghost" onClick={goToToday} className="text-xs sm:text-sm h-8 px-2 sm:px-3">
+              Today
+            </Button>
+            <span className="font-semibold text-foreground text-xs sm:text-sm truncate max-w-[120px] sm:max-w-none">
+              {getNavigationLabel()}
+            </span>
+          </div>
+
+          {/* View tabs - always visible */}
+          <Tabs value={view} onValueChange={(v) => setView(v as ViewType)}>
+            <TabsList className="h-8">
+              <TabsTrigger value="week" className="text-xs px-2 sm:px-3">Week</TabsTrigger>
+              <TabsTrigger value="month" className="text-xs px-2 sm:px-3">Month</TabsTrigger>
+              <TabsTrigger value="season" className="text-xs px-2 sm:px-3 hidden sm:inline-flex">Season</TabsTrigger>
+            </TabsList>
+          </Tabs>
         </div>
 
-        {/* Actions - Planning tools only (no coaching, no analytics) */}
-        <div className="flex items-center gap-3">
-          <Button size="sm" onClick={() => setAddSessionOpen(true)}>
-            <Plus className="h-4 w-4 mr-1.5" />
-            Add Session
+        {/* Bottom row: Action buttons - compact grid on mobile */}
+        <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide">
+          <Button 
+            size="sm" 
+            onClick={() => setAddSessionOpen(true)}
+            className="h-7 text-[10px] sm:text-xs px-2 sm:px-3 whitespace-nowrap flex-shrink-0"
+          >
+            <Plus className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+            Session
           </Button>
 
-          <Button variant="outline" size="sm" onClick={() => setAddWeekOpen(true)}>
-            <Plus className="h-4 w-4 mr-1.5" />
-            Add Week
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => setAddWeekOpen(true)}
+            className="h-7 text-[10px] sm:text-xs px-2 sm:px-3 whitespace-nowrap flex-shrink-0"
+          >
+            <Plus className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+            Week
           </Button>
 
-          <Button variant="outline" size="sm" onClick={() => setAddRaceOpen(true)}>
-            <Plus className="h-4 w-4 mr-1.5" />
-            Add Race
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => setAddRaceOpen(true)}
+            className="h-7 text-[10px] sm:text-xs px-2 sm:px-3 whitespace-nowrap flex-shrink-0"
+          >
+            <Plus className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+            Race
           </Button>
+
+          <div className="h-4 w-px bg-border/50 flex-shrink-0 hidden sm:block" />
 
           <Button
             variant="ghost"
             size="sm"
             onClick={handleExportIcs}
             disabled={!seasonData?.sessions?.length}
+            className="h-7 text-[10px] sm:text-xs px-2 sm:px-3 whitespace-nowrap flex-shrink-0"
           >
-            <Download className="h-4 w-4 mr-1.5" />
-            Export ICS
+            <Download className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+            <span className="hidden sm:inline">Export</span>
+            <span className="sm:hidden">ICS</span>
           </Button>
 
-          <Tabs value={view} onValueChange={(v) => setView(v as ViewType)}>
-            <TabsList>
-              <TabsTrigger value="week">Week</TabsTrigger>
-              <TabsTrigger value="month">Month</TabsTrigger>
-              <TabsTrigger value="season">Season</TabsTrigger>
-            </TabsList>
-          </Tabs>
+          {/* Season tab for mobile - as a button */}
+          <Button
+            variant={view === 'season' ? 'secondary' : 'ghost'}
+            size="sm"
+            onClick={() => setView('season')}
+            className="h-7 text-[10px] px-2 whitespace-nowrap flex-shrink-0 sm:hidden"
+          >
+            Season
+          </Button>
         </div>
       </div>
 
