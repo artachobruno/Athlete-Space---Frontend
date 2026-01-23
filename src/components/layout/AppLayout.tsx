@@ -1,7 +1,6 @@
 import { ReactNode, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { cn } from '@/lib/utils';
-import { PAGE_BG, scheduleThemeVars } from '@/styles/scheduleTheme';
 import {
   LayoutDashboard,
   Calendar,
@@ -45,7 +44,6 @@ export function AppLayout({ children }: AppLayoutProps) {
   const navigate = useNavigate();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { logout } = useAuth();
-  const isSchedulePage = location.pathname === '/schedule';
 
   const handleLogout = async () => {
     try {
@@ -58,21 +56,14 @@ export function AppLayout({ children }: AppLayoutProps) {
   };
 
   return (
-    <div
-      className={cn('min-h-[100svh]', !isSchedulePage && 'bg-background')}
-      style={
-        isSchedulePage
-          ? {
-              ...scheduleThemeVars,
-              background: PAGE_BG,
-              backgroundAttachment: 'fixed',
-            }
-          : undefined
-      }
-    >
+    <div className="min-h-[100svh]">
       {/* Mobile header */}
       <header 
-        className="lg:hidden fixed top-0 left-0 right-0 bg-card border-b z-50 flex items-center px-4 pt-[env(safe-area-inset-top,0px)] h-[calc(3.5rem+env(safe-area-inset-top,0px))]"
+        className="lg:hidden fixed top-0 left-0 right-0 border-b z-50 flex items-center px-4 pt-[env(safe-area-inset-top,0px)] h-[calc(3.5rem+env(safe-area-inset-top,0px))]"
+        style={{
+          background: 'rgba(2, 6, 23, 0.85)',
+          backdropFilter: 'blur(12px)',
+        }}
       >
         <Button
           variant="ghost"
@@ -90,7 +81,7 @@ export function AppLayout({ children }: AppLayoutProps) {
       {/* Sidebar */}
       <aside
         className={cn(
-          'fixed left-0 w-64 bg-card border-r z-40 transition-transform duration-200 ease-in-out',
+          'fixed left-0 w-64 border-r z-40 transition-transform duration-200 ease-in-out',
           // On mobile: start below the header (which includes safe area)
           'top-[calc(3.5rem+env(safe-area-inset-top,0px))] h-[calc(100%-3.5rem-env(safe-area-inset-top,0px))]',
           // On desktop: full height from top
@@ -98,6 +89,10 @@ export function AppLayout({ children }: AppLayoutProps) {
           'lg:translate-x-0',
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         )}
+        style={{
+          background: 'rgba(2, 6, 23, 0.85)',
+          backdropFilter: 'blur(12px)',
+        }}
       >
         <div className="flex flex-col h-full">
           {/* Logo - only visible on desktop since mobile has header */}
@@ -199,17 +194,17 @@ export function AppLayout({ children }: AppLayoutProps) {
       {/* Mobile overlay */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 bg-background/80 backdrop-blur-sm z-30 lg:hidden"
+          className="fixed inset-0 backdrop-blur-sm z-30 lg:hidden"
+          style={{
+            background: 'rgba(2, 6, 23, 0.80)',
+          }}
           onClick={() => setSidebarOpen(false)}
         />
       )}
 
       {/* Main content */}
       <main
-        className={cn(
-          'min-h-[100svh] pt-safe-area lg:pt-0 lg:pl-64 transition-all duration-200',
-          isSchedulePage && 'bg-transparent'
-        )}
+        className="min-h-[100svh] pt-safe-area lg:pt-0 lg:pl-64 transition-all duration-200"
       >
         <div className="mx-auto max-w-[1400px] px-6 py-6">
           {children}

@@ -204,7 +204,7 @@ const AppContent = () => {
   // CRITICAL: authReady ensures we never redirect during bootstrap
   if (!authReady || status === "bootstrapping" || loading) {
     return (
-      <div className="min-h-[100svh] flex items-center justify-center bg-background">
+      <div className="min-h-[100svh] flex items-center justify-center">
         <div className="space-y-4 w-full max-w-md p-8">
           <div className="h-12 w-full bg-muted animate-pulse rounded" />
           <div className="h-32 w-full bg-muted animate-pulse rounded" />

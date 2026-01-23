@@ -35,7 +35,7 @@ function ErrorDisplay({ error, onReset }: ErrorDisplayProps) {
   };
 
   return (
-    <div className="min-h-[100svh] flex items-center justify-center p-4 bg-background">
+    <div className="min-h-[100svh] flex items-center justify-center p-4">
       <GlassCard className="max-w-md w-full">
         <CardHeader>
           <div className="flex items-center gap-2">

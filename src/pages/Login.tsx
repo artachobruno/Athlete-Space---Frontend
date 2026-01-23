@@ -153,7 +153,7 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-[100svh] bg-gradient-to-br from-background via-background to-primary/3 flex flex-col">
+    <div className="min-h-[100svh] flex flex-col">
       {/* Header */}
       <header 
         className="px-4 pb-4 pt-4 flex items-center justify-between"

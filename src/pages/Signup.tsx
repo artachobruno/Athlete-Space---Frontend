@@ -111,7 +111,7 @@ export default function Signup() {
   };
 
   return (
-    <div className="min-h-[100svh] bg-gradient-to-br from-background via-background to-accent/5 flex flex-col">
+    <div className="min-h-[100svh] flex flex-col">
       {/* Header */}
       <header className="p-4 flex items-center justify-between">
         <div className="flex items-center">

@@ -72,7 +72,7 @@ export default function Onboarding() {
   };
 
   return (
-    <div className="min-h-[100svh] bg-background flex flex-col">
+    <div className="min-h-[100svh] flex flex-col">
       {/* Minimal header */}
       <header className="h-14 border-b border-border flex items-center px-6">
         <span className="font-semibold text-foreground">AI Training Coach</span>

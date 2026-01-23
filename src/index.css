@@ -84,6 +84,24 @@
     --chart-3: 35 90% 55%;
     --chart-4: 0 70% 55%;
     --chart-5: 280 60% 55%;
+
+    /* Global app background - deep blue with vignette */
+    --app-bg: radial-gradient(
+        1200px 600px at 50% 20%,
+        rgba(56, 189, 248, 0.10) 0%,
+        rgba(2, 6, 23, 0.0) 55%
+      ),
+      radial-gradient(
+        100% 80% at 50% 100%,
+        rgba(2, 6, 23, 0.0) 0%,
+        rgba(2, 6, 23, 0.85) 80%
+      ),
+      linear-gradient(
+        to bottom,
+        #020617 0%,
+        #020617 40%,
+        #01040f 100%
+      );
   }
 
   .dark {
@@ -164,7 +182,9 @@
   }
 
   body {
-    @apply bg-background text-foreground antialiased;
+    @apply text-foreground antialiased;
+    background: var(--app-bg);
+    background-attachment: fixed;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
     overflow-x: hidden;
     width: 100%;

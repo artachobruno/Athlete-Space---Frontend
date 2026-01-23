@@ -1,5 +1,98 @@
 <svg width="400" height="400" viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
-  <!-- Very dense Milky Way starfield with many clusters and sparse areas -->
+  <!-- Very dense Milky Way starfield – doubled stars, high concentration top-right -->
+  
+  <!-- TOP-RIGHT CONCENTRATION (80+ stars) – primary dense cluster -->
+  <circle cx="320" cy="15" r="0.9" fill="white" opacity="1.0"/>
+  <circle cx="340" cy="10" r="0.8" fill="white" opacity="0.95"/>
+  <circle cx="300" cy="20" r="0.7" fill="white" opacity="0.9"/>
+  <circle cx="355" cy="18" r="0.9" fill="white" opacity="1.0"/>
+  <circle cx="330" cy="25" r="0.6" fill="white" opacity="0.8"/>
+  <circle cx="350" cy="28" r="0.7" fill="white" opacity="0.85"/>
+  <circle cx="310" cy="35" r="0.5" fill="white" opacity="0.7"/>
+  <circle cx="365" cy="35" r="0.8" fill="white" opacity="0.95"/>
+  <circle cx="325" cy="40" r="0.6" fill="white" opacity="0.75"/>
+  <circle cx="345" cy="42" r="0.5" fill="white" opacity="0.7"/>
+  <circle cx="335" cy="50" r="0.7" fill="white" opacity="0.85"/>
+  <circle cx="355" cy="48" r="0.6" fill="white" opacity="0.8"/>
+  <circle cx="315" cy="55" r="0.5" fill="white" opacity="0.7"/>
+  <circle cx="370" cy="52" r="0.7" fill="white" opacity="0.9"/>
+  <circle cx="320" cy="60" r="0.6" fill="white" opacity="0.75"/>
+  <circle cx="340" cy="58" r="0.5" fill="white" opacity="0.7"/>
+  <circle cx="360" cy="62" r="0.6" fill="white" opacity="0.8"/>
+  <circle cx="305" cy="68" r="0.4" fill="white" opacity="0.6"/>
+  <circle cx="330" cy="70" r="0.5" fill="white" opacity="0.7"/>
+  <circle cx="350" cy="72" r="0.5" fill="white" opacity="0.7"/>
+  <circle cx="375" cy="65" r="0.6" fill="white" opacity="0.8"/>
+  <circle cx="318" cy="78" r="0.4" fill="white" opacity="0.6"/>
+  <circle cx="338" cy="80" r="0.5" fill="white" opacity="0.7"/>
+  <circle cx="358" cy="78" r="0.5" fill="white" opacity="0.7"/>
+  <circle cx="368" cy="85" r="0.4" fill="white" opacity="0.6"/>
+  <circle cx="328" cy="88" r="0.5" fill="white" opacity="0.7"/>
+  <circle cx="348" cy="90" r="0.4" fill="white" opacity="0.6"/>
+  <circle cx="380" cy="80" r="0.5" fill="white" opacity="0.7"/>
+  <circle cx="312" cy="95" r="0.4" fill="white" opacity="0.6"/>
+  <circle cx="332" cy="98" r="0.5" fill="white" opacity="0.7"/>
+  <circle cx="352" cy="96" r="0.4" fill="white" opacity="0.6"/>
+  <circle cx="372" cy="95" r="0.5" fill="white" opacity="0.7"/>
+  <circle cx="385" cy="42" r="0.6" fill="white" opacity="0.8"/>
+  <circle cx="390" cy="58" r="0.5" fill="white" opacity="0.7"/>
+  <circle cx="395" cy="25" r="0.5" fill="white" opacity="0.7"/>
+  <circle cx="382" cy="110" r="0.4" fill="white" opacity="0.6"/>
+  <circle cx="362" cy="108" r="0.4" fill="white" opacity="0.6"/>
+  <circle cx="342" cy="105" r="0.4" fill="white" opacity="0.6"/>
+  <circle cx="322" cy="108" r="0.3" fill="white" opacity="0.5"/>
+  <circle cx="302" cy="112" r="0.4" fill="white" opacity="0.6"/>
+  <circle cx="288" cy="25" r="0.6" fill="white" opacity="0.8"/>
+  <circle cx="292" cy="45" r="0.5" fill="white" opacity="0.7"/>
+  <circle cx="278" cy="55" r="0.5" fill="white" opacity="0.7"/>
+  <circle cx="298" cy="65" r="0.4" fill="white" opacity="0.6"/>
+  <circle cx="285" cy="85" r="0.4" fill="white" opacity="0.6"/>
+  <circle cx="275" cy="40" r="0.5" fill="white" opacity="0.7"/>
+  <circle cx="265" cy="20" r="0.5" fill="white" opacity="0.7"/>
+  <circle cx="255" cy="35" r="0.4" fill="white" opacity="0.6"/>
+  <circle cx="250" cy="55" r="0.4" fill="white" opacity="0.6"/>
+  <circle cx="268" cy="70" r="0.4" fill="white" opacity="0.6"/>
+  <circle cx="258" cy="95" r="0.3" fill="white" opacity="0.5"/>
+  <circle cx="272" cy="105" r="0.4" fill="white" opacity="0.6"/>
+  <circle cx="262" cy="115" r="0.3" fill="white" opacity="0.5"/>
+  <circle cx="282" cy="120" r="0.4" fill="white" opacity="0.6"/>
+  <circle cx="294" cy="95" r="0.4" fill="white" opacity="0.6"/>
+  <circle cx="306" cy="125" r="0.3" fill="white" opacity="0.5"/>
+  <circle cx="316" cy="118" r="0.4" fill="white" opacity="0.6"/>
+  <circle cx="336" cy="115" r="0.3" fill="white" opacity="0.5"/>
+  <circle cx="356" cy="118" r="0.4" fill="white" opacity="0.6"/>
+  <circle cx="376" cy="120" r="0.3" fill="white" opacity="0.5"/>
+  <circle cx="386" cy="95" r="0.4" fill="white" opacity="0.6"/>
+  <circle cx="392" cy="75" r="0.4" fill="white" opacity="0.6"/>
+  <circle cx="388" cy="130" r="0.3" fill="white" opacity="0.5"/>
+  <circle cx="378" cy="138" r="0.3" fill="white" opacity="0.5"/>
+  <circle cx="358" cy="132" r="0.3" fill="white" opacity="0.5"/>
+  <circle cx="338" cy="128" r="0.3" fill="white" opacity="0.5"/>
+  <circle cx="318" cy="132" r="0.3" fill="white" opacity="0.5"/>
+  <circle cx="298" cy="128" r="0.3" fill="white" opacity="0.5"/>
+  <circle cx="278" cy="135" r="0.3" fill="white" opacity="0.5"/>
+  <circle cx="258" cy="130" r="0.3" fill="white" opacity="0.5"/>
+  <circle cx="248" cy="75" r="0.4" fill="white" opacity="0.6"/>
+  <circle cx="242" cy="95" r="0.3" fill="white" opacity="0.5"/>
+  <circle cx="252" cy="110" r="0.3" fill="white" opacity="0.5"/>
+  <circle cx="246" cy="50" r="0.4" fill="white" opacity="0.6"/>
+  <circle cx="238" cy="65" r="0.3" fill="white" opacity="0.5"/>
+  <circle cx="236" cy="85" r="0.3" fill="white" opacity="0.5"/>
+  <circle cx="244" cy="120" r="0.3" fill="white" opacity="0.5"/>
+  <circle cx="254" cy="125" r="0.3" fill="white" opacity="0.5"/>
+  <circle cx="264" cy="135" r="0.3" fill="white" opacity="0.5"/>
+  <circle cx="274" cy="145" r="0.3" fill="white" opacity="0.5"/>
+  <circle cx="284" cy="140" r="0.3" fill="white" opacity="0.5"/>
+  <circle cx="294" cy="145" r="0.3" fill="white" opacity="0.5"/>
+  <circle cx="304" cy="138" r="0.3" fill="white" opacity="0.5"/>
+  <circle cx="314" cy="142" r="0.3" fill="white" opacity="0.5"/>
+  <circle cx="324" cy="145" r="0.3" fill="white" opacity="0.5"/>
+  <circle cx="334" cy="138" r="0.3" fill="white" opacity="0.5"/>
+  <circle cx="344" cy="142" r="0.3" fill="white" opacity="0.5"/>
+  <circle cx="354" cy="145" r="0.3" fill="white" opacity="0.5"/>
+  <circle cx="364" cy="142" r="0.3" fill="white" opacity="0.5"/>
+  <circle cx="374" cy="148" r="0.3" fill="white" opacity="0.5"/>
+  <circle cx="384" cy="145" r="0.3" fill="white" opacity="0.5"/>
   
   <!-- Dense Cluster 1: Top-left quadrant (20+ stars) -->
   <circle cx="30" cy="20" r="0.4" fill="white" opacity="0.5"/>
@@ -23,6 +116,15 @@
   <circle cx="75" cy="60" r="0.3" fill="white" opacity="0.4"/>
   <circle cx="20" cy="75" r="0.4" fill="white" opacity="0.5"/>
   <circle cx="60" cy="80" r="0.5" fill="white" opacity="0.6"/>
+  <circle cx="38" cy="42" r="0.3" fill="white" opacity="0.4"/>
+  <circle cx="52" cy="28" r="0.4" fill="white" opacity="0.5"/>
+  <circle cx="68" cy="52" r="0.3" fill="white" opacity="0.4"/>
+  <circle cx="42" cy="58" r="0.3" fill="white" opacity="0.4"/>
+  <circle cx="58" cy="48" r="0.4" fill="white" opacity="0.5"/>
+  <circle cx="72" cy="38" r="0.3" fill="white" opacity="0.4"/>
+  <circle cx="28" cy="48" r="0.4" fill="white" opacity="0.5"/>
+  <circle cx="62" cy="62" r="0.3" fill="white" opacity="0.4"/>
+  <circle cx="48" cy="78" r="0.4" fill="white" opacity="0.5"/>
   
   <!-- Dense Cluster 2: Center-left (25+ stars) -->
   <circle cx="70" cy="110" r="0.6" fill="white" opacity="0.7"/>
@@ -50,6 +152,17 @@
   <circle cx="55" cy="180" r="0.3" fill="white" opacity="0.4"/>
   <circle cx="95" cy="165" r="0.5" fill="white" opacity="0.6"/>
   <circle cx="80" cy="185" r="0.4" fill="white" opacity="0.5"/>
+  <circle cx="78" cy="118" r="0.3" fill="white" opacity="0.4"/>
+  <circle cx="92" cy="128" r="0.4" fill="white" opacity="0.5"/>
+  <circle cx="66" cy="132" r="0.3" fill="white" opacity="0.4"/>
+  <circle cx="102" cy="118" r="0.4" fill="white" opacity="0.5"/>
+  <circle cx="72" cy="148" r="0.3" fill="white" opacity="0.4"/>
+  <circle cx="88" cy="142" r="0.4" fill="white" opacity="0.5"/>
+  <circle cx="58" cy="158" r="0.3" fill="white" opacity="0.4"/>
+  <circle cx="98" cy="168" r="0.4" fill="white" opacity="0.5"/>
+  <circle cx="68" cy="178" r="0.3" fill="white" opacity="0.4"/>
+  <circle cx="82" cy="165" r="0.4" fill="white" opacity="0.5"/>
+  <circle cx="94" cy="152" r="0.3" fill="white" opacity="0.4"/>
   
   <!-- Dense Cluster 3: Center (30+ stars - main cluster) -->
   <circle cx="170" cy="90" r="0.9" fill="white" opacity="1.0"/>
@@ -82,6 +195,17 @@
   <circle cx="180" cy="150" r="0.3" fill="white" opacity="0.4"/>
   <circle cx="200" cy="145" r="0.4" fill="white" opacity="0.5"/>
   <circle cx="190" cy="155" r="0.3" fill="white" opacity="0.4"/>
+  <circle cx="178" cy="98" r="0.3" fill="white" opacity="0.4"/>
+  <circle cx="192" cy="92" r="0.4" fill="white" opacity="0.5"/>
+  <circle cx="168" cy="108" r="0.3" fill="white" opacity="0.4"/>
+  <circle cx="202" cy="102" r="0.4" fill="white" opacity="0.5"/>
+  <circle cx="172" cy="118" r="0.3" fill="white" opacity="0.4"/>
+  <circle cx="188" cy="128" r="0.4" fill="white" opacity="0.5"/>
+  <circle cx="198" cy="132" r="0.3" fill="white" opacity="0.4"/>
+  <circle cx="162" cy="138" r="0.3" fill="white" opacity="0.4"/>
+  <circle cx="208" cy="138" r="0.4" fill="white" opacity="0.5"/>
+  <circle cx="182" cy="142" r="0.3" fill="white" opacity="0.4"/>
+  <circle cx="196" cy="148" r="0.3" fill="white" opacity="0.4"/>
   
   <!-- Dense Cluster 4: Center-right (35+ stars - nebula area, brightest) -->
   <circle cx="270" cy="70" r="1.0" fill="white" opacity="1.0"/>
@@ -118,6 +242,17 @@
   <circle cx="255" cy="140" r="0.3" fill="white" opacity="0.4"/>
   <circle cx="300" cy="140" r="0.4" fill="white" opacity="0.5"/>
   <circle cx="280" cy="150" r="0.3" fill="white" opacity="0.4"/>
+  <circle cx="272" cy="82" r="0.3" fill="white" opacity="0.4"/>
+  <circle cx="288" cy="88" r="0.4" fill="white" opacity="0.5"/>
+  <circle cx="258" cy="92" r="0.3" fill="white" opacity="0.4"/>
+  <circle cx="302" cy="92" r="0.4" fill="white" opacity="0.5"/>
+  <circle cx="268" cy="108" r="0.3" fill="white" opacity="0.4"/>
+  <circle cx="292" cy="112" r="0.4" fill="white" opacity="0.5"/>
+  <circle cx="278" cy="128" r="0.3" fill="white" opacity="0.4"/>
+  <circle cx="298" cy="132" r="0.3" fill="white" opacity="0.4"/>
+  <circle cx="262" cy="138" r="0.3" fill="white" opacity="0.4"/>
+  <circle cx="312" cy="128" r="0.4" fill="white" opacity="0.5"/>
+  <circle cx="282" cy="142" r="0.3" fill="white" opacity="0.4"/>
   
   <!-- Dense Cluster 5: Right side (20+ stars) -->
   <circle cx="330" cy="40" r="0.7" fill="white" opacity="0.8"/>
@@ -141,6 +276,15 @@
   <circle cx="345" cy="120" r="0.4" fill="white" opacity="0.5"/>
   <circle cx="330" cy="130" r="0.3" fill="white" opacity="0.4"/>
   <circle cx="350" cy="125" r="0.4" fill="white" opacity="0.5"/>
+  <circle cx="328" cy="52" r="0.3" fill="white" opacity="0.4"/>
+  <circle cx="342" cy="48" r="0.4" fill="white" opacity="0.5"/>
+  <circle cx="318" cy="62" r="0.3" fill="white" opacity="0.4"/>
+  <circle cx="352" cy="68" r="0.4" fill="white" opacity="0.5"/>
+  <circle cx="332" cy="82" r="0.3" fill="white" opacity="0.4"/>
+  <circle cx="348" cy="88" r="0.4" fill="white" opacity="0.5"/>
+  <circle cx="322" cy="102" r="0.3" fill="white" opacity="0.4"/>
+  <circle cx="338" cy="118" r="0.3" fill="white" opacity="0.4"/>
+  <circle cx="358" cy="122" r="0.3" fill="white" opacity="0.4"/>
   
   <!-- Dense Cluster 6: Bottom-left (25+ stars) -->
   <circle cx="60" cy="220" r="0.7" fill="white" opacity="0.8"/>
@@ -168,6 +312,16 @@
   <circle cx="70" cy="330" r="0.3" fill="white" opacity="0.4"/>
   <circle cx="100" cy="320" r="0.4" fill="white" opacity="0.5"/>
   <circle cx="80" cy="340" r="0.3" fill="white" opacity="0.4"/>
+  <circle cx="68" cy="228" r="0.3" fill="white" opacity="0.4"/>
+  <circle cx="82" cy="238" r="0.4" fill="white" opacity="0.5"/>
+  <circle cx="56" cy="256" r="0.3" fill="white" opacity="0.4"/>
+  <circle cx="92" cy="268" r="0.4" fill="white" opacity="0.5"/>
+  <circle cx="66" cy="278" r="0.3" fill="white" opacity="0.4"/>
+  <circle cx="86" cy="288" r="0.4" fill="white" opacity="0.5"/>
+  <circle cx="74" cy="298" r="0.3" fill="white" opacity="0.4"/>
+  <circle cx="96" cy="308" r="0.3" fill="white" opacity="0.4"/>
+  <circle cx="62" cy="318" r="0.3" fill="white" opacity="0.4"/>
+  <circle cx="88" cy="328" r="0.3" fill="white" opacity="0.4"/>
   
   <!-- Dense Cluster 7: Bottom-center (25+ stars) -->
   <circle cx="180" cy="220" r="0.8" fill="white" opacity="0.9"/>
@@ -195,6 +349,16 @@
   <circle cx="175" cy="320" r="0.3" fill="white" opacity="0.4"/>
   <circle cx="215" cy="310" r="0.4" fill="white" opacity="0.5"/>
   <circle cx="195" cy="330" r="0.3" fill="white" opacity="0.4"/>
+  <circle cx="184" cy="228" r="0.3" fill="white" opacity="0.4"/>
+  <circle cx="198" cy="218" r="0.4" fill="white" opacity="0.5"/>
+  <circle cx="172" cy="248" r="0.3" fill="white" opacity="0.4"/>
+  <circle cx="212" cy="238" r="0.4" fill="white" opacity="0.5"/>
+  <circle cx="188" cy="258" r="0.3" fill="white" opacity="0.4"/>
+  <circle cx="204" cy="268" r="0.4" fill="white" opacity="0.5"/>
+  <circle cx="176" cy="278" r="0.3" fill="white" opacity="0.4"/>
+  <circle cx="216" cy="278" r="0.3" fill="white" opacity="0.4"/>
+  <circle cx="192" cy="298" r="0.3" fill="white" opacity="0.4"/>
+  <circle cx="208" cy="308" r="0.3" fill="white" opacity="0.4"/>
   
   <!-- Dense Cluster 8: Bottom-right (25+ stars) -->
   <circle cx="290" cy="220" r="0.7" fill="white" opacity="0.8"/>
@@ -222,8 +386,18 @@
   <circle cx="285" cy="320" r="0.3" fill="white" opacity="0.4"/>
   <circle cx="325" cy="310" r="0.4" fill="white" opacity="0.5"/>
   <circle cx="305" cy="330" r="0.3" fill="white" opacity="0.4"/>
+  <circle cx="288" cy="228" r="0.3" fill="white" opacity="0.4"/>
+  <circle cx="308" cy="218" r="0.4" fill="white" opacity="0.5"/>
+  <circle cx="272" cy="248" r="0.3" fill="white" opacity="0.4"/>
+  <circle cx="328" cy="238" r="0.4" fill="white" opacity="0.5"/>
+  <circle cx="294" cy="258" r="0.3" fill="white" opacity="0.4"/>
+  <circle cx="314" cy="268" r="0.4" fill="white" opacity="0.5"/>
+  <circle cx="278" cy="278" r="0.3" fill="white" opacity="0.4"/>
+  <circle cx="322" cy="278" r="0.3" fill="white" opacity="0.4"/>
+  <circle cx="298" cy="298" r="0.3" fill="white" opacity="0.4"/>
+  <circle cx="318" cy="308" r="0.3" fill="white" opacity="0.4"/>
   
-  <!-- Sparse stars: scattered between clusters (40+ stars for Milky Way effect) -->
+  <!-- Sparse stars: scattered between clusters (80+ stars for Milky Way effect) -->
   <circle cx="120" cy="50" r="0.3" fill="white" opacity="0.4"/>
   <circle cx="130" cy="30" r="0.4" fill="white" opacity="0.5"/>
   <circle cx="140" cy="70" r="0.3" fill="white" opacity="0.4"/>
@@ -266,4 +440,51 @@
   <circle cx="230" cy="80" r="0.4" fill="white" opacity="0.5"/>
   <circle cx="140" cy="120" r="0.3" fill="white" opacity="0.4"/>
   <circle cx="240" cy="120" r="0.4" fill="white" opacity="0.5"/>
+  <circle cx="125" cy="55" r="0.3" fill="white" opacity="0.4"/>
+  <circle cx="135" cy="35" r="0.4" fill="white" opacity="0.5"/>
+  <circle cx="145" cy="75" r="0.3" fill="white" opacity="0.4"/>
+  <circle cx="235" cy="45" r="0.4" fill="white" opacity="0.5"/>
+  <circle cx="245" cy="65" r="0.3" fill="white" opacity="0.4"/>
+  <circle cx="125" cy="165" r="0.3" fill="white" opacity="0.4"/>
+  <circle cx="135" cy="185" r="0.4" fill="white" opacity="0.5"/>
+  <circle cx="145" cy="205" r="0.3" fill="white" opacity="0.4"/>
+  <circle cx="235" cy="155" r="0.4" fill="white" opacity="0.5"/>
+  <circle cx="245" cy="175" r="0.3" fill="white" opacity="0.4"/>
+  <circle cx="155" cy="165" r="0.3" fill="white" opacity="0.4"/>
+  <circle cx="255" cy="155" r="0.4" fill="white" opacity="0.5"/>
+  <circle cx="145" cy="245" r="0.3" fill="white" opacity="0.4"/>
+  <circle cx="245" cy="225" r="0.4" fill="white" opacity="0.5"/>
+  <circle cx="155" cy="265" r="0.3" fill="white" opacity="0.4"/>
+  <circle cx="255" cy="245" r="0.4" fill="white" opacity="0.5"/>
+  <circle cx="365" cy="155" r="0.3" fill="white" opacity="0.4"/>
+  <circle cx="375" cy="175" r="0.4" fill="white" opacity="0.5"/>
+  <circle cx="385" cy="205" r="0.3" fill="white" opacity="0.4"/>
+  <circle cx="12" cy="185" r="0.4" fill="white" opacity="0.5"/>
+  <circle cx="22" cy="225" r="0.3" fill="white" opacity="0.4"/>
+  <circle cx="17" cy="265" r="0.4" fill="white" opacity="0.5"/>
+  <circle cx="27" cy="305" r="0.3" fill="white" opacity="0.4"/>
+  <circle cx="155" cy="325" r="0.3" fill="white" opacity="0.4"/>
+  <circle cx="255" cy="305" r="0.4" fill="white" opacity="0.5"/>
+  <circle cx="275" cy="325" r="0.3" fill="white" opacity="0.4"/>
+  <circle cx="365" cy="245" r="0.3" fill="white" opacity="0.4"/>
+  <circle cx="52" cy="345" r="0.4" fill="white" opacity="0.5"/>
+  <circle cx="332" cy="345" r="0.3" fill="white" opacity="0.4"/>
+  <circle cx="122" cy="365" r="0.4" fill="white" opacity="0.5"/>
+  <circle cx="242" cy="365" r="0.3" fill="white" opacity="0.4"/>
+  <circle cx="352" cy="365" r="0.4" fill="white" opacity="0.5"/>
+  <circle cx="385" cy="125" r="0.3" fill="white" opacity="0.4"/>
+  <circle cx="392" cy="285" r="0.4" fill="white" opacity="0.5"/>
+  <circle cx="7" cy="105" r="0.3" fill="white" opacity="0.4"/>
+  <circle cx="397" cy="105" r="0.4" fill="white" opacity="0.5"/>
+  <circle cx="7" cy="305" r="0.3" fill="white" opacity="0.4"/>
+  <circle cx="397" cy="305" r="0.4" fill="white" opacity="0.5"/>
+  <circle cx="132" cy="85" r="0.3" fill="white" opacity="0.4"/>
+  <circle cx="232" cy="85" r="0.4" fill="white" opacity="0.5"/>
+  <circle cx="142" cy="125" r="0.3" fill="white" opacity="0.4"/>
+  <circle cx="242" cy="125" r="0.4" fill="white" opacity="0.5"/>
+  <circle cx="118" cy="95" r="0.3" fill="white" opacity="0.4"/>
+  <circle cx="152" cy="45" r="0.4" fill="white" opacity="0.5"/>
+  <circle cx="168" cy="75" r="0.3" fill="white" opacity="0.4"/>
+  <circle cx="222" cy="55" r="0.4" fill="white" opacity="0.5"/>
+  <circle cx="198" cy="95" r="0.3" fill="white" opacity="0.4"/>
 </svg>
