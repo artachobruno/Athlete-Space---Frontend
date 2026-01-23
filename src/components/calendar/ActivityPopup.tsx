@@ -908,11 +908,17 @@ export function ActivityPopup({
                     />
                   )}
                   
-                  {elevSparkData && elevSparkData.length > 0 && (
+                  {activity?.elevation && activity.elevation > 0 && (
                     <TelemetryMetricRow
                       label="Elev"
-                      value={Math.round(Math.max(...elevSparkData) - Math.min(...elevSparkData))}
-                      unit="m gain"
+                      value={(() => {
+                        const elev = convertElevation(activity.elevation);
+                        return Math.round(elev.value);
+                      })()}
+                      unit={(() => {
+                        const elev = convertElevation(activity.elevation);
+                        return elev.unit;
+                      })()}
                       sparkData={elevSparkData}
                       sparkColor="hsl(var(--chart-2))"
                     />
