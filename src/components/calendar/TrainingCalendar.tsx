@@ -127,43 +127,58 @@ export function TrainingCalendar() {
   return (
     <div className="flex flex-col h-full">
       {/* Controls */}
-      <div className="flex flex-col gap-3 flex-shrink-0 mb-4">
-        {/* Top row: Navigation + View tabs */}
-        <div className="flex items-center justify-between gap-2">
-          {/* Navigation controls */}
-          <div className="flex items-center gap-1.5 sm:gap-2">
-            <Button variant="outline" size="icon" className="h-8 w-8 sm:h-9 sm:w-9" onClick={navigatePrevious}>
-              <ChevronLeft className="h-4 w-4" />
+      <div className="flex flex-col gap-2 flex-shrink-0 mb-3">
+        {/* Row 1: Navigation arrows + date label */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-1">
+            <Button variant="outline" size="icon" className="h-7 w-7 sm:h-8 sm:w-8" onClick={navigatePrevious}>
+              <ChevronLeft className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
             </Button>
-            <Button variant="outline" size="icon" className="h-8 w-8 sm:h-9 sm:w-9" onClick={navigateNext}>
-              <ChevronRight className="h-4 w-4" />
+            <Button variant="outline" size="icon" className="h-7 w-7 sm:h-8 sm:w-8" onClick={navigateNext}>
+              <ChevronRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
             </Button>
-            <Button variant="ghost" onClick={goToToday} className="text-xs sm:text-sm h-8 px-2 sm:px-3">
+            <Button variant="ghost" onClick={goToToday} className="text-[10px] sm:text-xs h-7 px-2">
               Today
             </Button>
-            <span className="font-semibold text-foreground text-xs sm:text-sm truncate max-w-[120px] sm:max-w-none">
-              {getNavigationLabel()}
-            </span>
           </div>
-
-          {/* View tabs - always visible */}
-          <Tabs value={view} onValueChange={(v) => setView(v as ViewType)}>
-            <TabsList className="h-8">
-              <TabsTrigger value="week" className="text-xs px-2 sm:px-3">Week</TabsTrigger>
-              <TabsTrigger value="month" className="text-xs px-2 sm:px-3">Month</TabsTrigger>
-              <TabsTrigger value="season" className="text-xs px-2 sm:px-3 hidden sm:inline-flex">Season</TabsTrigger>
-            </TabsList>
-          </Tabs>
+          
+          <span className="font-semibold text-foreground text-[11px] sm:text-sm">
+            {getNavigationLabel()}
+          </span>
         </div>
 
-        {/* Bottom row: Action buttons - compact grid on mobile */}
-        <div className="flex items-center gap-2 overflow-x-auto scrollbar-hide">
+        {/* Row 2: View toggle (full width on mobile) */}
+        <Tabs value={view} onValueChange={(v) => setView(v as ViewType)} className="w-full">
+          <TabsList className="h-7 w-full grid grid-cols-3 bg-muted/50">
+            <TabsTrigger 
+              value="week" 
+              className="text-[10px] sm:text-xs h-6 data-[state=active]:bg-background"
+            >
+              Week
+            </TabsTrigger>
+            <TabsTrigger 
+              value="month" 
+              className="text-[10px] sm:text-xs h-6 data-[state=active]:bg-background"
+            >
+              Month
+            </TabsTrigger>
+            <TabsTrigger 
+              value="season" 
+              className="text-[10px] sm:text-xs h-6 data-[state=active]:bg-background"
+            >
+              Season
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
+
+        {/* Row 3: Action buttons - horizontally scrollable */}
+        <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-hide -mx-1 px-1">
           <Button 
             size="sm" 
             onClick={() => setAddSessionOpen(true)}
-            className="h-7 text-[10px] sm:text-xs px-2 sm:px-3 whitespace-nowrap flex-shrink-0"
+            className="h-6 text-[9px] sm:text-[10px] px-2 whitespace-nowrap flex-shrink-0"
           >
-            <Plus className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+            <Plus className="h-2.5 w-2.5 sm:h-3 sm:w-3 mr-0.5" />
             Session
           </Button>
 
@@ -171,9 +186,9 @@ export function TrainingCalendar() {
             variant="outline" 
             size="sm" 
             onClick={() => setAddWeekOpen(true)}
-            className="h-7 text-[10px] sm:text-xs px-2 sm:px-3 whitespace-nowrap flex-shrink-0"
+            className="h-6 text-[9px] sm:text-[10px] px-2 whitespace-nowrap flex-shrink-0"
           >
-            <Plus className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+            <Plus className="h-2.5 w-2.5 sm:h-3 sm:w-3 mr-0.5" />
             Week
           </Button>
 
@@ -181,34 +196,23 @@ export function TrainingCalendar() {
             variant="outline" 
             size="sm" 
             onClick={() => setAddRaceOpen(true)}
-            className="h-7 text-[10px] sm:text-xs px-2 sm:px-3 whitespace-nowrap flex-shrink-0"
+            className="h-6 text-[9px] sm:text-[10px] px-2 whitespace-nowrap flex-shrink-0"
           >
-            <Plus className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+            <Plus className="h-2.5 w-2.5 sm:h-3 sm:w-3 mr-0.5" />
             Race
           </Button>
 
-          <div className="h-4 w-px bg-border/50 flex-shrink-0 hidden sm:block" />
+          <div className="h-3 w-px bg-border/40 flex-shrink-0" />
 
           <Button
             variant="ghost"
             size="sm"
             onClick={handleExportIcs}
             disabled={!seasonData?.sessions?.length}
-            className="h-7 text-[10px] sm:text-xs px-2 sm:px-3 whitespace-nowrap flex-shrink-0"
+            className="h-6 text-[9px] sm:text-[10px] px-2 whitespace-nowrap flex-shrink-0"
           >
-            <Download className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
-            <span className="hidden sm:inline">Export</span>
-            <span className="sm:hidden">ICS</span>
-          </Button>
-
-          {/* Season tab for mobile - as a button */}
-          <Button
-            variant={view === 'season' ? 'secondary' : 'ghost'}
-            size="sm"
-            onClick={() => setView('season')}
-            className="h-7 text-[10px] px-2 whitespace-nowrap flex-shrink-0 sm:hidden"
-          >
-            Season
+            <Download className="h-2.5 w-2.5 sm:h-3 sm:w-3 mr-0.5" />
+            ICS
           </Button>
         </div>
       </div>
