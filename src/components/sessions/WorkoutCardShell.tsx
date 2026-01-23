@@ -3,6 +3,7 @@ import {
   CARD_BG,
   CARD_BORDER,
   CARD_INNER_HIGHLIGHT,
+  CARD_INNER_SHADOW,
   CARD_GLOW,
   NOISE_OPACITY,
   NOISE_BLEND_MODE,
@@ -37,9 +38,9 @@ export function WorkoutCardShell({
         ...scheduleThemeVars,
         background: CARD_BG,
         borderColor: CARD_BORDER,
-        ...(highlighted && {
-          boxShadow: CARD_GLOW,
-        }),
+        boxShadow: highlighted
+          ? `${CARD_GLOW}, ${CARD_INNER_SHADOW}`
+          : CARD_INNER_SHADOW,
       }}
     >
       {/* Inner highlight (top-left sheen) */}

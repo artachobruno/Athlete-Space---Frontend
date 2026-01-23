@@ -19,13 +19,19 @@ export const PAGE_BG_BASE = '#020617';
  * Page background gradient structure:
  * - Primary vertical gradient (top → bottom)
  * - Soft radial vignette centered slightly above viewport center
- * - Edge darkening to frame content
+ * - Edge darkening radial gradient for cinematic frame
+ * - Linear gradient for depth
  */
 export const PAGE_BG = `
   radial-gradient(
     1200px 600px at 50% 20%,
     rgba(56, 189, 248, 0.10) 0%,
     rgba(2, 6, 23, 0.0) 55%
+  ),
+  radial-gradient(
+    100% 80% at 50% 100%,
+    rgba(2, 6, 23, 0.0) 0%,
+    rgba(2, 6, 23, 0.85) 80%
   ),
   linear-gradient(
     to bottom,
@@ -86,6 +92,15 @@ export const CARD_INNER_HIGHLIGHT = `
 `;
 
 /**
+ * Inner shadow for edge lift and depth
+ * Creates "floating glass slab" appearance
+ */
+export const CARD_INNER_SHADOW = `
+  inset 0 1px 0 rgba(255,255,255,0.06),
+  inset 0 -1px 0 rgba(0,0,0,0.35)
+`;
+
+/**
  * Tailwind-ready card background class
  */
 export const CARD_BG_CLASS = 'bg-[var(--card-bg)]';
@@ -107,14 +122,14 @@ export const CARD_BLUR_CLASS = 'backdrop-blur-[14px]';
 /**
  * Card glow for highlighted sessions (long / threshold / vo2)
  * Characteristics:
- * - Ambient (not directional)
- * - Radial
- * - Soft falloff
+ * - Directional bias (stronger bottom-right)
+ * - Still ambient and soft
+ * - Radial with soft falloff
  * - Cyan/blue accent
  * - No hard edge
  */
 export const CARD_GLOW = `
-  0 0 60px -20px rgba(56, 189, 248, 0.45),
+  20px 30px 80px -40px rgba(56, 189, 248, 0.45),
   0 0 120px -60px rgba(56, 189, 248, 0.25)
 `;
 
@@ -129,13 +144,15 @@ export const CARD_GLOW_CLASS = 'shadow-[var(--card-glow)]';
 
 /**
  * Noise opacity - ultra-fine grain to break gradient banding
+ * Barely perceptible unless zoomed (matches reference)
  */
-export const NOISE_OPACITY = 0.05;
+export const NOISE_OPACITY = 0.035;
 
 /**
- * Noise blend mode
+ * Noise blend mode - soft-light for subtle texture
+ * overlay as fallback if Safari behaves oddly
  */
-export const NOISE_BLEND_MODE: 'overlay' | 'soft-light' = 'overlay';
+export const NOISE_BLEND_MODE: 'overlay' | 'soft-light' = 'soft-light';
 
 /**
  * CSS-only noise fallback (if noise.png not available)
@@ -166,6 +183,7 @@ export const scheduleThemeVars = {
   '--card-border-width': CARD_BORDER_WIDTH,
   '--card-blur': CARD_BLUR,
   '--card-inner-highlight': CARD_INNER_HIGHLIGHT,
+  '--card-inner-shadow': CARD_INNER_SHADOW,
   '--card-glow': CARD_GLOW,
   '--noise-opacity': NOISE_OPACITY.toString(),
 } as const;
