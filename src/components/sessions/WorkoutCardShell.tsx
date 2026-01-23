@@ -4,8 +4,7 @@ import {
   CARD_BORDER,
   CARD_INNER_HIGHLIGHT,
   CARD_INNER_SHADOW,
-  CARD_LIGHT_FIELD,
-  CARD_HALO,
+  CARD_STELLAR_FIELD,
   NOISE_OPACITY,
   NOISE_BLEND_MODE,
   NOISE_FALLBACK,
@@ -22,25 +21,12 @@ export function WorkoutCardShell({
   highlighted = false,
 }: WorkoutCardShellProps) {
   return (
-    <div className="relative z-0">
-      {/* Outer halo (NOT clipped by card, sits behind card) - painted glow, not additive */}
-      {highlighted && (
-        <div
-          className="absolute -inset-12 z-0 pointer-events-none"
-          style={{
-            background: CARD_HALO,
-            filter: 'blur(14px)',
-            opacity: 0.75,
-            transform: 'scale(1.05)',
-          }}
-        />
-      )}
-
+    <div className="relative">
       {/* Actual card */}
       <div
         className={cn(
           // Base glass card
-          'relative z-10 rounded-xl backdrop-blur-[14px]',
+          'relative rounded-xl backdrop-blur-[14px]',
           'shadow-sm transition-all motion-safe:duration-200',
           
           // Border only for non-highlighted cards (highlighted = pure light)
@@ -64,13 +50,13 @@ export function WorkoutCardShell({
           }}
         />
 
-        {/* Internal glow star - localized radial light emitter */}
+        {/* Stellar field - milky way style texture (sparse stars, not glow) */}
         {highlighted && (
           <div
             className="absolute inset-0 rounded-xl pointer-events-none"
             style={{
-              background: CARD_LIGHT_FIELD,
-              opacity: 0.9,
+              background: CARD_STELLAR_FIELD,
+              opacity: 0.6,
             }}
           />
         )}
