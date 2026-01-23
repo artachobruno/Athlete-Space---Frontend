@@ -408,6 +408,23 @@ export function TodayWorkoutCard(props: TodayWorkoutCardProps = {}) {
         </CardContent>
       </Card>
 
+      {/* Coach Hint Preview - optional, only for planned sessions */}
+      {!isCompleted && todayWorkout.coach_insight && (
+        <Card className="border-primary/20 bg-primary/5">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm flex items-center gap-2 text-primary">
+              <Brain className="h-4 w-4" />
+              Coach Hint
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-foreground leading-relaxed">
+              {todayWorkout.coach_insight}
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Expandable Workout Details */}
       {todayWorkout && (
         <WorkoutDetailCard

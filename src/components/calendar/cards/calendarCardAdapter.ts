@@ -1,5 +1,6 @@
 import type { CalendarItem } from '@/types/calendar';
 import type { BaseCardProps } from './BaseCalendarCardSvg';
+import { getIntentNarrative, getExecutionSummary, truncateNarrative } from '@/copy/workoutNarratives';
 
 export interface CalendarCardProps {
   variant: string;
@@ -37,87 +38,41 @@ function formatDuration(minutes: number): string {
  * Derives narrative intent text (WHY) from CalendarItem
  * Present tense for planned, past tense for completed
  * Max 120 characters
+ * Uses canonical copy templates from /copy/workoutNarratives
  */
 function deriveIntentText(item: CalendarItem): string | undefined {
-  const intentNarratives: Record<string, string> = {
-    easy: 'Maintain aerobic base and promote recovery.',
-    steady: 'Build endurance at sustainable effort.',
-    tempo: 'Develop threshold fitness and race pace feel.',
-    intervals: 'Improve VO2 max and speed endurance.',
-    long: 'Build fatigue resistance late-race.',
-    rest: 'Recovery and adaptation day.',
-  };
-
-  // Base narrative from intent
-  let narrative = intentNarratives[item.intent] || 'Training session.';
-
-  // Enhance with title/description context if available
-  const titleLower = item.title?.toLowerCase() || '';
-  const descLower = item.description?.toLowerCase() || '';
-
-  // Special handling for race
-  if (item.sport === 'race') {
-    narrative = 'Race day — execute your plan.';
-  }
-
-  // Adjust tense based on kind
-  if (item.kind === 'completed') {
-    // Convert to past tense
-    narrative = narrative
-      .replace(/Build/g, 'Built')
-      .replace(/Maintain/g, 'Maintained')
-      .replace(/Develop/g, 'Developed')
-      .replace(/Improve/g, 'Improved')
-      .replace(/Promote/g, 'Promoted')
-      .replace(/Execute/g, 'Executed');
-  }
-
-  // Truncate to 120 chars
-  if (narrative.length > 120) {
-    narrative = narrative.slice(0, 117) + '...';
-  }
-
-  return narrative;
+  const isCompleted = item.kind === 'completed';
+  const narrative = getIntentNarrative(item.sport, item.intent, isCompleted);
+  
+  return truncateNarrative(narrative);
 }
 
 /**
  * Derives execution summary (DID IT WORK?) from CalendarItem
  * Only for completed activities
  * Max 120 characters, factual and neutral
+ * Uses canonical copy templates from /copy/workoutNarratives
  */
 function deriveExecutionSummary(item: CalendarItem): string | undefined {
   if (item.kind !== 'completed') {
     return undefined;
   }
 
-  const compliance = item.compliance;
-  const isPaired = item.isPaired;
-  const executionNotes = item.executionNotes;
-
   // If we have explicit execution notes, use them (truncated)
-  if (executionNotes && executionNotes.trim()) {
-    const trimmed = executionNotes.trim();
-    return trimmed.length > 120 ? trimmed.slice(0, 117) + '...' : trimmed;
+  if (item.executionNotes && item.executionNotes.trim()) {
+    return truncateNarrative(item.executionNotes.trim());
   }
 
-  // Derive from compliance + pairing
-  if (compliance === 'complete') {
-    if (isPaired) {
-      return 'On target — matched plan.';
-    }
-    return 'Completed as planned.';
+  // Use canonical templates based on compliance
+  if (!item.compliance) {
+    return undefined;
   }
 
-  if (compliance === 'partial') {
-    return 'Completed with reduced volume.';
-  }
+  const summary = getExecutionSummary(item.compliance, {
+    isPaired: item.isPaired,
+  });
 
-  if (compliance === 'missed') {
-    return 'Missed due to schedule or fatigue.';
-  }
-
-  // Fallback for completed without compliance
-  return 'Completed.';
+  return truncateNarrative(summary);
 }
 
 /**
