@@ -118,12 +118,12 @@ export const CARD_NEBULA = `
  * Smaller size = more stars per area
  */
 export const STELLAR_DENSITY = {
-  easy: '600px 600px',
-  steady: '550px 550px',
-  tempo: '480px 480px',
-  intervals: '420px 420px',
-  long: '360px 360px',
-  rest: '600px 600px',
+  easy: '300px 300px',
+  steady: '280px 280px',
+  tempo: '250px 250px',
+  intervals: '220px 220px',
+  long: '200px 200px',
+  rest: '300px 300px',
 } as const;
 
 /**

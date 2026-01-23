@@ -46,7 +46,7 @@ export function WorkoutCardShell({
           boxShadow: CARD_INNER_SHADOW,
         }}
       >
-        {/* Stellar field - actual stars (SVG) + nebula mist */}
+        {/* Stellar field - actual stars (SVG) + nebula mist - behind highlight */}
         {highlighted && (
           <div
             className="absolute inset-0 rounded-xl pointer-events-none"
@@ -54,7 +54,8 @@ export function WorkoutCardShell({
               backgroundImage: `url('/stars.svg'), ${CARD_NEBULA}`,
               backgroundSize: `${stellarSize}, cover`,
               backgroundRepeat: 'repeat, no-repeat',
-              opacity: 0.6,
+              backgroundPosition: '0% 0%, center',
+              opacity: 1.0,
             }}
           />
         )}
