@@ -98,6 +98,10 @@ function itemToCardData(item: CalendarItem): SessionCardData {
     status = 'missed';
   }
 
+  // Map coachNote from CalendarItem to coach_insight
+  // Prioritize coachNote.text over description for coach insight
+  const coach_insight = item.coachNote?.text || null;
+  
   return {
     id: item.id,
     title: item.title,
@@ -106,7 +110,7 @@ function itemToCardData(item: CalendarItem): SessionCardData {
     duration_minutes: item.durationMin,
     distance_km: item.distanceKm,
     status,
-    coach_insight: item.coachNote?.text || item.description || null,
+    coach_insight,
     notes: item.description || null,
     execution_notes: item.executionNotes || null,
     must_dos: item.mustDos,
@@ -252,7 +256,8 @@ export function SessionCard({
   const showIntensityBadge = density !== 'compact';
   const showStatusBadge = density !== 'compact';
   const showStatusIconOnRight = density === 'compact' && StatusIcon;
-  const showCoachInsight = density === 'standard' || density === 'rich';
+  // Coach insight: only for completed activities (matching BaseCalendarCardSvg behavior)
+  const showCoachInsight = (density === 'standard' || density === 'rich') && session.status === 'completed';
   const showSteps = density === 'rich';
   const showBothDurationAndDistance = density !== 'compact';
 
