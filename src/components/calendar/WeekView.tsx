@@ -6,6 +6,8 @@ import {
   format,
   isToday,
   startOfMonth,
+  parseISO,
+  isWithinInterval,
 } from 'date-fns';
 import { cn } from '@/lib/utils';
 import {
@@ -20,6 +22,7 @@ import {
 } from 'lucide-react';
 import { CombinedSessionCard } from '@/components/schedule/CombinedSessionCard';
 import { DayView } from './DayView';
+import { WeeklyNarrativeCard } from './WeeklyNarrativeCard';
 import { Button } from '@/components/ui/button';
 import { GlassCard } from '@/components/ui/GlassCard';
 import {
@@ -119,6 +122,29 @@ function WeekView({ currentDate, onActivityClick }: WeekViewProps) {
     return summaries || [];
   };
 
+  // Get all sessions for the week (for narrative card)
+  const weekSessions = useMemo(() => {
+    if (!monthData) return [];
+    
+    const allSessions = [...monthData.planned_sessions, ...monthData.workouts];
+    
+    return allSessions.filter(session => {
+      if (!session.date) return false;
+      const sessionDate = parseISO(session.date);
+      return isWithinInterval(sessionDate, { start: weekStart, end: weekEnd });
+    });
+  }, [monthData, weekStart, weekEnd]);
+
+  // Handle key session click (scroll to session)
+  const handleKeySessionClick = (sessionId: string) => {
+    // Find the day that contains this session
+    const session = weekSessions.find(s => s.id === sessionId);
+    if (session && session.date) {
+      const sessionDate = parseISO(session.date);
+      setSelectedDay(sessionDate);
+    }
+  };
+
   const handleCardClick = (summary: ExecutionSummary) => {
     if (monthData && onActivityClick) {
       const session = summary.planned
@@ -171,6 +197,13 @@ function WeekView({ currentDate, onActivityClick }: WeekViewProps) {
 
   return (
     <div className="space-y-3">
+      {/* Weekly Narrative Card */}
+      <WeeklyNarrativeCard
+        weekStart={format(weekStart, 'yyyy-MM-dd')}
+        sessions={weekSessions}
+        onKeySessionClick={handleKeySessionClick}
+      />
+
       {/* Week Grid */}
       <div className="grid grid-cols-7 gap-2">
         {days.map((day, idx) => {
