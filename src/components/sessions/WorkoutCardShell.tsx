@@ -22,11 +22,11 @@ export function WorkoutCardShell({
   highlighted = false,
 }: WorkoutCardShellProps) {
   return (
-    <div className="relative">
+    <div className="relative z-0">
       {/* Outer halo (NOT clipped by card, sits behind card) */}
       {highlighted && (
         <div
-          className="absolute -inset-10 pointer-events-none"
+          className="absolute -inset-10 z-0 pointer-events-none"
           style={{
             background: CARD_HALO,
             filter: 'blur(6px)',
@@ -40,7 +40,7 @@ export function WorkoutCardShell({
       <div
         className={cn(
           // Base glass card
-          'relative rounded-xl backdrop-blur-[14px]',
+          'relative z-10 rounded-xl backdrop-blur-[14px]',
           'shadow-sm transition-all motion-safe:duration-200',
           
           // Border only for non-highlighted cards (highlighted = pure light)

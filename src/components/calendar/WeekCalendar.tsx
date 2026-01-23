@@ -407,8 +407,8 @@ export function WeekCalendar({ currentDate, onActivityClick }: WeekCalendarProps
                 key={idx}
                 date={day}
                 className={cn(
-                  'rounded-lg border bg-card text-card-foreground shadow-sm',
-                  'flex flex-col min-h-0 overflow-hidden transition-all duration-150',
+                  'rounded-lg border bg-transparent text-card-foreground shadow-sm',
+                  'flex flex-col min-h-0 overflow-visible transition-all duration-150',
                   // Hover state - subtle lift and highlight
                   'hover:shadow-md hover:border-border/80',
                   // Focus state - keyboard navigation
