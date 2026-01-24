@@ -92,6 +92,11 @@ export interface WorkoutStructure {
   notes?: string;
 }
 
+export interface ClimateExpectation {
+  primary: string;
+  detail?: string | null;
+}
+
 export interface CompletedActivity {
   id: string;
   date: string;
@@ -111,6 +116,7 @@ export interface CompletedActivity {
   normalizedPower?: number; // Normalized Power (cycling) or Normalized Effort (running)
   intensityFactor?: number; // Intensity Factor (IF)
   effortSource?: 'power' | 'pace' | 'hr'; // Source of effort calculation
+  climateExpectation?: ClimateExpectation | null; // One-line climate expectation (outdoor aerobic only)
 }
 
 export interface TrainingLoad {

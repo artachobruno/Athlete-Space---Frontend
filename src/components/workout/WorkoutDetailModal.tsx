@@ -6,6 +6,7 @@ import { Clock, Route, Mountain, MessageCircle, ExternalLink, CheckCircle2 } fro
 import { useUnitSystem } from '@/hooks/useUnitSystem';
 import { cn } from '@/lib/utils';
 import { NarrativeBlock } from './NarrativeBlock';
+import { ClimateInfoTooltip } from '@/components/ClimateInfoTooltip';
 import type { CalendarSession } from '@/lib/api';
 import type { CalendarItem } from '@/types/calendar';
 import type { CompletedActivity } from '@/types';
@@ -274,6 +275,16 @@ export function WorkoutDetailModal({
                 isUnplanned={isUnplanned}
                 isHeroSession={isHeroSession}
               />
+              {/* Climate expectation: one-line only, never stack with coach criticism */}
+              {activity?.climateExpectation &&
+                coachInsight?.tone !== 'warning' && (
+                  <div className="text-xs text-muted-foreground leading-snug">
+                    {activity.climateExpectation.primary}
+                    {activity.climateExpectation.detail && (
+                      <ClimateInfoTooltip detail={activity.climateExpectation.detail} />
+                    )}
+                  </div>
+                )}
             </div>
 
             {/* ============ TABS ============ */}

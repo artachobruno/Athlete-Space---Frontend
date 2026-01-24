@@ -6,7 +6,7 @@ import { getConversationId } from "./utils";
 import { isPreviewMode } from "./preview";
 import { mockActivities } from "@/mock/activities.mock";
 import { mockCalendarSessions, getMockWeekSessions, getMockTodaySessions } from "@/mock/calendarSessions.mock";
-import type { CompletedActivity, PlannedWorkout } from "@/types";
+import type { ClimateExpectation, CompletedActivity, PlannedWorkout } from "@/types";
 
 export const getBaseURL = () => {
   // Check if we're in Capacitor (native app)
@@ -1235,6 +1235,16 @@ function normalizeActivityDate(dateField: unknown): string {
   return date.toISOString().split('T')[0];
 }
 
+function _normalizeClimateExpectation(raw: unknown): ClimateExpectation | null {
+  if (raw === null || raw === undefined) return null;
+  if (typeof raw !== 'object' || !('primary' in raw)) return null;
+  const obj = raw as { primary?: unknown; detail?: unknown };
+  if (typeof obj.primary !== 'string') return null;
+  const detail =
+    obj.detail != null && typeof obj.detail === 'string' ? obj.detail : null;
+  return { primary: obj.primary, detail };
+}
+
 /**
  * Fetches activities from the backend.
  * Note: Backend has a maximum limit of 100. Larger limits will be capped at 100.
@@ -1442,6 +1452,7 @@ export const fetchActivities = async (params?: { limit?: number; offset?: number
                              (act.planned_session_id === null ? null : undefined), // Link to planned session (pairing field)
           coachFeedback: typeof act.coach_feedback === 'string' ? act.coach_feedback :
                         typeof act.coachFeedback === 'string' ? act.coachFeedback : undefined,
+          climateExpectation: _normalizeClimateExpectation(act.climate_expectation ?? act.climateExpectation),
           normalizedPower: typeof act.normalized_power === 'number' ? act.normalized_power :
                           typeof act.normalizedPower === 'number' ? act.normalizedPower : undefined,
           intensityFactor: typeof act.intensity_factor === 'number' ? act.intensity_factor :
