@@ -177,9 +177,7 @@ export default function Activities() {
             </p>
           </div>
         ) : (
-          <div className="bg-transparent rounded-xl border border-border/50 overflow-hidden shadow-sm p-6">
-            <ActivityList activities={activities || []} initialExpandedId={activityId || null} />
-          </div>
+          <ActivityList activities={activities || []} initialExpandedId={activityId || null} />
         )}
       </div>
     </AppLayout>
