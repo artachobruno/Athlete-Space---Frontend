@@ -592,7 +592,7 @@ export function CoachChat() {
   };
 
   return (
-    <div className="flex-1 flex flex-col bg-card rounded-lg border border-border overflow-hidden">
+    <div className="flex-1 flex flex-col bg-muted/40 backdrop-blur-sm rounded-lg border border-border/50 overflow-hidden">
       {/* Draft Context Banner */}
       {draftContext?.context === 'modify_today_session' && (
         <div className="border-b border-yellow-500/30 bg-yellow-500/5 px-4 py-2">

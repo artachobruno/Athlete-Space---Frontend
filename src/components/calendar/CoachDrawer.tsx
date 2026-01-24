@@ -60,7 +60,7 @@ export function CoachDrawer({ open, onOpenChange, context }: CoachDrawerProps) {
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent className="w-full sm:max-w-md flex flex-col">
+      <SheetContent className="w-full sm:max-w-md flex flex-col bg-muted/40 backdrop-blur-sm border-border/50">
         <SheetHeader>
           <SheetTitle className="flex items-center gap-2">
             <Bot className="h-5 w-5 text-accent" />

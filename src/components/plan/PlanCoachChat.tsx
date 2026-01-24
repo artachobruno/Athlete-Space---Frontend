@@ -115,7 +115,7 @@ export function PlanCoachChat() {
 
       {/* Chat panel */}
       {isOpen && (
-        <div className="fixed bottom-6 right-6 w-80 bg-card border border-border rounded-lg shadow-xl overflow-hidden animate-fade-up">
+        <div className="fixed bottom-6 right-6 w-80 bg-muted/40 backdrop-blur-sm border border-border/50 rounded-lg shadow-xl overflow-hidden animate-fade-up">
           {/* Header */}
           <div className="flex items-center justify-between p-3 border-b border-border bg-muted/50">
             <div className="flex items-center gap-2">
