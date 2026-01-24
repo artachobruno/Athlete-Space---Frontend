@@ -96,10 +96,10 @@ function AthleteDashboard() {
             <WorkoutInstructionsCard instructions={firstPlannedSession.instructions} />
           )}
 
-          {/* 4. Workout Steps Card */}
+          {/* 4. Workout Steps Card
           {firstPlannedSession?.steps && firstPlannedSession.steps.length > 0 && (
             <WorkoutStepsCard steps={firstPlannedSession.steps} />
-          )}
+          )} */}
 
           {/* 5. Coach Insight Card */}
           {firstPlannedSession?.coach_insight && (
