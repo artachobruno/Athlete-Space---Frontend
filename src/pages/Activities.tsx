@@ -148,8 +148,9 @@ export default function Activities() {
 
   return (
     <AppLayout>
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
+      <div className="flex flex-col h-full min-h-screen bg-transparent">
+        {/* Header */}
+        <div className="flex items-center justify-between flex-shrink-0 mb-4">
           <div>
             <h1 className="text-[clamp(1.25rem,3vw,1.5rem)] font-semibold text-primary">History</h1>
             <p className="text-muted-foreground mt-1">Your completed training</p>
@@ -165,20 +166,23 @@ export default function Activities() {
           </Button>
         </div>
 
-        {isLoading ? (
-          <div className="flex items-center justify-center py-12 bg-muted/30 rounded-xl border border-border/50 backdrop-blur-sm">
-            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-          </div>
-        ) : error ? (
-          <div className="text-center py-12 text-muted-foreground bg-muted/30 rounded-xl border border-border/50 backdrop-blur-sm">
-            <p>Unable to load activities</p>
-            <p className="text-xs mt-2">
-              {error instanceof Error ? error.message : 'Unknown error occurred'}
-            </p>
-          </div>
-        ) : (
-          <ActivityList activities={activities || []} initialExpandedId={activityId || null} />
-        )}
+        {/* Content */}
+        <div className="flex-1 min-h-0">
+          {isLoading ? (
+            <div className="flex items-center justify-center py-12 bg-muted/30 rounded-xl border border-border/50 backdrop-blur-sm">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : error ? (
+            <div className="text-center py-12 text-muted-foreground bg-muted/30 rounded-xl border border-border/50 backdrop-blur-sm">
+              <p>Unable to load activities</p>
+              <p className="text-xs mt-2">
+                {error instanceof Error ? error.message : 'Unknown error occurred'}
+              </p>
+            </div>
+          ) : (
+            <ActivityList activities={activities || []} initialExpandedId={activityId || null} />
+          )}
+        </div>
       </div>
     </AppLayout>
   );
