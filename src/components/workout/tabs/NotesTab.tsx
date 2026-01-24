@@ -7,8 +7,8 @@ interface NotesTabProps {
 }
 
 export function NotesTab({ session, activity }: NotesTabProps) {
-  // Get athlete notes from session or activity
-  const athleteNotes = session?.notes || activity?.notes || null;
+  // Get athlete notes from session (activity doesn't have notes property)
+  const athleteNotes = session?.notes || null;
 
   // Get coach notes from session
   const coachNotes = session?.coach_insight ? [session.coach_insight] : [];

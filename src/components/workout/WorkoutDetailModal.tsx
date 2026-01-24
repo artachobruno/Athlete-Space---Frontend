@@ -108,6 +108,12 @@ export function WorkoutDetailModal({
   const navigate = useNavigate();
   const { convertDistance, convertElevation } = useUnitSystem();
 
+  // Get title first (needed for hero detection)
+  const title = session?.title || item?.title || activity?.title || 'Workout';
+
+  // Get intent/intensity first (needed for hero detection)
+  const intensity = session?.intensity || item?.intent || undefined;
+
   // Determine status
   const status = session?.status || (item?.kind === 'completed' ? 'completed' : 'planned');
   const isPlanned = status === 'planned';
@@ -121,12 +127,6 @@ export function WorkoutDetailModal({
     intensity?.toLowerCase().includes('long') ||
     title.toLowerCase().includes('long') ||
     title.toLowerCase().includes('race');
-
-  // Get title
-  const title = session?.title || item?.title || activity?.title || 'Workout';
-
-  // Get intent/intensity
-  const intensity = session?.intensity || item?.intent || undefined;
   const zoneLabel = getIntentLabel(intensity, session?.type || item?.sport || 'other');
   const { zoneBgColor, zoneTextColor } = getZoneColors(intensity);
 
@@ -270,7 +270,7 @@ export function WorkoutDetailModal({
                 intentText={intentText}
                 executionSummary={executionSummary}
                 coachInsight={coachInsight}
-                status={status}
+                status={status as 'completed' | 'planned'}
                 isUnplanned={isUnplanned}
                 isHeroSession={isHeroSession}
               />
