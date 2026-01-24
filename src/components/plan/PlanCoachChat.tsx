@@ -164,18 +164,22 @@ export function PlanCoachChat() {
             {/* Coach Progress Panel - shown above messages when conversation is active */}
             {conversationId && <CoachProgressPanel conversationId={conversationId} mode="executing" />}
             {messages.map((msg, idx) => (
-              <div key={idx} className="space-y-2">
+              <div 
+                key={idx} 
+                className="space-y-2 animate-fade-in"
+                style={{ animationDelay: `${idx * 50}ms`, animationFillMode: 'backwards' }}
+              >
                 <div
                   className={cn(
-                    'flex',
-                    msg.role === 'athlete' && 'justify-end'
+                    'flex transition-all duration-300',
+                    msg.role === 'athlete' ? 'justify-end' : 'justify-start'
                   )}
                 >
                   <div
                     className={cn(
-                      'max-w-[85%] rounded-lg px-3 py-2 text-sm',
+                      'max-w-[85%] rounded-lg px-3 py-2 text-sm transform transition-all duration-200',
                       msg.role === 'coach'
-                        ? 'bg-[#2F4F4F]/10 text-foreground'
+                        ? 'bg-coach/10 text-foreground'
                         : 'bg-accent text-accent-foreground'
                     )}
                   >
@@ -189,7 +193,7 @@ export function PlanCoachChat() {
                   msg.plan_items &&
                   (!msg.response_type ||
                     ['plan', 'weekly_plan', 'season_plan', 'session_plan', 'recommendation', 'summary'].includes(msg.response_type)) && (
-                    <div className={cn('flex')}>
+                    <div className="flex animate-fade-in" style={{ animationDelay: '100ms' }}>
                       <div className="max-w-[85%]">
                         <PlanList planItems={msg.plan_items} />
                       </div>
