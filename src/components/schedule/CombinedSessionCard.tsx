@@ -103,49 +103,43 @@ export function CombinedSessionCard({
   return (
     <div
       className={cn(
-        'rounded-lg border border-border/60 bg-card',
+        'rounded-lg border border-border/60 bg-card overflow-hidden',
         'transition-all hover:border-border/80',
         onClick && 'cursor-pointer',
         variant === 'week' && 'text-xs'
       )}
       onClick={onClick}
     >
-      {/* Status Badges: Easy Done */}
-      <div className="px-2 pt-2 pb-1.5 flex items-center gap-1.5 flex-wrap">
-        <Badge variant="outline" className="text-[9px] px-1.5 py-0.5 h-auto font-medium">
+      {/* Row 1: Status Badges (Easy Done) */}
+      <div className="px-2 pt-2 pb-1 flex items-center gap-1.5">
+        <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-4 font-medium whitespace-nowrap shrink-0">
           {intensityLabel}
         </Badge>
         {showDoneBadge && (
-          <Badge variant="outline" className="text-[9px] px-1.5 py-0.5 h-auto font-medium text-green-600 dark:text-green-400 border-green-600/30 dark:border-green-400/30">
+          <Badge variant="outline" className="text-[9px] px-1.5 py-0 h-4 font-medium whitespace-nowrap shrink-0 text-load-fresh border-load-fresh/30">
             Done
           </Badge>
         )}
       </div>
 
-      {/* Title */}
-      <div className="px-2 pb-1.5">
-        <p className="font-medium text-foreground truncate text-sm">{title}</p>
+      {/* Row 2: Title */}
+      <div className="px-2 pb-1">
+        <p className="font-medium text-foreground text-sm truncate">{title}</p>
       </div>
 
-      {/* Time and Distance on one line */}
+      {/* Row 3: Time · Distance */}
       {(displayDuration || displayDistance) && (
-        <div className="px-2 pb-1.5 flex items-center gap-2 text-muted-foreground">
-          {displayDuration && (
-            <span className="text-[10px]">{displayDuration}</span>
-          )}
-          {displayDuration && displayDistance && (
-            <span className="text-[9px]">·</span>
-          )}
-          {displayDistance && (
-            <span className="text-[10px]">{displayDistance}</span>
-          )}
+        <div className="px-2 pb-1 text-muted-foreground text-[10px] truncate">
+          {displayDuration}
+          {displayDuration && displayDistance && ' · '}
+          {displayDistance}
         </div>
       )}
 
-      {/* Coach Feedback */}
+      {/* Row 4: Coach Feedback */}
       {coachFeedback && (
-        <div className="px-2 pt-1.5 pb-2">
-          <p className="text-[10px] leading-relaxed text-foreground break-words line-clamp-3">
+        <div className="px-2 pb-2">
+          <p className="text-[10px] leading-tight text-muted-foreground line-clamp-2">
             {coachFeedback}
           </p>
         </div>
