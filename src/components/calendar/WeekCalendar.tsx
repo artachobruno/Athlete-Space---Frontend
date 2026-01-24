@@ -481,12 +481,12 @@ export function WeekCalendar({ currentDate, onActivityClick }: WeekCalendarProps
                                 isDragging && 'opacity-30'
                               )}
                             >
-                              <SessionCard
-                                session={item}
-                                density="standard"
-                                className="h-full"
-                                highlighted={isHighlightedIntent(item.intent)}
-                              />
+                            <SessionCard
+                              session={item}
+                              density="compact"
+                              className="h-full"
+                              highlighted={isHighlightedIntent(item.intent)}
+                            />
                             </div>
                           </DraggableSessionWrapper>
                         );
