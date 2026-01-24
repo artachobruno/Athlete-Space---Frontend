@@ -181,7 +181,7 @@ export function DayView({ date, items, onBack, onItemClick }: DayViewProps) {
                     
                     <div>
                       <CardTitle className="text-lg">
-                        {intentLabels[item.intent]}
+                        {item.title}
                       </CardTitle>
                       <p className="text-sm text-muted-foreground mt-0.5">
                         {sportLabels[item.sport]} • {time}

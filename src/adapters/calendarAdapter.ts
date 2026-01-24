@@ -6,9 +6,20 @@
  * All UI components work with CalendarItem only.
  */
 
+/**
+ * Calendar Adapter
+ * 
+ * Converts backend types (CalendarSession, CompletedActivity) to frontend CalendarItem.
+ * This is the ONLY place where backend types are accessed directly.
+ * All UI components work with CalendarItem only.
+ * 
+ * Uses canonical coach vocabulary for workout titles (shared language layer).
+ */
 import { CalendarItem, CalendarCompliance, normalizeCalendarSport, normalizeCalendarIntent } from '@/types/calendar';
 import { CalendarSession } from '@/lib/api';
 import { CompletedActivity } from '@/types';
+import { resolveWorkoutDisplayName } from '@/utils/resolveWorkoutDisplayName';
+import type { CoachVocabularyLevel } from '@/types/vocabulary';
 
 /**
  * Capitalizes all words in a title (title case).
@@ -26,13 +37,18 @@ export function capitalizeTitle(title: string): string {
 /**
  * Converts a CalendarSession to a CalendarItem.
  * 
+ * Uses canonical coach vocabulary to resolve workout titles.
+ * This ensures consistent language across UI cards, narratives, and LLM responses.
+ * 
  * @param session - Backend calendar session
  * @param activities - Array of completed activities for matching/compliance
+ * @param vocabularyLevel - Optional coach vocabulary level (defaults to 'intermediate')
  * @returns CalendarItem for UI display
  */
 export function toCalendarItem(
   session: CalendarSession,
-  activities: CompletedActivity[]
+  activities: CompletedActivity[],
+  vocabularyLevel?: CoachVocabularyLevel | null
 ): CalendarItem {
   // CRITICAL: Determine completion based on planned_sessions fields ONLY
   // Check all completion indicators to be robust to inconsistent data:
@@ -153,12 +169,21 @@ export function toCalendarItem(
     });
   }
 
+  const sport = normalizeCalendarSport(session.type, session.title);
+  const intent = normalizeCalendarIntent(session.intensity);
+  
+  const resolvedTitle = resolveWorkoutDisplayName({
+    sport,
+    intent,
+    vocabularyLevel,
+  });
+
   return {
     id: session.id,
     kind,
-    sport: normalizeCalendarSport(session.type, session.title),
-    intent: normalizeCalendarIntent(session.intensity),
-    title: capitalizeTitle(session.title || ''),
+    sport,
+    intent,
+    title: resolvedTitle,
     startLocal,
     durationMin: session.duration_minutes || 0,
     load,

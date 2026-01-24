@@ -126,7 +126,7 @@ export function TrainingCard({ group, variant = 'compact', onClick }: TrainingCa
                 'text-[9px] font-medium uppercase tracking-wider',
                 'text-muted-foreground/70'
               )}>
-                {intentLabels[primaryItem.intent] || primaryItem.intent}
+                {primaryItem.title}
               </span>
               
               {isMultiple && (
@@ -216,7 +216,7 @@ export function TrainingCard({ group, variant = 'compact', onClick }: TrainingCa
           {/* Session type - small caps label */}
           <div className="flex items-center justify-between">
             <span className="text-[10px] font-medium uppercase tracking-widest text-muted-foreground/60">
-              {intentLabels[primaryItem.intent] || primaryItem.intent}
+              {primaryItem.title}
             </span>
             
             <div className="flex items-center gap-1.5">
@@ -246,12 +246,6 @@ export function TrainingCard({ group, variant = 'compact', onClick }: TrainingCa
             <span className="text-[10px] text-muted-foreground/50 uppercase tracking-wider">min</span>
           </div>
           
-          {/* Title if different from intent */}
-          {primaryItem.title && primaryItem.title !== intentLabels[primaryItem.intent] && (
-            <p className="text-[11px] text-muted-foreground/70 line-clamp-1 tracking-tight">
-              {primaryItem.title}
-            </p>
-          )}
           
           {/* Metrics row - telemetry style */}
           <div className="flex items-center gap-3 text-[10px] tabular-nums">

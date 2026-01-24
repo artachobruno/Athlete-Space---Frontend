@@ -39,6 +39,7 @@ export const AthleteProfileOutSchema = z.object({
   }).nullable(),
   goals: z.array(z.string()),
   strava_connected: z.boolean(),
+  vocabulary_level: z.enum(['foundational', 'intermediate', 'advanced']).nullable().optional(), // Coach vocabulary level for canonical language layer
 });
 
 export type AthleteProfileOut = z.infer<typeof AthleteProfileOutSchema>;
