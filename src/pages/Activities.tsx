@@ -166,18 +166,22 @@ export default function Activities() {
         </div>
 
         {isLoading ? (
-          <div className="flex items-center justify-center py-12">
+          <div className="flex items-center justify-center py-12 bg-card rounded-xl border border-border">
             <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
           </div>
         ) : error ? (
-          <div className="text-center py-12 text-muted-foreground">
+          <div className="text-center py-12 text-muted-foreground bg-card rounded-xl border border-border">
             <p>Unable to load activities</p>
             <p className="text-xs mt-2">
               {error instanceof Error ? error.message : 'Unknown error occurred'}
             </p>
           </div>
         ) : (
-          <ActivityList activities={activities || []} initialExpandedId={activityId || null} />
+          <div className="bg-card rounded-xl border border-border overflow-hidden shadow-sm">
+            <div className="p-6 bg-muted/40">
+              <ActivityList activities={activities || []} initialExpandedId={activityId || null} />
+            </div>
+          </div>
         )}
       </div>
     </AppLayout>
