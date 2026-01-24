@@ -169,11 +169,11 @@ export default function Activities() {
         {/* Content */}
         <div className="flex-1 min-h-0">
           {isLoading ? (
-            <div className="flex items-center justify-center py-12 bg-muted/30 rounded-xl border border-border/50 backdrop-blur-sm">
+            <div className="flex items-center justify-center py-12 rounded-xl border border-border/50 backdrop-blur-sm">
               <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
             </div>
           ) : error ? (
-            <div className="text-center py-12 text-muted-foreground bg-muted/30 rounded-xl border border-border/50 backdrop-blur-sm">
+            <div className="text-center py-12 text-muted-foreground rounded-xl border border-border/50 backdrop-blur-sm">
               <p>Unable to load activities</p>
               <p className="text-xs mt-2">
                 {error instanceof Error ? error.message : 'Unknown error occurred'}

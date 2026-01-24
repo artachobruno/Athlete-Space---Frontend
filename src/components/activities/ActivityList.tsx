@@ -112,7 +112,7 @@ export function ActivityList({ activities, initialExpandedId = null }: ActivityL
 
   if (validActivities.length === 0) {
     return (
-      <div className="text-center py-12 text-muted-foreground bg-muted/20 rounded-lg border border-border/50 backdrop-blur-sm">
+      <div className="text-center py-12 text-muted-foreground bg-transparent rounded-lg border border-border/50 backdrop-blur-sm">
         <p>No activities found</p>
         <p className="text-xs mt-2">Connect your Strava account to sync activities</p>
       </div>
@@ -120,7 +120,7 @@ export function ActivityList({ activities, initialExpandedId = null }: ActivityL
   }
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3 bg-transparent">
       {validActivities.map((activity) => {
           const Icon = sportIcons[activity.sport] || Footprints;
           const isExpanded = expandedId === activity.id;
