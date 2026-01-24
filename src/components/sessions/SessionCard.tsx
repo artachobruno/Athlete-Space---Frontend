@@ -347,42 +347,95 @@ export function SessionCard({
     ? '#FCA5A5'
     : '#94A3B8';
 
+  // ==================== COMPACT DENSITY (Week View) ====================
+  // Clean 4-row layout: Badges | Title | Time · Distance | Coach Feedback
+  if (density === 'compact') {
+    const durationStr = formatDuration(session.duration_minutes);
+    const distanceStr = session.distance_km 
+      ? formatDistance(convertDistance(session.distance_km)) 
+      : null;
+    
+    return (
+      <div
+        className={cn(
+          'rounded-lg border border-border/60 bg-card overflow-hidden',
+          'transition-all hover:border-border/80',
+          onClick && 'cursor-pointer',
+          className
+        )}
+        onClick={onClick}
+      >
+        {/* Row 1: Status Badges (e.g., EASY Done) */}
+        <div className="px-2 pt-2 pb-1 flex items-center gap-1.5">
+          <Badge 
+            variant="outline" 
+            className="text-[9px] px-1.5 py-0 h-4 font-medium whitespace-nowrap shrink-0"
+          >
+            {zoneLabel}
+          </Badge>
+          {session.status === 'completed' && (
+            <Badge 
+              variant="outline" 
+              className="text-[9px] px-1.5 py-0 h-4 font-medium whitespace-nowrap shrink-0 text-load-fresh border-load-fresh/30"
+            >
+              Done
+            </Badge>
+          )}
+        </div>
+
+        {/* Row 2: Title */}
+        <div className="px-2 pb-1">
+          <p className="font-medium text-foreground text-sm truncate">
+            {session.title || session.type || 'Workout'}
+          </p>
+        </div>
+
+        {/* Row 3: Time · Distance */}
+        {(durationStr || distanceStr) && (
+          <div className="px-2 pb-1 text-muted-foreground text-[10px] truncate">
+            {durationStr}
+            {durationStr && distanceStr && ' · '}
+            {distanceStr}
+          </div>
+        )}
+
+        {/* Row 4: Coach Feedback */}
+        {session.coach_insight && (
+          <div className="px-2 pb-2">
+            <p className="text-[10px] leading-tight text-muted-foreground line-clamp-2">
+              {session.coach_insight}
+            </p>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // ==================== STANDARD / RICH DENSITY ====================
   return (
     <WorkoutCardShell role={surfaceRole} intent={calendarIntent}>
       <div
         className={cn(
           'w-full',
           onClick && 'cursor-pointer',
-          density === 'compact' && 'min-h-[88px] flex flex-col overflow-hidden',
           className
         )}
         onClick={onClick}
       >
         {/* ============ HEADER: Title + Status/Zone ============ */}
-        <div className={cn(
-          'flex items-start justify-between gap-2',
-          density === 'compact' && 'flex-shrink-0'
-        )}>
+        <div className="flex items-start justify-between gap-2">
           {/* Title (left, largest) */}
           <h3 
-            className={cn(
-              'flex-1 min-w-0',
-              density === 'compact' ? 'truncate' : 'line-clamp-2'
-            )}
-            style={density === 'compact' ? CardTypography.titleCompact : CardTypography.title}
+            className="flex-1 min-w-0 line-clamp-2"
+            style={CardTypography.title}
           >
             {session.title || session.type || 'Workout'}
           </h3>
 
           {/* Status/Zone (right, inline with title) */}
           <div className="flex items-center gap-1.5 flex-shrink-0">
-            {/* Status icon for compact */}
-            {density === 'compact' && StatusIcon && (
-              <StatusIcon className={cn('h-4 w-4', statusColors.text)} />
-            )}
-            
-            {/* Zone badge for standard/rich */}
-            {density !== 'compact' && intent && (
+            {/* Zone badge */}
+            {intent && (
               <span
                 className="px-2 py-0.5 rounded-full text-[10px] font-semibold uppercase tracking-wide max-w-[80px] truncate"
                 style={{
@@ -395,33 +448,27 @@ export function SessionCard({
               </span>
             )}
             
-            {/* Status badge for standard/rich */}
-            {density !== 'compact' && (
-              <Badge 
-                variant="outline" 
-                className={cn(
-                  'text-[10px] max-w-[70px] truncate',
-                  statusColors.badge
-                )}
-                title={session.status === 'completed' ? 'Completed' : session.status}
-              >
-                {session.status === 'completed' && 'Done'}
-                {session.status === 'skipped' && 'Skipped'}
-                {session.status === 'deleted' && 'Deleted'}
-                {session.status === 'missed' && 'Missed'}
-                {session.status === 'planned' && 'Planned'}
-              </Badge>
-            )}
+            {/* Status badge */}
+            <Badge 
+              variant="outline" 
+              className={cn(
+                'text-[10px] max-w-[70px] truncate',
+                statusColors.badge
+              )}
+              title={session.status === 'completed' ? 'Completed' : session.status}
+            >
+              {session.status === 'completed' && 'Done'}
+              {session.status === 'skipped' && 'Skipped'}
+              {session.status === 'deleted' && 'Deleted'}
+              {session.status === 'missed' && 'Missed'}
+              {session.status === 'planned' && 'Planned'}
+            </Badge>
           </div>
         </div>
 
-        {/* ============ META: Duration, Distance, Effort ============ */}
-        {/* Gap: ~5px from header */}
+        {/* ============ META: Duration, Distance ============ */}
         <div 
-          className={cn(
-            'flex items-center gap-3 mt-[5px]',
-            density === 'compact' && 'flex-shrink-0'
-          )}
+          className="flex items-center gap-3 mt-[5px]"
           style={CardTypography.stat}
         >
           {session.duration_minutes && (
@@ -436,32 +483,16 @@ export function SessionCard({
               <span>{formatDistance(convertDistance(session.distance_km))}</span>
             </span>
           )}
-          {/* Effort indicator (zone shorthand for compact) */}
-          {density === 'compact' && intent && (
-            <span 
-              className="text-[9px] font-semibold uppercase tracking-wide opacity-80"
-              style={{ color: zoneTextColor }}
-            >
-              {zoneLabel}
-            </span>
-          )}
         </div>
 
         {/* ============ BODY: Intent OR Execution (never mixed) ============ */}
-        {/* Gap: ~7-8px from meta */}
         {(showIntentText || showExecutionSummary || showSteps || showCoachInsight) && (
-          <div className={cn(
-            'mt-[7px]',
-            density !== 'compact' && 'space-y-2'
-          )}>
+          <div className="mt-[7px] space-y-2">
             {/* PLANNED: Intent narrative */}
             {showIntentText && (
               <p 
-                className={cn(
-                  'opacity-80',
-                  density === 'compact' ? 'truncate text-[10px]' : 'line-clamp-2'
-                )}
-                style={density === 'compact' ? undefined : CardTypography.description}
+                className="opacity-80 line-clamp-2"
+                style={CardTypography.description}
               >
                 {session.intent_text}
               </p>
@@ -506,26 +537,12 @@ export function SessionCard({
             {/* Coach insight (for both planned and completed sessions) */}
             {showCoachInsight && (
               <p 
-                className={cn(
-                  density === 'compact' ? 'truncate text-[10px] opacity-70' : 'line-clamp-2 opacity-60'
-                )}
-                style={density === 'compact' ? undefined : CardTypography.description}
+                className="line-clamp-2 opacity-60"
+                style={CardTypography.description}
               >
                 {session.coach_insight}
               </p>
             )}
-          </div>
-        )}
-
-        {/* ============ EFFORT GRAPH (compact only) ============ */}
-        {density === 'compact' && !hideEffortGraph && effortData && effortData.length > 0 && (
-          <div className="h-[20px] mt-1.5 -mx-2 -mb-2 flex-shrink-0 flex-grow" style={{ minHeight: '20px' }}>
-            <EffortGraph
-              data={effortData}
-              showData={showEffortData}
-              compact
-              onClick={undefined}
-            />
           </div>
         )}
       </div>
