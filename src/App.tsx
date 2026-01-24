@@ -24,6 +24,7 @@ import Activities from "./pages/Activities";
 import Analytics from "./pages/Analytics";
 import Coach from "./pages/Coach";
 import Settings from "./pages/Settings";
+import Profile from "./pages/Profile";
 import Onboarding from "./pages/Onboarding";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
@@ -318,6 +319,14 @@ const AppContent = () => {
           element={
             <RequireAuth>
               <Coach />
+            </RequireAuth>
+          }
+        />
+        <Route
+          path="/profile"
+          element={
+            <RequireAuth>
+              <Profile />
             </RequireAuth>
           }
         />
