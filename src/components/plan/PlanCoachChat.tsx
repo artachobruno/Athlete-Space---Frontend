@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { MessageCircle, X, Send, Brain } from 'lucide-react';
@@ -17,6 +17,8 @@ interface Message {
 
 export function PlanCoachChat() {
   const [isOpen, setIsOpen] = useState(false);
+  const [isClosing, setIsClosing] = useState(false);
+  const [isVisible, setIsVisible] = useState(false);
   const [input, setInput] = useState('');
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -27,6 +29,29 @@ export function PlanCoachChat() {
   const [isTyping, setIsTyping] = useState(false);
   const [conversationId, setConversationId] = useState<string | null>(null);
   const isSendingRef = useRef<boolean>(false);
+
+  // Handle open/close animations
+  const handleOpen = () => {
+    setIsOpen(true);
+    // Small delay to trigger entrance animation after mount
+    requestAnimationFrame(() => setIsVisible(true));
+  };
+
+  const handleClose = () => {
+    setIsClosing(true);
+    setIsVisible(false);
+  };
+
+  // Remove from DOM after exit animation completes
+  useEffect(() => {
+    if (isClosing) {
+      const timer = setTimeout(() => {
+        setIsOpen(false);
+        setIsClosing(false);
+      }, 200); // Match animation duration
+      return () => clearTimeout(timer);
+    }
+  }, [isClosing]);
 
   const sendMessage = async () => {
     // F02: Prevent duplicate sends with send lock
@@ -106,8 +131,8 @@ export function PlanCoachChat() {
       {/* Floating button */}
       {!isOpen && (
         <Button
-          onClick={() => setIsOpen(true)}
-          className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg"
+          onClick={handleOpen}
+          className="fixed bottom-6 right-6 h-14 w-14 rounded-full shadow-lg transition-transform duration-200 hover:scale-110"
         >
           <MessageCircle className="h-6 w-6" />
         </Button>
@@ -115,14 +140,21 @@ export function PlanCoachChat() {
 
       {/* Chat panel */}
       {isOpen && (
-        <div className="fixed bottom-6 right-6 w-80 bg-muted/40 backdrop-blur-sm border border-border/50 rounded-lg shadow-xl overflow-hidden animate-fade-up">
+        <div 
+          className={cn(
+            "fixed bottom-6 right-6 w-80 bg-muted/40 backdrop-blur-sm border border-border/50 rounded-lg shadow-xl overflow-hidden transition-all duration-200 ease-out",
+            isVisible && !isClosing 
+              ? "opacity-100 translate-y-0 scale-100" 
+              : "opacity-0 translate-y-4 scale-95"
+          )}
+        >
           {/* Header */}
-          <div className="flex items-center justify-between p-3 border-b border-border bg-muted/50">
+          <div className="flex items-center justify-between p-3 border-b border-border/50 bg-muted/30">
             <div className="flex items-center gap-2">
               <Brain className="h-5 w-5 text-coach" />
               <span className="font-medium text-sm">Ask about this week</span>
             </div>
-            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setIsOpen(false)}>
+            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleClose}>
               <X className="h-4 w-4" />
             </Button>
           </div>
