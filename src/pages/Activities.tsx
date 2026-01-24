@@ -178,7 +178,7 @@ export default function Activities() {
           </div>
         ) : (
           <div className="bg-card rounded-xl border border-border overflow-hidden shadow-sm">
-            <div className="p-6 bg-muted/40">
+            <div className="bg-muted/40 p-6">
               <ActivityList activities={activities || []} initialExpandedId={activityId || null} />
             </div>
           </div>
