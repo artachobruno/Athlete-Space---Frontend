@@ -1,4 +1,4 @@
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Card, CardHeader, CardTitle, CardContent, glassCardStyles } from '@/components/ui/card';
 import { CheckCircle2, Circle, AlertTriangle } from 'lucide-react';
 import { format } from 'date-fns';
 import { useMemo } from 'react';
@@ -170,7 +170,7 @@ export function TodayCompletionStatus({ todayData, activities10, todayIntelligen
   }
   
   return (
-    <Card>
+    <Card className={glassCardStyles}>
       <CardHeader className="pb-2">
         <CardTitle className="text-lg">Completion Status</CardTitle>
       </CardHeader>

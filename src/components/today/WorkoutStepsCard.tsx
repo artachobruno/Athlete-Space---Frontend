@@ -3,7 +3,7 @@
 // Never use regex, split(), match(), or pattern logic to extract workout data
 
 import { useMemo } from 'react';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Card, CardHeader, CardTitle, CardContent, glassCardStyles } from '@/components/ui/card';
 import type { WorkoutStep } from '@/lib/api';
 import { WorkoutTimeline } from '@/components/workout/WorkoutTimeline';
 import type { StructuredWorkoutStep } from '@/api/workouts';
@@ -82,7 +82,7 @@ export function WorkoutStepsCard({ steps, className }: WorkoutStepsCardProps) {
   }
 
   return (
-    <Card className={className}>
+    <Card className={`${glassCardStyles} ${className || ''}`}>
       <CardHeader className="pb-3">
         <CardTitle className="text-lg">Workout Steps</CardTitle>
       </CardHeader>

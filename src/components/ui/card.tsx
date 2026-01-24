@@ -2,10 +2,34 @@ import * as React from "react";
 
 import { cn } from "@/lib/utils";
 
+/**
+ * Glass card styling - transparent with blur effect
+ * Used across the app for consistent visual treatment
+ */
+const glassCardStyles = "bg-muted/40 border-border/50 shadow-none backdrop-blur-sm";
+
 const Card = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(({ className, ...props }, ref) => (
   <div ref={ref} className={cn("rounded-lg border bg-card text-card-foreground shadow-sm", className)} {...props} />
 ));
 Card.displayName = "Card";
+
+interface GlassCardProps extends React.HTMLAttributes<HTMLDivElement> {
+  variant?: "default" | "raised" | "blue"
+  animated?: boolean
+  hover?: boolean
+  glowIntensity?: string
+}
+
+/**
+ * GlassCard - Card with transparent glass effect
+ * Matches the styling used in History/Schedule pages
+ */
+const GlassCard = React.forwardRef<HTMLDivElement, GlassCardProps>(
+  ({ className, variant: _variant, animated: _animated, hover: _hover, glowIntensity: _glowIntensity, ...props }, ref) => (
+    <div ref={ref} className={cn("rounded-lg border text-card-foreground", glassCardStyles, className)} {...props} />
+  )
+);
+GlassCard.displayName = "GlassCard";
 
 const CardHeader = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDivElement>>(
   ({ className, ...props }, ref) => (
@@ -40,4 +64,4 @@ const CardFooter = React.forwardRef<HTMLDivElement, React.HTMLAttributes<HTMLDiv
 );
 CardFooter.displayName = "CardFooter";
 
-export { Card, CardHeader, CardFooter, CardTitle, CardDescription, CardContent };
+export { Card, GlassCard, glassCardStyles, CardHeader, CardFooter, CardTitle, CardDescription, CardContent, type GlassCardProps };

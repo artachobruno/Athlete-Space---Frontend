@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
 import { cn } from '@/lib/utils';
-import { Card } from '@/components/ui/card';
+import { Card, glassCardStyles } from '@/components/ui/card';
 
 interface TelemetryMetricsStripProps {
   /** Overview data containing CTL/ATL/TSB metrics */
@@ -58,7 +58,7 @@ export function TelemetryMetricsStrip({
 
   if (isLoading) {
     return (
-      <Card className={cn('p-4', className)}>
+      <Card className={cn('p-4', glassCardStyles, className)}>
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-8">
             {[1, 2, 3, 4].map(i => (
@@ -74,7 +74,7 @@ export function TelemetryMetricsStrip({
   }
 
   return (
-    <Card className={cn('p-4', className)}>
+    <Card className={cn('p-4', glassCardStyles, className)}>
       <div className="flex items-center justify-between flex-wrap gap-4">
         {/* CTL (Fitness) */}
         <div className="flex flex-col">
