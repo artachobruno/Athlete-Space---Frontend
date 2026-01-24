@@ -94,24 +94,24 @@ export function CombinedSessionCard({
   return (
     <div
       className={cn(
-        'rounded-lg border border-border/60 bg-card overflow-hidden',
+        'rounded-lg border border-border/60 bg-card',
         'transition-all hover:border-border/80',
         onClick && 'cursor-pointer',
         variant === 'week' && 'text-xs'
       )}
       onClick={onClick}
     >
-      {/* Title */}
-      <div className="px-2 py-1.5 border-b border-border/40">
+      {/* Title - moved down with more top padding */}
+      <div className="px-2 pt-2.5 pb-1.5 border-b border-border/40">
         <p className="font-medium text-foreground truncate">{title}</p>
         {executionState === 'COMPLETED_UNPLANNED' && (
           <p className="text-[10px] text-muted-foreground mt-0.5">(Unplanned)</p>
         )}
       </div>
 
-      {/* Planned Block */}
+      {/* Planned Block - moved down */}
       {planned && (
-        <div className="px-2 py-1.5 border-b border-border/40 bg-muted/10">
+        <div className="px-2 pt-2 pb-1.5 border-b border-border/40 bg-muted/10">
           <div className="flex items-center gap-1.5 mb-1">
             <span className="text-[9px] font-medium text-muted-foreground uppercase tracking-wider">
               Planned
@@ -133,9 +133,9 @@ export function CombinedSessionCard({
         </div>
       )}
 
-      {/* Completed Block */}
+      {/* Completed Block - moved down */}
       {activity && (
-        <div className="px-2 py-1.5 border-b border-border/40">
+        <div className="px-2 pt-2 pb-1.5 border-b border-border/40">
           <div className="flex items-center gap-1.5 mb-1">
             <span className="text-[9px] font-medium text-muted-foreground uppercase tracking-wider">
               Completed
@@ -173,22 +173,22 @@ export function CombinedSessionCard({
         </div>
       )}
 
-      {/* Coach Insight */}
+      {/* Coach Insight - moved down, no truncation, full display */}
       {planned?.coach_insight && (
-        <div className="px-2 py-1.5 border-t border-border/40 bg-primary/5">
+        <div className="px-2 pt-2 pb-2 border-t border-border/40 bg-primary/5">
           <div className="flex items-start gap-1.5">
             <Sparkles className="h-3 w-3 text-primary mt-0.5 flex-shrink-0" />
-            <p className="text-[10px] leading-relaxed text-foreground flex-1">
+            <p className="text-[10px] leading-relaxed text-foreground flex-1 break-words">
               {planned.coach_insight}
             </p>
           </div>
         </div>
       )}
 
-      {/* State Badge */}
+      {/* State Badge - moved down */}
       <div
         className={cn(
-          'px-2 py-1.5 flex items-center gap-1.5',
+          'px-2 pt-2 pb-2 flex items-center gap-1.5',
           config.bgColor
         )}
       >
