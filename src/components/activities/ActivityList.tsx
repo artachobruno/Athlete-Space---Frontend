@@ -144,12 +144,12 @@ export function ActivityList({ activities, initialExpandedId = null }: ActivityL
               >
                 <Card 
                   className={cn(
-                    'transition-all',
-                    isExpanded && 'ring-1 ring-primary/30'
+                    'transition-all bg-primary/[0.02] border-primary/20',
+                    isExpanded && 'ring-2 ring-primary/50'
                   )}
                 >
                 <CollapsibleTrigger asChild>
-                  <CardContent className="p-4 cursor-pointer hover:bg-muted/30 transition-colors">
+                  <CardContent className="p-4 cursor-pointer hover:bg-primary/5 transition-colors">
                     {/* Header */}
                     <div className="flex items-center gap-3 mb-3">
                       <div className="p-2 bg-muted rounded-lg">

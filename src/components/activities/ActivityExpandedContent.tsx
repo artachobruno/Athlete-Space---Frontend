@@ -281,7 +281,7 @@ export function ActivityExpandedContent({ activity }: ActivityExpandedContentPro
   const verdict = getComplianceVerdict();
 
   return (
-    <div className="px-4 pb-4 pt-0 border-t border-border space-y-4">
+    <div className="px-4 pb-4 pt-0 border-t border-primary/20 bg-primary/[0.02] space-y-4">
       {/* Header */}
       <div className="flex items-center justify-between pt-4 pb-2">
         <div className="flex items-center gap-2">
