@@ -6,7 +6,7 @@
  * Expands/collapses inline - no route navigation.
  */
 
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, glassCardStyles } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Loader2, CheckCircle2, SkipForward, Trash2, ChevronDown, ChevronUp, ArrowRight, ExternalLink, Brain, MessageCircle } from 'lucide-react';
@@ -199,7 +199,7 @@ export function WorkoutDetailCard({
 
   return (
     <>
-      <Card className={cn('overflow-hidden', className)}>
+      <Card className={cn('overflow-hidden', glassCardStyles, className)}>
         <CardHeader className="pb-3">
           <div className="flex items-start justify-between gap-4">
             <div className="flex-1 space-y-2">

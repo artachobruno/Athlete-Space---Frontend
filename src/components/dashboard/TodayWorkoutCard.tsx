@@ -408,8 +408,8 @@ export function TodayWorkoutCard(props: TodayWorkoutCardProps = {}) {
         </CardContent>
       </Card>
 
-      {/* Expandable Workout Details */}
-      {todayWorkout && (
+      {/* Expandable Workout Details - only show when expanded */}
+      {todayWorkout && showWorkoutDetails && (
         <WorkoutDetailCard
           session={todayWorkout}
           expanded={showWorkoutDetails}
