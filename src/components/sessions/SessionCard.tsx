@@ -356,58 +356,55 @@ export function SessionCard({
       : null;
     
     return (
-      <div
-        className={cn(
-          'rounded-lg border border-border/60 bg-card overflow-hidden',
-          'transition-all hover:border-border/80',
-          onClick && 'cursor-pointer',
-          className
-        )}
-        onClick={onClick}
-      >
-        {/* Row 1: Status Badges (e.g., EASY Done) */}
-        <div className="px-2 pt-2 pb-1 flex items-center gap-1.5">
-          <Badge 
-            variant="outline" 
-            className="text-[9px] px-1.5 py-0 h-4 font-medium whitespace-nowrap shrink-0"
-          >
-            {zoneLabel}
-          </Badge>
-          {session.status === 'completed' && (
+      <WorkoutCardShell role={surfaceRole} intent={calendarIntent}>
+        <div
+          className={cn(
+            'w-full overflow-hidden',
+            onClick && 'cursor-pointer',
+            className
+          )}
+          onClick={onClick}
+        >
+          {/* Row 1: Status Badges (e.g., EASY Done) */}
+          <div className="flex items-center gap-1.5 mb-1.5">
             <Badge 
               variant="outline" 
-              className="text-[9px] px-1.5 py-0 h-4 font-medium whitespace-nowrap shrink-0 text-load-fresh border-load-fresh/30"
+              className="text-[10px] px-1.5 py-0.5 h-5 font-medium whitespace-nowrap shrink-0"
             >
-              Done
+              {zoneLabel}
             </Badge>
-          )}
-        </div>
+            {session.status === 'completed' && (
+              <Badge 
+                variant="outline" 
+                className="text-[10px] px-1.5 py-0.5 h-5 font-medium whitespace-nowrap shrink-0 text-load-fresh border-load-fresh/30"
+              >
+                Done
+              </Badge>
+            )}
+          </div>
 
-        {/* Row 2: Title */}
-        <div className="px-2 pb-1">
-          <p className="font-medium text-foreground text-sm truncate">
+          {/* Row 2: Title */}
+          <p className="font-medium text-foreground text-sm leading-tight truncate mb-1">
             {session.title || session.type || 'Workout'}
           </p>
-        </div>
 
-        {/* Row 3: Time · Distance */}
-        {(durationStr || distanceStr) && (
-          <div className="px-2 pb-1 text-muted-foreground text-[10px] truncate">
-            {durationStr}
-            {durationStr && distanceStr && ' · '}
-            {distanceStr}
-          </div>
-        )}
+          {/* Row 3: Time · Distance */}
+          {(durationStr || distanceStr) && (
+            <p className="text-muted-foreground text-xs truncate mb-1">
+              {durationStr}
+              {durationStr && distanceStr && ' · '}
+              {distanceStr}
+            </p>
+          )}
 
-        {/* Row 4: Coach Feedback */}
-        {session.coach_insight && (
-          <div className="px-2 pb-2">
-            <p className="text-[10px] leading-tight text-muted-foreground line-clamp-2">
+          {/* Row 4: Coach Feedback */}
+          {session.coach_insight && (
+            <p className="text-xs leading-snug text-muted-foreground line-clamp-2">
               {session.coach_insight}
             </p>
-          </div>
-        )}
-      </div>
+          )}
+        </div>
+      </WorkoutCardShell>
     );
   }
 
