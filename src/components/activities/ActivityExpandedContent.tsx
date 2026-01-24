@@ -104,7 +104,7 @@ function TelemetryMetricRow({
   ) : null;
 
   return (
-    <div className="flex items-center justify-between py-2 border-b border-border last:border-b-0">
+    <div className="flex items-center justify-between py-2 border-b border-border/50 last:border-b-0">
       <div className="flex items-center gap-3">
         <span className="text-xs uppercase tracking-wider text-muted-foreground w-16">
           {label}
@@ -146,7 +146,7 @@ function DeviationIndicator({
   const isOver = diff > 5;
 
   return (
-    <div className="flex items-center justify-between py-3 border-b border-border last:border-b-0">
+    <div className="flex items-center justify-between py-3 border-b border-border/50 last:border-b-0">
       <div className="flex flex-col gap-1">
         <span className="text-xs uppercase tracking-wider text-muted-foreground">
           {label}
@@ -281,7 +281,7 @@ export function ActivityExpandedContent({ activity }: ActivityExpandedContentPro
   const verdict = getComplianceVerdict();
 
   return (
-    <div className="px-4 pb-4 pt-0 border-t border-primary/20 space-y-4">
+    <div className="px-4 pb-4 pt-0 border-t border-border/50 space-y-4 bg-muted/20">
       {/* Header */}
       <div className="flex items-center justify-between pt-4 pb-2">
         <div className="flex items-center gap-2">
@@ -297,7 +297,7 @@ export function ActivityExpandedContent({ activity }: ActivityExpandedContentPro
 
       {/* Coach Insight */}
       {activity.coachFeedback && (
-        <div className="p-4 bg-muted/50 rounded-lg border-l-2 border-primary/40">
+        <div className="p-4 bg-muted/30 rounded-lg border-l-2 border-primary/40 backdrop-blur-sm">
           <div className="flex items-center gap-2 mb-2">
             <Bot className="h-4 w-4 text-primary" />
             <span className="text-sm font-medium text-primary">Analysis</span>
@@ -351,7 +351,7 @@ export function ActivityExpandedContent({ activity }: ActivityExpandedContentPro
 
       {/* Tabs */}
       <Tabs defaultValue="overview" className="w-full">
-        <TabsList className="w-full grid grid-cols-2 sm:grid-cols-4">
+        <TabsList className="w-full grid grid-cols-2 sm:grid-cols-4 bg-muted/50">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="steps">Steps</TabsTrigger>
           <TabsTrigger value="execution">Execution</TabsTrigger>
@@ -361,7 +361,7 @@ export function ActivityExpandedContent({ activity }: ActivityExpandedContentPro
         {/* OVERVIEW TAB */}
         <TabsContent value="overview" className="mt-4 space-y-4">
           {/* Metrics */}
-          <div className="space-y-1 bg-muted/30 rounded-lg p-4 border border-border">
+          <div className="space-y-1 bg-muted/30 rounded-lg p-4 border border-border/50 backdrop-blur-sm">
             <div className="text-sm font-medium text-muted-foreground mb-3">
               Performance Metrics
             </div>
@@ -415,7 +415,7 @@ export function ActivityExpandedContent({ activity }: ActivityExpandedContentPro
             <div className="text-sm font-medium text-muted-foreground">
               Route
             </div>
-            <div className="rounded-lg overflow-hidden border border-border">
+            <div className="rounded-lg overflow-hidden border border-border/50 backdrop-blur-sm">
               {streamsLoading ? (
                 <div className="flex items-center justify-center h-48 text-muted-foreground">
                   <Loader2 className="h-5 w-5 animate-spin" />
@@ -481,7 +481,7 @@ export function ActivityExpandedContent({ activity }: ActivityExpandedContentPro
           
           {/* Execution Metrics Summary */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
-            <div className="p-4 bg-muted/30 rounded-lg border border-border">
+            <div className="p-4 bg-muted/30 rounded-lg border border-border/50 backdrop-blur-sm">
               <div className="text-sm text-muted-foreground mb-1">Status</div>
               <div className={cn(
                 "text-base font-medium",
@@ -508,7 +508,7 @@ export function ActivityExpandedContent({ activity }: ActivityExpandedContentPro
           ) : plannedData ? (
             <div className="space-y-4">
               {/* Verdict Header */}
-              <div className="flex items-center justify-between p-4 bg-muted/30 rounded-lg border border-border">
+              <div className="flex items-center justify-between p-4 bg-muted/30 rounded-lg border border-border/50 backdrop-blur-sm">
                 <div>
                   <div className="text-sm text-muted-foreground">
                     Execution Assessment
@@ -556,7 +556,7 @@ export function ActivityExpandedContent({ activity }: ActivityExpandedContentPro
 
               {/* Compliance from API */}
               {structuredWorkout?.comparison && (
-                <div className="space-y-1 bg-muted/30 rounded-lg p-4 border border-border">
+                <div className="space-y-1 bg-muted/30 rounded-lg p-4 border border-border/50 backdrop-blur-sm">
                   <div className="text-sm font-medium text-muted-foreground mb-3">
                     Detailed Compliance
                   </div>
@@ -569,7 +569,7 @@ export function ActivityExpandedContent({ activity }: ActivityExpandedContentPro
                     if (!summary) return null;
                     
                     return Object.entries(summary).map(([key, value]) => (
-                      <div key={key} className="flex items-center justify-between py-2 border-b border-border last:border-b-0">
+                      <div key={key} className="flex items-center justify-between py-2 border-b border-border/50 last:border-b-0">
                         <span className="text-sm text-muted-foreground capitalize">
                           {key.replace(/_/g, ' ')}
                         </span>

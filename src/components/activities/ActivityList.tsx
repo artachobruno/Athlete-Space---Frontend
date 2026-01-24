@@ -112,7 +112,7 @@ export function ActivityList({ activities, initialExpandedId = null }: ActivityL
 
   if (validActivities.length === 0) {
     return (
-      <div className="text-center py-12 text-muted-foreground">
+      <div className="text-center py-12 text-muted-foreground bg-muted/20 rounded-lg border border-border/50 backdrop-blur-sm">
         <p>No activities found</p>
         <p className="text-xs mt-2">Connect your Strava account to sync activities</p>
       </div>
@@ -144,15 +144,15 @@ export function ActivityList({ activities, initialExpandedId = null }: ActivityL
               >
                 <Card 
                   className={cn(
-                    'transition-all bg-transparent border-primary/20 shadow-none',
-                    isExpanded && 'ring-2 ring-primary/50'
+                    'transition-all bg-muted/40 border-border/50 shadow-none backdrop-blur-sm',
+                    isExpanded && 'ring-2 ring-primary/50 bg-muted/50'
                   )}
                 >
                 <CollapsibleTrigger asChild>
-                  <CardContent className="p-4 cursor-pointer bg-primary/[0.02] hover:bg-primary/5 transition-colors">
+                  <CardContent className="p-4 cursor-pointer bg-transparent hover:bg-muted/30 transition-colors">
                     {/* Header */}
                     <div className="flex items-center gap-3 mb-3">
-                      <div className="p-2 bg-muted rounded-lg">
+                      <div className="p-2 bg-muted/50 rounded-lg">
                         <Icon className="h-5 w-5 text-foreground" />
                       </div>
                       <div className="flex-1 min-w-0">
@@ -223,7 +223,7 @@ export function ActivityList({ activities, initialExpandedId = null }: ActivityL
 
                     {/* Coach Insight Preview */}
                     {activity.coachFeedback && !isExpanded && (
-                      <div className="mt-3 p-3 bg-muted/50 rounded-lg border-l-2 border-primary/30">
+                      <div className="mt-3 p-3 bg-muted/30 rounded-lg border-l-2 border-primary/40 backdrop-blur-sm">
                         <div className="flex items-center gap-2 mb-1">
                           <Bot className="h-4 w-4 text-primary" />
                           <span className="text-xs font-medium text-primary">Analysis</span>
