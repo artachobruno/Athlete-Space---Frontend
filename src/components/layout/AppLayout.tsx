@@ -17,6 +17,7 @@ import {
   Bot,
   Database,
   LifeBuoy,
+  User,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/context/AuthContext';
@@ -36,6 +37,7 @@ const navItems = [
   { path: '/admin', label: 'Admin Ops', icon: Shield },
   { path: '/admin/ai', label: 'Admin AI', icon: Bot },
   { path: '/admin/analytics', label: 'Admin Analytics', icon: Database },
+  { path: '/profile', label: 'Profile', icon: User },
   { path: '/settings', label: 'Settings', icon: Settings },
 ];
 
