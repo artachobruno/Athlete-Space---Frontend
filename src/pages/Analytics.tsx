@@ -10,6 +10,7 @@ import { useAuthenticatedQuery } from '@/hooks/useAuthenticatedQuery';
 import { Loader2 } from 'lucide-react';
 import type { TrainingLoad } from '@/types';
 import { useSyncTodayWorkout } from '@/hooks/useSyncTodayWorkout';
+import { PlanCoachChat } from '@/components/plan/PlanCoachChat';
 
 export default function Analytics() {
   useSyncTodayWorkout();
@@ -136,6 +137,9 @@ export default function Analytics() {
 
         {/* PMC Chart - Detailed trends */}
         <PMCChart data={filteredData} isAdvanced={isAdvanced} />
+
+        {/* Floating Coach Chat */}
+        <PlanCoachChat />
       </div>
     </AppLayout>
   );

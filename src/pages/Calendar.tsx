@@ -9,6 +9,7 @@ import { AppLayout } from '@/components/layout/AppLayout';
 import { TrainingCalendar } from '@/components/calendar/TrainingCalendar';
 import { useSyncTodayWorkout } from '@/hooks/useSyncTodayWorkout';
 import { useAutoMatchSessions } from '@/hooks/useAutoMatchSessions';
+import { PlanCoachChat } from '@/components/plan/PlanCoachChat';
 
 export default function Calendar() {
   useSyncTodayWorkout();
@@ -29,6 +30,9 @@ export default function Calendar() {
         <div className="flex-1 min-h-0">
           <TrainingCalendar />
         </div>
+
+        {/* Floating Coach Chat */}
+        <PlanCoachChat />
       </div>
     </AppLayout>
   );

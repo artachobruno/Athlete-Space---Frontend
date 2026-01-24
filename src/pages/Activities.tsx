@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { toast } from '@/hooks/use-toast';
 import { useAutoMatchSessions } from '@/hooks/useAutoMatchSessions';
 import { useSyncTodayWorkout } from '@/hooks/useSyncTodayWorkout';
+import { PlanCoachChat } from '@/components/plan/PlanCoachChat';
 
 export default function Activities() {
   useSyncTodayWorkout();
@@ -183,6 +184,9 @@ export default function Activities() {
             <ActivityList activities={activities || []} initialExpandedId={activityId || null} />
           )}
         </div>
+
+        {/* Floating Coach Chat */}
+        <PlanCoachChat />
       </div>
     </AppLayout>
   );

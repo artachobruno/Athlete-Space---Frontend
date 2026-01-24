@@ -24,6 +24,7 @@ import { WorkoutStepsCard } from '@/components/today/WorkoutStepsCard';
 import { CoachInsightCard } from '@/components/today/CoachInsightCard';
 import { useSyncTodayWorkout } from '@/hooks/useSyncTodayWorkout';
 import { useDashboardData } from '@/hooks/useDashboardData';
+import { PlanCoachChat } from '@/components/plan/PlanCoachChat';
 
 // Coach Dashboard Components
 import { useCoachDashboardData, useAthleteSelection, IS_PREVIEW } from '@/hooks/useCoachDashboardData';
@@ -112,6 +113,9 @@ function AthleteDashboard() {
             todayIntelligence={dashboardData.todayIntelligence}
           />
         </div>
+
+        {/* Floating Coach Chat */}
+        <PlanCoachChat />
       </div>
     </AppLayout>
   );
