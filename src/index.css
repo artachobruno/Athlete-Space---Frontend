@@ -201,11 +201,7 @@
 
   body {
     @apply text-foreground antialiased;
-    background: 
-      url('/stars.svg'),
-      var(--app-bg);
-    background-size: 400px 400px, auto;
-    background-repeat: repeat, no-repeat;
+    background: var(--app-bg);
     background-attachment: fixed;
     font-feature-settings: "cv02", "cv03", "cv04", "cv11";
     overflow-x: hidden;
