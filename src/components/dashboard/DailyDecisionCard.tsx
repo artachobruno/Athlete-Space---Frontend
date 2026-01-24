@@ -1,4 +1,4 @@
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Card, CardHeader, CardTitle, CardContent, glassCardStyles } from '@/components/ui/card';
 import { CheckCircle2, AlertCircle, RefreshCw, Moon, Loader2, TrendingUp, TrendingDown, Activity } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { CoachDecisionV2, CoachDecision } from '@/types/coachDecision';
@@ -151,7 +151,7 @@ export function DailyDecisionCard({ todayIntelligence, isLoading = false, error,
 
   if (isLoading) {
     return (
-      <Card className={cn('h-full flex flex-col', className)}>
+      <Card className={cn('h-full flex flex-col', glassCardStyles, className)}>
         <CardHeader className="pb-2">
           <CardTitle className="text-lg">Today's Decision</CardTitle>
         </CardHeader>
@@ -167,7 +167,7 @@ export function DailyDecisionCard({ todayIntelligence, isLoading = false, error,
   
   if (isServiceUnavailable) {
     return (
-      <Card className={cn('h-full flex flex-col', className)}>
+      <Card className={cn('h-full flex flex-col', glassCardStyles, className)}>
         <CardHeader className="pb-2">
           <CardTitle className="text-lg">Today's Decision</CardTitle>
         </CardHeader>
@@ -180,7 +180,7 @@ export function DailyDecisionCard({ todayIntelligence, isLoading = false, error,
 
   if (error || !data) {
     return (
-      <Card className={cn('h-full flex flex-col', className)}>
+      <Card className={cn('h-full flex flex-col', glassCardStyles, className)}>
         <CardHeader className="pb-2">
           <CardTitle className="text-lg">Today's Decision</CardTitle>
         </CardHeader>
@@ -208,7 +208,7 @@ export function DailyDecisionCard({ todayIntelligence, isLoading = false, error,
 
   if (isPlaceholder) {
     return (
-      <Card className={cn('h-full flex flex-col', className)}>
+      <Card className={cn('h-full flex flex-col', glassCardStyles, className)}>
         <CardHeader className="pb-2">
           <CardTitle className="text-lg">Today's Decision</CardTitle>
         </CardHeader>
@@ -224,7 +224,7 @@ export function DailyDecisionCard({ todayIntelligence, isLoading = false, error,
   
   if (!v2Decision) {
     return (
-      <Card className={cn('h-full flex flex-col', className)}>
+      <Card className={cn('h-full flex flex-col', glassCardStyles, className)}>
         <CardHeader className="pb-2">
           <CardTitle className="text-lg">Today's Decision</CardTitle>
         </CardHeader>
@@ -284,7 +284,7 @@ export function DailyDecisionCard({ todayIntelligence, isLoading = false, error,
   };
 
   return (
-    <Card className={cn('h-full flex flex-col', className)}>
+    <Card className={cn('h-full flex flex-col', glassCardStyles, className)}>
       {/* TODAY'S VERDICT Header Band */}
       <div className={cn('relative border-b', config.bgClass)}>
         <div className={cn('absolute left-0 top-0 bottom-0 w-1', config.accentStripClass)} />

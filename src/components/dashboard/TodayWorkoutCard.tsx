@@ -1,4 +1,4 @@
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Card, CardHeader, CardTitle, CardContent, glassCardStyles } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { fetchCalendarToday, fetchTrainingLoad, fetchActivities, fetchActivityStreams } from '@/lib/api';
@@ -216,7 +216,7 @@ export function TodayWorkoutCard(props: TodayWorkoutCardProps = {}) {
 
   if (isLoading) {
     return (
-      <Card className={cn('h-full flex flex-col', cardClassName)}>
+      <Card className={cn('h-full flex flex-col', glassCardStyles, cardClassName)}>
         <CardHeader className="pb-2">
           <CardTitle className="text-lg">Today's Session</CardTitle>
         </CardHeader>
@@ -233,7 +233,7 @@ export function TodayWorkoutCard(props: TodayWorkoutCardProps = {}) {
 
   if (error) {
     return (
-      <Card className={cn('h-full flex flex-col', cardClassName)}>
+      <Card className={cn('h-full flex flex-col', glassCardStyles, cardClassName)}>
         <CardHeader className="pb-2">
           <CardTitle className="text-lg">Today's Session</CardTitle>
         </CardHeader>
@@ -248,7 +248,7 @@ export function TodayWorkoutCard(props: TodayWorkoutCardProps = {}) {
 
   if (hasNoPlannedSession) {
     return (
-      <Card className={cn('h-full flex flex-col', cardClassName)}>
+      <Card className={cn('h-full flex flex-col', glassCardStyles, cardClassName)}>
         <CardHeader className="pb-2">
           <CardTitle className="text-lg">Today's Session</CardTitle>
         </CardHeader>
@@ -296,7 +296,7 @@ export function TodayWorkoutCard(props: TodayWorkoutCardProps = {}) {
 
   if (!todayWorkout) {
     return (
-      <Card className={cn('h-full flex flex-col', cardClassName)}>
+      <Card className={cn('h-full flex flex-col', glassCardStyles, cardClassName)}>
         <CardHeader className="pb-2">
           <CardTitle className="text-lg">Today's Session</CardTitle>
         </CardHeader>
@@ -353,7 +353,7 @@ export function TodayWorkoutCard(props: TodayWorkoutCardProps = {}) {
     <div className={cn('space-y-4', cardClassName)}>
       {/* Coach Suggestion Card - show if verdict suggests modification */}
       {shouldSuggestModification && getModificationSuggestion && (
-        <Card className="border-yellow-500/30 bg-yellow-500/5">
+        <Card className={cn('border-yellow-500/30 bg-yellow-500/5', glassCardStyles)}>
           <CardHeader className="pb-3">
             <CardTitle className="text-base flex items-center gap-2 text-yellow-600 dark:text-yellow-400">
               <Brain className="h-4 w-4" />
@@ -388,7 +388,7 @@ export function TodayWorkoutCard(props: TodayWorkoutCardProps = {}) {
       )}
 
       {/* Main workout card - non-compact mode to show effort graph */}
-      <Card className="h-full flex flex-col">
+      <Card className={cn('h-full flex flex-col', glassCardStyles)}>
         <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
           <CardTitle className="text-lg">Today's Session</CardTitle>
           <Badge variant={isCompleted ? 'default' : getIntentVariant(workoutIntent)}>

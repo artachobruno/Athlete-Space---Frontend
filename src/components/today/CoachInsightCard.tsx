@@ -1,4 +1,4 @@
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Card, CardHeader, CardTitle, CardContent, glassCardStyles } from '@/components/ui/card';
 import { Brain } from 'lucide-react';
 
 interface CoachInsightCardProps {
@@ -12,7 +12,7 @@ export function CoachInsightCard({ coachInsight, className }: CoachInsightCardPr
   }
 
   return (
-    <Card className={className}>
+    <Card className={`${glassCardStyles} ${className || ''}`}>
       <CardHeader className="pb-3">
         <div className="flex items-center gap-2">
           <Brain className="h-5 w-5 text-primary" />

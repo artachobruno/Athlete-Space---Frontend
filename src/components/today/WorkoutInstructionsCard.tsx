@@ -1,4 +1,4 @@
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Card, CardHeader, CardTitle, CardContent, glassCardStyles } from '@/components/ui/card';
 import { CheckCircle2 } from 'lucide-react';
 
 interface WorkoutInstructionsCardProps {
@@ -12,7 +12,7 @@ export function WorkoutInstructionsCard({ instructions, className }: WorkoutInst
   }
 
   return (
-    <Card className={className}>
+    <Card className={`${glassCardStyles} ${className || ''}`}>
       <CardHeader className="pb-3">
         <CardTitle className="text-lg">Execution Instructions</CardTitle>
       </CardHeader>

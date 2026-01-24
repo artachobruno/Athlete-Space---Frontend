@@ -1,2 +1,3 @@
-// Backward compatibility wrapper - re-export from new glass-card
-export { GlassCard, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from './glass-card';
+// Backward compatibility wrapper - re-export from card.tsx
+export { GlassCard, glassCardStyles, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from './card';
+export type { GlassCardProps } from './card';
