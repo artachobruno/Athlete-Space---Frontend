@@ -277,3 +277,14 @@ export function toCalendarCardRenderModel(item: CalendarItem): CalendarCardRende
     props: toSessionCardProps(item),
   };
 }
+
+/**
+ * Unified card props for a single combined card (plan + execution).
+ * Use BaseCalendarCardSvg for both planned and completed – one card that
+ * shows intent (planned), execution summary + coach (completed), or both when paired.
+ */
+export function toUnifiedCalendarCardProps(item: CalendarItem): BaseCardProps {
+  return item.kind === 'completed'
+    ? toActivityCardProps(item)
+    : toSessionCardProps(item);
+}

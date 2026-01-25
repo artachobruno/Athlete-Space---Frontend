@@ -203,7 +203,6 @@ export function WorkoutDetailCard({
         <CardHeader className="pb-3">
           <div className="flex items-start justify-between gap-4">
             <div className="flex-1 space-y-2">
-              {/* Title */}
               <div className="flex items-center gap-2">
                 <h3 className="text-lg font-semibold">{session.title || session.type || 'Workout'}</h3>
                 {intent && (
@@ -212,8 +211,6 @@ export function WorkoutDetailCard({
                   </Badge>
                 )}
               </div>
-
-              {/* Metrics */}
               <div className="flex items-center gap-4 text-sm text-muted-foreground">
                 {session.duration_minutes && (
                   <span>Duration: {formatDuration(session.duration_minutes)}</span>
@@ -225,16 +222,13 @@ export function WorkoutDetailCard({
                 )}
               </div>
             </div>
-
-            {/* Header Actions */}
             <div className="flex items-center gap-2 flex-shrink-0">
-              {/* View Full Workout Link - only show when expanded and workout_id exists */}
               {expanded && showFullWorkoutLink && session.workout_id && (
                 <Button
                   variant="ghost"
                   size="sm"
                   onClick={(e) => {
-                    e.stopPropagation(); // Prevent triggering parent click handlers
+                    e.stopPropagation();
                     navigate(`/workout/${session.workout_id}`);
                   }}
                   className="text-primary hover:text-primary/80"
@@ -244,13 +238,7 @@ export function WorkoutDetailCard({
                   <ArrowRight className="h-3 w-3 ml-1" />
                 </Button>
               )}
-              
-              {/* Expand/Collapse button */}
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={onToggleExpand}
-              >
+              <Button variant="ghost" size="sm" onClick={onToggleExpand}>
                 {expanded ? (
                   <>
                     <ChevronUp className="h-4 w-4 mr-1" />

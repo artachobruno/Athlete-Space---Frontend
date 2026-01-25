@@ -396,7 +396,6 @@ export function TodayWorkoutCard(props: TodayWorkoutCardProps = {}) {
           </Badge>
         </CardHeader>
         <CardContent className="flex-1 py-2">
-          {/* Phase 4: React-based SessionCard (standard density) */}
           {todayWorkout && (
             <SessionCard
               session={todayWorkout}
@@ -408,8 +407,7 @@ export function TodayWorkoutCard(props: TodayWorkoutCardProps = {}) {
         </CardContent>
       </Card>
 
-      {/* Expandable Workout Details - only show when expanded */}
-      {todayWorkout && showWorkoutDetails && (
+      {todayWorkout && (
         <WorkoutDetailCard
           session={todayWorkout}
           expanded={showWorkoutDetails}
