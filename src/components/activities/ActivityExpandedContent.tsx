@@ -13,10 +13,16 @@ import { useUnitSystem } from '@/hooks/useUnitSystem';
 import { useQuery } from '@tanstack/react-query';
 import { fetchActivityStreams, fetchWorkoutExecution } from '@/lib/api';
 import { useStructuredWorkout } from '@/hooks/useStructuredWorkout';
-import { useMemo } from 'react';
+import { useMemo, useRef, useEffect, useState } from 'react';
 import { normalizeRoutePointsFromStreams } from '@/lib/route-utils';
 import { useAuthenticatedQuery } from '@/hooks/useAuthenticatedQuery';
 import { Loader2 } from 'lucide-react';
+import {
+  CARD_BG,
+  CARD_BORDER,
+  CARD_INNER_SHADOW,
+  CARD_NEBULA,
+} from '@/styles/scheduleTheme';
 
 interface ActivityExpandedContentProps {
   activity: CompletedActivity;
@@ -280,10 +286,51 @@ export function ActivityExpandedContent({ activity }: ActivityExpandedContentPro
 
   const verdict = getComplianceVerdict();
 
+  // Parallax scroll effect for stars
+  const containerRef = useRef<HTMLDivElement>(null);
+  const [scrollY, setScrollY] = useState(0);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const container = containerRef.current;
+      if (!container) return;
+      const rect = container.getBoundingClientRect();
+      const viewportHeight = window.innerHeight;
+      const progress = (viewportHeight - rect.top) / (viewportHeight + rect.height);
+      setScrollY(Math.max(0, Math.min(1, progress)) * 30);
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    handleScroll();
+    
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
   return (
-    <div className="px-4 pb-4 pt-0 border-t border-border/50 space-y-4 bg-muted/20">
+    <div 
+      ref={containerRef}
+      className="relative px-4 pb-4 pt-0 border-t border-border/50 space-y-4 overflow-hidden rounded-b-xl"
+      style={{
+        background: CARD_BG,
+        borderColor: CARD_BORDER,
+        boxShadow: CARD_INNER_SHADOW,
+      }}
+    >
+      {/* Starfield with parallax */}
+      <div
+        className="absolute inset-0 pointer-events-none rounded-b-xl"
+        style={{
+          backgroundImage: `url('/stars.svg'), ${CARD_NEBULA}`,
+          backgroundSize: 'cover, cover',
+          backgroundRepeat: 'no-repeat, no-repeat',
+          backgroundPosition: `center ${-scrollY}px, 70% 50%`,
+          opacity: 0.35,
+          transition: 'background-position 0.1s ease-out',
+        }}
+      />
+
       {/* Header */}
-      <div className="flex items-center justify-between pt-4 pb-2">
+      <div className="relative flex items-center justify-between pt-4 pb-2">
         <div className="flex items-center gap-2">
           <Activity className="h-4 w-4 text-muted-foreground" />
           <span className="text-sm font-medium text-muted-foreground">
@@ -297,7 +344,7 @@ export function ActivityExpandedContent({ activity }: ActivityExpandedContentPro
 
       {/* Coach Insight */}
       {activity.coachFeedback && (
-        <div className="p-4 bg-muted/30 rounded-lg border-l-2 border-primary/40 backdrop-blur-sm">
+        <div className="relative p-4 bg-muted/30 rounded-lg border-l-2 border-primary/40 backdrop-blur-sm">
           <div className="flex items-center gap-2 mb-2">
             <Bot className="h-4 w-4 text-primary" />
             <span className="text-sm font-medium text-primary">Analysis</span>
@@ -309,7 +356,7 @@ export function ActivityExpandedContent({ activity }: ActivityExpandedContentPro
       )}
 
       {/* Core Metrics */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+      <div className="relative grid grid-cols-2 md:grid-cols-4 gap-3">
         <TelemetryMetricCard
           label="Distance"
           value={distanceDisplay.value.toFixed(1)}
