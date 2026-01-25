@@ -103,8 +103,9 @@ export function WorkoutCardShell({
             className="stars absolute inset-0 rounded-xl pointer-events-none"
             style={{
               backgroundImage: `url('/stars.svg'), ${hasNebula ? CARD_NEBULA : 'none'}`,
-              backgroundSize: `${stellarSize}, cover`,
-              backgroundRepeat: 'repeat, no-repeat',
+              // Modal uses cover to prevent star tiling; smaller cards use repeat
+              backgroundSize: role === 'modal' ? 'cover, cover' : `${stellarSize}, cover`,
+              backgroundRepeat: role === 'modal' ? 'no-repeat, no-repeat' : 'repeat, no-repeat',
               backgroundPosition: '0% 0%, 70% 50%',
               opacity: config.stars,
             }}
