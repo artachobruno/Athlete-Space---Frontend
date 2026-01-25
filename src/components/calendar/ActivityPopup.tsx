@@ -934,7 +934,34 @@ export function ActivityPopup({
                 </div>
 
                 {/* Climate Data Section */}
-                {(activity.heatStressIndex !== undefined || activity.coldStressIndex !== undefined || activity.conditionsLabel) && (
+                {(() => {
+                  // Check if any climate data exists (not undefined and not null)
+                  const hasHeatStress = activity.heatStressIndex !== undefined && activity.heatStressIndex !== null;
+                  const hasEffectiveHeatStress = activity.effectiveHeatStressIndex !== undefined && activity.effectiveHeatStressIndex !== null;
+                  const hasColdStress = activity.coldStressIndex !== undefined && activity.coldStressIndex !== null;
+                  const hasConditionsLabel = activity.conditionsLabel !== undefined && activity.conditionsLabel !== null && activity.conditionsLabel !== '';
+                  const hasClimateData = hasHeatStress || hasEffectiveHeatStress || hasColdStress || hasConditionsLabel;
+                  
+                  console.log('[ActivityPopup] Climate data check:', {
+                    hasHeatStress,
+                    hasEffectiveHeatStress,
+                    hasColdStress,
+                    hasConditionsLabel,
+                    hasClimateData,
+                    rawValues: {
+                      heatStressIndex: activity.heatStressIndex,
+                      effectiveHeatStressIndex: activity.effectiveHeatStressIndex,
+                      heatAcclimationScore: activity.heatAcclimationScore,
+                      coldStressIndex: activity.coldStressIndex,
+                      windChillC: activity.windChillC,
+                      avgTemperatureC: activity.avgTemperatureC,
+                      conditionsLabel: activity.conditionsLabel,
+                    },
+                    allActivityKeys: Object.keys(activity),
+                  });
+                  
+                  return hasClimateData;
+                })() && (
                   <div className="space-y-1 bg-muted/30 rounded-lg p-3 border border-border">
                     <div className="text-xs font-medium text-muted-foreground mb-2 flex items-center gap-2">
                       <Thermometer className="h-4 w-4" />

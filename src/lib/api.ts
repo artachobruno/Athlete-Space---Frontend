@@ -1301,8 +1301,19 @@ export const fetchActivities = async (params?: { limit?: number; offset?: number
     
     // Log first activity to see structure
     if (activitiesArray.length > 0) {
-      console.log('[API] Sample activity structure:', activitiesArray[0]);
-      console.log('[API] Activity keys:', Object.keys(activitiesArray[0] as Record<string, unknown>));
+      const sample = activitiesArray[0] as Record<string, unknown>;
+      console.log('[API] Sample activity structure:', sample);
+      console.log('[API] Activity keys:', Object.keys(sample));
+      // Log climate fields specifically
+      console.log('[API] Climate fields in sample:', {
+        heat_stress_index: sample.heat_stress_index,
+        heat_acclimation_score: sample.heat_acclimation_score,
+        effective_heat_stress_index: sample.effective_heat_stress_index,
+        wind_chill_c: sample.wind_chill_c,
+        cold_stress_index: sample.cold_stress_index,
+        avg_temperature_c: sample.avg_temperature_c,
+        conditions_label: sample.conditions_label,
+      });
     }
     
     // First, remove duplicates by strava_activity_id (keep the first occurrence)
