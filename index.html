@@ -23,21 +23,12 @@
     <link rel="icon" type="image/jpeg" href="/AthleteSpace_logo_dark.jpg" />
     <link rel="apple-touch-icon" href="/AthleteSpace_logo_dark.jpg" />
     <script>
-      // Apply theme immediately on page load to prevent flash
+      // Apply dark theme immediately on page load to prevent flash
       (function() {
-        const stored = localStorage.getItem('theme');
-        const theme = stored && ['light', 'dark', 'system'].includes(stored) ? stored : 
-          (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'system' : 'light');
-        
         const root = document.documentElement;
         root.classList.remove('light', 'dark');
-        
-        if (theme === 'system') {
-          const systemTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-          root.classList.add(systemTheme);
-        } else {
-          root.classList.add(theme);
-        }
+        root.classList.add('dark');
+        localStorage.setItem('theme', 'dark');
       })();
     </script>
   </head>
