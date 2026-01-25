@@ -7,7 +7,7 @@ export type StructuredWorkoutState =
   | { status: 'ready'; data: StructuredWorkoutResponse }
 
 export function useStructuredWorkout(workoutId: string | undefined) {
-  const { data, isLoading, error } = useAuthenticatedQuery<StructuredWorkoutResponse>({
+  const { data, isLoading, error, isFetching } = useAuthenticatedQuery<StructuredWorkoutResponse>({
     queryKey: ['structuredWorkout', workoutId],
     queryFn: () => {
       if (!workoutId) {
@@ -21,7 +21,12 @@ export function useStructuredWorkout(workoutId: string | undefined) {
     gcTime: 30 * 60 * 1000,
   })
 
-  if (isLoading) {
+  // If no workoutId, return ready with null data (not loading)
+  if (!workoutId) {
+    return { status: 'ready' as const, data: null }
+  }
+
+  if (isLoading || isFetching) {
     return { status: 'loading' as const }
   }
 
@@ -34,5 +39,6 @@ export function useStructuredWorkout(workoutId: string | undefined) {
     return { status: 'ready' as const, data }
   }
 
-  return { status: 'loading' as const }
+  // If query completed but no data, return ready with null
+  return { status: 'ready' as const, data: null }
 }

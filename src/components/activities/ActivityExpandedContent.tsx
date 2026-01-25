@@ -11,7 +11,7 @@ import { ActivityCharts } from './ActivityCharts';
 import { ActivityMap } from './ActivityMap';
 import { useUnitSystem } from '@/hooks/useUnitSystem';
 import { useQuery } from '@tanstack/react-query';
-import { fetchActivityStreams, fetchWorkoutExecution } from '@/lib/api';
+import { fetchActivityStreams, fetchWorkoutExecution, fetchWorkoutCompliance } from '@/lib/api';
 import { useStructuredWorkout } from '@/hooks/useStructuredWorkout';
 import { useMemo, useRef, useEffect, useState } from 'react';
 import { normalizeRoutePointsFromStreams } from '@/lib/route-utils';
@@ -197,6 +197,21 @@ export function ActivityExpandedContent({ activity }: ActivityExpandedContentPro
   const workoutLoading = structuredWorkoutState.status === 'loading';
   const workoutError = structuredWorkoutState.status === 'error' ? structuredWorkoutState.error : null;
   
+  // Debug logging
+  if (workoutId) {
+    console.log('[ActivityExpandedContent] Workout state:', {
+      workoutId,
+      status: structuredWorkoutState.status,
+      hasData: !!structuredWorkout,
+      stepsCount: structuredWorkout?.steps?.length || 0,
+    });
+  }
+  
+  // Check if workout was not found (status = "not_found" in response or workout is null)
+  const workoutNotFound = structuredWorkout === null || 
+                         (structuredWorkout && 'status' in structuredWorkout && structuredWorkout.status === 'not_found') ||
+                         (structuredWorkout && !structuredWorkout.workout);
+  
   const { data: execution, isLoading: executionLoading, error: executionError } = useAuthenticatedQuery({
     queryKey: ['workout', workoutId, 'execution'],
     queryFn: () => fetchWorkoutExecution(workoutId!),
@@ -204,6 +219,38 @@ export function ActivityExpandedContent({ activity }: ActivityExpandedContentPro
     enabled: !!workoutId,
     staleTime: 5 * 60 * 1000,
   });
+
+  const { data: complianceData, isLoading: complianceLoading, error: complianceError } = useAuthenticatedQuery({
+    queryKey: ['workout', workoutId, 'compliance'],
+    queryFn: async () => {
+      try {
+        return await fetchWorkoutCompliance(workoutId!);
+      } catch (error) {
+        const apiError = error as { status?: number; message?: string };
+        // 404 means compliance not computed yet - this is OK
+        if (apiError.status === 404) {
+          console.log('[ActivityExpandedContent] Compliance not computed yet for workout', workoutId);
+          return null; // Return null instead of throwing
+        }
+        console.error('[ActivityExpandedContent] Compliance fetch error:', error);
+        throw error; // Re-throw other errors
+      }
+    },
+    retry: false,
+    enabled: !!workoutId,
+    staleTime: 5 * 60 * 1000,
+  });
+  
+  // Debug logging for compliance
+  if (workoutId) {
+    console.log('[ActivityExpandedContent] Compliance state:', {
+      workoutId,
+      isLoading: complianceLoading,
+      hasData: !!complianceData,
+      error: complianceError,
+      stepsCount: complianceData?.steps?.length || 0,
+    });
+  }
   
   const plannedData = useMemo(() => {
     if (!structuredWorkout?.workout) return null;
@@ -268,13 +315,17 @@ export function ActivityExpandedContent({ activity }: ActivityExpandedContentPro
   }, [streamsData]);
 
   // Compliance score calculation
+  // Use API compliance data if available, otherwise calculate from duration/distance differences
   const complianceScore = useMemo(() => {
+    if (complianceData?.overall_compliance_pct !== undefined) {
+      return complianceData.overall_compliance_pct * 100;
+    }
     if (!plannedData) return null;
     const diffs = [durationDiff, distanceDiff].filter((d): d is number => d !== undefined);
     if (diffs.length === 0) return null;
     const avgDiff = diffs.reduce((sum, d) => sum + Math.abs(d), 0) / diffs.length;
     return Math.max(0, Math.min(100, 100 - avgDiff));
-  }, [durationDiff, distanceDiff, plannedData]);
+  }, [complianceData, durationDiff, distanceDiff, plannedData]);
 
   const getComplianceVerdict = () => {
     if (complianceScore === null) return { label: 'NO PLAN DATA', color: 'text-muted-foreground/50' };
@@ -386,6 +437,24 @@ export function ActivityExpandedContent({ activity }: ActivityExpandedContentPro
 
       {/* Key Highlights */}
       <div className="flex flex-wrap gap-2">
+        {activity.conditionsLabel && (
+          <HighlightChip 
+            type="neutral" 
+            text={`${activity.conditionsLabel} conditions`}
+          />
+        )}
+        {activity.effectiveHeatStressIndex !== undefined && activity.effectiveHeatStressIndex !== null && activity.effectiveHeatStressIndex > 0.5 && (
+          <HighlightChip 
+            type="warning" 
+            text={`Heat stress ${(activity.effectiveHeatStressIndex * 100).toFixed(0)}%`}
+          />
+        )}
+        {activity.coldStressIndex !== undefined && activity.coldStressIndex !== null && activity.coldStressIndex > 0.4 && (
+          <HighlightChip 
+            type="warning" 
+            text={`Cold stress ${(activity.coldStressIndex * 100).toFixed(0)}%`}
+          />
+        )}
         <HighlightChip type="positive" text="HR in zone 85%" />
         <HighlightChip type="positive" text="Negative split" />
         {durationDiff && durationDiff > 10 && (
@@ -459,7 +528,7 @@ export function ActivityExpandedContent({ activity }: ActivityExpandedContentPro
 
           {/* Climate Data Section */}
           {(activity.heatStressIndex !== undefined || activity.coldStressIndex !== undefined || activity.conditionsLabel) && (
-            <div className="space-y-1 bg-muted/30 rounded-lg p-4 border border-border/50 backdrop-blur-sm mt-4">
+            <div className="relative space-y-1 bg-muted/30 rounded-lg p-4 border border-border/50 backdrop-blur-sm">
               <div className="text-sm font-medium text-muted-foreground mb-3 flex items-center gap-2">
                 <Thermometer className="h-4 w-4" />
                 Climate Conditions
@@ -543,36 +612,117 @@ export function ActivityExpandedContent({ activity }: ActivityExpandedContentPro
         
         {/* STEPS TAB */}
         <TabsContent value="steps" className="mt-4">
-          {workoutLoading ? (
+          {!workoutId ? (
+            <div className="text-center py-8 text-muted-foreground">
+              <ListChecks className="h-8 w-8 mx-auto mb-2 opacity-50" />
+              <p className="text-sm">No workout linked to this activity</p>
+            </div>
+          ) : workoutNotFound && !workoutLoading ? (
+            <div className="text-center py-8 text-muted-foreground">
+              <ListChecks className="h-8 w-8 mx-auto mb-2 opacity-50" />
+              <p className="text-sm">Workout not found</p>
+            </div>
+          ) : workoutLoading ? (
             <div className="flex items-center justify-center h-48 text-muted-foreground">
               <Loader2 className="h-5 w-5 animate-spin" />
             </div>
           ) : workoutError ? (
             <div className="text-center py-8 text-muted-foreground">
               <ListChecks className="h-8 w-8 mx-auto mb-2 opacity-50" />
-              <p className="text-sm">Error loading workout</p>
+              <p className="text-sm">Error loading workout: {workoutError}</p>
+            </div>
+          ) : structuredWorkout && (!structuredWorkout.structured_available || structuredWorkout.steps.length === 0) ? (
+            <div className="text-center py-8 text-muted-foreground">
+              <ListChecks className="h-8 w-8 mx-auto mb-2 opacity-50" />
+              <p className="text-sm">No structured steps available</p>
+              <p className="text-xs mt-1 opacity-60">
+                {structuredWorkout.workout?.parse_status === 'pending' 
+                  ? 'Workout is being parsed...' 
+                  : structuredWorkout.workout?.parse_status === 'failed'
+                  ? 'Failed to parse workout structure'
+                  : 'This workout has no structured steps'}
+              </p>
             </div>
           ) : structuredWorkout?.steps && structuredWorkout.steps.length > 0 ? (
             <div className="space-y-2">
-              {structuredWorkout.steps.map((step, idx) => (
-                <div key={step.id} className="p-3 bg-muted/30 rounded-lg border border-border">
-                  <div className="flex items-center gap-3 mb-1">
-                    <span className="text-sm font-medium text-muted-foreground w-6">{idx + 1}</span>
-                    <span className="text-sm font-semibold text-foreground capitalize">{step.type}</span>
-                    {step.duration_seconds && (
-                      <span className="text-sm text-muted-foreground ml-auto tabular-nums">
-                        {Math.round(step.duration_seconds / 60)} min
-                      </span>
+              {structuredWorkout.steps.map((step, idx) => {
+                // Find compliance data for this step
+                const stepCompliance = complianceData?.steps?.find(
+                  (sc) => sc.order === step.order || sc.order === idx + 1
+                );
+
+                return (
+                  <div key={step.id} className="relative p-3 bg-muted/30 rounded-lg border border-border">
+                    <div className="flex items-center gap-3 mb-1">
+                      <span className="text-sm font-medium text-muted-foreground w-6">{step.order || idx + 1}</span>
+                      <span className="text-sm font-semibold text-foreground capitalize">{step.type}</span>
+                      {step.duration_seconds && (
+                        <span className="text-sm text-muted-foreground ml-auto tabular-nums">
+                          {Math.round(step.duration_seconds / 60)} min
+                        </span>
+                      )}
+                    </div>
+                    {step.purpose && (
+                      <p className="text-sm text-foreground ml-9">{step.purpose}</p>
+                    )}
+                    {step.intensity && (
+                      <p className="text-sm text-muted-foreground ml-9 mt-1">{step.intensity}</p>
+                    )}
+                    {step.target && (
+                      <div className="ml-9 mt-1 text-xs text-muted-foreground">
+                        {step.target.type === 'pace' && step.target.min && step.target.max && (
+                          <span>Target: {step.target.min.toFixed(1)}-{step.target.max.toFixed(1)} {step.target.unit}</span>
+                        )}
+                        {step.target.type === 'hr' && step.target.min && step.target.max && (
+                          <span>Target: {Math.round(step.target.min)}-{Math.round(step.target.max)} {step.target.unit}</span>
+                        )}
+                        {step.target.type === 'power' && step.target.min && step.target.max && (
+                          <span>Target: {Math.round(step.target.min)}-{Math.round(step.target.max)} {step.target.unit}</span>
+                        )}
+                        {step.target.value && (
+                          <span>Target: {step.target.value.toFixed(1)} {step.target.unit}</span>
+                        )}
+                      </div>
+                    )}
+                    {/* Step Compliance Metrics */}
+                    {stepCompliance && (
+                      <div className="mt-2 ml-9 space-y-1 text-xs">
+                        <div className="flex items-center justify-between">
+                          <span className="text-muted-foreground">Compliance:</span>
+                          <span className={cn(
+                            "font-medium tabular-nums",
+                            stepCompliance.compliance_pct >= 0.8 ? "text-load-fresh" :
+                            stepCompliance.compliance_pct >= 0.6 ? "text-accent" :
+                            "text-load-overreaching"
+                          )}>
+                            {(stepCompliance.compliance_pct * 100).toFixed(0)}%
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-3 text-muted-foreground">
+                          {stepCompliance.time_in_range_seconds > 0 && (
+                            <span>In range: {Math.round(stepCompliance.time_in_range_seconds / 60)}m</span>
+                          )}
+                          {stepCompliance.overshoot_seconds > 0 && (
+                            <span className="text-amber-600 dark:text-amber-400">
+                              Over: {Math.round(stepCompliance.overshoot_seconds / 60)}m
+                            </span>
+                          )}
+                          {stepCompliance.undershoot_seconds > 0 && (
+                            <span className="text-blue-600 dark:text-blue-400">
+                              Under: {Math.round(stepCompliance.undershoot_seconds / 60)}m
+                            </span>
+                          )}
+                          {stepCompliance.pause_seconds > 0 && (
+                            <span className="text-muted-foreground/60">
+                              Paused: {Math.round(stepCompliance.pause_seconds / 60)}m
+                            </span>
+                          )}
+                        </div>
+                      </div>
                     )}
                   </div>
-                  {step.purpose && (
-                    <p className="text-sm text-foreground ml-9">{step.purpose}</p>
-                  )}
-                  {step.intensity && (
-                    <p className="text-sm text-muted-foreground ml-9 mt-1">{step.intensity}</p>
-                  )}
-                </div>
-              ))}
+                );
+              })}
             </div>
           ) : (
             <div className="text-center py-8 text-muted-foreground">
@@ -611,9 +761,30 @@ export function ActivityExpandedContent({ activity }: ActivityExpandedContentPro
         
         {/* COMPLIANCE TAB */}
         <TabsContent value="compliance" className="mt-4 space-y-4">
-          {workoutLoading ? (
+          {!workoutId ? (
+            <div className="text-center py-8 text-muted-foreground">
+              <CheckCircle2 className="h-8 w-8 mx-auto mb-2 opacity-50" />
+              <p className="text-sm">No workout linked to this activity</p>
+            </div>
+          ) : workoutNotFound && !workoutLoading ? (
+            <div className="text-center py-8 text-muted-foreground">
+              <CheckCircle2 className="h-8 w-8 mx-auto mb-2 opacity-50" />
+              <p className="text-sm">Workout not found</p>
+            </div>
+          ) : workoutLoading || complianceLoading ? (
             <div className="flex items-center justify-center h-48 text-muted-foreground">
               <Loader2 className="h-5 w-5 animate-spin" />
+            </div>
+          ) : workoutError ? (
+            <div className="text-center py-8 text-muted-foreground">
+              <CheckCircle2 className="h-8 w-8 mx-auto mb-2 opacity-50" />
+              <p className="text-sm">Error loading workout: {workoutError}</p>
+            </div>
+          ) : complianceError && (complianceError as { status?: number }).status === 404 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              <CheckCircle2 className="h-8 w-8 mx-auto mb-2 opacity-50" />
+              <p className="text-sm">Compliance data not computed yet</p>
+              <p className="text-xs mt-1 opacity-60">Compliance is calculated after workout execution</p>
             </div>
           ) : plannedData ? (
             <div className="space-y-4">
@@ -664,31 +835,71 @@ export function ActivityExpandedContent({ activity }: ActivityExpandedContentPro
                 )}
               </div>
 
-              {/* Compliance from API */}
-              {structuredWorkout?.comparison && (
+              {/* Per-Step Compliance Breakdown */}
+              {complianceData?.steps && complianceData.steps.length > 0 && (
                 <div className="space-y-1 bg-muted/30 rounded-lg p-4 border border-border/50 backdrop-blur-sm">
                   <div className="text-sm font-medium text-muted-foreground mb-3">
-                    Detailed Compliance
+                    Step-by-Step Compliance
                   </div>
-                  {(() => {
-                    const comp = Array.isArray(structuredWorkout.comparison) 
-                      ? structuredWorkout.comparison[0] 
-                      : structuredWorkout.comparison;
-                    const summary = (comp as { summary_json?: Record<string, number | boolean> })?.summary_json;
-                    
-                    if (!summary) return null;
-                    
-                    return Object.entries(summary).map(([key, value]) => (
-                      <div key={key} className="flex items-center justify-between py-2 border-b border-border/50 last:border-b-0">
-                        <span className="text-sm text-muted-foreground capitalize">
-                          {key.replace(/_/g, ' ')}
-                        </span>
-                        <span className="text-sm font-medium text-foreground tabular-nums">
-                          {typeof value === 'number' ? value.toFixed(value % 1 === 0 ? 0 : 1) : String(value)}
-                        </span>
+                  {complianceData.steps.map((stepComp) => {
+                    const step = structuredWorkout?.steps?.find(
+                      (s) => s.order === stepComp.order
+                    );
+                    return (
+                      <div key={stepComp.order} className="py-2 border-b border-border/50 last:border-b-0">
+                        <div className="flex items-center justify-between mb-1">
+                          <span className="text-sm font-medium text-foreground">
+                            Step {stepComp.order}: {step?.type || step?.name || 'Unknown'}
+                          </span>
+                          <span className={cn(
+                            "text-sm font-semibold tabular-nums",
+                            stepComp.compliance_pct >= 0.8 ? "text-load-fresh" :
+                            stepComp.compliance_pct >= 0.6 ? "text-accent" :
+                            "text-load-overreaching"
+                          )}>
+                            {(stepComp.compliance_pct * 100).toFixed(0)}%
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-4 text-xs text-muted-foreground ml-4">
+                          <span>In range: {Math.round(stepComp.time_in_range_seconds / 60)}m</span>
+                          {stepComp.overshoot_seconds > 0 && (
+                            <span className="text-amber-600 dark:text-amber-400">
+                              Over: {Math.round(stepComp.overshoot_seconds / 60)}m
+                            </span>
+                          )}
+                          {stepComp.undershoot_seconds > 0 && (
+                            <span className="text-blue-600 dark:text-blue-400">
+                              Under: {Math.round(stepComp.undershoot_seconds / 60)}m
+                            </span>
+                          )}
+                          {stepComp.pause_seconds > 0 && (
+                            <span>Paused: {Math.round(stepComp.pause_seconds / 60)}m</span>
+                          )}
+                        </div>
                       </div>
-                    ));
-                  })()}
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* Overall Compliance Summary */}
+              {complianceData && (
+                <div className="space-y-1 bg-muted/30 rounded-lg p-4 border border-border/50 backdrop-blur-sm">
+                  <div className="text-sm font-medium text-muted-foreground mb-3">
+                    Overall Summary
+                  </div>
+                  <TelemetryMetricRow
+                    label="Overall Compliance"
+                    value={`${(complianceData.overall_compliance_pct * 100).toFixed(0)}%`}
+                  />
+                  <TelemetryMetricRow
+                    label="Total Pause Time"
+                    value={`${Math.round(complianceData.total_pause_seconds / 60)} min`}
+                  />
+                  <TelemetryMetricRow
+                    label="Status"
+                    value={complianceData.completed ? "Completed" : "Incomplete"}
+                  />
                 </div>
               )}
             </div>
