@@ -5,7 +5,7 @@ import type { CompletedActivity } from '@/types';
 import {
   Clock, Route, Heart, Zap, Mountain, Bot,
   TrendingUp, TrendingDown, Minus, CheckCircle2, Info, ListChecks, PlayCircle,
-  Activity
+  Activity, Thermometer
 } from 'lucide-react';
 import { ActivityCharts } from './ActivityCharts';
 import { ActivityMap } from './ActivityMap';

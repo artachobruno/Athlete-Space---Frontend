@@ -951,13 +951,11 @@ export function ActivityPopup({
                     {activity.effectiveHeatStressIndex !== undefined && activity.effectiveHeatStressIndex !== null ? (
                       <TelemetryMetricRow
                         label="Heat Stress"
-                        value={`${(activity.effectiveHeatStressIndex * 100).toFixed(0)}%`}
-                        delta={activity.heatAcclimationScore !== undefined && activity.heatAcclimationScore !== null && activity.heatAcclimationScore > 0 
-                          ? activity.heatAcclimationScore * 100 
-                          : undefined}
-                        deltaLabel={activity.heatAcclimationScore !== undefined && activity.heatAcclimationScore !== null && activity.heatAcclimationScore > 0
-                          ? "acclimated"
-                          : undefined}
+                        value={`${(activity.effectiveHeatStressIndex * 100).toFixed(0)}%${
+                          activity.heatAcclimationScore !== undefined && activity.heatAcclimationScore !== null && activity.heatAcclimationScore > 0 
+                            ? ` (${(activity.heatAcclimationScore * 100).toFixed(0)}% acclimated)` 
+                            : ''
+                        }`}
                       />
                     ) : activity.heatStressIndex !== undefined && activity.heatStressIndex !== null ? (
                       <TelemetryMetricRow
