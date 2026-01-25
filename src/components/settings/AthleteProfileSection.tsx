@@ -138,7 +138,14 @@ export function AthleteProfileSection() {
     // CRITICAL: Never reload profile if we just saved
     // This prevents the form from being cleared when /me is called after save
     if (justSavedRef.current) {
-      console.log('[Profile] Skipping loadProfile - profile was just saved');
+      console.log('[Profile] Skipping loadProfile - profile was just saved (guard active)');
+      return;
+    }
+    
+    // CRITICAL: Never reload if a save is in progress
+    // This prevents race conditions where save completes but reload happens first
+    if (isSavingRef.current) {
+      console.log('[Profile] Skipping loadProfile - save in progress');
       return;
     }
     
@@ -413,34 +420,54 @@ export function AthleteProfileSection() {
         const displayGender = backendGender === 'M' || backendGender === 'F' ? backendGender : '';
         
         const updatedState: ProfileState = {
-          name: (updatedProfile as { name?: string }).name || '',
-          email: user?.email || '', // Always use email from auth context
-          gender: displayGender,
-          weight: displayWeight,
-          unitSystem,
-          location: (updatedProfile as { location?: string }).location || '',
+          // CRITICAL: Preserve existing form values if backend response is missing them
+          // This prevents fields from being cleared if backend response is incomplete
+          name: (updatedProfile as { name?: string }).name ?? profile.name ?? '',
+          email: user?.email || profile.email || '', // Always use email from auth context, fallback to current
+          gender: displayGender || profile.gender || '',
+          weight: displayWeight || profile.weight || '',
+          unitSystem: unitSystem || profile.unitSystem || 'imperial',
+          location: (updatedProfile as { location?: string }).location ?? profile.location ?? '',
           dateOfBirth: (updatedProfile as { date_of_birth?: string }).date_of_birth || 
-                      (updatedProfile as { dateOfBirth?: string }).dateOfBirth || '',
-          heightFeet,
-          heightInches,
+                      (updatedProfile as { dateOfBirth?: string }).dateOfBirth || 
+                      profile.dateOfBirth || '',
+          heightFeet: heightFeet || profile.heightFeet || '',
+          heightInches: heightInches || profile.heightInches || '',
         };
         
         // CRITICAL: Update state from the saved profile response
         // This ensures the form shows the saved data, not data from /me
+        // 
+        // IMPORTANT: We update BOTH profile and initialProfile to the SAME values
+        // This ensures hasChanges stays false and the form shows as "saved"
+        // 
+        // IMPORTANT: We use nullish coalescing (??) to preserve existing values
+        // if backend response is incomplete - this prevents fields from being cleared
         setProfile(updatedState);
         setInitialProfile(updatedState);
+        
+        // Log for debugging - verify state was updated correctly
+        console.log('[Profile] Profile saved and state updated:', {
+          name: updatedState.name,
+          weight: updatedState.weight,
+          height: `${updatedState.heightFeet}'${updatedState.heightInches}"`,
+          location: updatedState.location,
+        });
       } else {
         // If no response, just update initial profile to current state
+        // This marks the form as "saved" even if backend didn't return data
         setInitialProfile({ ...profile });
+        console.warn('[Profile] Save succeeded but no response data, using current state');
       }
       
       setHasChanges(false);
       
-      // CRITICAL: Reset the guard after a short delay
-      // This allows time for any /me calls to complete without affecting the form
+      // CRITICAL: Keep the guard active longer to prevent any refetch from clearing fields
+      // Extended to 5 seconds to cover any background syncs or refetches
       setTimeout(() => {
         justSavedRef.current = false;
-      }, 2000);
+        console.log('[Profile] Save guard expired - profile can be reloaded again');
+      }, 5000);
       
       // CRITICAL: Reset save guard after a delay to allow future saves
       // But keep it long enough to prevent immediate re-saves from state updates
@@ -451,7 +478,11 @@ export function AthleteProfileSection() {
       // Invalidate queries to update unit system across the app
       // NOTE: This does NOT trigger a profile reload because we guard against it
       // NOTE: This does NOT trigger another save because we guard against it
-      await queryClient.invalidateQueries({ queryKey: ['userProfile'] });
+      // NOTE: We use refetchType: 'none' to prevent automatic refetches
+      await queryClient.invalidateQueries({ 
+        queryKey: ['userProfile'],
+        refetchType: 'none' // Don't automatically refetch - we've already updated state
+      });
       
       toast({
         title: 'Profile updated',

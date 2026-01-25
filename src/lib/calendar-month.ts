@@ -128,9 +128,29 @@ function sportKey(s: CalendarSession): string {
 }
 
 /**
- * Build calendar items for a day, merging 1:1 planned+workout same sport into a single combined card.
- * When there is exactly one planned session and one workout (activity) for the same sport,
- * we emit only the workout-based item so we show one combined card instead of two.
+ * Prefer the workout that has activity linkage (completed_activity_id, workout_id) or
+ * matches an activity in completedActivities. Used when merging 2 workouts same sport.
+ */
+function pickBestWorkout(
+  a: CalendarSession,
+  b: CalendarSession,
+  completedActivities: CompletedActivity[],
+): CalendarSession {
+  const score = (s: CalendarSession): number => {
+    if (s.completed_activity_id || s.workout_id) return 2;
+    const hasMatch = completedActivities.some(
+      (act) => act.id === s.id || act.planned_session_id === s.id,
+    );
+    return hasMatch ? 1 : 0;
+  };
+  return score(b) > score(a) ? b : a;
+}
+
+/**
+ * Build calendar items for a day, merging duplicate planned+workout same sport into one combined card.
+ * - 1 planned + 1 workout same sport -> emit 1 (workout).
+ * - 2 workouts, 0 planned same sport -> emit 1 (duplicate: completed plan + unpaired activity).
+ * - Otherwise emit all.
  */
 export function buildMergedCalendarItemsForDay(
   dayData: DayCalendarData,
@@ -163,6 +183,10 @@ export function buildMergedCalendarItemsForDay(
     const workouts = bySportWorkouts.get(sport) ?? [];
     if (planned.length === 1 && workouts.length === 1) {
       toEmit.push(workouts[0]);
+    } else if (planned.length === 0 && workouts.length === 2) {
+      toEmit.push(
+        pickBestWorkout(workouts[0], workouts[1], completedActivities),
+      );
     } else {
       toEmit.push(...planned);
       toEmit.push(...workouts);
