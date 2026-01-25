@@ -141,13 +141,16 @@ export function CoachProgressPanel({ conversationId, mode = 'executing', onConfi
     );
   }
 
-  // Hide when not executing or when completed
-  if (mode !== 'executing' || hasCompleted) {
+  // Hide when not executing (planning branch handled above)
+  if (mode !== 'executing') {
     return null;
   }
 
-  // Show loading state while fetching initial progress
-  if (isLoading && !progress) {
+  // When completed: keep checklist visible with all steps marked completed (cursor-style todo list)
+  const forceCompleted = hasCompleted;
+
+  // Show loading state while fetching initial progress (only when not yet completed)
+  if (!forceCompleted && isLoading && !progress) {
     return (
       <div className="mb-4 p-4 bg-accent/5 border border-accent/20 rounded-lg">
         <div className="space-y-2">
@@ -160,8 +163,8 @@ export function CoachProgressPanel({ conversationId, mode = 'executing', onConfi
     );
   }
 
-  // Show empty/initializing state if no steps yet
-  if (!progress || progress.steps.length === 0) {
+  // Show empty/initializing state if no steps yet (only when not completed)
+  if (!forceCompleted && (!progress || progress.steps.length === 0)) {
     return (
       <div className="mb-4 p-4 bg-accent/5 border border-accent/20 rounded-lg">
         <div className="space-y-2">
@@ -206,11 +209,17 @@ export function CoachProgressPanel({ conversationId, mode = 'executing', onConfi
     }
   };
 
+  // When completed, we may have progress from last poll; if not, show nothing (shouldn't happen)
+  const steps = progress?.steps ?? [];
+  if (steps.length === 0) return null;
+
   return (
     <div className="mb-4 p-4 bg-accent/5 border border-accent/20 rounded-lg">
       <ul className="space-y-2" role="list">
-        {progress.steps.map((step) => {
-          const status = resolveStepStatus(step.id, progress.events);
+        {steps.map((step) => {
+          const status = forceCompleted
+            ? 'completed'
+            : resolveStepStatus(step.id, progress!.events);
           const isInProgress = status === 'in_progress';
 
           return (

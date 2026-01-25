@@ -804,12 +804,13 @@ export function CoachChat() {
           />
         )}
 
-        {/* Coach Progress Panel - shown below last message when conversation is active (executing) */}
-        {conversationId && mode === 'executing' ? (
-          <CoachProgressPanel 
-            conversationId={conversationId} 
+        {/* Coach Progress Panel - planning: todo list + "Generate Weekly Plan"; executing: live checklist */}
+        {(mode === 'planning' || (conversationId != null && mode === 'executing')) ? (
+          <CoachProgressPanel
+            conversationId={mode === 'executing' ? conversationId : null}
             mode={mode}
-            onComplete={handleProgressComplete}
+            onConfirm={mode === 'planning' ? handleConfirmPlan : undefined}
+            onComplete={mode === 'executing' ? handleProgressComplete : undefined}
           />
         ) : null}
 
