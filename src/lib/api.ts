@@ -673,7 +673,11 @@ export const updateUserProfile = async (
     const backendData: Record<string, unknown> = {};
     
     // Handle both camelCase and snake_case field names
-    if (profileData.name !== undefined) backendData.name = profileData.name;
+    // CRITICAL: Backend expects full_name, not name
+    const nameValue = (profileData as { name?: string; full_name?: string }).name 
+      ?? (profileData as { name?: string; full_name?: string }).full_name;
+    if (nameValue !== undefined) backendData.full_name = nameValue;
+    
     if (profileData.email !== undefined) backendData.email = profileData.email;
     if (profileData.gender !== undefined) backendData.gender = profileData.gender;
     
@@ -711,15 +715,21 @@ export const updateUserProfile = async (
       }
     }
     
-    // Handle height - support height_in (imperial) and height_cm (metric) with 1 decimal precision
+    // Handle height - support height_inches (imperial, integer) and height_cm (metric, integer)
+    // CRITICAL: Backend expects height_inches (integer), not height_in (float)
+    const heightInches = (profileData as { height_inches?: number }).height_inches;
     const heightIn = (profileData as { height_in?: number }).height_in;
     const heightCm = (profileData as { height_cm?: number }).height_cm;
-    if (heightIn !== undefined && heightIn !== null) {
-      // Send height_in for imperial (1 decimal max)
-      backendData.height_in = Number(heightIn.toFixed(1));
+    
+    if (heightInches !== undefined && heightInches !== null) {
+      // Backend expects integer for height_inches
+      backendData.height_inches = Math.round(heightInches);
+    } else if (heightIn !== undefined && heightIn !== null) {
+      // Convert height_in (float) to height_inches (integer) for backend
+      backendData.height_inches = Math.round(heightIn);
     } else if (heightCm !== undefined && heightCm !== null) {
-      // Send height_cm for metric (1 decimal max)
-      backendData.height_cm = Number(heightCm.toFixed(1));
+      // Send height_cm for metric (integer)
+      backendData.height_cm = Math.round(heightCm);
     } else {
       // Fallback: try to get height and convert based on unit system
       const height = (profileData as { height?: number | string }).height;
@@ -727,9 +737,11 @@ export const updateUserProfile = async (
         const heightValue = typeof height === 'number' ? height : parseFloat(String(height));
         if (!isNaN(heightValue)) {
           if (unitSystem === 'imperial') {
-            backendData.height_in = Number(heightValue.toFixed(1));
+            // Convert to total inches (integer)
+            backendData.height_inches = Math.round(heightValue);
           } else {
-            backendData.height_cm = Number(heightValue.toFixed(1));
+            // Convert to cm (integer)
+            backendData.height_cm = Math.round(heightValue);
           }
         }
       }

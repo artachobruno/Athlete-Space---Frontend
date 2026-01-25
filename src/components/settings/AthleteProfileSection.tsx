@@ -211,14 +211,20 @@ export function AthleteProfileSection() {
         displayWeight = weightValue.toString();
       }
       
-      // Get height - backend may return height_cm (metric) or height_in (imperial)
+      // Get height - backend may return height_cm (metric) or height_inches (imperial)
+      // CRITICAL: Backend returns height_inches (integer), not height_in
       const heightCm = (userProfile as { height_cm?: number }).height_cm;
+      const heightInchesBackend = (userProfile as { height_inches?: number }).height_inches;
+      // Also check for height_in for backward compatibility
       const heightIn = (userProfile as { height_in?: number }).height_in;
       let heightFeet = '';
       let heightInches = '';
-      if (heightIn !== undefined && heightIn !== null) {
+      
+      // Backend returns height_inches (integer) for imperial
+      const totalInchesValue = heightInchesBackend ?? heightIn;
+      if (totalInchesValue !== undefined && totalInchesValue !== null) {
         // Backend already provided height in inches - convert to feet/inches
-        const totalInches = format1Decimal(heightIn);
+        const totalInches = format1Decimal(totalInchesValue);
         heightFeet = Math.floor(totalInches / 12).toString();
         heightInches = (totalInches % 12).toFixed(0);
       } else if (heightCm !== undefined && heightCm !== null) {
@@ -240,8 +246,14 @@ export function AthleteProfileSection() {
       const backendGender = (userProfile as { gender?: string }).gender || '';
       const displayGender = backendGender === 'M' || backendGender === 'F' ? backendGender : '';
       
+      // CRITICAL: Backend returns full_name, not name
+      // Handle both full_name and name for backward compatibility
+      const backendName = (userProfile as { full_name?: string }).full_name 
+        ?? (userProfile as { name?: string }).name 
+        ?? '';
+      
       const profileData: ProfileState = {
-        name: (userProfile as { name?: string }).name || '',
+        name: backendName,
         email: emailFromAuth, // Always use email from auth context
         gender: displayGender,
         weight: displayWeight,
@@ -251,6 +263,17 @@ export function AthleteProfileSection() {
         heightFeet,
         heightInches,
       };
+      
+      // Log loaded profile data for debugging
+      console.log('[Profile] Loaded profile data:', {
+        name: profileData.name,
+        weight: profileData.weight,
+        height: `${profileData.heightFeet}'${profileData.heightInches}"`,
+        location: profileData.location,
+        dateOfBirth: profileData.dateOfBirth,
+        gender: profileData.gender,
+        unitSystem: profileData.unitSystem,
+      });
       setProfile(profileData);
       setInitialProfile(profileData);
     } catch (error) {
@@ -359,19 +382,22 @@ export function AthleteProfileSection() {
         updateData.dateOfBirth = profile.dateOfBirth;
       }
 
-      // Handle height - convert feet+inches to total inches for imperial, or cm for metric (1 decimal max)
+      // Handle height - convert feet+inches to total inches for imperial, or cm for metric
+      // CRITICAL: Backend expects height_inches (integer) for imperial, height_cm (integer) for metric
       if (profile.heightFeet || profile.heightInches) {
         const feet = parseFloat(profile.heightFeet || '0');
         const inches = parseFloat(profile.heightInches || '0');
         if (!isNaN(feet) && !isNaN(inches)) {
           if (profile.unitSystem === 'imperial') {
-            // Convert feet + inches to total inches (1 decimal max)
-            const totalInches = feet * 12 + inches;
-            (updateData as { height_in?: number }).height_in = format1Decimal(totalInches);
+            // Convert feet + inches to total inches (integer for backend)
+            const totalInches = Math.round(feet * 12 + inches);
+            (updateData as { height_inches?: number }).height_inches = totalInches;
+            // Also send height_in for backward compatibility (will be converted by updateUserProfile)
+            (updateData as { height_in?: number }).height_in = totalInches;
           } else {
-            // For metric, convert to cm (feet and inches inputs are used, but convert to cm for backend)
+            // For metric, convert to cm (integer for backend)
             const totalInches = feet * 12 + inches;
-            const heightCm = format1Decimal(totalInches * 2.54);
+            const heightCm = Math.round(totalInches * 2.54);
             (updateData as { height_cm?: number }).height_cm = heightCm;
           }
         }
@@ -402,12 +428,17 @@ export function AthleteProfileSection() {
         }
         
         // Get height from response
+        // CRITICAL: Backend returns height_inches (integer), not height_in
+        const heightInchesBackend = (updatedProfile as { height_inches?: number }).height_inches;
         const heightIn = (updatedProfile as { height_in?: number }).height_in;
         const heightCm = (updatedProfile as { height_cm?: number }).height_cm;
         let heightFeet = '';
         let heightInches = '';
-        if (heightIn !== undefined && heightIn !== null) {
-          const totalInches = format1Decimal(heightIn);
+        
+        // Backend returns height_inches (integer) for imperial
+        const totalInchesValue = heightInchesBackend ?? heightIn;
+        if (totalInchesValue !== undefined && totalInchesValue !== null) {
+          const totalInches = format1Decimal(totalInchesValue);
           heightFeet = Math.floor(totalInches / 12).toString();
           heightInches = (totalInches % 12).toFixed(0);
         } else if (heightCm !== undefined && heightCm !== null) {
@@ -419,10 +450,16 @@ export function AthleteProfileSection() {
         const backendGender = (updatedProfile as { gender?: string }).gender || '';
         const displayGender = backendGender === 'M' || backendGender === 'F' ? backendGender : '';
         
+        // CRITICAL: Backend returns full_name, not name
+        // Handle both full_name and name for backward compatibility
+        const backendName = (updatedProfile as { full_name?: string }).full_name 
+          ?? (updatedProfile as { name?: string }).name 
+          ?? '';
+        
         const updatedState: ProfileState = {
           // CRITICAL: Preserve existing form values if backend response is missing them
           // This prevents fields from being cleared if backend response is incomplete
-          name: (updatedProfile as { name?: string }).name ?? profile.name ?? '',
+          name: backendName || profile.name || '',
           email: user?.email || profile.email || '', // Always use email from auth context, fallback to current
           gender: displayGender || profile.gender || '',
           weight: displayWeight || profile.weight || '',
