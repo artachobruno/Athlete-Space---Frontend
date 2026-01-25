@@ -1459,6 +1459,26 @@ export const fetchActivities = async (params?: { limit?: number; offset?: number
                           typeof act.intensityFactor === 'number' ? act.intensityFactor : undefined,
           effortSource: act.effort_source === 'power' || act.effort_source === 'pace' || act.effort_source === 'hr' ? act.effort_source :
                       act.effortSource === 'power' || act.effortSource === 'pace' || act.effortSource === 'hr' ? act.effortSource : undefined,
+          // v1.1: Heat acclimation fields
+          heatStressIndex: typeof act.heat_stress_index === 'number' ? act.heat_stress_index :
+                          typeof act.heatStressIndex === 'number' ? act.heatStressIndex : undefined,
+          heatAcclimationScore: typeof act.heat_acclimation_score === 'number' ? act.heat_acclimation_score :
+                               typeof act.heatAcclimationScore === 'number' ? act.heatAcclimationScore : undefined,
+          effectiveHeatStressIndex: typeof act.effective_heat_stress_index === 'number' ? act.effective_heat_stress_index :
+                                   typeof act.effectiveHeatStressIndex === 'number' ? act.effectiveHeatStressIndex : undefined,
+          // v2.0: Cold stress fields
+          windChillC: typeof act.wind_chill_c === 'number' ? act.wind_chill_c :
+                     typeof act.windChillC === 'number' ? act.windChillC : undefined,
+          coldStressIndex: typeof act.cold_stress_index === 'number' ? act.cold_stress_index :
+                          typeof act.coldStressIndex === 'number' ? act.coldStressIndex : undefined,
+          avgTemperatureC: typeof act.avg_temperature_c === 'number' ? act.avg_temperature_c :
+                          typeof act.avgTemperatureC === 'number' ? act.avgTemperatureC : undefined,
+          avgDewPointC: typeof act.avg_dew_point_c === 'number' ? act.avg_dew_point_c :
+                       typeof act.avgDewPointC === 'number' ? act.avgDewPointC : undefined,
+          windAvgMps: typeof act.wind_avg_mps === 'number' ? act.wind_avg_mps :
+                     typeof act.windAvgMps === 'number' ? act.windAvgMps : undefined,
+          conditionsLabel: typeof act.conditions_label === 'string' ? act.conditions_label :
+                          typeof act.conditionsLabel === 'string' ? act.conditionsLabel : undefined,
         } as import("../types").CompletedActivity;
       });
     

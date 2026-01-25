@@ -409,6 +409,69 @@ export function ActivityExpandedContent({ activity }: ActivityExpandedContentPro
               />
             )}
           </div>
+
+          {/* Climate Data Section */}
+          {(activity.heatStressIndex !== undefined || activity.coldStressIndex !== undefined || activity.conditionsLabel) && (
+            <div className="space-y-1 bg-muted/30 rounded-lg p-4 border border-border/50 backdrop-blur-sm mt-4">
+              <div className="text-sm font-medium text-muted-foreground mb-3 flex items-center gap-2">
+                <Thermometer className="h-4 w-4" />
+                Climate Conditions
+              </div>
+              
+              {activity.conditionsLabel && (
+                <TelemetryMetricRow
+                  label="Conditions"
+                  value={activity.conditionsLabel}
+                />
+              )}
+
+              {activity.effectiveHeatStressIndex !== undefined && activity.effectiveHeatStressIndex !== null ? (
+                <TelemetryMetricRow
+                  label="Heat Stress"
+                  value={`${(activity.effectiveHeatStressIndex * 100).toFixed(0)}%`}
+                  delta={activity.heatAcclimationScore !== undefined && activity.heatAcclimationScore !== null && activity.heatAcclimationScore > 0 
+                    ? activity.heatAcclimationScore * 100 
+                    : undefined}
+                  deltaLabel={activity.heatAcclimationScore !== undefined && activity.heatAcclimationScore !== null && activity.heatAcclimationScore > 0
+                    ? "acclimated"
+                    : undefined}
+                />
+              ) : activity.heatStressIndex !== undefined && activity.heatStressIndex !== null ? (
+                <TelemetryMetricRow
+                  label="Heat Stress"
+                  value={`${(activity.heatStressIndex * 100).toFixed(0)}%`}
+                />
+              ) : null}
+
+              {activity.coldStressIndex !== undefined && activity.coldStressIndex !== null && (
+                <TelemetryMetricRow
+                  label="Cold Stress"
+                  value={`${(activity.coldStressIndex * 100).toFixed(0)}%`}
+                />
+              )}
+
+              {activity.avgTemperatureC !== undefined && activity.avgTemperatureC !== null && (
+                <TelemetryMetricRow
+                  label="Temperature"
+                  value={`${activity.avgTemperatureC.toFixed(1)}°C`}
+                />
+              )}
+
+              {activity.windAvgMps !== undefined && activity.windAvgMps !== null && (
+                <TelemetryMetricRow
+                  label="Wind Speed"
+                  value={`${(activity.windAvgMps * 3.6).toFixed(1)} km/h`}
+                />
+              )}
+
+              {activity.windChillC !== undefined && activity.windChillC !== null && (
+                <TelemetryMetricRow
+                  label="Wind Chill"
+                  value={`${activity.windChillC.toFixed(1)}°C`}
+                />
+              )}
+            </div>
+          )}
           
           {/* Route Map */}
           <div className="space-y-2">

@@ -117,6 +117,17 @@ export interface CompletedActivity {
   intensityFactor?: number; // Intensity Factor (IF)
   effortSource?: 'power' | 'pace' | 'hr'; // Source of effort calculation
   climateExpectation?: ClimateExpectation | null; // One-line climate expectation (outdoor aerobic only)
+  // v1.1: Heat acclimation fields
+  heatStressIndex?: number | null;
+  heatAcclimationScore?: number | null;
+  effectiveHeatStressIndex?: number | null;
+  // v2.0: Cold stress fields
+  windChillC?: number | null;
+  coldStressIndex?: number | null;
+  avgTemperatureC?: number | null;
+  avgDewPointC?: number | null;
+  windAvgMps?: number | null;
+  conditionsLabel?: string | null;
 }
 
 export interface TrainingLoad {
