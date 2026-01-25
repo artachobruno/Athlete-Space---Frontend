@@ -78,6 +78,11 @@ export function AthleteProfileSection() {
   // This prevents the form from being cleared when /me is called after save
   const justSavedRef = useRef(false);
   const hasLoadedRef = useRef(false);
+  
+  // CRITICAL: Guard to prevent double saves and save loops
+  // Saves MUST ONLY happen on explicit user action (button click)
+  // NEVER on state changes, useEffect, or hydration
+  const isSavingRef = useRef(false);
 
   useEffect(() => {
     // ⚠️ FORM INITIALIZATION RULE: Forms should initialize ONCE unless explicitly reset
@@ -265,8 +270,46 @@ export function AthleteProfileSection() {
 
   const weightUnit = profile.unitSystem === 'metric' ? 'kg' : 'lbs';
 
+  /**
+   * handleSave - Explicit save handler
+   * 
+   * ⚠️ CRITICAL: Saves MUST ONLY happen on explicit user action (button click)
+   * 
+   * This function is NEVER called by:
+   * - useEffect hooks
+   * - State change watchers
+   * - Auto-save logic
+   * - Form submission handlers
+   * - Profile hydration
+   * 
+   * Multiple guards prevent:
+   * - Double saves (isSavingRef)
+   * - Save loops (justSavedRef)
+   * - Saves during hydration (hasLoadedRef)
+   */
   const handleSave = async () => {
+    // CRITICAL: Prevent double saves and save loops
+    // This ensures saves ONLY happen on explicit user action
+    if (isSavingRef.current) {
+      console.log('[Profile] Save already in progress, ignoring duplicate save request');
+      return;
+    }
+    
+    // Block saves during hydration (form not ready)
+    if (!hasLoadedRef.current) {
+      console.warn('[Profile] Attempted to save before profile loaded, ignoring');
+      return;
+    }
+    
+    // Block saves immediately after a save (prevent loops)
+    if (justSavedRef.current) {
+      console.log('[Profile] Save blocked - profile was just saved');
+      return;
+    }
+    
+    isSavingRef.current = true;
     setIsSaving(true);
+    
     try {
       // Get current profile to preserve target_event and goals (they're managed in TrainingPreferencesSection)
       // fetchUserProfile now returns null on failure (it's optional)
@@ -399,15 +442,27 @@ export function AthleteProfileSection() {
         justSavedRef.current = false;
       }, 2000);
       
+      // CRITICAL: Reset save guard after a delay to allow future saves
+      // But keep it long enough to prevent immediate re-saves from state updates
+      setTimeout(() => {
+        isSavingRef.current = false;
+      }, 1000);
+      
       // Invalidate queries to update unit system across the app
       // NOTE: This does NOT trigger a profile reload because we guard against it
+      // NOTE: This does NOT trigger another save because we guard against it
       await queryClient.invalidateQueries({ queryKey: ['userProfile'] });
+      
       toast({
         title: 'Profile updated',
         description: 'Your profile has been saved successfully',
       });
     } catch (error) {
       console.error('Failed to save profile:', error);
+      
+      // Reset save guard on error so user can retry
+      isSavingRef.current = false;
+      
       toast({
         title: 'Failed to save profile',
         description: error instanceof Error ? error.message : 'Could not save your profile',
