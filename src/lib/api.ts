@@ -1950,6 +1950,21 @@ export interface CoachChatResponse {
   workout_id?: string;
 }
 
+/** Prefixes that indicate process-step (internal) items; must not be shown. Match backend filter. */
+const PROCESS_STEP_PREFIXES = [
+  'review ', 'consider ', 'adjust ', 'determine ', 'schedule ', 'include ',
+  'retrieving ', 'providing ', 'highlighting ', 'analyzing ', 'assessing ',
+];
+
+function filterProcessStepPlanItems(items: PlanItem[]): PlanItem[] | undefined {
+  const kept = items.filter((item) => {
+    const t = (item.title ?? '').trim().toLowerCase();
+    if (!t) return false;
+    return !PROCESS_STEP_PREFIXES.some((p) => t.startsWith(p));
+  });
+  return kept.length > 0 ? kept : undefined;
+}
+
 /**
  * Converts string-based plan_items from orchestrator to PlanItem objects for frontend display
  * FE-2: Handles conversion from backend list[str] to frontend PlanItem[] format
@@ -2047,10 +2062,14 @@ export const sendCoachChat = async (
     if (response.planned_weeks && (!response.plan_items || response.plan_items.length === 0)) {
       response.plan_items = mapPlannedWeeksToPlanItems(response.planned_weeks);
     }
-    
+
     // FE-2: Convert string-based plan_items from orchestrator to PlanItem[] format
     if (response.plan_items && response.plan_items.length > 0) {
       response.plan_items = mapStringPlanItemsToPlanItems(response.plan_items);
+      // Defense in depth: strip process-step items (planner trace must not leak)
+      if (response.plan_items) {
+        response.plan_items = filterProcessStepPlanItems(response.plan_items);
+      }
     }
     
     return response;

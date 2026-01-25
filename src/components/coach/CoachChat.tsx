@@ -670,9 +670,11 @@ export function CoachChat() {
                         </div>
                       </div>
                       {/* Plan List - rendered inline with coach message that produced it */}
+                      {/* Fix 4: Never render plan for question (clarify); no process-step leak */}
                       {message.role === 'coach' &&
                         message.show_plan === true &&
                         message.plan_items &&
+                        message.response_type !== 'question' &&
                         (!message.response_type ||
                           ['plan', 'weekly_plan', 'season_plan', 'session_plan', 'recommendation', 'summary'].includes(message.response_type)) && (
                           <div className={cn('flex gap-3')}>
@@ -772,9 +774,11 @@ export function CoachChat() {
                         </div>
                       </div>
                       {/* Plan List - rendered inline with coach message that produced it */}
+                      {/* Fix 4: Never render plan for question (clarify); no process-step leak */}
                       {message.role === 'coach' &&
                         message.show_plan === true &&
                         message.plan_items &&
+                        message.response_type !== 'question' &&
                         (!message.response_type ||
                           ['plan', 'weekly_plan', 'season_plan', 'session_plan', 'recommendation', 'summary'].includes(message.response_type)) && (
                           <div className={cn('flex gap-3')}>

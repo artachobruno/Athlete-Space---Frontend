@@ -187,10 +187,11 @@ export function PlanCoachChat() {
                   </div>
                 </div>
                 {/* Plan List - rendered inline with coach message that produced it */}
-                {/* FE-2: Use show_plan flag instead of plan_items?.length */}
+                {/* FE-2: Use show_plan flag; Fix 4: never render plan for question (clarify) */}
                 {msg.role === 'coach' &&
                   msg.show_plan === true &&
                   msg.plan_items &&
+                  msg.response_type !== 'question' &&
                   (!msg.response_type ||
                     ['plan', 'weekly_plan', 'season_plan', 'session_plan', 'recommendation', 'summary'].includes(msg.response_type)) && (
                     <div className="flex animate-fade-in" style={{ animationDelay: '100ms' }}>
