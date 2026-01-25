@@ -589,6 +589,13 @@ export const disconnectGoogle = async (): Promise<void> => {
 /**
  * Fetches user profile from the backend.
  * 
+ * ⚠️ CRITICAL: This is the SINGLE SOURCE OF TRUTH for athlete profile data.
+ * 
+ * - This endpoint (/me/profile) contains: name, weight, height, gender, location, etc.
+ * - The /me endpoint contains ONLY identity: id, email, role, timezone, etc.
+ * 
+ * NEVER use /me to hydrate profile form fields. Always use this function.
+ * 
  * IMPORTANT: This endpoint is OPTIONAL. If it fails, returns null.
  * The app should redirect to onboarding if profile is missing.
  * 

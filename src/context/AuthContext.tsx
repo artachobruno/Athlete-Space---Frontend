@@ -3,6 +3,27 @@ import { fetchCurrentUser, logout as logoutApi, type AuthUser } from "@/lib/auth
 
 export type AuthStatus = "bootstrapping" | "unauthenticated" | "authenticated";
 
+/**
+ * AuthContext provides authentication state from the /me endpoint.
+ * 
+ * ⚠️ CRITICAL ARCHITECTURAL INVARIANT:
+ * 
+ * AuthContext MUST NOT hydrate or overwrite athlete profile data.
+ * 
+ * - /me returns identity only (id, email, role, timezone, onboarding_complete, strava_connected)
+ * - Profile data (name, weight, height, gender, location, etc.) lives exclusively in /me/profile
+ * 
+ * These are SEPARATE concerns:
+ * - Identity/Auth = /me → AuthContext
+ * - Athlete Profile = /me/profile → Profile components
+ * 
+ * NEVER use AuthContext.user to initialize or update profile form fields.
+ * This will cause fields to be cleared when /me refreshes after saves.
+ * 
+ * This separation prevents the "profile fields cleared after save" bug.
+ * 
+ * @see AthleteProfileSection.tsx for correct profile hydration pattern
+ */
 interface AuthContextValue {
   user: AuthUser | null;
   loading: boolean;

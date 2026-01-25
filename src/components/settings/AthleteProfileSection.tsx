@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { GlassCard } from '@/components/ui/GlassCard';
 import { CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -34,6 +34,17 @@ const format1Decimal = (value: number): number => {
   return Number(value.toFixed(1));
 };
 
+/**
+ * AthleteProfileSection - Profile form component
+ * 
+ * ⚠️ SINGLE SOURCE OF TRUTH: Profile form state hydrates ONLY from /me/profile
+ * 
+ * - AuthContext.user (from /me) is used ONLY for email (identity field)
+ * - All other profile fields (name, weight, height, etc.) come from /me/profile
+ * - NEVER re-initialize profile form from AuthContext.user
+ * 
+ * This separation prevents the "profile fields cleared after save" bug.
+ */
 export function AthleteProfileSection() {
   const queryClient = useQueryClient();
   const { user } = useAuth();
@@ -62,15 +73,35 @@ export function AthleteProfileSection() {
   const [isSaving, setIsSaving] = useState(false);
   const [hasChanges, setHasChanges] = useState(false);
   const [initialProfile, setInitialProfile] = useState<ProfileState | null>(null);
+  
+  // Guard to prevent reloading profile after save
+  // This prevents the form from being cleared when /me is called after save
+  const justSavedRef = useRef(false);
+  const hasLoadedRef = useRef(false);
 
   useEffect(() => {
-    loadProfile();
+    // ⚠️ FORM INITIALIZATION RULE: Forms should initialize ONCE unless explicitly reset
+    // 
+    // This ensures:
+    // 1. Profile loads only on mount (not after saves or auth refreshes)
+    // 2. Form state persists through /me calls and auth context updates
+    // 3. No race conditions between save and reload
+    //
+    // DO NOT weaken this guard - it prevents the "fields cleared after save" bug
+    if (!hasLoadedRef.current) {
+      loadProfile();
+      hasLoadedRef.current = true;
+    }
   }, []);
 
   // Update email when user changes (from auth context)
+  // CRITICAL: Only update email, never reload profile from /me
+  // The /me endpoint does not contain profile fields, so we must never
+  // re-initialize the profile form from the auth context user object
   useEffect(() => {
-    if (user?.email) {
-      setProfile((prev) => ({ ...prev, email: user.email }));
+    if (user?.email && !justSavedRef.current) {
+      // Only update email if we haven't just saved (to avoid race conditions)
+      setProfile((prev) => ({ ...prev, email: user.email || prev.email }));
     }
   }, [user?.email]);
 
@@ -99,11 +130,25 @@ export function AthleteProfileSection() {
   }, [profile, initialProfile]);
 
   const loadProfile = async () => {
+    // CRITICAL: Never reload profile if we just saved
+    // This prevents the form from being cleared when /me is called after save
+    if (justSavedRef.current) {
+      console.log('[Profile] Skipping loadProfile - profile was just saved');
+      return;
+    }
+    
     setIsLoading(true);
     try {
+      // CRITICAL: Always fetch from /me/profile, NEVER from /me
+      // The /me endpoint only contains auth fields (id, email, role, etc.)
+      // Profile fields (name, weight, height, etc.) come from /me/profile
+      // 
+      // SINGLE SOURCE OF TRUTH: Profile form state MUST ONLY hydrate from /me/profile
+      // NEVER from AuthContext.user (which comes from /me)
       const userProfile = await fetchUserProfile();
       
       // Email comes from auth context (useAuth), not from profile
+      // But we only use it if profile doesn't have email (defensive)
       const emailFromAuth = user?.email || '';
       
       // Handle null response (profile is optional)
@@ -123,6 +168,14 @@ export function AthleteProfileSection() {
         };
         setProfile(defaultProfile);
         setInitialProfile(defaultProfile);
+        setIsLoading(false);
+        return;
+      }
+      
+      // DEFENSIVE: Assert we have a valid profile response
+      // This prevents accidental hydration from malformed responses
+      if (typeof userProfile !== 'object') {
+        console.warn('[Profile] Invalid profile response type, skipping hydration');
         setIsLoading(false);
         return;
       }
@@ -274,6 +327,10 @@ export function AthleteProfileSection() {
         }
       }
 
+      // CRITICAL: Set flag to prevent profile reload after save
+      // This prevents the form from being cleared when /me is called
+      justSavedRef.current = true;
+      
       // Save to backend and get updated response
       const updatedProfile = await updateUserProfile(updateData);
       
@@ -325,6 +382,8 @@ export function AthleteProfileSection() {
           heightInches,
         };
         
+        // CRITICAL: Update state from the saved profile response
+        // This ensures the form shows the saved data, not data from /me
         setProfile(updatedState);
         setInitialProfile(updatedState);
       } else {
@@ -333,7 +392,15 @@ export function AthleteProfileSection() {
       }
       
       setHasChanges(false);
+      
+      // CRITICAL: Reset the guard after a short delay
+      // This allows time for any /me calls to complete without affecting the form
+      setTimeout(() => {
+        justSavedRef.current = false;
+      }, 2000);
+      
       // Invalidate queries to update unit system across the app
+      // NOTE: This does NOT trigger a profile reload because we guard against it
       await queryClient.invalidateQueries({ queryKey: ['userProfile'] });
       toast({
         title: 'Profile updated',
