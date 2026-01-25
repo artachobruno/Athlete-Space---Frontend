@@ -34,6 +34,7 @@ import { Card } from '@/components/ui/card';
 import {
   fetchCalendarMonth,
   normalizeCalendarMonth,
+  buildMergedCalendarItemsForDay,
   type DayCalendarData,
 } from '@/lib/calendar-month';
 import { useAuthenticatedQuery } from '@/hooks/useAuthenticatedQuery';
@@ -52,7 +53,7 @@ import { DroppableDayCell } from './DroppableDayCell';
 import { CalendarWorkoutStack } from './cards/CalendarWorkoutStack';
 import { MobileDayList } from './MobileDayList';
 import { SwipeIndicator } from './SwipeIndicator';
-import { toCalendarItem, capitalizeTitle } from '@/adapters/calendarAdapter';
+import { capitalizeTitle } from '@/adapters/calendarAdapter';
 import { sortCalendarItems } from './cards/sortCalendarItems';
 import { SessionCard } from '@/components/sessions/SessionCard';
 import { Loader2, GripVertical } from 'lucide-react';
@@ -130,16 +131,7 @@ export function MonthView({ currentDate, onActivityClick }: MonthViewProps) {
     const dayData = dayDataMap.get(dayKey);
     if (!dayData) return [];
 
-    const sessions = [
-      ...dayData.plannedSessions,
-      ...dayData.workouts.filter(
-        (w) => !dayData.plannedSessions.some((p) => p.id === w.id)
-      ),
-    ];
-
-    return sessions.map((s) =>
-      toCalendarItem(s, monthData.completed_activities)
-    );
+    return buildMergedCalendarItemsForDay(dayData, monthData.completed_activities);
   };
 
   const handleDragStart = (event: DragStartEvent) => {

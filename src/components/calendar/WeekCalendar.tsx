@@ -44,7 +44,7 @@ import type {
 import {
   groupDuplicateSessions,
 } from '@/types/calendar';
-import { fetchCalendarMonth, normalizeCalendarMonth } from '@/lib/calendar-month';
+import { fetchCalendarMonth, normalizeCalendarMonth, buildMergedCalendarItemsForDay } from '@/lib/calendar-month';
 import { useAuthenticatedQuery } from '@/hooks/useAuthenticatedQuery';
 import {
   useUpdatePlannedSession,
@@ -54,7 +54,7 @@ import { markDragOperationComplete } from '@/hooks/useAutoMatchSessions';
 import type { PlannedWorkout, CompletedActivity } from '@/types';
 import type { CalendarSession } from '@/lib/api';
 import { normalizeSportType, mapIntensityToIntent } from '@/lib/session-utils';
-import { toCalendarItem, capitalizeTitle } from '@/adapters/calendarAdapter';
+import { capitalizeTitle } from '@/adapters/calendarAdapter';
 import { isHighlightedIntent } from '@/types/calendar';
 
 interface WeekCalendarProps {
@@ -164,21 +164,8 @@ export function WeekCalendar({ currentDate, onActivityClick }: WeekCalendarProps
     const map = new Map<string, CalendarItem[]>();
 
     for (const day of normalizedDays) {
-      // Filter to week range
       if (day.date < weekStartStr || day.date > weekEndStr) continue;
-
-      const items: CalendarItem[] = [];
-
-      for (const session of day.plannedSessions) {
-        items.push(toCalendarItem(session, monthData.completed_activities || []));
-      }
-
-      for (const workout of day.workouts) {
-        if (!items.some(i => i.id === workout.id)) {
-          items.push(toCalendarItem(workout, monthData.completed_activities || []));
-        }
-      }
-
+      const items = buildMergedCalendarItemsForDay(day, monthData.completed_activities || []);
       map.set(day.date, items);
     }
 

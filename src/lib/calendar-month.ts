@@ -1,6 +1,9 @@
 import { startOfMonth, endOfMonth, format, parseISO, isWithinInterval } from 'date-fns';
 import { fetchCalendarSeason, fetchActivities, type CalendarSession } from '@/lib/api';
 import type { CompletedActivity } from '@/types';
+import type { CalendarItem } from '@/types/calendar';
+import { normalizeCalendarSport } from '@/types/calendar';
+import { toCalendarItem } from '@/adapters/calendarAdapter';
 
 /**
  * Month calendar data structure
@@ -118,4 +121,53 @@ export function normalizeCalendarMonth(monthData: MonthCalendarData): DayCalenda
   }
   
   return days;
+}
+
+function sportKey(s: CalendarSession): string {
+  return normalizeCalendarSport(s.type ?? null, s.title ?? null);
+}
+
+/**
+ * Build calendar items for a day, merging 1:1 planned+workout same sport into a single combined card.
+ * When there is exactly one planned session and one workout (activity) for the same sport,
+ * we emit only the workout-based item so we show one combined card instead of two.
+ */
+export function buildMergedCalendarItemsForDay(
+  dayData: DayCalendarData,
+  completedActivities: CompletedActivity[],
+): CalendarItem[] {
+  const bySportPlanned = new Map<string, CalendarSession[]>();
+  const bySportWorkouts = new Map<string, CalendarSession[]>();
+
+  for (const s of dayData.plannedSessions) {
+    const k = sportKey(s);
+    const list = bySportPlanned.get(k) ?? [];
+    list.push(s);
+    bySportPlanned.set(k, list);
+  }
+  for (const w of dayData.workouts) {
+    const k = sportKey(w);
+    const list = bySportWorkouts.get(k) ?? [];
+    list.push(w);
+    bySportWorkouts.set(k, list);
+  }
+
+  const sports = new Set<string>([
+    ...bySportPlanned.keys(),
+    ...bySportWorkouts.keys(),
+  ]);
+  const toEmit: CalendarSession[] = [];
+
+  for (const sport of [...sports].sort()) {
+    const planned = bySportPlanned.get(sport) ?? [];
+    const workouts = bySportWorkouts.get(sport) ?? [];
+    if (planned.length === 1 && workouts.length === 1) {
+      toEmit.push(workouts[0]);
+    } else {
+      toEmit.push(...planned);
+      toEmit.push(...workouts);
+    }
+  }
+
+  return toEmit.map((s) => toCalendarItem(s, completedActivities));
 }

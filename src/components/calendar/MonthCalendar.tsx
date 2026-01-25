@@ -25,11 +25,10 @@ import {
   isQualitySession,
 } from '@/types/calendar';
 import { sortCalendarItems } from './cards/sortCalendarItems';
-import { fetchCalendarMonth, normalizeCalendarMonth } from '@/lib/calendar-month';
+import { fetchCalendarMonth, normalizeCalendarMonth, buildMergedCalendarItemsForDay } from '@/lib/calendar-month';
 import { useAuthenticatedQuery } from '@/hooks/useAuthenticatedQuery';
 import type { PlannedWorkout, CompletedActivity } from '@/types';
 import type { CalendarSession } from '@/lib/api';
-import { toCalendarItem } from '@/adapters/calendarAdapter';
 
 /**
  * MonthCalendar Component
@@ -63,17 +62,7 @@ export function MonthCalendar({ currentDate, onActivityClick }: {
     const map = new Map<string, { items: CalendarItem[]; summary: DaySummary }>();
 
     for (const day of normalizedDays) {
-      const items: CalendarItem[] = [];
-
-      for (const session of day.plannedSessions) {
-        items.push(toCalendarItem(session, monthData.completed_activities || []));
-      }
-
-      for (const workout of day.workouts) {
-        if (!items.some(i => i.id === workout.id)) {
-          items.push(toCalendarItem(workout, monthData.completed_activities || []));
-        }
-      }
+      const items = buildMergedCalendarItemsForDay(day, monthData.completed_activities || []);
 
       const summary: DaySummary = {
         date: day.date,
