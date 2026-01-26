@@ -12,6 +12,7 @@
  */
 
 import { api } from "./api";
+import { authApi } from "./api/typedClient";
 
 // Google OAuth Client IDs - set these from environment or configuration
 // These should be configured in your build process or environment variables
@@ -156,6 +157,7 @@ export async function loginWithGoogleNative(): Promise<void> {
   });
 
   const idToken = result.result.idToken;
+  const googleAccessToken = result.result.accessToken;
 
   if (!idToken) {
     throw new Error("Google Sign-In did not return an ID token");
@@ -165,18 +167,16 @@ export async function loginWithGoogleNative(): Promise<void> {
   console.log("[GoogleAuthNative] Sending idToken to backend for verification");
 
   try {
-    const response = await api.post("/auth/google/mobile", {
-      id_token: idToken,
-      platform: "mobile",
-    });
+    const response = await authApi.googleMobile(idToken, googleAccessToken || "");
+    const responseData = response.data || response;
 
     // Store token for mobile
     const { storeAccessToken } = await import('./tokenStorage');
-    const accessToken = (response as { access_token?: string }).access_token;
-    const expiresIn = (response as { expires_in?: number }).expires_in || 2592000; // Default 30 days in seconds
+    const backendAccessToken = (responseData as { access_token?: string }).access_token;
+    const expiresIn = (responseData as { expires_in?: number }).expires_in || 2592000; // Default 30 days in seconds
     
-    if (accessToken) {
-      await storeAccessToken(accessToken, expiresIn);
+    if (backendAccessToken) {
+      await storeAccessToken(backendAccessToken, expiresIn);
       console.log("[GoogleAuthNative] ✅ Token stored securely for mobile");
     } else {
       console.warn("[GoogleAuthNative] ⚠️ Mobile Google login: No access_token in response");

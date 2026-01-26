@@ -8,6 +8,7 @@ import { mockActivities } from "@/mock/activities.mock";
 import { mockCalendarSessions, getMockWeekSessions, getMockTodaySessions } from "@/mock/calendarSessions.mock";
 import type { ClimateExpectation, CompletedActivity, PlannedWorkout } from "@/types";
 import type { WeeklySummaryCard } from "@/types/calendar";
+import { calendarApi, activitiesApi, authApi, settingsApi } from "./api/typedClient";
 
 export const getBaseURL = () => {
   // Check if we're in Capacitor (native app)
@@ -408,10 +409,13 @@ export const initiateStravaConnect = async (): Promise<void> => {
   console.log("[API] Initiating Strava connect");
   
   try {
-    // Use axios instance which has proper baseURL and CORS configuration
-    const response = await api.get("/auth/strava") as unknown as { redirect_url?: string; oauth_url?: string; url?: string };
+    // Use typed client for contract enforcement
+    const response = await authApi.getStravaOAuthUrl();
+    const responseData = response.data || response;
     
-    const oauthUrl = response.redirect_url || response.oauth_url || response.url;
+    const oauthUrl = (responseData as { redirect_url?: string; oauth_url?: string; url?: string }).redirect_url 
+      || (responseData as { redirect_url?: string; oauth_url?: string; url?: string }).oauth_url
+      || (responseData as { redirect_url?: string; oauth_url?: string; url?: string }).url;
     
     if (!oauthUrl) {
       throw new Error("Backend did not return OAuth URL");
@@ -460,10 +464,10 @@ export const initiateStravaConnect = async (): Promise<void> => {
 export const disconnectStrava = async (): Promise<void> => {
   console.log("[API] Disconnecting Strava");
   try {
-    const response = await api.post("/auth/strava/disconnect");
+    const response = await authApi.disconnectStrava();
+    const responseData = response.data || response;
     
     // Check if response indicates disconnection was successful
-    const responseData = response && typeof response === 'object' ? response : {};
     const connected = (responseData as { connected?: boolean }).connected;
     
     // Success if HTTP 200 OR connected === false
@@ -596,7 +600,7 @@ export const initiateGoogleConnect = async (): Promise<void> => {
 export const disconnectGoogle = async (): Promise<void> => {
   console.log("[API] Disconnecting Google");
   try {
-    await api.post("/auth/google/disconnect");
+    await authApi.disconnectGoogle();
   } catch (error) {
     console.error("[API] Failed to disconnect Google:", error);
     throw error;
@@ -624,16 +628,17 @@ export const disconnectGoogle = async (): Promise<void> => {
 export const fetchUserProfile = async (): Promise<AthleteProfileOut | null> => {
   console.log("[API] Fetching user profile (optional)");
   try {
-    const response = await api.get("/me/profile");
+    const response = await settingsApi.getProfile();
+    const responseData = response.data || response;
     
     // Validate response is not undefined/null
-    if (!response || typeof response !== 'object') {
-      console.warn("[API] /me/profile returned invalid response:", response);
+    if (!responseData || typeof responseData !== 'object') {
+      console.warn("[API] /me/profile returned invalid response:", responseData);
       return null;
     }
     
     // Backend now supports target_event and goals fields
-    return response as unknown as AthleteProfileOut;
+    return responseData as unknown as AthleteProfileOut;
   } catch (error) {
     // Don't log CORS errors repeatedly - they're already handled by interceptor
     if (!isCorsError(error)) {
@@ -836,17 +841,18 @@ export const updateUserProfile = async (
       fullPayload: backendData,
     });
     
-    const response = await api.put("/me/profile", backendData);
+    const response = await settingsApi.updateProfile(backendData);
+    const responseData = response.data || response;
     
     // Log what we received from the backend
     console.log("[API] Received profile update response:", {
-      full_name: (response as { full_name?: string | null }).full_name,
-      location: (response as { location?: string | null }).location,
-      gender: (response as { gender?: string | null }).gender,
-      rawResponse: response,
+      full_name: (responseData as { full_name?: string | null }).full_name,
+      location: (responseData as { location?: string | null }).location,
+      gender: (responseData as { gender?: string | null }).gender,
+      rawResponse: responseData,
     });
     
-    return response as unknown as AthleteProfileOut;
+    return responseData as unknown as AthleteProfileOut;
   } catch (error) {
     console.error("[API] Failed to update profile:", error);
     
@@ -878,8 +884,9 @@ export const fetchTrainingPreferences = async (): Promise<{
 }> => {
   console.log("[API] Fetching training preferences");
   try {
-    const response = await api.get("/me/training-preferences");
-    return response as unknown as {
+    const response = await settingsApi.getTrainingPreferences();
+    const responseData = response.data || response;
+    return responseData as unknown as {
       years_of_training: number;
       primary_sports: string[];
       available_days: string[];
@@ -929,8 +936,9 @@ export const completeOnboarding = async (data: {
 }> => {
   console.log("[API] Completing onboarding");
   try {
-    const response = await api.post("/api/onboarding/complete", data);
-    return response as unknown as {
+    const response = await settingsApi.completeOnboarding(data);
+    const responseData = response.data || response;
+    return responseData as unknown as {
       status: 'ok';
       weekly_intent: any | null;
       season_plan: any | null;
@@ -964,7 +972,7 @@ export const updateAthleteProfileSettings = async (data: {
 }): Promise<{ status: 'ok' }> => {
   console.log("[API] Updating athlete profile settings");
   try {
-    await api.put("/api/settings/profile", data);
+    await settingsApi.updateAthleteProfileSettings(data);
     return { status: 'ok' };
   } catch (error) {
     console.error("[API] Failed to update athlete profile settings:", error);
@@ -1016,8 +1024,9 @@ export const updateTrainingPreferences = async (
     if (preferences.consistency !== undefined) backendPayload.consistency = preferences.consistency;
     if (preferences.goal !== undefined) backendPayload.goal = preferences.goal; // FE-2: Free text, stored verbatim
 
-    const response = await api.put("/me/training-preferences", backendPayload);
-    return response as unknown as {
+    const response = await settingsApi.updateTrainingPreferences(backendPayload);
+    const responseData = response.data || response;
+    return responseData as unknown as {
       years_of_training: number;
       primary_sports: string[];
       available_days: string[];
@@ -1056,7 +1065,7 @@ export const uploadActivityFile = async (file: File): Promise<ActivityUploadResp
   try {
     // Note: Do not set Content-Type header manually for FormData
     // Axios automatically sets it with the correct boundary parameter
-    const response = await api.post("/activities/upload", formData);
+    const response = await activitiesApi.upload(formData);
     
     return response as unknown as ActivityUploadResponse;
   } catch (error) {
@@ -1075,8 +1084,9 @@ export const fetchPrivacySettings = async (): Promise<{
 }> => {
   console.log("[API] Fetching privacy settings");
   try {
-    const response = await api.get("/me/privacy-settings");
-    return response as unknown as {
+    const response = await settingsApi.getPrivacySettings();
+    const responseData = response.data || response;
+    return responseData as unknown as {
       profile_visibility: 'public' | 'private' | 'coaches';
       share_activity_data: boolean;
       share_training_metrics: boolean;
@@ -1103,8 +1113,9 @@ export const updatePrivacySettings = async (
 }> => {
   console.log("[API] Updating privacy settings");
   try {
-    const response = await api.put("/me/privacy-settings", settings);
-    return response as unknown as {
+    const response = await settingsApi.updatePrivacySettings(settings);
+    const responseData = response.data || response;
+    return responseData as unknown as {
       profile_visibility: 'public' | 'private' | 'coaches';
       share_activity_data: boolean;
       share_training_metrics: boolean;
@@ -1130,8 +1141,9 @@ export const fetchNotificationPreferences = async (): Promise<{
 }> => {
   console.log("[API] Fetching notification preferences");
   try {
-    const response = await api.get("/me/notifications");
-    return response as unknown as {
+    const response = await settingsApi.getNotificationPreferences();
+    const responseData = response.data || response;
+    return responseData as unknown as {
       email_notifications: boolean;
       push_notifications: boolean;
       workout_reminders: boolean;
@@ -1227,8 +1239,9 @@ export const updateNotificationPreferences = async (
 }> => {
   console.log("[API] Updating notification preferences");
   try {
-    const response = await api.put("/me/notifications", preferences);
-    return response as unknown as {
+    const response = await settingsApi.updateNotificationPreferences(preferences);
+    const responseData = response.data || response;
+    return responseData as unknown as {
       email_notifications: boolean;
       push_notifications: boolean;
       workout_reminders: boolean;
@@ -1256,7 +1269,7 @@ export const changePassword = async (
 ): Promise<{ success: boolean; message: string }> => {
   console.log("[API] Changing password");
   try {
-    const response = await api.post("/me/change-password", passwordData);
+    await settingsApi.changePassword(passwordData);
     return response as unknown as { success: boolean; message: string };
   } catch (error) {
     console.error("[API] Failed to change password:", error);
@@ -1275,7 +1288,7 @@ export const changeEmail = async (
 ): Promise<{ success: boolean; message: string }> => {
   console.log("[API] Changing email");
   try {
-    const response = await api.post("/auth/change-email", emailData);
+    await authApi.changeEmail(emailData.email);
     return response as unknown as { success: boolean; message: string };
   } catch (error) {
     console.error("[API] Failed to change email:", error);
@@ -1379,19 +1392,22 @@ export const fetchActivities = async (params?: { limit?: number; offset?: number
       limit: params.limit && params.limit > 1000 ? 1000 : params.limit,
     } : params;
     
-    const response = await api.get("/activities", { params: safeParams });
+    const response = await activitiesApi.list(safeParams);
     console.log("[API] Activities response:", response);
+    
+    // Handle axios response structure (response.data) or direct response
+    const responseData = response.data || response;
     
     let activitiesArray: unknown[] = [];
     
     // Handle different response formats
-    if (Array.isArray(response)) {
-      activitiesArray = response;
-    } else if (response && typeof response === "object") {
+    if (Array.isArray(responseData)) {
+      activitiesArray = responseData;
+    } else if (responseData && typeof responseData === "object") {
       // If response is an object, try to extract the array
-      const activities = (response as { activities?: unknown[]; data?: unknown[]; items?: unknown[] }).activities 
-        || (response as { activities?: unknown[]; data?: unknown[]; items?: unknown[] }).data
-        || (response as { activities?: unknown[]; data?: unknown[]; items?: unknown[] }).items;
+      const activities = (responseData as { activities?: unknown[]; data?: unknown[]; items?: unknown[] }).activities 
+        || (responseData as { activities?: unknown[]; data?: unknown[]; items?: unknown[] }).data
+        || (responseData as { activities?: unknown[]; data?: unknown[]; items?: unknown[] }).items;
       
       if (Array.isArray(activities)) {
         activitiesArray = activities;
@@ -1611,8 +1627,9 @@ export const fetchActivities = async (params?: { limit?: number; offset?: number
 export const fetchActivity = async (id: string): Promise<import("../types").CompletedActivity> => {
   console.log("[API] Fetching activity", id);
   try {
-    const response = await api.get(`/activities/${id}`);
-    return response as unknown as import("../types").CompletedActivity;
+    const response = await activitiesApi.getById(id);
+    const responseData = response.data || response;
+    return responseData as unknown as import("../types").CompletedActivity;
   } catch (error) {
     console.error("[API] Failed to fetch activity:", error);
     throw error;
@@ -1626,7 +1643,7 @@ export const fetchActivity = async (id: string): Promise<import("../types").Comp
 export const unpairActivity = async (activityId: string): Promise<void> => {
   console.log("[API] Unpairing activity", activityId);
   try {
-    await api.post(`/activities/${activityId}/unpair`);
+    await activitiesApi.unpair(activityId);
   } catch (error) {
     console.error("[API] Failed to unpair activity:", error);
     throw error;
@@ -1640,10 +1657,7 @@ export const unpairActivity = async (activityId: string): Promise<void> => {
 export const manualPair = async (activityId: string, plannedSessionId: string): Promise<void> => {
   console.log("[API] Manually pairing activity", activityId, "with session", plannedSessionId);
   try {
-    await api.post('/admin/pairing/merge', {
-      activity_id: activityId,
-      planned_session_id: plannedSessionId,
-    });
+    await activitiesApi.manualPair(activityId, plannedSessionId);
   } catch (error) {
     console.error("[API] Failed to manually pair activity:", error);
     throw error;
@@ -1657,9 +1671,7 @@ export const manualPair = async (activityId: string, plannedSessionId: string): 
 export const manualUnpair = async (activityId: string): Promise<void> => {
   console.log("[API] Manually unpairing activity", activityId);
   try {
-    await api.post('/admin/pairing/unmerge', {
-      activity_id: activityId,
-    });
+    await activitiesApi.manualUnpair(activityId);
   } catch (error) {
     console.error("[API] Failed to manually unpair activity:", error);
     throw error;
@@ -1783,7 +1795,8 @@ export const fetchActivityStreams = async (id: string): Promise<ActivityStreamsR
     let activity;
     let hasStreams = false;
     try {
-      activity = await api.get(`/activities/${id}`);
+      const activityResponse = await activitiesApi.getById(id);
+      activity = activityResponse.data || activityResponse;
       hasStreams = (activity as { has_streams?: boolean })?.has_streams === true;
     } catch (error) {
       // If this is a CORS error, don't proceed
@@ -1798,7 +1811,7 @@ export const fetchActivityStreams = async (id: string): Promise<ActivityStreamsR
     if (!hasStreams) {
       console.log("[API] Streams not available, fetching from Strava...");
       try {
-        await api.post(`/activities/${id}/fetch-streams`);
+        await activitiesApi.fetchStreams(id);
         // Wait for backend to process the fetch (may take a few seconds)
         await new Promise((resolve) => setTimeout(resolve, 2000));
       } catch (error) {
@@ -1835,8 +1848,9 @@ export const fetchActivityStreams = async (id: string): Promise<ActivityStreamsR
     
     for (let attempt = 0; attempt < maxRetries; attempt++) {
       try {
-        const response = await api.get(`/activities/${id}/streams`);
-        return normalizeActivityStreamsResponse(response);
+        const response = await activitiesApi.getStreams(id);
+        const responseData = response.data || response;
+        return normalizeActivityStreamsResponse(responseData);
       } catch (error) {
         // Stop immediately on CORS errors - don't retry
         if (isCorsError(error)) {
@@ -1957,8 +1971,9 @@ export const fetchOverview = async (days?: number): Promise<{
 }> => {
   console.log("[API] Fetching overview");
   try {
-    const response = await api.get("/me/overview", { params: days ? { days } : undefined });
-    return response as unknown as {
+    const response = await settingsApi.getOverview(days);
+    const responseData = response.data || response;
+    return responseData as unknown as {
       today: { ctl: number; atl: number; tsb: number };
       metrics: {
         ctl?: [string, number][];
@@ -2226,9 +2241,7 @@ export const fetchWeeklySummary = async (weekDateISO: string): Promise<WeeklySum
   
   console.log("[API] Fetching weekly summary", weekDateISO);
   try {
-    const response = await api.get("/calendar/week-summary", {
-      params: { date: weekDateISO },
-    });
+    const response = await calendarApi.getWeekSummary(weekDateISO);
     console.log("[API] Weekly summary response:", response);
     
     const responseData = response.data || response;
@@ -2263,7 +2276,7 @@ export const fetchCalendarWeek = async (date?: string): Promise<WeekResponse> =>
   
   console.log("[API] Fetching calendar week", date ? `(requested date: ${date})` : "(current week)");
   try {
-    const response = await api.get("/calendar/week", date ? { params: { date } } : {});
+    const response = await calendarApi.getWeek(date);
     console.log("[API] Calendar week response:", response);
     
     // Handle different response formats
@@ -2337,8 +2350,8 @@ export const fetchCalendarToday = async (date?: string): Promise<TodayResponse> 
   
   console.log("[API] Fetching calendar today", date ? `(requested date: ${date} - API returns today)` : "");
   try {
-    const response = await api.get("/calendar/today");
-    const todayResponse = response as unknown as TodayResponse;
+    const response = await calendarApi.getToday();
+    const todayResponse = (response.data || response) as unknown as TodayResponse;
     
     // Debug: Log coach_insight in sessions
     if (todayResponse?.sessions) {
@@ -2462,7 +2475,7 @@ export const fetchCalendarSeason = async (): Promise<SeasonResponse> => {
   
   console.log("[API] Fetching calendar season");
   try {
-    const response = await api.get("/calendar/season");
+    const response = await calendarApi.getSeason();
     console.log("[API] Calendar season response:", response);
     
     // Handle different response formats
@@ -2514,8 +2527,9 @@ export const fetchCalendarSessions = async (params?: { limit?: number; offset?: 
 }> => {
   console.log("[API] Fetching calendar sessions");
   try {
-    const response = await api.get("/calendar/sessions", { params });
-    return response as unknown as {
+    const response = await calendarApi.getSessions(params);
+    const responseData = response.data || response;
+    return responseData as unknown as {
       sessions: CalendarSession[];
       total: number;
     };
@@ -2761,7 +2775,7 @@ export const updateSessionStatus = async (
       payload.confirmed = true;
     }
 
-    const response = await api.patch(`/calendar/sessions/${sessionId}/status`, payload);
+    const response = await calendarApi.updateSessionStatus(sessionId, payload);
     console.log("[API] Session status response:", response);
     
     // Check if response is PROPOSAL_ONLY or contains proposal
@@ -2812,7 +2826,11 @@ export const updatePlannedSessionDate = async (
 
     // CRITICAL: Use planned_session_id in endpoint path
     // NEVER use /workouts/{id} or /calendar-sessions/{id}
-    const response = await api.patch(`/planned-sessions/${sessionId}`, payload);
+    const response = await calendarApi.updatePlannedSession(sessionId, {
+      scheduled_date: scheduledDate,
+      start_time: startTime ?? undefined,
+      order_in_day: orderInDay ?? undefined,
+    });
     console.log("[API] Planned session date updated:", response);
     
     const responseData = response.data || response;
@@ -2833,8 +2851,9 @@ export const fetchUserStatus = async (): Promise<{
 }> => {
   console.log("[API] Fetching user status");
   try {
-    const response = await api.get("/me/status");
-    return response as unknown as {
+    const response = await settingsApi.getStatus();
+    const responseData = response.data || response;
+    return responseData as unknown as {
       connected: boolean;
       last_sync: string;
       state: "ok" | "syncing" | "stale";
@@ -2856,7 +2875,7 @@ export const triggerHistoricalSync = async (): Promise<{
 }> => {
   console.log("[API] Triggering historical sync");
   try {
-    const response = await api.post("/me/sync/history");
+    await settingsApi.syncHistory();
     return response as unknown as {
       success: boolean;
       message: string;
@@ -2880,7 +2899,7 @@ export const checkRecentActivities = async (): Promise<{
 }> => {
   console.log("[API] Checking for recent activities");
   try {
-    const response = await api.post("/me/sync/check");
+    await settingsApi.syncCheck();
     return response as unknown as {
       success: boolean;
       message: string;
@@ -2903,7 +2922,7 @@ export const syncActivitiesNow = async (): Promise<{
 }> => {
   console.log("[API] User-initiated sync");
   try {
-    const response = await api.post("/me/sync/now");
+    await settingsApi.syncNow();
     return response as unknown as {
       success: boolean;
       message: string;
@@ -2940,8 +2959,9 @@ export const fetchOverviewDebug = async (days?: number): Promise<{
   console.log("[API] Fetching overview debug");
   try {
     const params = days ? { days } : undefined;
-    const response = await api.get("/me/overview/debug", { params });
-    return response as unknown as {
+    const response = await settingsApi.getOverviewDebug(days);
+    const responseData = response.data || response;
+    return responseData as unknown as {
       server_time: string;
       overview: {
         connected: boolean;

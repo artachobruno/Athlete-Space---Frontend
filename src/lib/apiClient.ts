@@ -9,7 +9,9 @@
 
 import { api } from "./api";
 import { safeApiCall } from "./api";
+import { authApi, settingsApi, calendarApi } from "./api/typedClient";
 import type { paths } from "@/types/api";
+import { activitiesApi } from "./api/typedClient";
 
 // Type helpers for OpenAPI-generated types
 type Paths = paths;
@@ -41,11 +43,12 @@ export async function safeCall<T>(
  */
 export async function getMe(): Promise<GetResponse<"/me", "get"> | null> {
   return safeCall(async () => {
-    const response = await api.get("/me");
-    if (!response || typeof response !== 'object') {
+    const response = await authApi.getMe();
+    const responseData = response.data || response;
+    if (!responseData || typeof responseData !== 'object') {
       return null;
     }
-    return response as GetResponse<"/me", "get">;
+    return responseData as GetResponse<"/me", "get">;
   });
 }
 
@@ -57,11 +60,12 @@ export async function getMe(): Promise<GetResponse<"/me", "get"> | null> {
 export async function getProfile(): Promise<GetResponse<"/me/profile", "get"> | null> {
   return safeCall(async () => {
     try {
-      const response = await api.get("/me/profile");
-      if (!response || typeof response !== 'object') {
+      const response = await settingsApi.getProfile();
+      const responseData = response.data || response;
+      if (!responseData || typeof responseData !== 'object') {
         return null;
       }
-      return response as GetResponse<"/me/profile", "get">;
+      return responseData as GetResponse<"/me/profile", "get">;
     } catch (error) {
       const apiError = error as { status?: number };
       // 404, 500, 401 all mean profile is not available - return null
@@ -81,11 +85,12 @@ export async function updateProfile(
   data: GetResponse<"/me/profile", "put">
 ): Promise<GetResponse<"/me/profile", "put"> | null> {
   return safeCall(async () => {
-    const response = await api.put("/me/profile", data);
-    if (!response || typeof response !== 'object') {
+    const response = await settingsApi.updateProfile(data);
+    const responseData = response.data || response;
+    if (!responseData || typeof responseData !== 'object') {
       return null;
     }
-    return response as GetResponse<"/me/profile", "put">;
+    return responseData as GetResponse<"/me/profile", "put">;
   });
 }
 
@@ -114,11 +119,12 @@ export async function updateUserSettings(data: { timezone?: string }): Promise<u
 export async function getTrainingPreferences(): Promise<GetResponse<"/me/training-preferences", "get"> | null> {
   return safeCall(async () => {
     try {
-      const response = await api.get("/me/training-preferences");
-      if (!response || typeof response !== 'object') {
+      const response = await settingsApi.getTrainingPreferences();
+      const responseData = response.data || response;
+      if (!responseData || typeof responseData !== 'object') {
         return null;
       }
-      return response as GetResponse<"/me/training-preferences", "get">;
+      return responseData as GetResponse<"/me/training-preferences", "get">;
     } catch (error) {
       const apiError = error as { status?: number };
       if (apiError.status === 404 || apiError.status === 500) {
@@ -136,11 +142,12 @@ export async function updateTrainingPreferences(
   data: GetResponse<"/me/training-preferences", "put">
 ): Promise<GetResponse<"/me/training-preferences", "put"> | null> {
   return safeCall(async () => {
-    const response = await api.put("/me/training-preferences", data);
-    if (!response || typeof response !== 'object') {
+    const response = await settingsApi.updateTrainingPreferences(data);
+    const responseData = response.data || response;
+    if (!responseData || typeof responseData !== 'object') {
       return null;
     }
-    return response as GetResponse<"/me/training-preferences", "put">;
+    return responseData as GetResponse<"/me/training-preferences", "put">;
   });
 }
 
@@ -157,11 +164,12 @@ export async function getActivities(params?: {
   offset?: number;
 }): Promise<GetResponse<"/activities", "get"> | null> {
   return safeCall(async () => {
-    const response = await api.get("/activities", { params });
-    if (!response) {
+    const response = await activitiesApi.list(params);
+    const responseData = response.data || response;
+    if (!responseData) {
       return null;
     }
-    return response as GetResponse<"/activities", "get">;
+    return responseData as GetResponse<"/activities", "get">;
   });
 }
 
@@ -170,11 +178,12 @@ export async function getActivities(params?: {
  */
 export async function getActivity(id: string): Promise<GetResponse<"/activities/{id}", "get"> | null> {
   return safeCall(async () => {
-    const response = await api.get(`/activities/${id}`);
-    if (!response || typeof response !== 'object') {
+    const response = await activitiesApi.getById(id);
+    const responseData = response.data || response;
+    if (!responseData || typeof responseData !== 'object') {
       return null;
     }
-    return response as GetResponse<"/activities/{id}", "get">;
+    return responseData as GetResponse<"/activities/{id}", "get">;
   });
 }
 
@@ -189,11 +198,12 @@ export async function getActivity(id: string): Promise<GetResponse<"/activities/
 export async function getCalendarToday(): Promise<GetResponse<"/calendar/today", "get"> | null> {
   return safeCall(async () => {
     try {
-      const response = await api.get("/calendar/today");
-      if (!response || typeof response !== 'object') {
+      const response = await calendarApi.getToday();
+      const responseData = response.data || response;
+      if (!responseData || typeof responseData !== 'object') {
         return null;
       }
-      return response as GetResponse<"/calendar/today", "get">;
+      return responseData as GetResponse<"/calendar/today", "get">;
     } catch (error) {
       const apiError = error as { status?: number };
       if (apiError.status === 500) {
@@ -211,11 +221,12 @@ export async function getCalendarToday(): Promise<GetResponse<"/calendar/today",
 export async function getCalendarWeek(): Promise<GetResponse<"/calendar/week", "get"> | null> {
   return safeCall(async () => {
     try {
-      const response = await api.get("/calendar/week");
-      if (!response || typeof response !== 'object') {
+      const response = await calendarApi.getWeek();
+      const responseData = response.data || response;
+      if (!responseData || typeof responseData !== 'object') {
         return null;
       }
-      return response as GetResponse<"/calendar/week", "get">;
+      return responseData as GetResponse<"/calendar/week", "get">;
     } catch (error) {
       const apiError = error as { status?: number };
       if (apiError.status === 500) {
@@ -233,11 +244,12 @@ export async function getCalendarWeek(): Promise<GetResponse<"/calendar/week", "
 export async function getCalendarSeason(): Promise<GetResponse<"/calendar/season", "get"> | null> {
   return safeCall(async () => {
     try {
-      const response = await api.get("/calendar/season");
-      if (!response || typeof response !== 'object') {
+      const response = await calendarApi.getSeason();
+      const responseData = response.data || response;
+      if (!responseData || typeof responseData !== 'object') {
         return null;
       }
-      return response as GetResponse<"/calendar/season", "get">;
+      return responseData as GetResponse<"/calendar/season", "get">;
     } catch (error) {
       const apiError = error as { status?: number };
       if (apiError.status === 500) {
@@ -259,11 +271,12 @@ export async function getCalendarSeason(): Promise<GetResponse<"/calendar/season
 export async function getUserStatus(): Promise<GetResponse<"/me/status", "get"> | null> {
   return safeCall(async () => {
     try {
-      const response = await api.get("/me/status");
-      if (!response || typeof response !== 'object') {
+      const response = await settingsApi.getStatus();
+      const responseData = response.data || response;
+      if (!responseData || typeof responseData !== 'object') {
         return null;
       }
-      return response as GetResponse<"/me/status", "get">;
+      return responseData as GetResponse<"/me/status", "get">;
     } catch (error) {
       return null;
     }
@@ -277,11 +290,8 @@ export async function getUserStatus(): Promise<GetResponse<"/me/status", "get"> 
 export async function triggerHistoricalSync(): Promise<GetResponse<"/me/sync/history", "post"> | null> {
   return safeCall(async () => {
     try {
-      const response = await api.post("/me/sync/history");
-      if (!response || typeof response !== 'object') {
-        return null;
-      }
-      return response as GetResponse<"/me/sync/history", "post">;
+      await settingsApi.syncHistory();
+      return { status: "ok" } as GetResponse<"/me/sync/history", "post">;
     } catch (error) {
       return null;
     }
@@ -295,11 +305,8 @@ export async function triggerHistoricalSync(): Promise<GetResponse<"/me/sync/his
 export async function checkRecentActivities(): Promise<GetResponse<"/me/sync/check", "post"> | null> {
   return safeCall(async () => {
     try {
-      const response = await api.post("/me/sync/check");
-      if (!response || typeof response !== 'object') {
-        return null;
-      }
-      return response as GetResponse<"/me/sync/check", "post">;
+      await settingsApi.syncCheck();
+      return { status: "ok" } as GetResponse<"/me/sync/check", "post">;
     } catch (error) {
       return null;
     }
@@ -313,11 +320,8 @@ export async function checkRecentActivities(): Promise<GetResponse<"/me/sync/che
 export async function syncActivitiesNow(): Promise<GetResponse<"/me/sync/now", "post"> | null> {
   return safeCall(async () => {
     try {
-      const response = await api.post("/me/sync/now");
-      if (!response || typeof response !== 'object') {
-        return null;
-      }
-      return response as GetResponse<"/me/sync/now", "post">;
+      await settingsApi.syncNow();
+      return { status: "ok" } as GetResponse<"/me/sync/now", "post">;
     } catch (error) {
       return null;
     }

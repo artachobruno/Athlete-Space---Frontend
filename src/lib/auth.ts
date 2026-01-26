@@ -1,4 +1,5 @@
 import { api } from "./api";
+import { authApi } from "./api/typedClient";
 import { isNative } from "./platform";
 import { loginWithGoogleNative, initializeGoogleAuth } from "./google-auth-native";
 
@@ -142,14 +143,15 @@ export const auth = {
  */
 export async function loginWithEmail(email: string, password: string): Promise<void> {
   try {
-    const response = await api.post("/auth/login", { email, password });
+    const response = await authApi.login(email, password);
+    const responseData = response.data || response;
     
     // Log response for debugging
     console.log("[LOGIN] Login successful");
-    console.log("[LOGIN] Response:", response);
+    console.log("[LOGIN] Response:", responseData);
     
     // Verify login worked by checking if response indicates success
-    if (!response) {
+    if (!responseData) {
       throw new Error("Login response was empty");
     }
     
@@ -157,18 +159,18 @@ export async function loginWithEmail(email: string, password: string): Promise<v
     // For web: Cookie is automatically set by backend with credentials: 'include'
     const { isNative } = await import('./platform');
     const isMobile = isNative();
-    console.log("[LOGIN] Platform detection:", { isMobile, responseKeys: Object.keys(response || {}) });
+    console.log("[LOGIN] Platform detection:", { isMobile, responseKeys: Object.keys(responseData || {}) });
     
     if (isMobile) {
       const { storeAccessToken } = await import('./tokenStorage');
-      const accessToken = (response as { access_token?: string }).access_token;
+      const accessToken = (responseData as { access_token?: string }).access_token;
       const expiresIn = (response as { expires_in?: number }).expires_in || 2592000; // Default 30 days in seconds
       
       console.log("[LOGIN] Mobile login - token extraction:", {
         hasAccessToken: !!accessToken,
         accessTokenLength: accessToken?.length,
         expiresIn,
-        fullResponse: response,
+        fullResponse: responseData,
       });
       
       if (accessToken) {
@@ -181,7 +183,7 @@ export async function loginWithEmail(email: string, password: string): Promise<v
         }
       } else {
         console.warn("[LOGIN] ⚠️ Mobile login: No access_token in response");
-        console.warn("[LOGIN] Response structure:", JSON.stringify(response, null, 2));
+        console.warn("[LOGIN] Response structure:", JSON.stringify(responseData, null, 2));
         // Don't throw - backend might not be deployed with token changes yet
         // User can still try to use cookies as fallback
       }
@@ -207,14 +209,15 @@ export async function loginWithEmail(email: string, password: string): Promise<v
  */
 export async function signupWithEmail(email: string, password: string): Promise<void> {
   try {
-    const response = await api.post("/auth/signup", { email, password });
+    const response = await authApi.signup(email, password);
+    const responseData = response.data || response;
     
     // Log response for debugging
     console.log("[SIGNUP] Signup successful");
-    console.log("[SIGNUP] Response:", response);
+    console.log("[SIGNUP] Response:", responseData);
     
     // Verify signup worked by checking if response indicates success
-    if (!response) {
+    if (!responseData) {
       throw new Error("Signup response was empty");
     }
     
@@ -223,8 +226,8 @@ export async function signupWithEmail(email: string, password: string): Promise<
     const { isNative } = await import('./platform');
     if (isNative()) {
       const { storeAccessToken } = await import('./tokenStorage');
-      const accessToken = (response as { access_token?: string }).access_token;
-      const expiresIn = (response as { expires_in?: number }).expires_in || 2592000; // Default 30 days in seconds
+      const accessToken = (responseData as { access_token?: string }).access_token;
+      const expiresIn = (responseData as { expires_in?: number }).expires_in || 2592000; // Default 30 days in seconds
       
       if (accessToken) {
         await storeAccessToken(accessToken, expiresIn);
@@ -337,7 +340,7 @@ export async function logout(): Promise<void> {
   
   try {
     // Backend /auth/logout endpoint clears the HTTP-only cookie (web)
-    await api.post("/auth/logout");
+    await authApi.logout();
     console.log("[Auth] ✅ Logout successful, cookie cleared by backend (web)");
   } catch (error) {
     // Handle 404 gracefully - endpoint might not exist, but logout is still successful
@@ -378,20 +381,21 @@ export async function fetchCurrentUser(): Promise<AuthUser | null> {
     try {
       // /me endpoint validates authentication via HTTP-only cookie
       // No need to check for localStorage tokens - cookies handle auth automatically
-      const response = await api.get("/me");
+      const response = await authApi.getMe();
+      const responseData = response.data || response;
       
-      console.log("[Auth] /me response received:", response);
+      console.log("[Auth] /me response received:", responseData);
       
       // Validate response is not undefined/null
-      if (!response || typeof response !== 'object') {
-        console.warn("[Auth] /me returned invalid response:", response);
+      if (!responseData || typeof responseData !== 'object') {
+        console.warn("[Auth] /me returned invalid response:", responseData);
         return null;
       }
       
       // Backend may return minimal response: {"user_id": "...", "authenticated": true}
       // Or full UserOut: {"id": "...", "email": "...", "onboarding_complete": true, "strava_connected": true}
       // Transform it to match expected AuthUser shape
-      const backendResponse = response as { user_id?: string; id?: string; authenticated?: boolean; email?: string | null; onboarding_complete?: boolean; strava_connected?: boolean; timezone?: string };
+      const backendResponse = responseData as { user_id?: string; id?: string; authenticated?: boolean; email?: string | null; onboarding_complete?: boolean; strava_connected?: boolean; timezone?: string };
       
       console.log("[Auth] Parsed backend response:", backendResponse);
       

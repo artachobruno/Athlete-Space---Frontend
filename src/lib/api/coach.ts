@@ -1,18 +1,5 @@
-import { api } from '../api';
+import { conversationsApi } from './typedClient';
 import type { CoachProgressResponse } from '@/types/coachProgress';
-
-/**
- * Fetches coach progress for a conversation.
- * Authenticated only, read-only, no retries beyond existing API policy.
- */
-export async function fetchCoachProgress(
-  conversationId: string
-): Promise<CoachProgressResponse> {
-  const response = await api.get<CoachProgressResponse>(
-    `/conversations/${conversationId}/progress`
-  );
-  return response as unknown as CoachProgressResponse;
-}
 
 /**
  * Conversation message from backend.
@@ -41,14 +28,27 @@ export interface ConversationMessage {
 }
 
 /**
+ * Fetches coach progress for a conversation.
+ * Authenticated only, read-only, no retries beyond existing API policy.
+ * 
+ * Uses typed API client to ensure endpoint exists.
+ */
+export async function fetchCoachProgress(
+  conversationId: string
+): Promise<CoachProgressResponse> {
+  const response = await conversationsApi.getProgress(conversationId);
+  return response as unknown as CoachProgressResponse;
+}
+
+/**
  * Fetches messages for a conversation.
  * Used to poll for transient progress messages during plan generation.
+ * 
+ * Uses typed API client to ensure endpoint exists.
  */
 export async function fetchConversationMessages(
   conversationId: string
 ): Promise<ConversationMessage[]> {
-  const response = await api.get<ConversationMessage[]>(
-    `/conversations/${conversationId}/messages`
-  );
+  const response = await conversationsApi.getMessages(conversationId);
   return response as unknown as ConversationMessage[];
 }

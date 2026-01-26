@@ -14,6 +14,7 @@ import { usePlanningProgressStore } from '@/store/planningProgressStore';
 import { PlanningProgressPanel } from '@/components/planning/PlanningProgressPanel';
 import { useQueryClient } from '@tanstack/react-query';
 import { fetchConversationMessages, type ConversationMessage } from '@/lib/api/coach';
+import { classifyApiError } from '@/lib/api/errorClassification';
 
 type CoachMode = 'idle' | 'awaiting_intent' | 'planning' | 'executing' | 'done';
 
@@ -219,10 +220,29 @@ export function CoachChat() {
         if (finalMsg) {
           clearInterval(intervalId);
         }
-      } catch (error) {
+      } catch (error: unknown) {
         console.error('[CoachChat] Failed to poll for messages:', error);
-        // Continue polling on error, but stop after max attempts
+        
+        // Use error classification to determine handling
+        const classified = classifyApiError(error);
+        
+        // TERMINAL errors (404, 403, 401) → stop polling immediately
+        if (classified.class === 'TERMINAL') {
+          console.info('[CoachChat] Terminal error detected, stopping polling:', classified);
+          clearInterval(intervalId);
+          return;
+        }
+        
+        // USER_ACTION errors → stop and surface to UI
+        if (classified.class === 'USER_ACTION') {
+          console.warn('[CoachChat] User action required, stopping polling:', classified);
+          clearInterval(intervalId);
+          return;
+        }
+        
+        // RETRYABLE errors → continue polling, but stop after max attempts
         if (pollCount >= maxPolls) {
+          console.warn('[CoachChat] Max polls reached, stopping');
           clearInterval(intervalId);
         }
       }

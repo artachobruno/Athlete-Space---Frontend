@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { api } from '@/lib/api';
+import { activitiesApi, calendarApi } from '@/lib/api/typedClient';
 
 /**
  * Invalidates all calendar-related queries after delete mutations.
@@ -44,7 +44,7 @@ export function useDeleteActivity() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (activityId: string) =>
-      api.delete(`/activities/${activityId}`),
+      activitiesApi.delete(activityId),
     onSuccess: () => {
       invalidateAll(queryClient);
     },
@@ -59,7 +59,7 @@ export function useDeletePlannedSession() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (plannedSessionId: string) =>
-      api.delete(`/planned-sessions/${plannedSessionId}`),
+      calendarApi.deletePlannedSession(plannedSessionId),
     onSuccess: () => {
       invalidateAll(queryClient);
     },

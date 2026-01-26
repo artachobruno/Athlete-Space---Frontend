@@ -5,6 +5,7 @@ import { fetchCoachProgress } from '@/lib/api/coach';
 import { resolveStepStatus } from '@/utils/resolveStepStatus';
 import type { CoachProgressResponse, StepStatus } from '@/types/coachProgress';
 import { Button } from '@/components/ui/button';
+import { classifyApiError } from '@/lib/api/errorClassification';
 
 type CoachMode = 'idle' | 'awaiting_intent' | 'planning' | 'executing' | 'done';
 
@@ -82,9 +83,30 @@ export function CoachProgressPanel({ conversationId, mode = 'executing', onConfi
             onComplete();
           }
         }
-      } catch (error) {
+      } catch (error: unknown) {
         console.error('[CoachProgressPanel] Failed to fetch progress:', error);
         setIsLoading(false);
+        
+        // Use error classification to determine if we should stop
+        const classified = classifyApiError(error);
+        
+        // TERMINAL errors (404, 403, 401) → stop polling immediately
+        if (classified.class === 'TERMINAL') {
+          console.info('[CoachProgress] Terminal error detected, stopping polling:', classified);
+          if (intervalRef.current) {
+            clearInterval(intervalRef.current);
+            intervalRef.current = null;
+          }
+        }
+        // RETRYABLE errors → continue polling (interval will retry)
+        // USER_ACTION errors → stop and surface to UI
+        else if (classified.class === 'USER_ACTION') {
+          console.warn('[CoachProgress] User action required, stopping polling:', classified);
+          if (intervalRef.current) {
+            clearInterval(intervalRef.current);
+            intervalRef.current = null;
+          }
+        }
       }
     };
 

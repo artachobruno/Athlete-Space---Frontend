@@ -5,6 +5,7 @@
 
 import { api } from './api';
 import { auth } from './auth';
+import { settingsApi } from './api/typedClient';
 
 /**
  * Test if Authorization header is being sent.
@@ -62,9 +63,10 @@ export async function testAuthHeader() {
     
     // Fallback: test with actual endpoint
     try {
-      const profileResponse = await api.get('/me/profile');
+      const profileResponse = await settingsApi.getProfile();
+      const profileData = profileResponse.data || profileResponse;
       console.log('✅ Profile request succeeded - header is being sent!');
-      console.log('Profile data:', profileResponse);
+      console.log('Profile data:', profileData);
     } catch (profileError) {
       const apiError = profileError as { status?: number; response?: { status?: number } };
       const status = apiError.status || apiError.response?.status;

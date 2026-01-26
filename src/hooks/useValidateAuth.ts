@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { api } from '@/lib/api';
+import { authApi } from '@/lib/api/typedClient';
 
 /**
  * Hook to validate authentication on app load.
@@ -16,8 +16,8 @@ export function useValidateAuth() {
     const validateAuth = async () => {
       // Use /me endpoint to validate HTTP-only cookie
       try {
-        // Interceptor returns response.data directly, so api.get() returns the data
-        const data = await api.get("/me");
+        const response = await authApi.getMe();
+        const data = response.data || response;
         
         console.log('[useValidateAuth] /me data:', data);
         
