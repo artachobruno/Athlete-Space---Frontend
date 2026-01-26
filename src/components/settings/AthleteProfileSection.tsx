@@ -271,22 +271,21 @@ export function AthleteProfileSection() {
            ?? (userProfile as { dateOfBirth?: string | null }).dateOfBirth)
         : undefined;
       
-      // CRITICAL: Only preserve current form state if backend field is undefined (not in response)
-      // If backend returns null, that means the field was explicitly cleared - use it
-      // If backend field is undefined, preserve current form state to avoid clearing valid data
-      const currentName = profile.name.trim() || '';
-      const currentLocation = profile.location.trim() || '';
-      const currentDateOfBirth = profile.dateOfBirth.trim() || '';
-      
+      // CRITICAL: When loading profile, always use backend values if they exist
+      // If backend returns null, that means the field was explicitly cleared - use empty string
+      // If backend field is undefined (not in response), use empty string as default
+      // DO NOT preserve current form state during load - backend is source of truth
+      // This ensures the form reflects what's actually saved in the backend
       const profileData: ProfileState = {
-        // Use backend value if field exists in response (even if null), otherwise preserve current state
-        name: backendName !== undefined ? (backendName || '') : currentName,
+        // Use backend value if it exists (even if null), otherwise use empty string
+        // Backend null means field was cleared, so use empty string in form
+        name: backendName !== undefined ? (backendName || '') : '',
         email: emailFromAuth, // Always use email from auth context
         gender: displayGender,
         weight: displayWeight,
         unitSystem,
-        location: backendLocation !== undefined ? (backendLocation || '') : currentLocation,
-        dateOfBirth: backendDateOfBirth !== undefined ? (backendDateOfBirth || '') : currentDateOfBirth,
+        location: backendLocation !== undefined ? (backendLocation || '') : '',
+        dateOfBirth: backendDateOfBirth !== undefined ? (backendDateOfBirth || '') : '',
         heightFeet,
         heightInches,
       };
@@ -387,15 +386,29 @@ export function AthleteProfileSection() {
       // Build update payload with all fields from the form
       // CRITICAL: Always send ALL fields explicitly, even if empty
       // This ensures the backend knows what to update/clear
+      const trimmedName = profile.name.trim();
+      const trimmedLocation = profile.location.trim();
+      
       const updateData: Partial<import('@/types').AthleteProfile> = {
         // CRITICAL: Send name as full_name for backend
-        // Send empty string if field is empty (backend will handle it)
-        name: profile.name.trim() || null,
+        // Send the trimmed value if it exists, otherwise null to clear
+        // CRITICAL: Only send null if the field is actually empty (user cleared it)
+        // If the field has any content (even whitespace that was trimmed), send it
+        name: trimmedName || null,
         // Email is NOT included in save payload - it comes from /me (auth context) only
         gender: profile.gender === 'not-specified' || profile.gender === '' ? null : profile.gender,
-        location: profile.location.trim() || null,
+        location: trimmedLocation || null,
         unitSystem: profile.unitSystem,
       };
+      
+      // Log the raw profile state before processing
+      console.log('[Profile] Raw profile state before save:', {
+        name: profile.name,
+        nameLength: profile.name.length,
+        nameTrimmed: trimmedName,
+        location: profile.location,
+        locationTrimmed: trimmedLocation,
+      });
       
       // Log what we're sending for debugging
       console.log('[Profile] Saving profile data:', {
@@ -775,7 +788,11 @@ export function AthleteProfileSection() {
             <Input
               id="name"
               value={profile.name}
-              onChange={(e) => setProfile({ ...profile, name: e.target.value })}
+              onChange={(e) => {
+                const newName = e.target.value;
+                console.log('[Profile] Name field changed:', { oldValue: profile.name, newValue: newName });
+                setProfile({ ...profile, name: newName });
+              }}
             />
           </div>
           <div className="space-y-2">

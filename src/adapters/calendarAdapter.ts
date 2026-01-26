@@ -88,9 +88,9 @@ export function toCalendarItem(
     );
   }
   
-  // Debug logging for 01/24 pairing issues
-  if (session.date && session.date.includes('2026-01-24') && session.completed_activity_id) {
-    console.log('[CALENDAR_ADAPTER] 01/24 pairing check:', {
+  // Debug logging for pairing issues - log all paired sessions
+  if (session.completed_activity_id) {
+    console.log('[CALENDAR_ADAPTER] Paired session check:', {
       sessionId: session.id,
       sessionDate: session.date,
       completed_activity_id: session.completed_activity_id,
@@ -99,9 +99,14 @@ export function toCalendarItem(
         id: matchedActivity.id,
         date: matchedActivity.date,
         planned_session_id: matchedActivity.planned_session_id,
+        distance: matchedActivity.distance,
+        duration: matchedActivity.duration,
+        trainingLoad: matchedActivity.trainingLoad,
       } : null,
       activitiesCount: activities.length,
       activitiesWithPlannedSessionId: activities.filter(a => a.planned_session_id === session.id).length,
+      activitiesWithMatchingId: activities.filter(a => a.id === session.completed_activity_id).length,
+      allActivityIds: activities.map(a => a.id).slice(0, 5), // First 5 for debugging
     });
   }
 
