@@ -1,7 +1,11 @@
+import type { LLMFeedback } from '@/lib/api';
+import { cn } from '@/lib/utils';
+
 interface NarrativeBlockProps {
   intentText?: string;
   executionSummary?: string;
   coachInsight?: { text: string; tone: 'warning' | 'encouragement' | 'neutral' };
+  llmFeedback?: LLMFeedback | null;
   status: 'planned' | 'completed';
   isUnplanned?: boolean;
   isHeroSession?: boolean;
@@ -11,6 +15,7 @@ export function NarrativeBlock({
   intentText,
   executionSummary,
   coachInsight,
+  llmFeedback,
   status,
   isUnplanned = false,
   isHeroSession = false,
@@ -51,7 +56,27 @@ export function NarrativeBlock({
         </>
       )}
 
-      {/* Coach section - shows after Outcome (if present) or after Purpose (if no Outcome) */}
+      {/* LLM Feedback section - shows after Outcome (if present) or after Purpose (if no Outcome) */}
+      {/* PHASE: LLM-generated coaching feedback from execution summary */}
+      {llmFeedback && (
+        <div
+          className={cn(
+            "rounded-md px-3 py-2 text-sm",
+            llmFeedback.tone === "encouraging" && "bg-green-500/10",
+            llmFeedback.tone === "corrective" && "bg-yellow-500/10",
+            llmFeedback.tone === "neutral" && "bg-muted/30"
+          )}
+        >
+          <div className="text-xs uppercase tracking-wider text-muted-foreground mb-1.5">
+            Coach Feedback
+          </div>
+          <p className="text-sm text-foreground leading-relaxed">
+            {llmFeedback.text}
+          </p>
+        </div>
+      )}
+
+      {/* Coach section - shows after LLM Feedback (if present) or after Outcome/Purpose */}
       {coachInsight && (
         <div>
           <div className="text-xs uppercase tracking-wider text-muted-foreground mb-1.5">

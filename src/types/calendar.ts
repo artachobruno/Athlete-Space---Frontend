@@ -194,3 +194,19 @@ function isAM(dateString: string): boolean {
   const date = new Date(dateString);
   return date.getHours() < 12;
 }
+
+/**
+ * Weekly Summary Card - Backend-derived execution summary
+ * PHASE A + B: Templated narrative from execution summaries
+ */
+export interface WeeklySummaryCard {
+  week_start: string; // ISO date (YYYY-MM-DD)
+  week_end: string; // ISO date (YYYY-MM-DD)
+  narrative: string;
+  total_planned_sessions: number;
+  executed_as_planned_count: number;
+  missed_sessions_count: number;
+  unplanned_sessions_count: number;
+  strongest_session_id?: string;
+  strongest_session_narrative?: string;
+}

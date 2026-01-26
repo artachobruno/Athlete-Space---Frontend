@@ -7,6 +7,7 @@ import { isPreviewMode } from "./preview";
 import { mockActivities } from "@/mock/activities.mock";
 import { mockCalendarSessions, getMockWeekSessions, getMockTodaySessions } from "@/mock/calendarSessions.mock";
 import type { ClimateExpectation, CompletedActivity, PlannedWorkout } from "@/types";
+import type { WeeklySummaryCard } from "@/types/calendar";
 
 export const getBaseURL = () => {
   // Check if we're in Capacitor (native app)
@@ -135,6 +136,20 @@ export interface CoachVerdict {
   generated_at: string;
 }
 
+export interface LLMFeedback {
+  text: string;
+  tone: "neutral" | "encouraging" | "corrective";
+  generated_at: string; // ISO 8601 timestamp
+}
+
+export interface ExecutionStateInfo {
+  state: "unexecuted" | "executed_as_planned" | "executed_unplanned" | "missed";
+  reason?: string | null;
+  deltas?: Record<string, number | null> | null;
+  resolved_at?: string | null;
+  llm_feedback?: LLMFeedback | null;
+}
+
 export interface CalendarSession {
   id: string;
   date: string;
@@ -163,6 +178,8 @@ export interface CalendarSession {
   must_dos?: string[];
   // Phase 5A: Coach verdict (read-only, advisory)
   coach_verdict?: CoachVerdict | null;
+  // PHASE 2.2: Execution state derived centrally
+  execution_state?: ExecutionStateInfo | null;
 }
 
 export interface TodayResponse {
@@ -2184,6 +2201,48 @@ export const sendCoachChat = async (
  * 
  * In preview mode: Returns mock calendar sessions that match mock activities.
  */
+/**
+ * Fetches weekly summary card with templated narrative.
+ * PHASE A + B: Deterministic aggregation from execution summaries.
+ * @param weekDateISO - Any date inside the week (YYYY-MM-DD format)
+ */
+export const fetchWeeklySummary = async (weekDateISO: string): Promise<WeeklySummaryCard> => {
+  // Check if we're in preview mode
+  if (isPreviewMode()) {
+    console.log("[API] Preview mode: Returning mock weekly summary");
+    await new Promise(resolve => setTimeout(resolve, 200));
+    
+    // Return minimal mock data
+    return {
+      week_start: weekDateISO,
+      week_end: format(endOfWeek(new Date(weekDateISO), { weekStartsOn: 1 }), 'yyyy-MM-dd'),
+      narrative: "This week, You executed 2 of 3 planned sessions.",
+      total_planned_sessions: 3,
+      executed_as_planned_count: 2,
+      missed_sessions_count: 1,
+      unplanned_sessions_count: 0,
+    };
+  }
+  
+  console.log("[API] Fetching weekly summary", weekDateISO);
+  try {
+    const response = await api.get("/calendar/week-summary", {
+      params: { date: weekDateISO },
+    });
+    console.log("[API] Weekly summary response:", response);
+    
+    const responseData = response.data || response;
+    if (responseData && typeof responseData === 'object') {
+      return responseData as WeeklySummaryCard;
+    }
+    
+    throw new Error("Invalid response format");
+  } catch (error) {
+    console.error("[API] Error fetching weekly summary:", error);
+    throw error;
+  }
+};
+
 export const fetchCalendarWeek = async (date?: string): Promise<WeekResponse> => {
   // Check if we're in preview mode
   if (isPreviewMode()) {

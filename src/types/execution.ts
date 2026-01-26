@@ -12,6 +12,15 @@ export type ExecutionState =
   | 'MISSED';
 
 /**
+ * LLM-generated coaching feedback (cached output).
+ */
+export interface LLMFeedback {
+  text: string;
+  tone: 'neutral' | 'encouraging' | 'corrective';
+  generated_at: string; // ISO 8601 timestamp
+}
+
+/**
  * Execution summary combining planned session and completed activity.
  * This is the canonical representation for schedule rendering.
  */
@@ -29,6 +38,8 @@ export interface ExecutionSummary {
   };
   /** Date of this execution summary */
   date: string;
+  /** LLM-generated coaching feedback (cached, optional) */
+  llm_feedback?: LLMFeedback;
 }
 
 /**

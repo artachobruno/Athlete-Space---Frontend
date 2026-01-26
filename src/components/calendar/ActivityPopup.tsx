@@ -758,12 +758,16 @@ export function ActivityPopup({
             // Check if unplanned
             const isUnplanned = isCompleted && !session?.completed_activity_id && !workout?.actualActivityId;
             
+            // Extract LLM feedback from execution_state if available
+            const llmFeedback = session?.execution_state?.llm_feedback || null;
+
             return (
               <div className="pb-4">
                 <NarrativeBlock
                   intentText={intentText}
                   executionSummary={executionSummary}
                   coachInsight={coachInsight}
+                  llmFeedback={llmFeedback}
                   status={status}
                   isUnplanned={isUnplanned}
                 />

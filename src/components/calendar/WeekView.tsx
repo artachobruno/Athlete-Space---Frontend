@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import {
   startOfWeek,
   endOfWeek,
@@ -23,6 +23,7 @@ import {
 import { CombinedSessionCard } from '@/components/schedule/CombinedSessionCard';
 import { DayView } from './DayView';
 import { WeeklyNarrativeCard } from './WeeklyNarrativeCard';
+import { WeeklySummaryCard } from './WeeklySummaryCard';
 import { SwipeIndicator } from './SwipeIndicator';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { Button } from '@/components/ui/button';
@@ -34,7 +35,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { fetchCalendarMonth, normalizeCalendarMonth } from '@/lib/calendar-month';
-import { fetchOverview } from '@/lib/api';
+import { fetchOverview, fetchWeeklySummary } from '@/lib/api';
 import { useAuthenticatedQuery } from '@/hooks/useAuthenticatedQuery';
 import { useQuery } from '@tanstack/react-query';
 import type { PlannedWorkout, CompletedActivity } from '@/types';
@@ -51,6 +52,7 @@ import {
 } from '@/lib/weekly-summary';
 import { buildExecutionSummaries } from '@/lib/execution-summary';
 import type { ExecutionSummary } from '@/types/execution';
+import type { WeeklySummaryCard } from '@/types/calendar';
 
 interface WeekViewProps {
   currentDate: Date;
@@ -64,12 +66,14 @@ interface WeekViewProps {
 function WeekView({ currentDate, onActivityClick }: WeekViewProps) {
   const [selectedDay, setSelectedDay] = useState<Date | null>(null);
   const [isSharing, setIsSharing] = useState(false);
+  const [weeklySummary, setWeeklySummary] = useState<WeeklySummaryCard | null>(null);
   const isMobile = useIsMobile();
 
   const weekStart = startOfWeek(currentDate, { weekStartsOn: 1 });
   const weekEnd = endOfWeek(currentDate, { weekStartsOn: 1 });
   const monthStart = startOfMonth(currentDate);
   const monthKey = format(monthStart, 'yyyy-MM');
+  const weekStartISO = format(weekStart, 'yyyy-MM-dd');
 
   const { data: monthData, isLoading } = useAuthenticatedQuery({
     queryKey: ['calendar', 'month', monthKey],
@@ -82,6 +86,21 @@ function WeekView({ currentDate, onActivityClick }: WeekViewProps) {
     queryFn: () => fetchOverview(14),
     retry: 1,
   });
+
+  // Load weekly summary when week changes
+  useEffect(() => {
+    async function loadSummary() {
+      try {
+        const summary = await fetchWeeklySummary(weekStartISO);
+        setWeeklySummary(summary);
+      } catch {
+        // Silent failure - don't block render
+        setWeeklySummary(null);
+      }
+    }
+
+    loadSummary();
+  }, [weekStartISO]);
 
   const executionSummariesByDay = useMemo(() => {
     if (!monthData) return new Map<string, ExecutionSummary[]>();
@@ -148,6 +167,55 @@ function WeekView({ currentDate, onActivityClick }: WeekViewProps) {
     }
   };
 
+  const handleOpenSession = (sessionId: string) => {
+    // Find the session in monthData and open it via onActivityClick
+    if (monthData && onActivityClick) {
+      // Try to find as planned session first
+      const plannedSession = [...monthData.planned_sessions, ...monthData.workouts].find(
+        (s) => s.id === sessionId
+      );
+      
+      if (plannedSession) {
+        onActivityClick(
+          {
+            id: plannedSession.id,
+            date: plannedSession.date || '',
+            sport: normalizeSportType(plannedSession.type),
+            intent: mapIntensityToIntent(plannedSession.intensity),
+            title: capitalizeTitle(plannedSession.title || ''),
+            description: plannedSession.notes || '',
+            duration: plannedSession.duration_minutes || 0,
+            distance: plannedSession.distance_km || 0,
+            intensity: plannedSession.intensity || 'easy',
+          },
+          null,
+          null
+        );
+        return;
+      }
+
+      // Try to find as activity
+      const activity = monthData.activities.find((a) => a.id === sessionId);
+      if (activity) {
+        onActivityClick(
+          null,
+          {
+            id: activity.id,
+            date: activity.date || '',
+            sport: normalizeSportType(activity.type),
+            title: capitalizeTitle(activity.name || ''),
+            duration: activity.duration_minutes || 0,
+            distance: activity.distance_km || 0,
+            pace: activity.pace || undefined,
+            elevation: activity.elevation || undefined,
+            hr: activity.hr || undefined,
+          },
+          null
+        );
+      }
+    }
+  };
+
   const handleCardClick = (summary: ExecutionSummary) => {
     if (monthData && onActivityClick) {
       const session = summary.planned
@@ -208,6 +276,15 @@ function WeekView({ currentDate, onActivityClick }: WeekViewProps) {
       <div className="h-full overflow-hidden flex flex-col">
         <SwipeIndicator label="week" className="flex-shrink-0" />
         <div className="flex-1 overflow-y-auto px-1">
+          {/* Weekly Summary Card - Mobile */}
+          {weeklySummary && (
+            <div className="mb-3 px-1">
+              <WeeklySummaryCard
+                summary={weeklySummary}
+                onOpenSession={handleOpenSession}
+              />
+            </div>
+          )}
           {days.map((day) => {
             const summaries = getItemsForDay(day);
             if (summaries.length === 0) return null;
@@ -239,6 +316,14 @@ function WeekView({ currentDate, onActivityClick }: WeekViewProps) {
 
   return (
     <div className="space-y-3">
+      {/* Weekly Summary Card - Backend-derived execution summary */}
+      {weeklySummary && (
+        <WeeklySummaryCard
+          summary={weeklySummary}
+          onOpenSession={handleOpenSession}
+        />
+      )}
+
       {/* Weekly Narrative Card */}
       <WeeklyNarrativeCard
         weekStart={format(weekStart, 'yyyy-MM-dd')}
