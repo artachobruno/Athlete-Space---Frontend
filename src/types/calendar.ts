@@ -26,6 +26,9 @@ export interface CalendarItem {
   distanceKm?: number; // Distance in kilometers
   pace?: string; // Formatted pace string (e.g., "5:30 /km")
   secondary?: string; // e.g., "Z2", "HR 145", "RPE 7"
+  elevation?: number; // Elevation gain (m)
+  cadence?: number; // Avg cadence (rpm), when available
+  hr?: number; // Avg heart rate (bpm), when available
   isPaired?: boolean;
   compliance?: CalendarCompliance;
   description?: string; // Workout description or coach notes

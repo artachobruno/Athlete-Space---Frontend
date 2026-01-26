@@ -314,6 +314,20 @@ export function ActivityExpandedContent({ activity }: ActivityExpandedContentPro
     return elev.filter((_, i) => i % step === 0);
   }, [streamsData]);
 
+  const cadenceSparkData = useMemo(() => {
+    if (!streamsData?.cadence) return undefined;
+    const cad = (streamsData.cadence as number[]).filter((v): v is number => typeof v === 'number' && v > 0);
+    if (cad.length < 10) return undefined;
+    const step = Math.max(1, Math.floor(cad.length / 30));
+    return cad.filter((_, i) => i % step === 0);
+  }, [streamsData]);
+
+  const avgCadence = useMemo(() => {
+    if (!cadenceSparkData || cadenceSparkData.length === 0) return undefined;
+    const sum = cadenceSparkData.reduce((a, b) => a + b, 0);
+    return Math.round(sum / cadenceSparkData.length);
+  }, [cadenceSparkData]);
+
   // Compliance score calculation
   // Use API compliance data if available, otherwise calculate from duration/distance differences
   const complianceScore = useMemo(() => {
@@ -476,12 +490,29 @@ export function ActivityExpandedContent({ activity }: ActivityExpandedContentPro
         
         {/* OVERVIEW TAB */}
         <TabsContent value="overview" className="mt-4 space-y-4">
-          {/* Metrics */}
+          <div className="space-y-1 bg-muted/30 rounded-lg p-4 border border-border/50 backdrop-blur-sm">
+            <div className="text-sm font-medium text-muted-foreground mb-3">
+              Overview
+            </div>
+            <TelemetryMetricRow label="Distance" value={distanceDisplay.value.toFixed(1)} unit={distanceDisplay.unit} />
+            <TelemetryMetricRow label="Time" value={activity.duration} unit="min" />
+            {activity.trainingLoad > 0 && (
+              <TelemetryMetricRow label="TSS" value={Math.round(activity.trainingLoad)} />
+            )}
+            {elevationDisplay && (
+              <TelemetryMetricRow
+                label="Elevation"
+                value={Math.round(elevationDisplay.value)}
+                unit={elevationDisplay.unit}
+                sparkData={elevSparkData}
+                sparkColor="hsl(var(--chart-2))"
+              />
+            )}
+          </div>
           <div className="space-y-1 bg-muted/30 rounded-lg p-4 border border-border/50 backdrop-blur-sm">
             <div className="text-sm font-medium text-muted-foreground mb-3">
               Performance Metrics
             </div>
-            
             {activity.avgHeartRate && (
               <TelemetryMetricRow
                 label="HR"
@@ -500,28 +531,22 @@ export function ActivityExpandedContent({ activity }: ActivityExpandedContentPro
               />
             )}
             
-            {paceSparkData && (
+            {(paceSparkData || activity.avgPace) && (
               <TelemetryMetricRow
                 label="Pace"
-                value={(() => {
-                  const avgPace = paceSparkData.reduce((a, b) => a + b, 0) / paceSparkData.length;
-                  const mins = Math.floor(avgPace);
-                  const secs = Math.round((avgPace - mins) * 60);
-                  return `${mins}:${secs.toString().padStart(2, '0')}`;
-                })()}
+                value={
+                  paceSparkData
+                    ? (() => {
+                        const avgPace = paceSparkData.reduce((a, b) => a + b, 0) / paceSparkData.length;
+                        const mins = Math.floor(avgPace);
+                        const secs = Math.round((avgPace - mins) * 60);
+                        return `${mins}:${secs.toString().padStart(2, '0')}`;
+                      })()
+                    : activity.avgPace ?? '—'
+                }
                 unit="/km"
                 sparkData={paceSparkData}
                 sparkColor="hsl(var(--chart-1))"
-              />
-            )}
-            
-            {elevSparkData && (
-              <TelemetryMetricRow
-                label="Elev"
-                value={Math.round(Math.max(...elevSparkData) - Math.min(...elevSparkData))}
-                unit="m gain"
-                sparkData={elevSparkData}
-                sparkColor="hsl(var(--chart-2))"
               />
             )}
           </div>
@@ -761,11 +786,64 @@ export function ActivityExpandedContent({ activity }: ActivityExpandedContentPro
         {/* EXECUTION TAB */}
         <TabsContent value="execution" className="mt-4 space-y-4">
           <div className="text-sm font-medium text-muted-foreground mb-3">
+            Execution Metrics
+          </div>
+          <div className="space-y-1 bg-muted/30 rounded-lg p-4 border border-border/50 backdrop-blur-sm">
+            <TelemetryMetricRow label="Distance" value={distanceDisplay.value.toFixed(1)} unit={distanceDisplay.unit} />
+            <TelemetryMetricRow label="Time" value={activity.duration} unit="min" />
+            {activity.trainingLoad > 0 && (
+              <TelemetryMetricRow label="TSS" value={Math.round(activity.trainingLoad)} />
+            )}
+            {activity.elevation != null && activity.elevation > 0 && (
+              <TelemetryMetricRow
+                label="Elevation"
+                value={Math.round(activity.elevation)}
+                unit="m"
+                sparkData={elevSparkData}
+                sparkColor="hsl(var(--chart-2))"
+              />
+            )}
+            {activity.avgHeartRate != null && activity.avgHeartRate > 0 && (
+              <TelemetryMetricRow
+                label="HR"
+                value={Math.round(activity.avgHeartRate)}
+                unit="bpm"
+                sparkData={hrSparkData}
+                sparkColor="hsl(var(--chart-4))"
+              />
+            )}
+            {avgCadence != null && avgCadence > 0 && (
+              <TelemetryMetricRow
+                label="Cadence"
+                value={avgCadence}
+                unit="rpm"
+                sparkData={cadenceSparkData}
+                sparkColor="hsl(var(--chart-3))"
+              />
+            )}
+            {(activity.avgPace || paceSparkData) && (
+              <TelemetryMetricRow
+                label="Pace"
+                value={
+                  paceSparkData
+                    ? (() => {
+                        const avgPace = paceSparkData.reduce((a, b) => a + b, 0) / paceSparkData.length;
+                        const mins = Math.floor(avgPace);
+                        const secs = Math.round((avgPace - mins) * 60);
+                        return `${mins}:${secs.toString().padStart(2, '0')}`;
+                      })()
+                    : activity.avgPace ?? '—'
+                }
+                unit="/km"
+                sparkData={paceSparkData}
+                sparkColor="hsl(var(--chart-1))"
+              />
+            )}
+          </div>
+          <div className="text-sm font-medium text-muted-foreground mb-3">
             Time-Series Analysis
           </div>
           <ActivityCharts activity={activity} />
-          
-          {/* Execution Metrics Summary */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-4">
             <div className="p-4 bg-muted/30 rounded-lg border border-border/50 backdrop-blur-sm">
               <div className="text-sm text-muted-foreground mb-1">Status</div>

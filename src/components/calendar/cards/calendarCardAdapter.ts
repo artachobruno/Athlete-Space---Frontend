@@ -221,6 +221,19 @@ function toActivityCardProps(item: CalendarItem): BaseCardProps {
   const secondaryText =
     p.distance || p.pace ? [p.distance, p.pace].filter(Boolean).join(' · ') : undefined;
 
+  const executionMetrics: BaseCardProps['executionMetrics'] =
+    item.kind === 'completed'
+      ? {
+          distance: p.distance,
+          duration: p.duration,
+          tss: item.load,
+          elevation: item.elevation,
+          hr: item.hr,
+          cadence: item.cadence,
+          pace: item.pace,
+        }
+      : undefined;
+
   return {
     variant,
     topLeft: p.duration,
@@ -228,15 +241,15 @@ function toActivityCardProps(item: CalendarItem): BaseCardProps {
     metricsLabel: secondaryText ? 'DISTANCE · AVG PACE' : undefined,
     metricsValue: secondaryText,
     title: p.title,
-    description: p.description, // Long-form fallback only
+    description: p.description,
     sparkline: p.sparkline,
     isActivity: true,
     isPlanned: false,
-    // Semantic elevation fields
     planContext: derivePlanContext(item),
     intentText: deriveIntentText(item),
     executionSummary: deriveExecutionSummary(item),
     coachInsight: item.coachNote ?? undefined,
+    executionMetrics,
   };
 }
 

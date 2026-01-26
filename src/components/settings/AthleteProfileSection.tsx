@@ -243,13 +243,23 @@ export function AthleteProfileSection() {
       }
       
       // Map backend gender format (M/F) to frontend format
-      const backendGender = (userProfile as { gender?: string }).gender || '';
-      const displayGender = backendGender === 'M' || backendGender === 'F' ? backendGender : '';
+      // CRITICAL: Use nullish coalescing to distinguish null from empty string
+      const backendGender = (userProfile as { gender?: string | null }).gender;
+      const displayGender = (backendGender === 'M' || backendGender === 'F') ? backendGender : '';
       
       // CRITICAL: Backend returns full_name, not name
       // Handle both full_name and name for backward compatibility
-      const backendName = (userProfile as { full_name?: string }).full_name 
-        ?? (userProfile as { name?: string }).name 
+      // CRITICAL: Use nullish coalescing - null means field is not set, empty string means it was cleared
+      const backendName = (userProfile as { full_name?: string | null }).full_name 
+        ?? (userProfile as { name?: string | null }).name 
+        ?? '';
+      
+      // CRITICAL: Use nullish coalescing for location - null means not set
+      const backendLocation = (userProfile as { location?: string | null }).location ?? '';
+      
+      // CRITICAL: Use nullish coalescing for date_of_birth
+      const backendDateOfBirth = (userProfile as { date_of_birth?: string | null }).date_of_birth 
+        ?? (userProfile as { dateOfBirth?: string | null }).dateOfBirth 
         ?? '';
       
       const profileData: ProfileState = {
@@ -258,8 +268,8 @@ export function AthleteProfileSection() {
         gender: displayGender,
         weight: displayWeight,
         unitSystem,
-        location: (userProfile as { location?: string }).location || '',
-        dateOfBirth: (userProfile as { date_of_birth?: string }).date_of_birth || (userProfile as { dateOfBirth?: string }).dateOfBirth || '',
+        location: backendLocation,
+        dateOfBirth: backendDateOfBirth,
         heightFeet,
         heightInches,
       };
@@ -273,6 +283,7 @@ export function AthleteProfileSection() {
         dateOfBirth: profileData.dateOfBirth,
         gender: profileData.gender,
         unitSystem: profileData.unitSystem,
+        rawBackendResponse: userProfile, // Log full backend response for debugging
       });
       setProfile(profileData);
       setInitialProfile(profileData);
@@ -345,13 +356,31 @@ export function AthleteProfileSection() {
       // fetchUserProfile now returns null on failure (it's optional)
       const currentProfile = await fetchUserProfile();
 
+      // Build update payload with all fields from the form
+      // CRITICAL: Always send ALL fields explicitly, even if empty
+      // This ensures the backend knows what to update/clear
       const updateData: Partial<import('@/types').AthleteProfile> = {
-        name: profile.name,
+        // CRITICAL: Send name as full_name for backend
+        // Send empty string if field is empty (backend will handle it)
+        name: profile.name.trim() || null,
         // Email is NOT included in save payload - it comes from /me (auth context) only
-        gender: profile.gender === 'not-specified' ? '' : profile.gender,
-        location: profile.location,
+        gender: profile.gender === 'not-specified' || profile.gender === '' ? null : profile.gender,
+        location: profile.location.trim() || null,
         unitSystem: profile.unitSystem,
       };
+      
+      // Log what we're sending for debugging
+      console.log('[Profile] Saving profile data:', {
+        name: updateData.name,
+        gender: updateData.gender,
+        location: updateData.location,
+        unitSystem: updateData.unitSystem,
+        weight: profile.weight,
+        heightFeet: profile.heightFeet,
+        heightInches: profile.heightInches,
+        dateOfBirth: profile.dateOfBirth,
+        fullPayload: updateData, // Log full payload
+      });
 
       // Preserve target_event and goals from current profile (they're edited in TrainingPreferencesSection)
       if (currentProfile) {
@@ -364,43 +393,69 @@ export function AthleteProfileSection() {
       }
 
       // Handle weight - send weight_lbs for imperial, weight_kg for metric (1 decimal max)
-      if (profile.weight) {
+      // CRITICAL: Always send weight, even if empty (send null to clear)
+      if (profile.weight && profile.weight.trim() !== '') {
         const weightValue = parseFloat(profile.weight);
-        if (!isNaN(weightValue)) {
+        if (!isNaN(weightValue) && weightValue > 0) {
           const formattedWeight = format1Decimal(weightValue);
           if (profile.unitSystem === 'imperial') {
             // Send weight_lbs for imperial (1 decimal max)
             (updateData as { weight_lbs?: number }).weight_lbs = formattedWeight;
+            // Clear weight_kg when using imperial
+            (updateData as { weight_kg?: number }).weight_kg = null;
           } else {
             // Send weight_kg for metric (1 decimal max)
             (updateData as { weight_kg?: number }).weight_kg = formattedWeight;
+            // Clear weight_lbs when using metric
+            (updateData as { weight_lbs?: number }).weight_lbs = null;
           }
         }
+      } else {
+        // Explicitly clear weight if field is empty
+        (updateData as { weight_lbs?: number }).weight_lbs = null;
+        (updateData as { weight_kg?: number }).weight_kg = null;
       }
 
-      if (profile.dateOfBirth) {
-        updateData.dateOfBirth = profile.dateOfBirth;
-      }
+      // CRITICAL: Always send dateOfBirth, even if empty (send null to clear)
+      updateData.dateOfBirth = profile.dateOfBirth && profile.dateOfBirth.trim() !== '' 
+        ? profile.dateOfBirth 
+        : null;
 
       // Handle height - convert feet+inches to total inches for imperial, or cm for metric
       // CRITICAL: Backend expects height_inches (integer) for imperial, height_cm (integer) for metric
-      if (profile.heightFeet || profile.heightInches) {
+      // CRITICAL: Always send height, even if empty (send null to clear)
+      const hasHeightFeet = profile.heightFeet && profile.heightFeet.trim() !== '';
+      const hasHeightInches = profile.heightInches && profile.heightInches.trim() !== '';
+      
+      if (hasHeightFeet || hasHeightInches) {
         const feet = parseFloat(profile.heightFeet || '0');
         const inches = parseFloat(profile.heightInches || '0');
-        if (!isNaN(feet) && !isNaN(inches)) {
+        if (!isNaN(feet) && !isNaN(inches) && (feet > 0 || inches > 0)) {
           if (profile.unitSystem === 'imperial') {
             // Convert feet + inches to total inches (integer for backend)
             const totalInches = Math.round(feet * 12 + inches);
             (updateData as { height_inches?: number }).height_inches = totalInches;
             // Also send height_in for backward compatibility (will be converted by updateUserProfile)
             (updateData as { height_in?: number }).height_in = totalInches;
+            // Clear height_cm when using imperial
+            (updateData as { height_cm?: number }).height_cm = null;
           } else {
             // For metric, convert to cm (integer for backend)
             const totalInches = feet * 12 + inches;
             const heightCm = Math.round(totalInches * 2.54);
             (updateData as { height_cm?: number }).height_cm = heightCm;
+            // Clear height_inches when using metric
+            (updateData as { height_inches?: number }).height_inches = null;
           }
+        } else {
+          // Explicitly clear height if values are invalid
+          (updateData as { height_inches?: number }).height_inches = null;
+          (updateData as { height_cm?: number }).height_cm = null;
         }
+      } else {
+        // Explicitly clear height if fields are empty
+        (updateData as { height_inches?: number }).height_inches = null;
+        (updateData as { height_cm?: number }).height_cm = null;
       }
 
       // CRITICAL: Set flag to prevent profile reload after save
@@ -456,11 +511,13 @@ export function AthleteProfileSection() {
           ?? (updatedProfile as { name?: string }).name 
           ?? '';
         
+        // CRITICAL: Use the values we JUST SENT to the backend, not the response
+        // The response might be incomplete, but we know what we saved
+        // This ensures the form shows exactly what was saved
         const updatedState: ProfileState = {
-          // CRITICAL: Preserve existing form values if backend response is missing them
-          // This prevents fields from being cleared if backend response is incomplete
+          // Use backend response if available, otherwise use what we just sent (from profile state)
           name: backendName || profile.name || '',
-          email: user?.email || profile.email || '', // Always use email from auth context, fallback to current
+          email: user?.email || profile.email || '', // Always use email from auth context
           gender: displayGender || profile.gender || '',
           weight: displayWeight || profile.weight || '',
           unitSystem: unitSystem || profile.unitSystem || 'imperial',
@@ -477,9 +534,6 @@ export function AthleteProfileSection() {
         // 
         // IMPORTANT: We update BOTH profile and initialProfile to the SAME values
         // This ensures hasChanges stays false and the form shows as "saved"
-        // 
-        // IMPORTANT: We use nullish coalescing (??) to preserve existing values
-        // if backend response is incomplete - this prevents fields from being cleared
         setProfile(updatedState);
         setInitialProfile(updatedState);
         
@@ -489,6 +543,10 @@ export function AthleteProfileSection() {
           weight: updatedState.weight,
           height: `${updatedState.heightFeet}'${updatedState.heightInches}"`,
           location: updatedState.location,
+          dateOfBirth: updatedState.dateOfBirth,
+          gender: updatedState.gender,
+          unitSystem: updatedState.unitSystem,
+          rawResponse: updatedProfile, // Log full response for debugging
         });
       } else {
         // If no response, just update initial profile to current state
@@ -498,6 +556,10 @@ export function AthleteProfileSection() {
       }
       
       setHasChanges(false);
+      
+      // CRITICAL: After save, the response should contain all saved values
+      // But if it doesn't, we'll use what we just sent (which is in profile state)
+      // The state update above already handles this with nullish coalescing
       
       // CRITICAL: Keep the guard active longer to prevent any refetch from clearing fields
       // Extended to 5 seconds to cover any background syncs or refetches
@@ -518,7 +580,7 @@ export function AthleteProfileSection() {
       // NOTE: We use refetchType: 'none' to prevent automatic refetches
       await queryClient.invalidateQueries({ 
         queryKey: ['userProfile'],
-        refetchType: 'none' // Don't automatically refetch - we've already updated state
+        refetchType: 'none' // Don't automatically refetch - we handle it manually above
       });
       
       toast({

@@ -23,6 +23,16 @@ export interface BaseCardProps {
     text: string;
     tone: 'warning' | 'encouragement' | 'neutral';
   };
+  /** Execution metrics for combined/merged completed cards (overview + execution) */
+  executionMetrics?: {
+    distance?: string;
+    duration?: string;
+    tss?: number;
+    elevation?: number;
+    hr?: number;
+    cadence?: number;
+    pace?: string;
+  };
   /** Mobile breakpoint flag - when true, uses stacked layout */
   isMobile?: boolean;
 }
@@ -78,6 +88,7 @@ export function BaseCalendarCardSvg({
   intentText,
   executionSummary,
   coachInsight,
+  executionMetrics,
   isMobile = false,
 }: BaseCardProps) {
   const theme = CALENDAR_CARD_THEMES[variant] ?? CALENDAR_CARD_THEMES['completed-running'];
@@ -129,13 +140,34 @@ export function BaseCalendarCardSvg({
   const metaLabelY = titleBottom + metaSpacing;
   const metaValueY = metaLabelY + 10 * textScale;
   const metaBottom = metaValueY + 4 * textScale;
-  
+
+  const hasExecutionMetrics = Boolean(
+    isActivity && executionMetrics &&
+    (executionMetrics.distance ?? executionMetrics.duration ?? executionMetrics.tss ??
+     executionMetrics.elevation ?? executionMetrics.hr ?? executionMetrics.cadence ?? executionMetrics.pace)
+  );
+  const executionMetricsParts: string[] = [];
+  if (executionMetrics) {
+    if (executionMetrics.distance) executionMetricsParts.push(executionMetrics.distance);
+    if (executionMetrics.duration) executionMetricsParts.push(executionMetrics.duration);
+    if (executionMetrics.tss != null && executionMetrics.tss > 0) executionMetricsParts.push(`TSS ${Math.round(executionMetrics.tss)}`);
+    if (executionMetrics.elevation != null && executionMetrics.elevation > 0) executionMetricsParts.push(`${Math.round(executionMetrics.elevation)} m`);
+    if (executionMetrics.hr != null && executionMetrics.hr > 0) executionMetricsParts.push(`${Math.round(executionMetrics.hr)} bpm`);
+    if (executionMetrics.cadence != null && executionMetrics.cadence > 0) executionMetricsParts.push(`${Math.round(executionMetrics.cadence)} rpm`);
+    if (executionMetrics.pace) executionMetricsParts.push(executionMetrics.pace);
+  }
+  const executionMetricsLine = executionMetricsParts.length > 0 ? executionMetricsParts.join(' · ') : '';
+
   // BODY visibility: month view hides BODY entirely
   const shouldShowBody = !isMonthView;
+  const showExecutionMetrics = shouldShowBody && hasExecutionMetrics;
+  const executionMetricsRowHeight = showExecutionMetrics ? 10 * textScale + 12 * textScale + 4 * textScale : 0;
+  const executionMetricsSpacing = showExecutionMetrics ? 4 * textScale : 0;
+  const executionMetricsY = metaBottom + executionMetricsSpacing;
+  const executionMetricsBottom = metaBottom + executionMetricsRowHeight + (showExecutionMetrics ? executionMetricsSpacing : 0);
   
-  // Intent/Execution: 6-8px spacing from meta (only if BODY is shown, more on mobile)
   const semanticSpacing = shouldShowBody ? (isMobile ? 10 * textScale : 7 * textScale) : 0;
-  const semanticY = shouldShowBody ? metaBottom + semanticSpacing : metaBottom;
+  const semanticY = shouldShowBody ? executionMetricsBottom + semanticSpacing : metaBottom;
   
   // Unplanned completed detection: isActivity && !isPlanned
   const isUnplannedCompleted = isActivity && !isPlanned;
@@ -162,12 +194,12 @@ export function BaseCalendarCardSvg({
   const coachSpacing = 6 * textScale; // Spacing between execution and coach
   const coachY = executionBottom + (showCoach ? coachSpacing : 0);
   
-  // Store for rendering
   const layout = {
     planContextY,
     titleY: adjustedTitleY,
     metaLabelY,
     metaValueY,
+    executionMetricsY,
     semanticY,
     unplannedLabelY,
     executionY,
@@ -295,7 +327,6 @@ export function BaseCalendarCardSvg({
       </foreignObject>
 
       {/* META */}
-      {/* Meta row (time · distance · pace) */}
       {metricsValue && (
         <>
           <text
@@ -316,6 +347,31 @@ export function BaseCalendarCardSvg({
             fontWeight={500}
           >
             {metricsValue}
+          </text>
+        </>
+      )}
+
+      {/* Execution metrics (overview + execution): distance, time, TSS, elevation, HR, cadence, pace */}
+      {showExecutionMetrics && executionMetricsLine && (
+        <>
+          <text
+            x={paddingX}
+            y={layout.executionMetricsY}
+            fill={COLORS.textMuted}
+            fontSize={9 * textScale}
+            fontWeight={500}
+            letterSpacing="0.05em"
+          >
+            EXECUTION
+          </text>
+          <text
+            x={paddingX}
+            y={layout.executionMetricsY + 10 * textScale + 2}
+            fill={COLORS.textSecondary}
+            fontSize={11 * textScale}
+            fontWeight={500}
+          >
+            {executionMetricsLine.length > 48 ? `${executionMetricsLine.slice(0, 45)}…` : executionMetricsLine}
           </text>
         </>
       )}

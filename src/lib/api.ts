@@ -674,12 +674,16 @@ export const updateUserProfile = async (
     
     // Handle both camelCase and snake_case field names
     // CRITICAL: Backend expects full_name, not name
-    const nameValue = (profileData as { name?: string; full_name?: string }).name 
-      ?? (profileData as { name?: string; full_name?: string }).full_name;
-    if (nameValue !== undefined) backendData.full_name = nameValue;
+    // CRITICAL: Always send name/full_name, even if null (to clear the field)
+    const nameValue = (profileData as { name?: string | null; full_name?: string | null }).name 
+      ?? (profileData as { name?: string | null; full_name?: string | null }).full_name;
+    // Send null explicitly if name is empty/null to clear the field
+    backendData.full_name = nameValue !== undefined ? nameValue : null;
     
+    // CRITICAL: Always send these fields, even if null/undefined
+    // This ensures the backend knows what to update
     if (profileData.email !== undefined) backendData.email = profileData.email;
-    if (profileData.gender !== undefined) backendData.gender = profileData.gender;
+    backendData.gender = profileData.gender !== undefined ? profileData.gender : null;
     
     // Handle date_of_birth (snake_case) or dateOfBirth (camelCase)
     const dateOfBirth = (profileData as { date_of_birth?: string; dateOfBirth?: string }).date_of_birth 
@@ -692,14 +696,24 @@ export const updateUserProfile = async (
     if (unitSystem !== undefined) backendData.unit_system = unitSystem;
     
     // Handle weight - support weight_lbs (imperial) and weight_kg (metric) with 1 decimal precision
-    const weightLbs = (profileData as { weight_lbs?: number }).weight_lbs;
-    const weightKg = (profileData as { weight_kg?: number }).weight_kg;
-    if (weightLbs !== undefined && weightLbs !== null) {
-      // Send weight_lbs for imperial (1 decimal max)
-      backendData.weight_lbs = Number(weightLbs.toFixed(1));
-    } else if (weightKg !== undefined && weightKg !== null) {
-      // Send weight_kg for metric (1 decimal max)
-      backendData.weight_kg = Number(weightKg.toFixed(1));
+    // CRITICAL: Always send weight fields explicitly, even if null (to clear them)
+    const weightLbs = (profileData as { weight_lbs?: number | null }).weight_lbs;
+    const weightKg = (profileData as { weight_kg?: number | null }).weight_kg;
+    
+    if (weightLbs !== undefined) {
+      // Send weight_lbs (null to clear, or number to set)
+      backendData.weight_lbs = weightLbs !== null ? Number(weightLbs.toFixed(1)) : null;
+      // Clear weight_kg when using imperial
+      if (weightLbs !== null) {
+        backendData.weight_kg = null;
+      }
+    } else if (weightKg !== undefined) {
+      // Send weight_kg (null to clear, or number to set)
+      backendData.weight_kg = weightKg !== null ? Number(weightKg.toFixed(1)) : null;
+      // Clear weight_lbs when using metric
+      if (weightKg !== null) {
+        backendData.weight_lbs = null;
+      }
     } else {
       // Fallback: try to get weight and convert based on unit system
       const weight = (profileData as { weight?: number | string }).weight;
@@ -708,28 +722,47 @@ export const updateUserProfile = async (
         if (!isNaN(weightValue)) {
           if (unitSystem === 'imperial') {
             backendData.weight_lbs = Number(weightValue.toFixed(1));
+            backendData.weight_kg = null;
           } else {
             backendData.weight_kg = Number(weightValue.toFixed(1));
+            backendData.weight_lbs = null;
           }
         }
+      } else {
+        // Explicitly clear both if weight is null/empty
+        backendData.weight_lbs = null;
+        backendData.weight_kg = null;
       }
     }
     
     // Handle height - support height_inches (imperial, integer) and height_cm (metric, integer)
     // CRITICAL: Backend expects height_inches (integer), not height_in (float)
-    const heightInches = (profileData as { height_inches?: number }).height_inches;
-    const heightIn = (profileData as { height_in?: number }).height_in;
-    const heightCm = (profileData as { height_cm?: number }).height_cm;
+    // CRITICAL: Always send height fields explicitly, even if null (to clear them)
+    const heightInches = (profileData as { height_inches?: number | null }).height_inches;
+    const heightIn = (profileData as { height_in?: number | null }).height_in;
+    const heightCm = (profileData as { height_cm?: number | null }).height_cm;
     
-    if (heightInches !== undefined && heightInches !== null) {
-      // Backend expects integer for height_inches
-      backendData.height_inches = Math.round(heightInches);
-    } else if (heightIn !== undefined && heightIn !== null) {
+    if (heightInches !== undefined) {
+      // Send height_inches (null to clear, or integer to set)
+      backendData.height_inches = heightInches !== null ? Math.round(heightInches) : null;
+      // Clear height_cm when using imperial
+      if (heightInches !== null) {
+        backendData.height_cm = null;
+      }
+    } else if (heightIn !== undefined) {
       // Convert height_in (float) to height_inches (integer) for backend
-      backendData.height_inches = Math.round(heightIn);
-    } else if (heightCm !== undefined && heightCm !== null) {
-      // Send height_cm for metric (integer)
-      backendData.height_cm = Math.round(heightCm);
+      backendData.height_inches = heightIn !== null ? Math.round(heightIn) : null;
+      // Clear height_cm when using imperial
+      if (heightIn !== null) {
+        backendData.height_cm = null;
+      }
+    } else if (heightCm !== undefined) {
+      // Send height_cm for metric (null to clear, or integer to set)
+      backendData.height_cm = heightCm !== null ? Math.round(heightCm) : null;
+      // Clear height_inches when using metric
+      if (heightCm !== null) {
+        backendData.height_inches = null;
+      }
     } else {
       // Fallback: try to get height and convert based on unit system
       const height = (profileData as { height?: number | string }).height;
@@ -739,15 +772,22 @@ export const updateUserProfile = async (
           if (unitSystem === 'imperial') {
             // Convert to total inches (integer)
             backendData.height_inches = Math.round(heightValue);
+            backendData.height_cm = null;
           } else {
             // Convert to cm (integer)
             backendData.height_cm = Math.round(heightValue);
+            backendData.height_inches = null;
           }
         }
+      } else {
+        // Explicitly clear both if height is null/empty
+        backendData.height_inches = null;
+        backendData.height_cm = null;
       }
     }
     
-    if (profileData.location !== undefined) backendData.location = profileData.location;
+    // CRITICAL: Always send location, even if null (to clear the field)
+    backendData.location = profileData.location !== undefined ? profileData.location : null;
     
     // Backend now supports target_event and goals
     const targetEvent = (profileData as { target_event?: unknown; targetEvent?: unknown }).target_event 

@@ -100,8 +100,9 @@ export function toCalendarItem(
   // Extract pace from activity if available
   const pace = matchedActivity?.avgPace;
 
-  // Extract secondary metric (power, HR, etc.) from activity if available
-  // Pace is now a separate field, so use other metrics for secondary
+  const elevation = matchedActivity?.elevation;
+  const hr = matchedActivity?.avgHeartRate;
+
   let secondary: string | undefined = undefined;
   if (matchedActivity) {
     if (matchedActivity.avgPower) {
@@ -178,6 +179,8 @@ export function toCalendarItem(
     vocabularyLevel,
   });
 
+  const durationMin = session.duration_minutes ?? (matchedActivity ? matchedActivity.duration : 0);
+
   return {
     id: session.id,
     kind,
@@ -185,11 +188,13 @@ export function toCalendarItem(
     intent,
     title: resolvedTitle,
     startLocal,
-    durationMin: session.duration_minutes || 0,
+    durationMin,
     load,
     distanceKm,
     pace,
     secondary,
+    elevation,
+    hr,
     isPaired,
     compliance,
     description: session.notes || undefined,

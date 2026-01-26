@@ -296,6 +296,20 @@ export function ActivityPopup({
     return elev.filter((_, i) => i % step === 0);
   }, [streamsData]);
 
+  const cadenceSparkData = useMemo(() => {
+    if (!streamsData?.cadence) return undefined;
+    const cad = (streamsData.cadence as number[]).filter((v): v is number => typeof v === 'number' && v > 0);
+    if (cad.length < 10) return undefined;
+    const step = Math.max(1, Math.floor(cad.length / 30));
+    return cad.filter((_, i) => i % step === 0);
+  }, [streamsData]);
+
+  const avgCadence = useMemo(() => {
+    if (!cadenceSparkData || cadenceSparkData.length === 0) return undefined;
+    const sum = cadenceSparkData.reduce((a, b) => a + b, 0);
+    return Math.round(sum / cadenceSparkData.length);
+  }, [cadenceSparkData]);
+
   const handleExportFIT = async () => {
     if (!session?.id || !canExport) return;
 
@@ -770,12 +784,53 @@ export function ActivityPopup({
               <TabsContent value="overview" className="mt-4 space-y-4">
                 {/* Coach Insight removed - now shown in NarrativeBlock above tabs */}
 
-                {/* Core Metrics Grid */}
+                {/* Core Metrics Grid: overview (distance, time, TSS, elevation) + execution (HR, cadence, pace) */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {activity.avgPace && (
+                  <div className="p-3 rounded-lg bg-muted/50">
+                    <div className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
+                      <Route className="h-3 w-3" /> Distance
+                    </div>
+                    <div className="text-sm font-medium text-foreground">
+                      {convertDistance(activity.distance).value.toFixed(1)} {convertDistance(activity.distance).unit}
+                    </div>
+                  </div>
+                  <div className="p-3 rounded-lg bg-muted/50">
+                    <div className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
+                      <Clock className="h-3 w-3" /> Time
+                    </div>
+                    <div className="text-sm font-medium text-foreground">{activity.duration} min</div>
+                  </div>
+                  {displayTss !== null && displayTss > 0 && (
+                    <div className="p-3 rounded-lg bg-muted/50">
+                      <div className="text-xs text-muted-foreground mb-1">TSS</div>
+                      <div className="text-sm font-medium text-foreground">{Math.round(displayTss)}</div>
+                    </div>
+                  )}
+                  {activity.elevation != null && activity.elevation > 0 && (
+                    <div className="p-3 rounded-lg bg-muted/50">
+                      <div className="text-xs text-muted-foreground mb-1 flex items-center gap-1">
+                        <Mountain className="h-3 w-3" /> Elevation
+                      </div>
+                      <div className="text-sm font-medium text-foreground">
+                        {Math.round(convertElevation(activity.elevation).value)} {convertElevation(activity.elevation).unit}
+                      </div>
+                    </div>
+                  )}
+                  {(activity.avgPace || paceSparkData) && (
                     <div className="p-3 rounded-lg bg-muted/50">
                       <div className="text-xs text-muted-foreground mb-1">Avg Pace</div>
-                      <div className="text-sm font-medium text-foreground">{formatPace(activity.avgPace)}</div>
+                      <div className="text-sm font-medium text-foreground">
+                        {activity.avgPace
+                          ? (formatPace(activity.avgPace) ?? activity.avgPace)
+                          : paceSparkData
+                            ? (() => {
+                                const avgPace = paceSparkData.reduce((a, b) => a + b, 0) / paceSparkData.length;
+                                const mins = Math.floor(avgPace);
+                                const secs = Math.round((avgPace - mins) * 60);
+                                return `${mins}:${secs.toString().padStart(2, '0')} /km`;
+                              })()
+                            : '—'}
+                      </div>
                     </div>
                   )}
                   {activity.avgHeartRate && (
@@ -794,10 +849,10 @@ export function ActivityPopup({
                       <div className="text-sm font-medium text-foreground">{Math.round(activity.avgPower)}w</div>
                     </div>
                   )}
-                  {displayTss !== null && displayTss > 0 && (
+                  {avgCadence != null && avgCadence > 0 && (
                     <div className="p-3 rounded-lg bg-muted/50">
-                      <div className="text-xs text-muted-foreground mb-1">TSS</div>
-                      <div className="text-sm font-medium text-foreground">{Math.round(displayTss)}</div>
+                      <div className="text-xs text-muted-foreground mb-1">Cadence</div>
+                      <div className="text-sm font-medium text-foreground">{avgCadence} rpm</div>
                     </div>
                   )}
                   {/* Normalized Power / Effort - only for bike and run */}
@@ -893,21 +948,33 @@ export function ActivityPopup({
                     />
                   )}
                   
-                  {paceSparkData && paceSparkData.length > 0 && (
+                  {(paceSparkData?.length ? paceSparkData : activity.avgPace) && (
                     <TelemetryMetricRow
                       label="Pace"
-                      value={(() => {
-                        const avgPace = paceSparkData.reduce((a, b) => a + b, 0) / paceSparkData.length;
-                        const mins = Math.floor(avgPace);
-                        const secs = Math.round((avgPace - mins) * 60);
-                        return `${mins}:${secs.toString().padStart(2, '0')}`;
-                      })()}
+                      value={
+                        paceSparkData?.length
+                          ? (() => {
+                              const avgPace = paceSparkData.reduce((a, b) => a + b, 0) / paceSparkData.length;
+                              const mins = Math.floor(avgPace);
+                              const secs = Math.round((avgPace - mins) * 60);
+                              return `${mins}:${secs.toString().padStart(2, '0')}`;
+                            })()
+                          : (activity.avgPace ?? '—')
+                      }
                       unit="/km"
                       sparkData={paceSparkData}
                       sparkColor="hsl(var(--chart-1))"
                     />
                   )}
-                  
+                  {avgCadence != null && avgCadence > 0 && (
+                    <TelemetryMetricRow
+                      label="Cadence"
+                      value={avgCadence}
+                      unit="rpm"
+                      sparkData={cadenceSparkData}
+                      sparkColor="hsl(var(--chart-3))"
+                    />
+                  )}
                   {activity?.elevation && activity.elevation > 0 && (
                     <TelemetryMetricRow
                       label="Elev"
