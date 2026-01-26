@@ -102,6 +102,9 @@ export function toCalendarItem(
 
   const elevation = matchedActivity?.elevation;
   const hr = matchedActivity?.avgHeartRate;
+  
+  // Extract cadence from activity if available
+  const cadence = matchedActivity?.avgCadence;
 
   let secondary: string | undefined = undefined;
   if (matchedActivity) {
@@ -195,6 +198,7 @@ export function toCalendarItem(
     secondary,
     elevation,
     hr,
+    cadence,
     isPaired,
     compliance,
     description: session.notes || undefined,

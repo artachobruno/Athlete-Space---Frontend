@@ -107,6 +107,7 @@ export interface CompletedActivity {
   avgPace?: string;
   avgHeartRate?: number;
   avgPower?: number;
+  avgCadence?: number; // Average cadence (rpm), when available
   elevation?: number;
   trainingLoad: number; // TSS equivalent
   source: 'strava' | 'manual';

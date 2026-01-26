@@ -197,6 +197,21 @@ export function toSessionCardProps(item: CalendarItem): BaseCardProps {
   const secondaryText =
     p.distance || p.pace ? [p.distance, p.pace].filter(Boolean).join(' · ') : undefined;
 
+  // For merged items (planned + completed), include execution metrics from the paired activity
+  // This ensures all activity data (distance, time, TSS, elevation, HR, cadence, pace) is shown
+  const executionMetrics: BaseCardProps['executionMetrics'] =
+    item.isPaired && item.kind === 'completed'
+      ? {
+          distance: p.distance,
+          duration: p.duration,
+          tss: item.load,
+          elevation: item.elevation,
+          hr: item.hr,
+          cadence: item.cadence,
+          pace: item.pace,
+        }
+      : undefined;
+
   return {
     variant,
     topLeft: p.duration,
@@ -207,11 +222,12 @@ export function toSessionCardProps(item: CalendarItem): BaseCardProps {
     description: p.description, // Long-form fallback only
     sparkline: p.sparkline,
     isPlanned: true,
-    isActivity: false,
+    isActivity: item.isPaired && item.kind === 'completed', // Show as activity when paired
     // Semantic elevation fields
     planContext: derivePlanContext(item),
     intentText: deriveIntentText(item),
     coachInsight: item.coachNote ?? undefined,
+    executionMetrics,
   };
 }
 
@@ -221,6 +237,8 @@ function toActivityCardProps(item: CalendarItem): BaseCardProps {
   const secondaryText =
     p.distance || p.pace ? [p.distance, p.pace].filter(Boolean).join(' · ') : undefined;
 
+  // Execution metrics for completed activities (overview + execution)
+  // Includes: distance, time, TSS, elevation (overview) and HR, cadence, pace (execution)
   const executionMetrics: BaseCardProps['executionMetrics'] =
     item.kind === 'completed'
       ? {
@@ -230,7 +248,7 @@ function toActivityCardProps(item: CalendarItem): BaseCardProps {
           elevation: item.elevation,
           hr: item.hr,
           cadence: item.cadence,
-          pace: item.pace,
+          pace: item.pace, // Pace included in both activity extended and combined
         }
       : undefined;
 

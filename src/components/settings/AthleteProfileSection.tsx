@@ -284,6 +284,8 @@ export function AthleteProfileSection() {
         gender: profileData.gender,
         unitSystem: profileData.unitSystem,
         rawBackendResponse: userProfile, // Log full backend response for debugging
+        backendNameField: (userProfile as { full_name?: string | null }).full_name,
+        backendNameFieldAlt: (userProfile as { name?: string | null }).name,
       });
       setProfile(profileData);
       setInitialProfile(profileData);
@@ -566,6 +568,9 @@ export function AthleteProfileSection() {
       setTimeout(() => {
         justSavedRef.current = false;
         console.log('[Profile] Save guard expired - profile can be reloaded again');
+        // Reload profile from backend to ensure we have the latest data
+        // This ensures that if the user stays on the page, they see the saved data
+        loadProfile();
       }, 5000);
       
       // CRITICAL: Reset save guard after a delay to allow future saves
