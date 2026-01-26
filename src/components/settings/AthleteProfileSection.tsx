@@ -552,23 +552,33 @@ export function AthleteProfileSection() {
           ?? null;
         
         // CRITICAL: Always prefer what we just sent to the backend over the response
-        // The response might be incomplete or the backend might not return all fields
+        // The response might be incomplete or the backend might not return all fields correctly
         // We know what we saved, so use that as the source of truth
-        const savedName = profile.name.trim() || null;
-        const finalName = backendName || savedName || '';
+        const savedName = profile.name.trim();
+        // If backend returns null but we sent a non-empty name, use what we sent
+        // This is a workaround for backend bugs where it doesn't return the saved value
+        // CRITICAL: If backend returns null but we sent a name, the backend likely has a bug
+        // but we should still preserve what we sent in the form state
+        const backendNameTrimmed = backendName ? backendName.trim() : '';
+        const finalName = backendNameTrimmed || savedName || '';
         
         console.log('[Profile] Name resolution after save:', {
           backendName,
+          backendNameTrimmed,
           savedName,
           finalName,
           profileName: profile.name,
+          backendReturnedNull: backendName === null,
+          backendReturnedEmpty: backendNameTrimmed === '',
+          weSentName: !!savedName,
+          warning: backendName === null && savedName ? 'Backend returned null but we sent a name - backend bug!' : null,
         });
         
         // CRITICAL: Use the values we JUST SENT to the backend, not the response
-        // The response might be incomplete, but we know what we saved
-        // This ensures the form shows exactly what was saved
+        // The response might be incomplete or buggy, but we know what we saved
+        // This ensures the form shows exactly what was saved, even if backend doesn't return it
         const updatedState: ProfileState = {
-          // Use backend response if available and non-empty, otherwise use what we just sent
+          // Use what we sent if backend returns null/empty, otherwise use backend response
           name: finalName,
           email: user?.email || profile.email || '', // Always use email from auth context
           gender: displayGender || profile.gender || '',
