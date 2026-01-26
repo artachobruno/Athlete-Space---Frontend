@@ -294,7 +294,6 @@ export function AthleteProfileSection() {
         hasFullName,
         hasName,
         backendName,
-        currentName,
         finalName: profileData.name,
         backendHasField: backendName !== undefined,
       });
