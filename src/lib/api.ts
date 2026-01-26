@@ -2899,8 +2899,9 @@ export const checkRecentActivities = async (): Promise<{
 }> => {
   console.log("[API] Checking for recent activities");
   try {
-    await settingsApi.syncCheck();
-    return response as unknown as {
+    const response = await settingsApi.syncCheck();
+    const responseData = response.data || response;
+    return responseData as unknown as {
       success: boolean;
       message: string;
       last_sync: string;
@@ -2922,8 +2923,9 @@ export const syncActivitiesNow = async (): Promise<{
 }> => {
   console.log("[API] User-initiated sync");
   try {
-    await settingsApi.syncNow();
-    return response as unknown as {
+    const response = await settingsApi.syncNow();
+    const responseData = response.data || response;
+    return responseData as unknown as {
       success: boolean;
       message: string;
       last_sync: string;
