@@ -199,8 +199,9 @@ export function toSessionCardProps(item: CalendarItem): BaseCardProps {
 
   // For merged items (planned + completed), include execution metrics from the paired activity
   // This ensures all activity data (distance, time, TSS, elevation, HR, cadence, pace) is shown
+  // When a planned session is paired with a completed activity, show all execution data
   const executionMetrics: BaseCardProps['executionMetrics'] =
-    item.isPaired && item.kind === 'completed'
+    item.isPaired
       ? {
           distance: p.distance,
           duration: p.duration,
@@ -208,7 +209,7 @@ export function toSessionCardProps(item: CalendarItem): BaseCardProps {
           elevation: item.elevation,
           hr: item.hr,
           cadence: item.cadence,
-          pace: item.pace,
+          pace: item.pace, // Pace included in both activity extended and combined
         }
       : undefined;
 
@@ -221,8 +222,8 @@ export function toSessionCardProps(item: CalendarItem): BaseCardProps {
     title: p.title,
     description: p.description, // Long-form fallback only
     sparkline: p.sparkline,
-    isPlanned: true,
-    isActivity: item.isPaired && item.kind === 'completed', // Show as activity when paired
+    isPlanned: !item.isPaired, // Not planned if paired (it's completed)
+    isActivity: item.isPaired, // Show as activity when paired
     // Semantic elevation fields
     planContext: derivePlanContext(item),
     intentText: deriveIntentText(item),
@@ -294,7 +295,8 @@ function toTrainingDayCardProps(item: CalendarItem): BaseCardProps {
 }
 
 export function toCalendarCardRenderModel(item: CalendarItem): CalendarCardRenderModel {
-  if (item.kind === 'completed') {
+  // If paired (planned + completed), always show as activity card with execution metrics
+  if (item.isPaired || item.kind === 'completed') {
     return {
       cardType: 'activity',
       props: toActivityCardProps(item),
@@ -313,8 +315,16 @@ export function toCalendarCardRenderModel(item: CalendarItem): CalendarCardRende
  * Unified card props for a single combined card (plan + execution).
  * Use BaseCalendarCardSvg for both planned and completed – one card that
  * shows intent (planned), execution summary + coach (completed), or both when paired.
+ * 
+ * When a planned session is paired with a completed activity, treat it as completed
+ * to show all execution metrics.
  */
 export function toUnifiedCalendarCardProps(item: CalendarItem): BaseCardProps {
+  // If paired, always show as activity card with execution metrics
+  if (item.isPaired) {
+    return toActivityCardProps(item);
+  }
+  
   return item.kind === 'completed'
     ? toActivityCardProps(item)
     : toSessionCardProps(item);

@@ -249,30 +249,56 @@ export function AthleteProfileSection() {
       
       // CRITICAL: Backend returns full_name, not name
       // Handle both full_name and name for backward compatibility
-      // CRITICAL: Use nullish coalescing - null means field is not set, empty string means it was cleared
-      const backendName = (userProfile as { full_name?: string | null }).full_name 
-        ?? (userProfile as { name?: string | null }).name 
-        ?? '';
+      // Check if field exists in response (undefined vs null)
+      const hasFullName = 'full_name' in userProfile;
+      const hasName = 'name' in userProfile;
+      const backendName = hasFullName 
+        ? (userProfile as { full_name?: string | null }).full_name 
+        : hasName
+        ? (userProfile as { name?: string | null }).name
+        : undefined;
       
-      // CRITICAL: Use nullish coalescing for location - null means not set
-      const backendLocation = (userProfile as { location?: string | null }).location ?? '';
+      // Check if location exists in response
+      const hasLocation = 'location' in userProfile;
+      const backendLocation = hasLocation 
+        ? (userProfile as { location?: string | null }).location 
+        : undefined;
       
-      // CRITICAL: Use nullish coalescing for date_of_birth
-      const backendDateOfBirth = (userProfile as { date_of_birth?: string | null }).date_of_birth 
-        ?? (userProfile as { dateOfBirth?: string | null }).dateOfBirth 
-        ?? '';
+      // Check if date_of_birth exists in response
+      const hasDateOfBirth = 'date_of_birth' in userProfile || 'dateOfBirth' in userProfile;
+      const backendDateOfBirth = hasDateOfBirth
+        ? ((userProfile as { date_of_birth?: string | null }).date_of_birth 
+           ?? (userProfile as { dateOfBirth?: string | null }).dateOfBirth)
+        : undefined;
+      
+      // CRITICAL: Only preserve current form state if backend field is undefined (not in response)
+      // If backend returns null, that means the field was explicitly cleared - use it
+      // If backend field is undefined, preserve current form state to avoid clearing valid data
+      const currentName = profile.name.trim() || '';
+      const currentLocation = profile.location.trim() || '';
+      const currentDateOfBirth = profile.dateOfBirth.trim() || '';
       
       const profileData: ProfileState = {
-        name: backendName,
+        // Use backend value if field exists in response (even if null), otherwise preserve current state
+        name: backendName !== undefined ? (backendName || '') : currentName,
         email: emailFromAuth, // Always use email from auth context
         gender: displayGender,
         weight: displayWeight,
         unitSystem,
-        location: backendLocation,
-        dateOfBirth: backendDateOfBirth,
+        location: backendLocation !== undefined ? (backendLocation || '') : currentLocation,
+        dateOfBirth: backendDateOfBirth !== undefined ? (backendDateOfBirth || '') : currentDateOfBirth,
         heightFeet,
         heightInches,
       };
+      
+      console.log('[Profile] Name resolution during load:', {
+        hasFullName,
+        hasName,
+        backendName,
+        currentName,
+        finalName: profileData.name,
+        backendHasField: backendName !== undefined,
+      });
       
       // Log loaded profile data for debugging
       console.log('[Profile] Loaded profile data:', {
@@ -509,16 +535,29 @@ export function AthleteProfileSection() {
         
         // CRITICAL: Backend returns full_name, not name
         // Handle both full_name and name for backward compatibility
-        const backendName = (updatedProfile as { full_name?: string }).full_name 
-          ?? (updatedProfile as { name?: string }).name 
-          ?? '';
+        const backendName = (updatedProfile as { full_name?: string | null }).full_name 
+          ?? (updatedProfile as { name?: string | null }).name 
+          ?? null;
+        
+        // CRITICAL: Always prefer what we just sent to the backend over the response
+        // The response might be incomplete or the backend might not return all fields
+        // We know what we saved, so use that as the source of truth
+        const savedName = profile.name.trim() || null;
+        const finalName = backendName || savedName || '';
+        
+        console.log('[Profile] Name resolution after save:', {
+          backendName,
+          savedName,
+          finalName,
+          profileName: profile.name,
+        });
         
         // CRITICAL: Use the values we JUST SENT to the backend, not the response
         // The response might be incomplete, but we know what we saved
         // This ensures the form shows exactly what was saved
         const updatedState: ProfileState = {
-          // Use backend response if available, otherwise use what we just sent (from profile state)
-          name: backendName || profile.name || '',
+          // Use backend response if available and non-empty, otherwise use what we just sent
+          name: finalName,
           email: user?.email || profile.email || '', // Always use email from auth context
           gender: displayGender || profile.gender || '',
           weight: displayWeight || profile.weight || '',

@@ -68,12 +68,42 @@ export function toCalendarItem(
 
   // Try to find matching activity for metrics (pace, power, HR, load, coachFeedback) if available
   // Match by: planned_session_id, workout_id, or completed_activity_id (external ID)
+  // Priority: 1) planned_session_id (most reliable), 2) completed_activity_id, 3) workout_id
   // But don't rely on this for determining completion status
-  const matchedActivity = activities.find(a => 
-    a.planned_session_id === session.id ||
-    (session.workout_id && a.workout_id === session.workout_id) ||
-    (session.completed_activity_id && a.id === session.completed_activity_id)
+  let matchedActivity = activities.find(a => 
+    a.planned_session_id === session.id
   );
+  
+  // Fallback: match by completed_activity_id if no planned_session_id match
+  if (!matchedActivity && session.completed_activity_id) {
+    matchedActivity = activities.find(a => 
+      a.id === session.completed_activity_id
+    );
+  }
+  
+  // Final fallback: match by workout_id
+  if (!matchedActivity && session.workout_id) {
+    matchedActivity = activities.find(a => 
+      a.workout_id === session.workout_id
+    );
+  }
+  
+  // Debug logging for 01/24 pairing issues
+  if (session.date && session.date.includes('2026-01-24') && session.completed_activity_id) {
+    console.log('[CALENDAR_ADAPTER] 01/24 pairing check:', {
+      sessionId: session.id,
+      sessionDate: session.date,
+      completed_activity_id: session.completed_activity_id,
+      isPaired: !!session.completed_activity_id,
+      matchedActivity: matchedActivity ? {
+        id: matchedActivity.id,
+        date: matchedActivity.date,
+        planned_session_id: matchedActivity.planned_session_id,
+      } : null,
+      activitiesCount: activities.length,
+      activitiesWithPlannedSessionId: activities.filter(a => a.planned_session_id === session.id).length,
+    });
+  }
 
   // Determine compliance
   // If status is 'missed', set compliance='missed' even if kind is 'planned'
@@ -182,7 +212,8 @@ export function toCalendarItem(
     vocabularyLevel,
   });
 
-  const durationMin = session.duration_minutes ?? (matchedActivity ? matchedActivity.duration : 0);
+  // Extract duration: prefer activity data (actual execution), fall back to session planned duration
+  const durationMin = matchedActivity?.duration ?? session.duration_minutes ?? 0;
 
   return {
     id: session.id,

@@ -805,7 +805,30 @@ export const updateUserProfile = async (
       backendData.race_input = raceInput;
     }
 
+    // Log what we're sending to the backend
+    console.log("[API] Sending profile update to backend:", {
+      full_name: backendData.full_name,
+      location: backendData.location,
+      gender: backendData.gender,
+      unit_system: backendData.unit_system,
+      date_of_birth: backendData.date_of_birth,
+      weight_lbs: backendData.weight_lbs,
+      weight_kg: backendData.weight_kg,
+      height_inches: backendData.height_inches,
+      height_cm: backendData.height_cm,
+      fullPayload: backendData,
+    });
+    
     const response = await api.put("/me/profile", backendData);
+    
+    // Log what we received from the backend
+    console.log("[API] Received profile update response:", {
+      full_name: (response as { full_name?: string | null }).full_name,
+      location: (response as { location?: string | null }).location,
+      gender: (response as { gender?: string | null }).gender,
+      rawResponse: response,
+    });
+    
     return response as unknown as AthleteProfileOut;
   } catch (error) {
     console.error("[API] Failed to update profile:", error);
