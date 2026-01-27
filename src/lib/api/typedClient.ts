@@ -121,6 +121,13 @@ export const conversationsApi = {
  */
 export const calendarApi = {
   /**
+   * GET /calendar/range?start=YYYY-MM-DD&end=YYYY-MM-DD
+   * Fetches calendar sessions for a specific date range (max 45 days).
+   */
+  getRange: async (start: string, end: string) => {
+    return api.get(`/calendar/range?start=${start}&end=${end}`);
+  },
+  /**
    * Get today's calendar sessions.
    * 
    * @returns Today's sessions
@@ -149,6 +156,18 @@ export const calendarApi = {
   async getSeason() {
     const path = "/calendar/season" as const;
     return api.get<SeasonResponse>(path);
+  },
+
+  /**
+   * Get calendar sessions for a specific date range (max 45 days).
+   * 
+   * @param start - Start date in YYYY-MM-DD format
+   * @param end - End date in YYYY-MM-DD format (inclusive)
+   * @returns Sessions in the specified range
+   */
+  async getRange(start: string, end: string) {
+    const path = "/calendar/range" as const;
+    return api.get<{ sessions: CalendarSession[] }>(path, { params: { start, end } });
   },
 
   /**

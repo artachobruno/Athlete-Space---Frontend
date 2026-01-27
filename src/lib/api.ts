@@ -1270,7 +1270,7 @@ export const changePassword = async (
   console.log("[API] Changing password");
   try {
     await settingsApi.changePassword(passwordData);
-    return response as unknown as { success: boolean; message: string };
+    return { success: true, message: "Password changed successfully" };
   } catch (error) {
     console.error("[API] Failed to change password:", error);
     throw error;
@@ -1288,8 +1288,8 @@ export const changeEmail = async (
 ): Promise<{ success: boolean; message: string }> => {
   console.log("[API] Changing email");
   try {
-    await authApi.changeEmail(emailData.email);
-    return response as unknown as { success: boolean; message: string };
+    await authApi.changeEmail(emailData.new_email);
+    return { success: true, message: "Email changed successfully" };
   } catch (error) {
     console.error("[API] Failed to change email:", error);
     throw error;
@@ -2449,6 +2449,86 @@ export const fetchSeasonSummary = async (): Promise<SeasonSummary> => {
   }
 };
 
+/**
+ * Fetches calendar sessions for a specific date range.
+ * 
+ * **CRITICAL**: Use this instead of fetchCalendarSeason for UI rendering.
+ * Maximum range is 45 days to prevent OOM.
+ * 
+ * **Safety Guards**:
+ * - Validates date range before making request
+ * - Throws error if range exceeds 45 days
+ * - Prevents accidental season fetches
+ * 
+ * @param start - Start date in YYYY-MM-DD format
+ * @param end - End date in YYYY-MM-DD format (inclusive)
+ * @returns Sessions in the specified range
+ */
+export const fetchCalendarRange = async (start: string, end: string): Promise<CalendarSession[]> => {
+  // Safety guard: Validate range before making request
+  const startDate = new Date(start);
+  const endDate = new Date(end);
+  
+  if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+    throw new Error(`Invalid date format. Use YYYY-MM-DD. start=${start}, end=${end}`);
+  }
+  
+  const rangeDays = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+  
+  if (rangeDays < 0) {
+    throw new Error(`Invalid date range: end date must be after start date. start=${start}, end=${end}`);
+  }
+  
+  // CRITICAL: Hard limit to prevent OOM
+  if (rangeDays > 45) {
+    throw new Error(
+      `Date range exceeds maximum of 45 days. Requested: ${rangeDays} days. ` +
+      `Use smaller ranges for UI rendering. start=${start}, end=${end}`
+    );
+  }
+  
+  // Log warning for large ranges (near limit)
+  if (rangeDays > 35) {
+    console.warn(
+      `[Calendar] Large date range requested: ${rangeDays} days. ` +
+      `Consider using smaller ranges for better performance.`
+    );
+  }
+  
+  // Check if we're in preview mode
+  if (isPreviewMode()) {
+    console.log("[API] Preview mode: Returning mock calendar range");
+    await new Promise(resolve => setTimeout(resolve, 200));
+    
+    // Filter mock sessions by date range
+    const sessions = mockCalendarSessions.filter(s => {
+      const sessionDate = new Date(s.date);
+      return sessionDate >= startDate && sessionDate <= endDate;
+    });
+    
+    return sessions;
+  }
+  
+  console.log(`[API] Fetching calendar range: ${start} to ${end}`);
+  try {
+    const response = await calendarApi.getRange(start, end);
+    const responseData = response.data || response;
+    
+    if (responseData && typeof responseData === 'object' && 'sessions' in responseData) {
+      return (responseData.sessions || []) as CalendarSession[];
+    }
+    
+    return [];
+  } catch (error) {
+    const apiError = error as ApiError;
+    console.error("[API] Failed to fetch calendar range:", {
+      message: apiError.message,
+      status: apiError.status,
+    });
+    throw error;
+  }
+};
+
 export const fetchCalendarSeason = async (): Promise<SeasonResponse> => {
   // Check if we're in preview mode
   if (isPreviewMode()) {
@@ -2762,7 +2842,11 @@ export const updateSessionStatus = async (
 ): Promise<CalendarSession | WriteResponse<CalendarSession>> => {
   console.log("[API] Updating session status:", { sessionId, status, completedActivityId, confirmed });
   try {
-    const payload: Record<string, unknown> = {
+    const payload: {
+      status: string;
+      completed_activity_id?: string;
+      confirmed?: boolean;
+    } = {
       status,
     };
     
@@ -2876,11 +2960,11 @@ export const triggerHistoricalSync = async (): Promise<{
   console.log("[API] Triggering historical sync");
   try {
     await settingsApi.syncHistory();
-    return response as unknown as {
-      success: boolean;
-      message: string;
-      user_id: string;
-      last_sync: string;
+    return {
+      success: true,
+      message: "Historical sync triggered",
+      user_id: "",
+      last_sync: new Date().toISOString(),
     };
   } catch (error) {
     console.error("[API] Failed to trigger historical sync:", error);
@@ -2899,12 +2983,11 @@ export const checkRecentActivities = async (): Promise<{
 }> => {
   console.log("[API] Checking for recent activities");
   try {
-    const response = await settingsApi.syncCheck();
-    const responseData = response.data || response;
-    return responseData as unknown as {
-      success: boolean;
-      message: string;
-      last_sync: string;
+    await settingsApi.syncCheck();
+    return {
+      success: true,
+      message: "Recent activities check completed",
+      last_sync: new Date().toISOString(),
     };
   } catch (error) {
     console.error("[API] Failed to check recent activities:", error);
@@ -2923,12 +3006,11 @@ export const syncActivitiesNow = async (): Promise<{
 }> => {
   console.log("[API] User-initiated sync");
   try {
-    const response = await settingsApi.syncNow();
-    const responseData = response.data || response;
-    return responseData as unknown as {
-      success: boolean;
-      message: string;
-      last_sync: string;
+    await settingsApi.syncNow();
+    return {
+      success: true,
+      message: "Sync completed",
+      last_sync: new Date().toISOString(),
     };
   } catch (error) {
     console.error("[API] Failed to sync activities:", error);

@@ -106,21 +106,33 @@ export function TrainingCalendar() {
   };
 
   const invalidateCalendar = () => {
-    queryClient.invalidateQueries({ queryKey: ['calendar'], exact: false });
+    // Invalidate only active view queries (not season to prevent OOM refetch storms)
     queryClient.invalidateQueries({ queryKey: ['calendarWeek'], exact: false });
-    queryClient.invalidateQueries({ queryKey: ['calendarSeason'], exact: false });
+    queryClient.invalidateQueries({ queryKey: ['calendar', 'month'], exact: false });
     queryClient.invalidateQueries({ queryKey: ['calendarToday'], exact: false });
+    queryClient.invalidateQueries({ queryKey: ['calendarRange'], exact: false });
   };
 
+  // NOTE: Season data is only used for ICS export, not for rendering.
+  // For rendering, use range-based fetches (week/month views).
+  // This prevents OOM by avoiding full season loads in memory.
   const { data: seasonData } = useAuthenticatedQuery({
     queryKey: ['calendarSeason'],
     queryFn: () => fetchCalendarSeason(),
     retry: 1,
+    // Only fetch when explicitly needed (e.g., export), not on every render
+    enabled: false, // Disable auto-fetch - will be enabled only when export is triggered
   });
 
-  const handleExportIcs = () => {
-    if (seasonData?.sessions?.length) {
-      downloadIcsFile(seasonData.sessions);
+  const handleExportIcs = async () => {
+    // For ICS export, we need full season data, but fetch it on-demand
+    try {
+      const data = await fetchCalendarSeason();
+      if (data?.sessions?.length) {
+        downloadIcsFile(data.sessions);
+      }
+    } catch (error) {
+      console.error('[Calendar] Failed to fetch season data for export:', error);
     }
   };
 

@@ -1,5 +1,5 @@
-import { startOfMonth, endOfMonth, format, parseISO, isWithinInterval } from 'date-fns';
-import { fetchCalendarSeason, fetchActivities, type CalendarSession } from '@/lib/api';
+import { startOfMonth, endOfMonth, startOfWeek, endOfWeek, format, parseISO, isWithinInterval } from 'date-fns';
+import { fetchCalendarRange, fetchActivities, type CalendarSession } from '@/lib/api';
 import type { CompletedActivity } from '@/types';
 import type { CalendarItem } from '@/types/calendar';
 import { normalizeCalendarSport } from '@/types/calendar';
@@ -28,8 +28,11 @@ export interface DayCalendarData {
 
 /**
  * Fetches calendar data for a specific month.
- * Uses fetchCalendarSeason and filters sessions by month range.
+ * Uses fetchCalendarRange with grid bounds (includes leading/trailing week days).
  * Also fetches activities for the month.
+ * 
+ * **CRITICAL**: Fetches only visible date range (month grid), not entire season.
+ * This prevents OOM and scales to alpha.
  * 
  * @param month - Date object representing the month to fetch
  * @returns Month calendar data with planned sessions, completed activities, and workouts
@@ -37,14 +40,21 @@ export interface DayCalendarData {
 export async function fetchCalendarMonth(month: Date): Promise<MonthCalendarData> {
   const monthStart = startOfMonth(month);
   const monthEnd = endOfMonth(month);
+  
+  // Calculate grid bounds (includes leading/trailing week days for month view)
+  const gridStart = startOfWeek(monthStart, { weekStartsOn: 1 });
+  const gridEnd = endOfWeek(monthEnd, { weekStartsOn: 1 });
+  
+  const gridStartStr = format(gridStart, 'yyyy-MM-dd');
+  const gridEndStr = format(gridEnd, 'yyyy-MM-dd');
   const monthStartStr = format(monthStart, 'yyyy-MM-dd');
   const monthEndStr = format(monthEnd, 'yyyy-MM-dd');
 
-  // Fetch season data (contains all sessions)
-  const seasonData = await fetchCalendarSeason();
+  // Fetch only the visible grid range (max 42 days)
+  const rangeSessions = await fetchCalendarRange(gridStartStr, gridEndStr);
   
-  // Filter sessions to the month range
-  const monthSessions = (seasonData?.sessions || []).filter((session) => {
+  // Filter sessions to the actual month range (exclude leading/trailing days)
+  const monthSessions = rangeSessions.filter((session) => {
     if (!session.date) return false;
     const sessionDate = parseISO(session.date);
     return isWithinInterval(sessionDate, { start: monthStart, end: monthEnd });
