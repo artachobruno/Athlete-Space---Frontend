@@ -206,7 +206,8 @@ export default function Login() {
           <GlassCard className="border-border/50 shadow-lg">
             <CardContent className="space-y-4 pt-6">
               {/* Strava - Primary CTA */}
-              <Button
+              {/* STRAVA DISABLED: Garmin-first strategy - Strava coming soon */}
+              {/* <Button
                 className="w-full"
                 size="lg"
                 onClick={handleStravaLogin}
@@ -215,7 +216,7 @@ export default function Login() {
               >
                 <Activity className="h-4 w-4 mr-2 text-[#FC4C02]" />
                 Continue with Strava (recommended)
-              </Button>
+              </Button> */}
 
               {/* Google OAuth */}
               <Button

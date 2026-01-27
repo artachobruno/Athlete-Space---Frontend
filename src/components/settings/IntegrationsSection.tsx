@@ -21,25 +21,26 @@ interface Integration {
   status: 'connected' | 'disconnected' | 'coming-soon';
   primary?: boolean;
   lastSync?: string;
+  historical_backfill_complete?: boolean;
+  historical_backfill_cursor_date?: string | null;
 }
 
 const integrations: Integration[] = [
-  {
-    id: 'strava',
-    name: 'Strava',
-    description: 'Sync activities, import training history, and track your progress',
-    icon: Activity,
-    iconColor: 'text-[#FC4C02]',
-    status: 'connected',
-    primary: true,
-    lastSync: '2 hours ago',
-  },
   {
     id: 'garmin',
     name: 'Garmin Connect',
     description: 'Import workouts and physiological metrics from Garmin devices',
     icon: Watch,
     iconColor: 'text-[#007CC3]',
+    status: 'disconnected',
+    primary: true,
+  },
+  {
+    id: 'strava',
+    name: 'Strava',
+    description: 'Sync activities, import training history, and track your progress',
+    icon: Activity,
+    iconColor: 'text-[#FC4C02]',
     status: 'coming-soon',
   },
   {
@@ -72,7 +73,12 @@ export function IntegrationsSection() {
   const { user, status } = useAuth();
   const [connectingId, setConnectingId] = useState<string | null>(null);
   const [stravaStatus, setStravaStatus] = useState<{ connected: boolean; athlete_id?: string | number } | null>(null);
-  const [garminStatus, setGarminStatus] = useState<{ connected: boolean; last_sync_at: string | null } | null>(null);
+  const [garminStatus, setGarminStatus] = useState<{
+    connected: boolean;
+    last_sync_at: string | null;
+    historical_backfill_complete?: boolean;
+    historical_backfill_cursor_date?: string | null;
+  } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [syncingStrava, setSyncingStrava] = useState(false);
   const [lastSync, setLastSync] = useState<string | null>(null);
@@ -100,6 +106,8 @@ export function IntegrationsSection() {
       setGarminStatus({ 
         connected: garminIntegration?.connected ?? false,
         last_sync_at: garminIntegration?.last_sync_at ?? null,
+        historical_backfill_complete: garminIntegration?.historical_backfill_complete ?? false,
+        historical_backfill_cursor_date: garminIntegration?.historical_backfill_cursor_date ?? null,
       });
       
       const storedLastSync = localStorage.getItem('strava_last_sync');
@@ -117,19 +125,12 @@ export function IntegrationsSection() {
 
   const handleConnect = async (id: string) => {
     if (id === 'strava') {
-      setConnectingId(id);
-      try {
-        await initiateStravaConnect();
-        // This will redirect, so we won't reach here
-      } catch (error) {
-        console.error('Failed to connect Strava:', error);
-        toast({
-          title: 'Failed to connect Strava',
-          description: error instanceof Error ? error.message : 'Could not initiate Strava connection',
-          variant: 'destructive',
-        });
-        setConnectingId(null);
-      }
+      // Strava is coming soon - show message instead of connecting
+      toast({
+        title: 'Coming soon',
+        description: 'Strava support is coming soon. Please use Garmin Connect for now.',
+      });
+      return;
     } else if (id === 'garmin') {
       setConnectingId(id);
       try {
@@ -258,10 +259,11 @@ export function IntegrationsSection() {
 
   const updatedIntegrations: Integration[] = integrations.map(integration => {
     if (integration.id === 'strava') {
+      // Strava is always "coming-soon" in Garmin-first strategy
       return {
         ...integration,
-        status: stravaStatus?.connected ? 'connected' as const : 'disconnected' as const,
-        lastSync: lastSync ? formatLastSync(lastSync) : undefined,
+        status: 'coming-soon' as const,
+        primary: false,
       };
     }
     if (integration.id === 'garmin') {
@@ -269,6 +271,9 @@ export function IntegrationsSection() {
         ...integration,
         status: garminStatus?.connected ? 'connected' as const : 'disconnected' as const,
         lastSync: garminStatus?.last_sync_at ? formatLastSync(garminStatus.last_sync_at) : undefined,
+        primary: true, // Garmin is always primary
+        historical_backfill_complete: garminStatus?.historical_backfill_complete,
+        historical_backfill_cursor_date: garminStatus?.historical_backfill_cursor_date,
       };
     }
     return integration;
@@ -373,6 +378,14 @@ function IntegrationCard({
             <span>Last synced {integration.lastSync}</span>
           </div>
         )}
+        {isConnected && integration.id === 'garmin' && garminStatus?.historical_backfill_cursor_date && !garminStatus?.historical_backfill_complete && (
+          <div className="flex items-center gap-1 mt-1 text-xs text-muted-foreground">
+            <Loader2 className="h-3 w-3 animate-spin" />
+            <span>
+              History syncing... Synced up to {new Date(garminStatus.historical_backfill_cursor_date).toLocaleDateString()}
+            </span>
+          </div>
+        )}
       </div>
 
       {/* Status & Action */}
@@ -429,6 +442,9 @@ function IntegrationCard({
               </>
             )}
           </Button>
+        )}
+        {isComingSoon && integration.id === 'strava' && (
+          <p className="text-xs text-muted-foreground">Strava support coming soon.</p>
         )}
       </div>
     </div>
