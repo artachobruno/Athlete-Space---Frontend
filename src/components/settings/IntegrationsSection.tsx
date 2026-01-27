@@ -8,7 +8,7 @@ import {
   Link2, Check, X, Clock, ExternalLink, Loader2, RefreshCw,
   Activity, Watch, Heart, Apple, BarChart3
 } from 'lucide-react';
-import { getStravaStatus, initiateStravaConnect, disconnectStrava, syncStravaData } from '@/lib/api';
+import { getIntegrationsStatus, getStravaStatus, initiateStravaConnect, initiateGarminConnect, disconnectStrava, disconnectGarmin, syncStravaData } from '@/lib/api';
 import { toast } from '@/hooks/use-toast';
 import { useAuth } from '@/context/AuthContext';
 
@@ -72,6 +72,7 @@ export function IntegrationsSection() {
   const { user, status } = useAuth();
   const [connectingId, setConnectingId] = useState<string | null>(null);
   const [stravaStatus, setStravaStatus] = useState<{ connected: boolean; athlete_id?: string | number } | null>(null);
+  const [garminStatus, setGarminStatus] = useState<{ connected: boolean; last_sync_at: string | null } | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [syncingStrava, setSyncingStrava] = useState(false);
   const [lastSync, setLastSync] = useState<string | null>(null);
@@ -87,8 +88,20 @@ export function IntegrationsSection() {
   const loadIntegrationStatus = async () => {
     setIsLoading(true);
     try {
-      const status = await getStravaStatus();
-      setStravaStatus(status);
+      // Load all integrations status
+      const integrationsStatus = await getIntegrationsStatus();
+      
+      // Update Strava status
+      const stravaIntegration = integrationsStatus.integrations.find(i => i.provider === 'strava');
+      setStravaStatus({ connected: stravaIntegration?.connected ?? false });
+      
+      // Update Garmin status
+      const garminIntegration = integrationsStatus.integrations.find(i => i.provider === 'garmin');
+      setGarminStatus({ 
+        connected: garminIntegration?.connected ?? false,
+        last_sync_at: garminIntegration?.last_sync_at ?? null,
+      });
+      
       const storedLastSync = localStorage.getItem('strava_last_sync');
       if (storedLastSync) {
         setLastSync(storedLastSync);
@@ -96,6 +109,7 @@ export function IntegrationsSection() {
     } catch (error) {
       console.error('Failed to load integration status:', error);
       setStravaStatus({ connected: false });
+      setGarminStatus({ connected: false, last_sync_at: null });
     } finally {
       setIsLoading(false);
     }
@@ -114,6 +128,30 @@ export function IntegrationsSection() {
           description: error instanceof Error ? error.message : 'Could not initiate Strava connection',
           variant: 'destructive',
         });
+        setConnectingId(null);
+      }
+    } else if (id === 'garmin') {
+      setConnectingId(id);
+      try {
+        await initiateGarminConnect();
+        // This will redirect, so we won't reach here
+      } catch (error) {
+        console.error('Failed to connect Garmin:', error);
+        
+        // Check for EMAIL_REQUIRED error
+        if (error instanceof Error && error.message === 'EMAIL_REQUIRED') {
+          toast({
+            title: 'Email Verification Required',
+            description: 'Please verify your email before connecting Garmin',
+            variant: 'destructive',
+          });
+        } else {
+          toast({
+            title: 'Failed to connect Garmin',
+            description: error instanceof Error ? error.message : 'Could not initiate Garmin connection',
+            variant: 'destructive',
+          });
+        }
         setConnectingId(null);
       }
     } else {
@@ -152,6 +190,27 @@ export function IntegrationsSection() {
             description: 'Your Strava account has been disconnected',
           });
         }
+      } finally {
+        setConnectingId(null);
+      }
+    } else if (id === 'garmin') {
+      setConnectingId(id);
+      try {
+        await disconnectGarmin();
+        setGarminStatus({ connected: false, last_sync_at: null });
+        toast({
+          title: 'Garmin disconnected',
+          description: 'Your Garmin account has been disconnected',
+        });
+        // Reload status to reflect changes
+        await loadIntegrationStatus();
+      } catch (error) {
+        console.error('Failed to disconnect Garmin:', error);
+        toast({
+          title: 'Failed to disconnect',
+          description: error instanceof Error ? error.message : 'Could not disconnect Garmin',
+          variant: 'destructive',
+        });
       } finally {
         setConnectingId(null);
       }
@@ -205,6 +264,13 @@ export function IntegrationsSection() {
         lastSync: lastSync ? formatLastSync(lastSync) : undefined,
       };
     }
+    if (integration.id === 'garmin') {
+      return {
+        ...integration,
+        status: garminStatus?.connected ? 'connected' as const : 'disconnected' as const,
+        lastSync: garminStatus?.last_sync_at ? formatLastSync(garminStatus.last_sync_at) : undefined,
+      };
+    }
     return integration;
   });
 
@@ -217,7 +283,9 @@ export function IntegrationsSection() {
           </div>
           <div>
             <CardTitle className="text-lg">Integrations</CardTitle>
-            <CardDescription>Connect your training platforms and devices</CardDescription>
+            <CardDescription>
+              Connect devices to automatically sync workouts and health data.
+            </CardDescription>
           </div>
         </div>
       </CardHeader>

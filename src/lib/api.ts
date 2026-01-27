@@ -1311,6 +1311,98 @@ export const getStravaStatus = async (): Promise<{ connected: boolean; activity_
 };
 
 /**
+ * Gets integration status for all providers (Strava, Garmin).
+ */
+export const getIntegrationsStatus = async (): Promise<{
+  integrations: Array<{
+    provider: string;
+    connected: boolean;
+    last_sync_at: string | null;
+  }>;
+}> => {
+  console.log("[API] Fetching integrations status");
+  try {
+    const response = await api.get("/integrations/status");
+    return response as unknown as {
+      integrations: Array<{
+        provider: string;
+        connected: boolean;
+        last_sync_at: string | null;
+      }>;
+    };
+  } catch (error) {
+    console.error("[API] Failed to fetch integrations status:", error);
+    throw error;
+  }
+};
+
+/**
+ * Initiates Garmin OAuth connection.
+ * Redirects to Garmin OAuth flow.
+ */
+export const initiateGarminConnect = async (): Promise<void> => {
+  console.log("[API] Initiating Garmin connect");
+  
+  try {
+    // Check if running in native app (Capacitor)
+    const { isNative } = await import('./platform');
+    const isCapacitor = isNative();
+    
+    // Get base URL from API config or use window location
+    const baseURL = (api.defaults.baseURL as string) || window.location.origin;
+    const oauthUrl = `${baseURL}/integrations/garmin/connect`;
+    
+    if (isCapacitor) {
+      const { Browser } = await import('@capacitor/browser');
+      console.log("[API] Opening Garmin OAuth in external browser (native)");
+      try {
+        await Browser.open({ 
+          url: oauthUrl,
+          presentationStyle: 'popover'
+        });
+      } catch (error) {
+        console.error("[API] Browser.open() failed:", error);
+        window.location.href = oauthUrl;
+      }
+    } else {
+      // Web: Use standard redirect
+      console.log("[API] Redirecting to Garmin OAuth URL (web)");
+      window.location.href = oauthUrl;
+    }
+  } catch (error) {
+    console.error("[API] Failed to initiate Garmin connect:", error);
+    
+    // Check for EMAIL_REQUIRED error
+    const apiError = error as { status?: number; response?: { data?: { detail?: string } }; headers?: { 'x-error-code'?: string } };
+    if (apiError.status === 403 && (apiError.headers?.['x-error-code'] === 'EMAIL_REQUIRED' || apiError.response?.data?.detail?.includes('Email'))) {
+      throw new Error('EMAIL_REQUIRED');
+    }
+    
+    throw error;
+  }
+};
+
+/**
+ * Disconnects Garmin integration.
+ */
+export const disconnectGarmin = async (): Promise<void> => {
+  console.log("[API] Disconnecting Garmin");
+  try {
+    await api.delete("/integrations/garmin");
+    console.log("[API] Garmin disconnected successfully");
+  } catch (error) {
+    const apiError = error as { status?: number };
+    // Only throw errors for status >= 500
+    if (apiError.status && apiError.status >= 500) {
+      console.error("[API] Failed to disconnect Garmin (server error):", error);
+      throw error;
+    }
+    // For 4xx errors, treat as success (already disconnected)
+    console.log("[API] Garmin already disconnected or not found");
+  }
+};
+
+/**
  * Normalizes activity timestamps from API response to ensure proper UTC handling.
  * This function should be applied immediately when activities are received from the API.
  */

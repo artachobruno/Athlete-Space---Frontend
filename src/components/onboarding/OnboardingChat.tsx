@@ -4,7 +4,7 @@ import { Input } from '@/components/ui/input';
 import { Brain, User, Send, Loader2, CheckCircle2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { OnboardingOptionChips } from './OnboardingOptionChips';
-import { StravaConnectCard } from './StravaConnectCard';
+import { DevicesConnectCard } from './DevicesConnectCard';
 import { CoachSummaryCard } from './CoachSummaryCard';
 import { completeOnboarding } from '@/lib/api';
 import { auth } from '@/lib/auth';
@@ -36,16 +36,16 @@ interface OnboardingChatProps {
   isComplete: boolean;
 }
 
-type Step = 'role' | 'welcome' | 'name' | 'timezone' | 'sports' | 'consistency' | 'goals' | 'race-details' | 'availability' | 'hours' | 'injuries' | 'injury-details' | 'strava' | 'analyzing' | 'summary' | 'complete';
+type Step = 'role' | 'welcome' | 'name' | 'timezone' | 'sports' | 'consistency' | 'goals' | 'race-details' | 'availability' | 'hours' | 'injuries' | 'injury-details' | 'devices' | 'analyzing' | 'summary' | 'complete';
 
 interface Message {
   id: string;
   role: 'coach' | 'athlete';
   content: string;
-  component?: 'role' | 'sports' | 'consistency' | 'goals' | 'availability' | 'hours' | 'injuries' | 'strava' | 'summary' | 'text-input';
+  component?: 'role' | 'sports' | 'consistency' | 'goals' | 'availability' | 'hours' | 'injuries' | 'devices' | 'summary' | 'text-input';
 }
 
-const stepOrder: Step[] = ['welcome', 'sports', 'consistency', 'goals', 'availability', 'injuries', 'strava', 'summary', 'complete'];
+const stepOrder: Step[] = ['welcome', 'sports', 'consistency', 'goals', 'availability', 'injuries', 'devices', 'summary', 'complete'];
 
 export function OnboardingChat({ onComplete, isComplete }: OnboardingChatProps) {
   const { status } = useAuth();
@@ -84,10 +84,12 @@ export function OnboardingChat({ onComplete, isComplete }: OnboardingChatProps) 
 
   // Check if user authenticated (token from OAuth callback)
   useEffect(() => {
-    if (auth.isLoggedIn() && !data.stravaConnected && step === 'strava') {
-      // User came back from OAuth with a token
+    if (auth.isLoggedIn() && !data.stravaConnected && step === 'devices') {
+      // User came back from OAuth with a token (Strava or Garmin)
+      // For now, we'll check if Strava was connected
+      // In the future, we could check both providers
       setData(prev => ({ ...prev, stravaConnected: true }));
-      addAthleteMessage('Connected Strava');
+      addAthleteMessage('Connected device');
       
       setTimeout(() => {
         addCoachMessage("Analyzing your training history...");
@@ -437,16 +439,20 @@ export function OnboardingChat({ onComplete, isComplete }: OnboardingChatProps) 
   const proceedToStrava = () => {
     setTimeout(() => {
       addCoachMessage(
-        "If you connect Strava, I can review your recent training history and coach you much more accurately. This is optional, but strongly recommended.",
-        'strava'
+        "Connect your devices to automatically sync workouts and health data. This is optional, but strongly recommended.",
+        'devices'
       );
-      setStep('strava');
+      setStep('devices');
     }, 600);
   };
 
-  const handleStravaConnect = () => {
-    setData(prev => ({ ...prev, stravaConnected: true }));
-    addAthleteMessage('Connected Strava');
+  const handleDeviceConnect = (provider: 'strava' | 'garmin') => {
+    if (provider === 'strava') {
+      setData(prev => ({ ...prev, stravaConnected: true }));
+      addAthleteMessage('Connected Strava');
+    } else {
+      addAthleteMessage('Connected Garmin');
+    }
 
     setTimeout(() => {
       addCoachMessage("Analyzing your training history...");
@@ -462,7 +468,7 @@ export function OnboardingChat({ onComplete, isComplete }: OnboardingChatProps) 
     }, 300);
   };
 
-  const handleStravaSkip = () => {
+  const handleDevicesSkip = () => {
     addAthleteMessage('Skip for now');
 
     setTimeout(() => {
@@ -739,7 +745,7 @@ export function OnboardingChat({ onComplete, isComplete }: OnboardingChatProps) 
   };
 
   const getCurrentStepNumber = () => {
-    const coreSteps = ['sports', 'consistency', 'goals', 'availability', 'injuries', 'strava'];
+    const coreSteps = ['sports', 'consistency', 'goals', 'availability', 'injuries', 'devices'];
     const currentIndex = coreSteps.indexOf(step);
     if (currentIndex === -1) return null;
     return { current: currentIndex + 1, total: 6 };
@@ -857,10 +863,10 @@ export function OnboardingChat({ onComplete, isComplete }: OnboardingChatProps) 
               />
             )}
 
-            {message.component === 'strava' && step === 'strava' && (
-              <StravaConnectCard
-                onConnect={handleStravaConnect}
-                onSkip={handleStravaSkip}
+            {message.component === 'devices' && step === 'devices' && (
+              <DevicesConnectCard
+                onConnect={handleDeviceConnect}
+                onSkip={handleDevicesSkip}
               />
             )}
 
