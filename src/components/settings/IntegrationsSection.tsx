@@ -378,11 +378,11 @@ function IntegrationCard({
             <span>Last synced {integration.lastSync}</span>
           </div>
         )}
-        {isConnected && integration.id === 'garmin' && garminStatus?.historical_backfill_cursor_date && !garminStatus?.historical_backfill_complete && (
+        {isConnected && integration.id === 'garmin' && integration.historical_backfill_cursor_date && !integration.historical_backfill_complete && (
           <div className="flex items-center gap-1 mt-1 text-xs text-muted-foreground">
             <Loader2 className="h-3 w-3 animate-spin" />
             <span>
-              History syncing... Synced up to {new Date(garminStatus.historical_backfill_cursor_date).toLocaleDateString()}
+              History syncing... Synced up to {new Date(integration.historical_backfill_cursor_date).toLocaleDateString()}
             </span>
           </div>
         )}
